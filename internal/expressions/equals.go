@@ -1,8 +1,6 @@
 package expressions
 
-import (
-	"github.com/efritz/gostgres/internal/shared"
-)
+import "github.com/efritz/gostgres/internal/shared"
 
 type equalsExpression struct {
 	left  Expression

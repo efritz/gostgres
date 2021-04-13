@@ -1,8 +1,6 @@
 package relations
 
-import (
-	"github.com/efritz/gostgres/internal/shared"
-)
+import "github.com/efritz/gostgres/internal/shared"
 
 type Relation interface {
 	Name() string

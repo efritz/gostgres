@@ -20,27 +20,44 @@ func NewNamed(relationName, name string) Expression {
 	}
 }
 
+func (e namedExpression) UsesField(field shared.Field) bool {
+	_, err := e.indexFor([]shared.Field{field})
+	return err == nil
+}
+
 func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	matches := 0
-	for i, field := range row.Fields {
-		if field.Name == e.name {
-			if field.RelationName == e.relationName {
-				return row.Values[i], nil
-			}
+	index, err := e.indexFor(row.Fields)
+	if err != nil {
+		return nil, err
+	}
 
-			matches++
+	return row.Values[index], nil
+}
+
+func (e namedExpression) indexFor(fields []shared.Field) (int, error) {
+	var unqualifiedIndexes []int
+	for index, field := range fields {
+		if field.Name != e.name {
+			continue
 		}
-	}
 
-	if matches > 1 {
-		return nil, fmt.Errorf("ambiguous field %s", e.name)
-	}
-
-	for i, field := range row.Fields {
-		if field.Name == e.name {
-			return row.Values[i], nil
+		if field.RelationName == e.relationName {
+			return index, nil
 		}
+
+		unqualifiedIndexes = append(unqualifiedIndexes, index)
 	}
 
-	return nil, fmt.Errorf("unknown field %s", e.name)
+	if e.relationName != "" {
+		return 0, fmt.Errorf("unknown field %s.%s", e.relationName, e.name)
+	}
+
+	if len(unqualifiedIndexes) == 1 {
+		return unqualifiedIndexes[0], nil
+	}
+	if len(unqualifiedIndexes) > 1 {
+		return 0, fmt.Errorf("ambiguous field %s", e.name)
+	}
+
+	return 0, fmt.Errorf("unknown field %s", e.name)
 }

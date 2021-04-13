@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/filters"
 	"github.com/efritz/gostgres/internal/relations"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -13,71 +12,82 @@ import (
 func main() {
 	tableA := relations.NewData(
 		"A",
-		[]string{"a"},
-		[][]interface{}{
-			{6},
-			{5},
-			{7},
-			{3},
-			{4},
+		shared.Rows{
+			Fields: []shared.Field{{Name: "a"}},
+			Values: [][]interface{}{
+				{6},
+				{5},
+				{7},
+				{3},
+				{4},
+			},
 		},
 	)
 	tableB := relations.NewData(
 		"B",
-		[]string{"b"},
-		[][]interface{}{
-			{2},
-			{3},
-			{8},
+		shared.Rows{
+			Fields: []shared.Field{{Name: "b"}},
+			Values: [][]interface{}{
+				{2},
+				{3},
+				{8},
+			},
 		},
 	)
-	tableC := relations.NewData(
+	tableC := relations.NewDataTemp(
 		"C",
-		[]string{"c"},
-		[][]interface{}{
-			{"89d29124d4368c20ab33623cc32f8d9f999fd691"},
-			{"189d29124d4368c20ab33623cc32f8d9f999fd69"},
-			{"0ad2e75d529bda74472a1dbb5e488ec095b07fe7"},
-			{"33623cc32f8d9f999fd69189d29124d4368c20ab"},
+		shared.Rows{
+			Fields: []shared.Field{{Name: "c"}},
+			Values: [][]interface{}{
+				{"89d29124d43623cc32f8d9f999fd"},
+				{"33623cc32f8d9f999fd69189d29124d4368c20ab"},
+				{"189d29124d4368c20ab33623cc32f8d9fd69"},
+				{"0ad2e75d529bda744b07fe7"},
+			},
 		},
+		nil, // filters.NewEquals(expressions.NewNamed("", "c"), expressions.NewConstant("33623cc32f8d9f999fd69189d29124d4368c20ab")),
+		expressions.Int(expressions.NewLength(expressions.NewNamed("", "c"))),
 	)
 
 	relation := relations.NewLimit(
-		relations.NewOrder(
-			relations.NewFilter(
-				relations.NewAlias(
-					relations.NewProjection(
+		// relations.NewOffset(
+		// relations.NewOrder(
+		relations.NewFilter(
+			relations.NewAlias(
+				relations.NewProjection(
+					relations.NewJoin(
 						relations.NewJoin(
-							relations.NewJoin(
-								tableA,
-								tableB,
-								nil,
-							),
-							relations.NewLimit(tableC, 100),
+							tableA,
+							tableB,
 							nil,
 						),
-						[]relations.AliasedExpression{
-							{Alias: "id", Expression: expressions.NewNamed("A", "a")},
-							{Alias: "repository_id", Expression: expressions.NewNamed("B", "b")},
-							{Alias: "commit", Expression: expressions.NewNamed("C", "c")},
-						},
+						tableC,
+						nil,
 					),
-					"Q",
+					[]relations.AliasedExpression{
+						{Alias: "id", Expression: expressions.NewNamed("A", "a")},
+						{Alias: "repository_id", Expression: expressions.NewNamed("B", "b")},
+						{Alias: "commit", Expression: expressions.NewNamed("C", "c")},
+					},
 				),
-				filters.NewEquals(
-					expressions.NewNamed("", "id"),
-					expressions.NewSum(
-						expressions.NewNamed("", "repository_id"),
-						expressions.NewNamed("", "repository_id"),
-					),
+				"Q",
+			),
+			expressions.Bool(expressions.NewEquals(
+				expressions.NewNamed("", "id"),
+				expressions.NewSum(
+					expressions.NewNamed("", "repository_id"),
+					expressions.NewNamed("", "repository_id"),
 				),
 			),
-			expressions.NewNamed("", "id"),
-		),
-		3,
+			)),
+		// 	expressions.NewNamed("", "id"),
+		// ),
+		// 	1,
+		// ),
+		5,
 	)
 
-	rows, err := relations.ScanRows(relations.ScanContext{}, relation)
+	rows, err := relations.ScanRows(relation)
 	if err != nil {
 		panic(err.Error())
 	}

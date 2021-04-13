@@ -7,25 +7,19 @@ import (
 type Relation interface {
 	Name() string
 	Fields() []shared.Field
-	Scan(scanContext ScanContext, visitor VisitorFunc) error
+	Scan(visitor VisitorFunc) error
 }
 
-type VisitorFunc func(scanContext ScanContext, values []interface{}) (bool, error)
+type VisitorFunc func(row shared.Row) (bool, error)
 
-type ScanContext struct {
-	// TODO - selection, filtering, ordering
-}
+func ScanRows(relation Relation) (shared.Rows, error) {
+	rows := shared.NewRows(relation.Fields())
 
-func ScanRows(scanContext ScanContext, relation Relation) (shared.Rows, error) {
-	rows := shared.Rows{
-		Fields: relation.Fields(),
-	}
-
-	if err := relation.Scan(scanContext, func(scanContext ScanContext, values []interface{}) (bool, error) {
-		rows.Values = append(rows.Values, values)
+	if err := relation.Scan(func(row shared.Row) (bool, error) {
+		rows = rows.AddValues(row.Values)
 		return true, nil
 	}); err != nil {
-		return shared.Rows{}, err
+		return rows, err
 	}
 
 	return rows, nil

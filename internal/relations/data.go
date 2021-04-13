@@ -1,34 +1,58 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type dataRelation struct {
-	name   string
-	fields []shared.Field
-	values [][]interface{}
+	name string
+	rows shared.Rows
+
+	// TODO - sub selection
+	filter expressions.BoolExpression
+	order  expressions.IntExpression
 }
 
 var _ Relation = &dataRelation{}
 
-func NewData(name string, fieldNames []string, values [][]interface{}) Relation {
-	fields := make([]shared.Field, len(fieldNames))
-	for i, field := range fieldNames {
-		fields[i].Name = field
+func NewData(name string, rows shared.Rows) Relation {
+	return &dataRelation{
+		name: name,
+		rows: rows,
 	}
+}
 
+func NewDataTemp(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.IntExpression) Relation {
 	return &dataRelation{
 		name:   name,
-		fields: updateRelationName(fields, name),
-		values: values,
+		rows:   rows,
+		filter: filter,
+		order:  order,
 	}
 }
 
 func (r *dataRelation) Name() string           { return r.name }
-func (r *dataRelation) Fields() []shared.Field { return copyFields(r.fields) }
+func (r *dataRelation) Fields() []shared.Field { return copyFields(r.rows.Fields) }
 
-func (r *dataRelation) Scan(scanContext ScanContext, visitor VisitorFunc) error {
-	for _, values := range r.values {
-		if ok, err := visitor(scanContext, values); err != nil {
+func (r *dataRelation) Scan(visitor VisitorFunc) error {
+	indexes, err := findIndexIterationOrder(r.order, r.rows)
+	if err != nil {
+		return err
+	}
+
+	for _, i := range indexes {
+		row := r.rows.Row(i)
+
+		if r.filter != nil {
+			if ok, err := r.filter.ValueFrom(row); err != nil {
+				return err
+			} else if !ok {
+				continue
+			}
+		}
+
+		if ok, err := visitor(row); err != nil {
 			return err
 		} else if !ok {
 			break

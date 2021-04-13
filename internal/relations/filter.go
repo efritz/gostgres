@@ -1,34 +1,32 @@
 package relations
 
 import (
-	"github.com/efritz/gostgres/internal/filters"
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type filterRelation struct {
 	Relation
-	filter filters.Filter
+	filter expressions.BoolExpression
 }
 
 var _ Relation = &filterRelation{}
 
-func NewFilter(table Relation, filter filters.Filter) Relation {
+func NewFilter(table Relation, filter expressions.BoolExpression) Relation {
 	return &filterRelation{
 		Relation: table,
 		filter:   filter,
 	}
 }
 
-func (r *filterRelation) Scan(scanContext ScanContext, visitor VisitorFunc) error {
-	fields := r.Fields()
-
-	return r.Relation.Scan(scanContext, func(scanContext ScanContext, values []interface{}) (bool, error) {
-		if ok, err := r.filter.Test(shared.Row{Fields: fields, Values: values}); err != nil {
+func (r *filterRelation) Scan(visitor VisitorFunc) error {
+	return r.Relation.Scan(func(row shared.Row) (bool, error) {
+		if ok, err := r.filter.ValueFrom(row); err != nil {
 			return false, err
 		} else if !ok {
 			return true, nil
 		}
 
-		return visitor(scanContext, values)
+		return visitor(row)
 	})
 }

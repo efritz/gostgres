@@ -1,5 +1,7 @@
 package relations
 
+import "github.com/efritz/gostgres/internal/shared"
+
 type limitRelation struct {
 	Relation
 	limit int
@@ -14,14 +16,14 @@ func NewLimit(table Relation, limit int) Relation {
 	}
 }
 
-func (r *limitRelation) Scan(scanContext ScanContext, visitor VisitorFunc) error {
-	invocations := 0
-	return r.Relation.Scan(scanContext, func(scanContext ScanContext, values []interface{}) (bool, error) {
-		if invocations >= r.limit {
+func (r *limitRelation) Scan(visitor VisitorFunc) error {
+	remaining := r.limit
+	return r.Relation.Scan(func(row shared.Row) (bool, error) {
+		if remaining <= 0 {
 			return false, nil
 		}
 
-		invocations++
-		return visitor(scanContext, values)
+		remaining--
+		return visitor(row)
 	})
 }

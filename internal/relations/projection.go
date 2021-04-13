@@ -38,24 +38,31 @@ func (r *projectionRelation) Fields() []shared.Field {
 	return r.fields
 }
 
-func (r *projectionRelation) Scan(scanContext ScanContext, visitor VisitorFunc) error {
-	return r.Relation.Scan(scanContext, r.decorateVisitor(scanContext, visitor))
+func (r *projectionRelation) Scan(visitor VisitorFunc) error {
+	return r.Relation.Scan(r.decorateVisitor(visitor))
 }
 
-func (r *projectionRelation) decorateVisitor(scanContext ScanContext, visitor VisitorFunc) VisitorFunc {
-	fields := r.Relation.Fields()
-
-	return func(scanContext ScanContext, values []interface{}) (bool, error) {
-		rowValues := make([]interface{}, 0, len(r.expressions))
-		for _, field := range r.expressions {
-			value, err := field.Expression.ValueFrom(shared.Row{Fields: fields, Values: values})
-			if err != nil {
-				return false, err
-			}
-
-			rowValues = append(rowValues, value)
+func (r *projectionRelation) decorateVisitor(visitor VisitorFunc) VisitorFunc {
+	return func(row shared.Row) (bool, error) {
+		row, err := r.project(row)
+		if err != nil {
+			return false, err
 		}
 
-		return visitor(scanContext, rowValues)
+		return visitor(row)
 	}
+}
+
+func (r *projectionRelation) project(row shared.Row) (shared.Row, error) {
+	values := make([]interface{}, 0, len(r.expressions))
+	for _, field := range r.expressions {
+		value, err := field.Expression.ValueFrom(row)
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		values = append(values, value)
+	}
+
+	return shared.NewRow(r.fields, values), nil
 }

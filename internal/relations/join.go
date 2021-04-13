@@ -1,20 +1,20 @@
 package relations
 
 import (
-	"github.com/efritz/gostgres/internal/filters"
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type joinRelation struct {
 	left      Relation
 	right     Relation
-	condition filters.Filter
+	condition expressions.BoolExpression
 	fields    []shared.Field
 }
 
 var _ Relation = &joinRelation{}
 
-func NewJoin(left Relation, right Relation, condition filters.Filter) Relation {
+func NewJoin(left Relation, right Relation, condition expressions.BoolExpression) Relation {
 	return &joinRelation{
 		left:      left,
 		right:     right,
@@ -26,34 +26,29 @@ func NewJoin(left Relation, right Relation, condition filters.Filter) Relation {
 func (r *joinRelation) Name() string           { return "" }
 func (r *joinRelation) Fields() []shared.Field { return r.fields }
 
-func (r *joinRelation) Scan(scanContext ScanContext, visitor VisitorFunc) error {
-	return r.left.Scan(scanContext, r.decorateLeftVisitor(scanContext, visitor))
+func (r *joinRelation) Scan(visitor VisitorFunc) error {
+	return r.left.Scan(r.decorateLeftVisitor(visitor))
 }
 
-func (r *joinRelation) decorateLeftVisitor(scanContext ScanContext, visitor VisitorFunc) VisitorFunc {
-	return func(scanContext ScanContext, leftValues []interface{}) (bool, error) {
-		return true, r.right.Scan(scanContext, r.decorateRightVisitor(scanContext, visitor, leftValues))
+func (r *joinRelation) decorateLeftVisitor(visitor VisitorFunc) VisitorFunc {
+	return func(leftRow shared.Row) (bool, error) {
+		return true, r.right.Scan(r.decorateRightVisitor(visitor, leftRow))
 	}
 }
 
-func (r *joinRelation) decorateRightVisitor(scanContext ScanContext, visitor VisitorFunc, leftValues []interface{}) VisitorFunc {
-	fields := r.Fields()
-
-	return func(scanContext ScanContext, rightValues []interface{}) (bool, error) {
-		rowValues := append(copyValues(leftValues), rightValues...)
+func (r *joinRelation) decorateRightVisitor(visitor VisitorFunc, leftRow shared.Row) VisitorFunc {
+	return func(rightRow shared.Row) (bool, error) {
+		row := shared.NewRow(r.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 
 		if r.condition != nil {
-			ok, err := r.condition.Test(shared.Row{Fields: fields, Values: rowValues})
-			if err != nil {
+			if ok, err := r.condition.ValueFrom(row); err != nil {
 				return false, err
-			}
-
-			if !ok {
+			} else if !ok {
 				return true, nil
 			}
 		}
 
-		return visitor(scanContext, rowValues)
+		return visitor(row)
 	}
 }
 

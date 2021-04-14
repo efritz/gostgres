@@ -282,7 +282,7 @@ func (p *parser) parseWhereClause() (expressions.BoolExpression, bool, error) {
 	return expressions.Bool(whereExpression), true, nil
 }
 
-func (p *parser) parseOrderByClause() (expressions.IntExpression, bool, error) {
+func (p *parser) parseOrderByClause() (expressions.Expression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeOrder)) {
 		return nil, false, nil
 	}
@@ -296,7 +296,7 @@ func (p *parser) parseOrderByClause() (expressions.IntExpression, bool, error) {
 		return nil, false, err
 	}
 
-	return expressions.Int(orderExpression), true, nil
+	return orderExpression, true, nil
 }
 
 func (p *parser) parseLimitClause() (int, bool, error) {

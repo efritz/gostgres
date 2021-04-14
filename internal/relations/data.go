@@ -11,7 +11,7 @@ type dataRelation struct {
 
 	// TODO - sub selection
 	filter expressions.BoolExpression
-	order  expressions.IntExpression
+	order  expressions.Expression
 }
 
 var _ Relation = &dataRelation{}
@@ -23,7 +23,7 @@ func NewData(name string, rows shared.Rows) Relation {
 	}
 }
 
-func NewDataWithFilters(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.IntExpression) Relation {
+func NewDataWithFilters(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.Expression) Relation {
 	return &dataRelation{
 		name:   name,
 		rows:   rows,

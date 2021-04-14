@@ -235,7 +235,7 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 			relation = relations.NewJoin(relation, left, nil)
 		}
 
-		if p.advanceIf(isType(TokenTypeJoin)) {
+		for p.advanceIf(isType(TokenTypeJoin)) {
 			fromToken, err := p.mustAdvance(isType(TokenTypeIdent))
 			if err != nil {
 				return nil, err

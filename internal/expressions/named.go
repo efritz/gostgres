@@ -24,6 +24,14 @@ func (e namedExpression) Name() string {
 	return e.name
 }
 
+func (e namedExpression) String() string {
+	if e.relationName != "" {
+		return fmt.Sprintf("%s.%s", e.relationName, e.name)
+	}
+
+	return e.name
+}
+
 func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	index, err := e.indexFor(row.Fields)
 	if err != nil {

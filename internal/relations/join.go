@@ -1,6 +1,9 @@
 package relations
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -25,6 +28,18 @@ func NewJoin(left Relation, right Relation, condition expressions.BoolExpression
 
 func (r *joinRelation) Name() string           { return "" }
 func (r *joinRelation) Fields() []shared.Field { return r.fields }
+
+func (r *joinRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	indentation := indent(indentationLevel)
+	buf.WriteString(fmt.Sprintf("%sjoin\n", indentation))
+	r.left.Serialize(buf, indentationLevel+1)
+	buf.WriteString(fmt.Sprintf("%swith\n", indentation))
+	r.right.Serialize(buf, indentationLevel+1)
+
+	if r.condition != nil {
+		buf.WriteString(fmt.Sprintf("%son %s\n", indentation, r.condition))
+	}
+}
 
 func (r *joinRelation) Scan(visitor VisitorFunc) error {
 	return r.left.Scan(r.decorateLeftVisitor(visitor))

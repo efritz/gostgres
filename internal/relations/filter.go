@@ -1,6 +1,9 @@
 package relations
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -17,6 +20,11 @@ func NewFilter(table Relation, filter expressions.BoolExpression) Relation {
 		Relation: table,
 		filter:   filter,
 	}
+}
+
+func (r *filterRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	buf.WriteString(fmt.Sprintf("%sfilter by %s\n", indent(indentationLevel), r.filter))
+	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
 func (r *filterRelation) Scan(visitor VisitorFunc) error {

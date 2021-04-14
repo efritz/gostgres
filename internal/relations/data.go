@@ -1,6 +1,9 @@
 package relations
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -23,17 +26,22 @@ func NewData(name string, rows shared.Rows) Relation {
 	}
 }
 
-func NewDataWithFilters(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.Expression) Relation {
-	return &dataRelation{
-		name:   name,
-		rows:   rows,
-		filter: filter,
-		order:  order,
-	}
-}
+// func NewDataWithFilters(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.Expression) Relation {
+// 	return &dataRelation{
+// 		name:   name,
+// 		rows:   rows,
+// 		filter: filter,
+// 		order:  order,
+// 	}
+// }
 
 func (r *dataRelation) Name() string           { return r.name }
 func (r *dataRelation) Fields() []shared.Field { return copyFields(r.rows.Fields) }
+
+func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	// TODO - filters and ordering as well
+	buf.WriteString(fmt.Sprintf("%sseq scan over %s\n", indent(indentationLevel), r.name))
+}
 
 func (r *dataRelation) Scan(visitor VisitorFunc) error {
 	indexes, err := findIndexIterationOrder(r.order, r.rows)

@@ -2,6 +2,7 @@ package repl
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -33,6 +34,10 @@ func Start() error {
 			fmt.Printf("failed to parse relation: %s\n\n", err)
 			continue
 		}
+
+		var buf bytes.Buffer
+		relation.Serialize(&buf, 0)
+		fmt.Printf("Query plan:\n\n%s\nResults:\n\n", buf.String())
 
 		rows, err := relations.ScanRows(relation)
 		if err != nil {

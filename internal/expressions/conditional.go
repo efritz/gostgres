@@ -1,6 +1,10 @@
 package expressions
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type notExpression struct {
 	expression BoolExpression
@@ -12,6 +16,10 @@ func NewNot(expression Expression) Expression {
 	return &notExpression{
 		expression: Bool(expression),
 	}
+}
+
+func (e notExpression) String() string {
+	return fmt.Sprintf("not %s", e.expression)
 }
 
 func (e notExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -35,6 +43,10 @@ func NewAnd(left, right Expression) Expression {
 		left:  Bool(left),
 		right: Bool(right),
 	}
+}
+
+func (e andExpression) String() string {
+	return fmt.Sprintf("%s and %s", e.left, e.right)
 }
 
 func (e andExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -64,6 +76,10 @@ func NewOr(left, right Expression) Expression {
 		left:  Bool(left),
 		right: Bool(right),
 	}
+}
+
+func (e orExpression) String() string {
+	return fmt.Sprintf("%s or %s", e.left, e.right)
 }
 
 func (e orExpression) ValueFrom(row shared.Row) (interface{}, error) {

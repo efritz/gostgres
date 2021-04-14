@@ -1,6 +1,10 @@
 package expressions
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type additionExpression struct {
 	left  IntExpression
@@ -14,6 +18,10 @@ func NewAddition(left, right Expression) Expression {
 		left:  Int(left),
 		right: Int(right),
 	}
+}
+
+func (e additionExpression) String() string {
+	return fmt.Sprintf("%s + %s", e.left, e.right)
 }
 
 func (e additionExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -44,6 +52,10 @@ func NewSubtraction(left, right Expression) Expression {
 	}
 }
 
+func (e subtractionExpression) String() string {
+	return fmt.Sprintf("%s - %s", e.left, e.right)
+}
+
 func (e subtractionExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	lVal, err := e.left.ValueFrom(row)
 	if err != nil {
@@ -72,6 +84,10 @@ func NewMultiplication(left, right Expression) Expression {
 	}
 }
 
+func (e multiplicationExpression) String() string {
+	return fmt.Sprintf("%s * %s", e.left, e.right)
+}
+
 func (e multiplicationExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	lVal, err := e.left.ValueFrom(row)
 	if err != nil {
@@ -98,6 +114,10 @@ func NewDivision(left, right Expression) Expression {
 		left:  Int(left),
 		right: Int(right),
 	}
+}
+
+func (e divisionExpression) String() string {
+	return fmt.Sprintf("%s / %s", e.left, e.right)
 }
 
 func (e divisionExpression) ValueFrom(row shared.Row) (interface{}, error) {

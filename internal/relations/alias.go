@@ -1,6 +1,11 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type aliasRelation struct {
 	Relation
@@ -20,3 +25,14 @@ func NewAlias(relation Relation, name string) Relation {
 
 func (r *aliasRelation) Name() string           { return r.name }
 func (r *aliasRelation) Fields() []shared.Field { return r.fields }
+
+func (r *aliasRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	buf.WriteString(fmt.Sprintf("%salias as %s\n", indent(indentationLevel), r.name))
+	r.Relation.Serialize(buf, indentationLevel+1)
+}
+
+func (r *aliasRelation) Scan(visitor VisitorFunc) error {
+	return r.Relation.Scan(func(row shared.Row) (bool, error) {
+		return visitor(shared.NewRow(r.fields, row.Values))
+	})
+}

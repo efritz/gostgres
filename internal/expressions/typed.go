@@ -6,34 +6,22 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type intExpressionFunc func(row shared.Row) (int, error)
-type boolExpressionFunc func(row shared.Row) (bool, error)
-
-func (f intExpressionFunc) ValueFrom(row shared.Row) (int, error)   { return f(row) }
-func (f boolExpressionFunc) ValueFrom(row shared.Row) (bool, error) { return f(row) }
-
 type IntExpression interface {
 	ValueFrom(row shared.Row) (int, error)
 }
 
-type BoolExpression interface {
-	ValueFrom(row shared.Row) (bool, error)
-}
+type intExpression struct{ Expression }
 
 func Int(expression Expression) IntExpression {
-	return intExpressionFunc(typedExpression{expression}.valueFromInt)
+	return intExpression{expression}
 }
 
-func Bool(expression Expression) BoolExpression {
-	return boolExpressionFunc(typedExpression{expression}.valueFromBool)
+func (e intExpression) String() string {
+	return fmt.Sprintf("%s", e.Expression)
 }
 
-type typedExpression struct {
-	expression Expression
-}
-
-func (f typedExpression) valueFromInt(row shared.Row) (int, error) {
-	val, err := f.expression.ValueFrom(row)
+func (e intExpression) ValueFrom(row shared.Row) (int, error) {
+	val, err := e.Expression.ValueFrom(row)
 	if err != nil {
 		return 0, err
 	}
@@ -45,8 +33,22 @@ func (f typedExpression) valueFromInt(row shared.Row) (int, error) {
 	return typedVal, nil
 }
 
-func (f typedExpression) valueFromBool(row shared.Row) (bool, error) {
-	val, err := f.expression.ValueFrom(row)
+type BoolExpression interface {
+	ValueFrom(row shared.Row) (bool, error)
+}
+
+type boolExpression struct{ Expression }
+
+func Bool(expression Expression) BoolExpression {
+	return boolExpression{expression}
+}
+
+func (e boolExpression) String() string {
+	return fmt.Sprintf("%s", e.Expression)
+}
+
+func (e boolExpression) ValueFrom(row shared.Row) (bool, error) {
+	val, err := e.Expression.ValueFrom(row)
 	if err != nil {
 		return false, err
 	}

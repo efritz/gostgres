@@ -1,6 +1,11 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type offsetRelation struct {
 	Relation
@@ -14,6 +19,11 @@ func NewOffset(table Relation, offset int) Relation {
 		Relation: table,
 		offset:   offset,
 	}
+}
+
+func (r *offsetRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	buf.WriteString(fmt.Sprintf("%soffset %d\n", indent(indentationLevel), r.offset))
+	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
 func (r *offsetRelation) Scan(visitor VisitorFunc) error {

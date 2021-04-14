@@ -105,14 +105,16 @@ func (p *parser) init() {
 	}
 }
 
+// consumes: `SELECT` select
 func (p *parser) parseStatement() (relations.Relation, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
 	}
 
-	return nil, fmt.Errorf("expected start of statement")
+	return nil, fmt.Errorf("expected start of statement (near %s)", p.current().Text)
 }
 
+// consumes: select_expressions from [where] [order] [limit] [offset]
 func (p *parser) parseSelect() (relations.Relation, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
@@ -160,6 +162,8 @@ func (p *parser) parseSelect() (relations.Relation, error) {
 	return relation, nil
 }
 
+// consumes: `*`
+// consumes: expression [alias] [, ...]
 func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.AliasedExpression, _ error) {
 	if p.advanceIf(isType(TokenTypeAsterisk)) {
 		return nil, nil
@@ -171,7 +175,7 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.Aliase
 			return nil, err
 		}
 
-		alias, err := p.parseAlias(expression)
+		alias, err := p.parseColumnAlias(expression)
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +197,9 @@ type named interface {
 	Name() string
 }
 
-func (p *parser) parseAlias(expression expressions.Expression) (string, error) {
+// consumes: ident
+// consumes: `AS` ident
+func (p *parser) parseColumnAlias(expression expressions.Expression) (string, error) {
 	alias := "?column?"
 	if named, ok := expression.(named); ok {
 		alias = named.Name()
@@ -211,54 +217,22 @@ func (p *parser) parseAlias(expression expressions.Expression) (string, error) {
 	return alias, nil
 }
 
+// consumes: `FROM` table_expression [, ...]
 func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 	if _, err := p.mustAdvance(isType(TokenTypeFrom)); err != nil {
 		return nil, err
 	}
 
 	for {
-		fromToken, err := p.mustAdvance(isType(TokenTypeIdent))
+		tableExpression, err := p.parseTableExpression()
 		if err != nil {
 			return nil, err
 		}
-		left, ok := p.builtins[fromToken.Text]
-		if !ok {
-			return nil, fmt.Errorf("unknown table %s", fromToken.Text)
-		}
-		if p.current().Type == TokenTypeIdent {
-			left = relations.NewAlias(left, p.advance().Text)
-		}
 
 		if relation == nil {
-			relation = left
+			relation = tableExpression
 		} else {
-			relation = relations.NewJoin(relation, left, nil)
-		}
-
-		for p.advanceIf(isType(TokenTypeJoin)) {
-			fromToken, err := p.mustAdvance(isType(TokenTypeIdent))
-			if err != nil {
-				return nil, err
-			}
-			right, ok := p.builtins[fromToken.Text]
-			if !ok {
-				return nil, fmt.Errorf("unknown table %s", fromToken.Text)
-			}
-			if p.current().Type == TokenTypeIdent {
-				right = relations.NewAlias(right, p.advance().Text)
-			}
-
-			var condition expressions.BoolExpression
-			if p.advanceIf(isType(TokenTypeOn)) {
-				rawCondition, err := p.parseExpression(0)
-				if err != nil {
-					return nil, err
-				}
-
-				condition = expressions.Bool(rawCondition)
-			}
-
-			relation = relations.NewJoin(relation, right, condition)
+			relation = relations.NewJoin(relation, tableExpression, nil)
 		}
 
 		if !p.advanceIf(isType(TokenTypeComma)) {
@@ -269,6 +243,104 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 	return relation, nil
 }
 
+// consumes: base_table_expression [`JOIN` join [`JOIN` ...]]
+func (p *parser) parseTableExpression() (relations.Relation, error) {
+	relation, err := p.parseBaseTableExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.advanceIf(isType(TokenTypeJoin)) {
+		relation, err = p.parseJoin(relation)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return relation, nil
+}
+
+// consumes: ident [alias]
+// consumes: (select) alias
+// consumes: (table_expression) [alias]
+func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
+	expectParen := false
+	requireAlias := false
+	parseFunc := p.parseTableReference
+
+	if p.advanceIf(isType(TokenTypeLeftParen)) {
+		if p.advanceIf(isType(TokenTypeSelect)) {
+			requireAlias = true
+			parseFunc = p.parseSelect
+		} else {
+			parseFunc = p.parseTableExpression
+		}
+
+		expectParen = true
+	}
+
+	relation, err := parseFunc()
+	if err != nil {
+		return nil, err
+	}
+
+	if expectParen {
+		if _, err := p.mustAdvance(isType(TokenTypeRightParen)); err != nil {
+			return nil, err
+		}
+	}
+
+	if p.advanceIf(isType(TokenTypeAs)) {
+		if p.current().Type != TokenTypeIdent {
+			return nil, fmt.Errorf("expected alias (near %s)", p.current().Text)
+		}
+	}
+
+	if p.current().Type == TokenTypeIdent {
+		relation = relations.NewAlias(relation, p.advance().Text)
+	} else if requireAlias {
+		return nil, fmt.Errorf("expected subselect alias (near %s)", p.current().Text)
+	}
+
+	return relation, nil
+}
+
+// consumes: ident
+func (p *parser) parseTableReference() (relations.Relation, error) {
+	fromToken, err := p.mustAdvance(isType(TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	relation, ok := p.builtins[fromToken.Text]
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", fromToken.Text)
+	}
+
+	return relation, nil
+}
+
+// consumes: table_expression [`ON` expression]
+func (p *parser) parseJoin(relation relations.Relation) (relations.Relation, error) {
+	right, err := p.parseTableExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	var condition expressions.BoolExpression
+	if p.advanceIf(isType(TokenTypeOn)) {
+		rawCondition, err := p.parseExpression(0)
+		if err != nil {
+			return nil, err
+		}
+
+		condition = expressions.Bool(rawCondition)
+	}
+
+	return relations.NewJoin(relation, right, condition), nil
+}
+
+// consumes: [`WHERE` expression]
 func (p *parser) parseWhereClause() (expressions.BoolExpression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeWhere)) {
 		return nil, false, nil
@@ -282,6 +354,7 @@ func (p *parser) parseWhereClause() (expressions.BoolExpression, bool, error) {
 	return expressions.Bool(whereExpression), true, nil
 }
 
+// consumes: [`ORDER` `BY` expression]
 func (p *parser) parseOrderByClause() (expressions.Expression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeOrder)) {
 		return nil, false, nil
@@ -299,6 +372,7 @@ func (p *parser) parseOrderByClause() (expressions.Expression, bool, error) {
 	return orderExpression, true, nil
 }
 
+// consumes: [`LIMIT` expression]
 func (p *parser) parseLimitClause() (int, bool, error) {
 	if !p.advanceIf(isType(TokenTypeLimit)) {
 		return 0, false, nil
@@ -313,6 +387,7 @@ func (p *parser) parseLimitClause() (int, bool, error) {
 	return limitValue, true, err
 }
 
+// consumes: [`OFFSET` expression]
 func (p *parser) parseOffsetClause() (int, bool, error) {
 	if !p.advanceIf(isType(TokenTypeOffset)) {
 		return 0, false, nil
@@ -340,7 +415,7 @@ func (p *parser) parseExpressionPrefix() (expressions.Expression, error) {
 	current := p.advance()
 	parseFunc, ok := p.prefixParsers[current.Type]
 	if !ok {
-		return nil, fmt.Errorf("expected expression")
+		return nil, fmt.Errorf("expected expression (near %s)", current.Text)
 	}
 
 	return parseFunc(current)
@@ -370,9 +445,7 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 	return expression, nil
 }
 
-//
-// Prefix parsers
-
+// consumes: [`.` ident]
 func (p *parser) parseNamedExpression(token Token) (expressions.Expression, error) {
 	if !p.advanceIf(isType(TokenTypeDot)) {
 		return expressions.NewNamed("", token.Text), nil
@@ -386,6 +459,7 @@ func (p *parser) parseNamedExpression(token Token) (expressions.Expression, erro
 	return expressions.NewNamed(token.Text, qualifiedNameToken.Text), nil
 }
 
+// consumes: nothing
 func (p *parser) parseNumericLiteralExpression(token Token) (expressions.Expression, error) {
 	value, err := strconv.Atoi(token.Text)
 	if err != nil {
@@ -395,14 +469,17 @@ func (p *parser) parseNumericLiteralExpression(token Token) (expressions.Express
 	return expressions.NewConstant(value), nil
 }
 
+// consumes: nothing
 func (p *parser) parseBooleanLiteralExpression(token Token) (expressions.Expression, error) {
 	return expressions.NewConstant(token.Type == TokenTypeTrue), nil
 }
 
+// consumes: nothing
 func (p *parser) parseNullLiteralExpression(token Token) (expressions.Expression, error) {
 	return expressions.NewConstant(nil), nil
 }
 
+// consumes: expression `)`
 func (p *parser) parseParenthesizedExpression(token Token) (expressions.Expression, error) {
 	inner, err := p.parseExpression(0)
 	if err != nil {
@@ -426,9 +503,6 @@ func (p *parser) parseUnary(factory unaryExpressionParserFunc) prefixParserFunc 
 		return factory(expression), nil
 	}
 }
-
-//
-// Infix parsers
 
 func (p *parser) parseBinary(precedence Precedence, factory binaryExpressionParserFunc) infixParserFunc {
 	return func(left expressions.Expression, token Token) (expressions.Expression, error) {
@@ -467,7 +541,7 @@ func (p *parser) advanceIf(filter tokenFilterFunc) bool {
 func (p *parser) mustAdvance(filter tokenFilterFunc) (Token, error) {
 	current := p.advance()
 	if !filter(current) {
-		return InvalidToken, fmt.Errorf("unexpected token")
+		return InvalidToken, fmt.Errorf("unexpected token (near %s)", current.Text)
 	}
 
 	return current, nil

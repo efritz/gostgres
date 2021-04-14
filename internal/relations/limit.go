@@ -1,6 +1,11 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type limitRelation struct {
 	Relation
@@ -14,6 +19,11 @@ func NewLimit(table Relation, limit int) Relation {
 		Relation: table,
 		limit:    limit,
 	}
+}
+
+func (r *limitRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	buf.WriteString(fmt.Sprintf("%slimit %d\n", indent(indentationLevel), r.limit))
+	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
 func (r *limitRelation) Scan(visitor VisitorFunc) error {

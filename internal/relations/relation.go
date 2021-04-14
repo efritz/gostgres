@@ -1,10 +1,15 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"bytes"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type Relation interface {
 	Name() string
 	Fields() []shared.Field
+	Serialize(buf *bytes.Buffer, indentationLevel int)
 	Scan(visitor VisitorFunc) error
 }
 

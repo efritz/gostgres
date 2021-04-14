@@ -1,6 +1,10 @@
 package expressions
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type equalsExpression struct {
 	left  Expression
@@ -14,6 +18,10 @@ func NewEquals(left, right Expression) Expression {
 		left:  left,
 		right: right,
 	}
+}
+
+func (e equalsExpression) String() string {
+	return fmt.Sprintf("%s = %s", e.left, e.right)
 }
 
 func (e equalsExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -44,6 +52,10 @@ func NewLessThan(left, right Expression) Expression {
 	}
 }
 
+func (e lessThanExpression) String() string {
+	return fmt.Sprintf("%s < %s", e.left, e.right)
+}
+
 func (e lessThanExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	lVal, err := e.left.ValueFrom(row)
 	if err != nil {
@@ -70,6 +82,10 @@ func NewLessThanEquals(left, right Expression) Expression {
 		left:  Int(left),
 		right: Int(right),
 	}
+}
+
+func (e lessThanEqualsExpression) String() string {
+	return fmt.Sprintf("%s <= %s", e.left, e.right)
 }
 
 func (e lessThanEqualsExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -100,6 +116,10 @@ func NewGreaterThan(left, right Expression) Expression {
 	}
 }
 
+func (e greaterThanExpression) String() string {
+	return fmt.Sprintf("%s > %s", e.left, e.right)
+}
+
 func (e greaterThanExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	lVal, err := e.left.ValueFrom(row)
 	if err != nil {
@@ -126,6 +146,10 @@ func NewGreaterThanEquals(left, right Expression) Expression {
 		left:  Int(left),
 		right: Int(right),
 	}
+}
+
+func (e greaterThanEqualsExpression) String() string {
+	return fmt.Sprintf("%s >= %s", e.left, e.right)
 }
 
 func (e greaterThanEqualsExpression) ValueFrom(row shared.Row) (interface{}, error) {

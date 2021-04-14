@@ -1,6 +1,10 @@
 package relations
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -36,6 +40,24 @@ func NewProjection(relation Relation, expressions []AliasedExpression) Relation 
 
 func (r *projectionRelation) Fields() []shared.Field {
 	return r.fields
+}
+
+type named interface {
+	Name() string
+}
+
+func (r *projectionRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	fields := make([]string, 0, len(r.expressions))
+	for _, expression := range r.expressions {
+		if named, ok := expression.Expression.(named); ok && named.Name() == expression.Alias {
+			fields = append(fields, fmt.Sprintf("%s", expression.Expression))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s as %s", expression.Expression, expression.Alias))
+		}
+	}
+
+	buf.WriteString(fmt.Sprintf("%sselect (%s)\n", indent(indentationLevel), strings.Join(fields, ", ")))
+	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
 func (r *projectionRelation) Scan(visitor VisitorFunc) error {

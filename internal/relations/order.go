@@ -1,6 +1,9 @@
 package relations
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 )
 
@@ -16,6 +19,11 @@ func NewOrder(relation Relation, order expressions.Expression) Relation {
 		Relation: relation,
 		order:    order,
 	}
+}
+
+func (r *orderRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	buf.WriteString(fmt.Sprintf("%sorder by %s\n", indent(indentationLevel), r.order))
+	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
 func (r *orderRelation) Scan(visitor VisitorFunc) error {

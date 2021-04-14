@@ -1,6 +1,10 @@
 package relations
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"strings"
+
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 func copyFields(fields []shared.Field) []shared.Field {
 	c := make([]shared.Field, len(fields))
@@ -20,4 +24,8 @@ func updateRelationName(fields []shared.Field, relationName string) []shared.Fie
 	}
 
 	return fields
+}
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

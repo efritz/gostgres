@@ -33,7 +33,12 @@ func displayValues(rows shared.Rows) {
 		if i != 0 {
 			fmt.Printf(" | ")
 		}
-		fmt.Printf(fmt.Sprintf("%% %ds", columnWidths[i]/2), field.Name)
+
+		name := field.Name
+		if len(field.Name) < columnWidths[i] {
+			name += strings.Repeat(" ", (columnWidths[i]-len(field.Name))/2)
+		}
+		fmt.Printf(fmt.Sprintf("%% %ds", columnWidths[i]), name)
 	}
 	fmt.Printf("\n")
 

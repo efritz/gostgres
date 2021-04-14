@@ -1,6 +1,7 @@
 package relations
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -23,9 +24,17 @@ func findIndexIterationOrder(order expressions.Expression, rows shared.Rows) ([]
 		indexValues = append(indexValues, value)
 	}
 
+	incomparable := false
 	sort.Slice(indexValues, func(i, j int) bool {
-		return compareValues(indexValues[i].value, indexValues[j].value)
+		relation := shared.CompareValues(indexValues[i].value, indexValues[j].value)
+		if relation == shared.OrderTypeIncomparable {
+			incomparable = true
+		}
+		return relation == shared.OrderTypeBefore
 	})
+	if incomparable {
+		return nil, fmt.Errorf("incomparable types")
+	}
 
 	indexes := make([]int, 0, len(indexValues))
 	for _, value := range indexValues {
@@ -46,20 +55,4 @@ func indexValueFrom(expression expressions.Expression, index int, row shared.Row
 	}
 
 	return indexValue{index: index, value: value}, nil
-}
-
-func compareValues(left, right interface{}) bool {
-	if lVal, ok := left.(int); ok {
-		if rVal, ok := right.(int); ok {
-			return lVal < rVal
-		}
-	}
-
-	if lVal, ok := left.(string); ok {
-		if rVal, ok := right.(string); ok {
-			return lVal < rVal
-		}
-	}
-
-	return false
 }

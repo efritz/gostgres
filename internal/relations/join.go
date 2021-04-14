@@ -45,15 +45,6 @@ func (r *joinRelation) Scan(visitor VisitorFunc) error {
 	return r.left.Scan(r.decorateLeftVisitor(visitor))
 }
 
-func (r *joinRelation) Optimize() {
-	r.left.Optimize()
-	r.right.Optimize()
-}
-
-func (r *joinRelation) SinkFilter(filter expressions.Expression) bool {
-	return false
-}
-
 func (r *joinRelation) decorateLeftVisitor(visitor VisitorFunc) VisitorFunc {
 	return func(leftRow shared.Row) (bool, error) {
 		return true, r.right.Scan(r.decorateRightVisitor(visitor, leftRow))
@@ -65,7 +56,7 @@ func (r *joinRelation) decorateRightVisitor(visitor VisitorFunc, leftRow shared.
 		row := shared.NewRow(r.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 
 		if r.condition != nil {
-			if ok, err := expressions.Bool(r.condition).ValueFrom(row); err != nil {
+			if ok, err := expressions.EnsureBool(r.condition.ValueFrom(row)); err != nil {
 				return false, err
 			} else if !ok {
 				return true, nil

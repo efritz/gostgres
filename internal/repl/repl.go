@@ -39,12 +39,6 @@ func Start() error {
 		relation.Serialize(&buf, 0)
 		fmt.Printf("Query plan:\n\n%s\n", buf.String())
 
-		relation.Optimize()
-
-		buf.Reset()
-		relation.Serialize(&buf, 0)
-		fmt.Printf("Optimized query plan:\n\n%s\n", buf.String())
-
 		fmt.Printf("Results:\n\n")
 		rows, err := relations.ScanRows(relation)
 		if err != nil {

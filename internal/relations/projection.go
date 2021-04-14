@@ -60,14 +60,6 @@ func (r *projectionRelation) Serialize(buf *bytes.Buffer, indentationLevel int) 
 	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
-func (r *projectionRelation) Optimize() {
-	r.Relation.Optimize()
-}
-
-func (r *projectionRelation) SinkFilter(filter expressions.Expression) bool {
-	return r.Relation.SinkFilter(filter)
-}
-
 func (r *projectionRelation) Scan(visitor VisitorFunc) error {
 	return r.Relation.Scan(r.decorateVisitor(visitor))
 }

@@ -44,16 +44,6 @@ func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	}
 }
 
-func (r *dataRelation) Optimize() {
-	// no-op
-}
-
-func (r *dataRelation) SinkFilter(filter expressions.Expression) bool {
-	// TODO - only accept if we can
-	r.filter = filter
-	return true
-}
-
 func (r *dataRelation) Scan(visitor VisitorFunc) error {
 	indexes, err := findIndexIterationOrder(r.order, r.rows)
 	if err != nil {
@@ -64,7 +54,7 @@ func (r *dataRelation) Scan(visitor VisitorFunc) error {
 		row := r.rows.Row(i)
 
 		if r.filter != nil {
-			if ok, err := expressions.Bool(r.filter).ValueFrom(row); err != nil {
+			if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {
 				return err
 			} else if !ok {
 				continue

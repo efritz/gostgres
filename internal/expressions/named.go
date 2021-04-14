@@ -42,7 +42,7 @@ func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
 }
 
 func (e namedExpression) indexFor(fields []shared.Field) (int, error) {
-	var unqualifiedIndexes []int
+	unqualifiedIndexes := make([]int, 0, len(fields))
 	for index, field := range fields {
 		if field.Name != e.name {
 			continue

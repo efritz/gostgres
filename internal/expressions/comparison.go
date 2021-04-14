@@ -6,162 +6,54 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type equalsExpression struct {
-	left  Expression
-	right Expression
-}
-
-var _ Expression = &equalsExpression{}
-
 func NewEquals(left, right Expression) Expression {
-	return &equalsExpression{
-		left:  left,
-		right: right,
-	}
+	return newComparison(left, right, "=", func(relation shared.OrderType) (interface{}, error) {
+		return relation == shared.OrderTypeEqual, nil
+	})
 }
-
-func (e equalsExpression) String() string {
-	return fmt.Sprintf("%s = %s", e.left, e.right)
-}
-
-func (e equalsExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := e.left.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	rVal, err := e.right.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	return lVal == rVal, nil
-}
-
-type lessThanExpression struct {
-	left  IntExpression
-	right IntExpression
-}
-
-var _ Expression = &lessThanExpression{}
 
 func NewLessThan(left, right Expression) Expression {
-	return &lessThanExpression{
-		left:  Int(left),
-		right: Int(right),
-	}
+	return newComparison(left, right, "<", func(relation shared.OrderType) (interface{}, error) {
+		return relation == shared.OrderTypeBefore, nil
+	})
 }
-
-func (e lessThanExpression) String() string {
-	return fmt.Sprintf("%s < %s", e.left, e.right)
-}
-
-func (e lessThanExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := e.left.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	rVal, err := e.right.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	return lVal < rVal, nil
-}
-
-type lessThanEqualsExpression struct {
-	left  IntExpression
-	right IntExpression
-}
-
-var _ Expression = &lessThanEqualsExpression{}
 
 func NewLessThanEquals(left, right Expression) Expression {
-	return &lessThanEqualsExpression{
-		left:  Int(left),
-		right: Int(right),
-	}
+	return newComparison(left, right, "<=", func(relation shared.OrderType) (interface{}, error) {
+		return relation == shared.OrderTypeBefore || relation == shared.OrderTypeEqual, nil
+	})
 }
-
-func (e lessThanEqualsExpression) String() string {
-	return fmt.Sprintf("%s <= %s", e.left, e.right)
-}
-
-func (e lessThanEqualsExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := e.left.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	rVal, err := e.right.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	return lVal <= rVal, nil
-}
-
-type greaterThanExpression struct {
-	left  IntExpression
-	right IntExpression
-}
-
-var _ Expression = &greaterThanExpression{}
 
 func NewGreaterThan(left, right Expression) Expression {
-	return &greaterThanExpression{
-		left:  Int(left),
-		right: Int(right),
-	}
+	return newComparison(left, right, ">", func(relation shared.OrderType) (interface{}, error) {
+		return relation == shared.OrderTypeAfter, nil
+	})
 }
-
-func (e greaterThanExpression) String() string {
-	return fmt.Sprintf("%s > %s", e.left, e.right)
-}
-
-func (e greaterThanExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := e.left.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	rVal, err := e.right.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
-
-	return lVal > rVal, nil
-}
-
-type greaterThanEqualsExpression struct {
-	left  IntExpression
-	right IntExpression
-}
-
-var _ Expression = &greaterThanEqualsExpression{}
 
 func NewGreaterThanEquals(left, right Expression) Expression {
-	return &greaterThanEqualsExpression{
-		left:  Int(left),
-		right: Int(right),
-	}
+	return newComparison(left, right, ">=", func(relation shared.OrderType) (interface{}, error) {
+		return relation == shared.OrderTypeAfter || relation == shared.OrderTypeEqual, nil
+	})
 }
 
-func (e greaterThanEqualsExpression) String() string {
-	return fmt.Sprintf("%s >= %s", e.left, e.right)
-}
+func newComparison(left, right Expression, operatorText string, f func(relation shared.OrderType) (interface{}, error)) Expression {
+	return newBinaryExpression(left, right, operatorText, func(row shared.Row) (interface{}, error) {
+		lVal, err := left.ValueFrom(row)
+		if err != nil {
+			return nil, err
+		}
 
-func (e greaterThanEqualsExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := e.left.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
+		rVal, err := right.ValueFrom(row)
+		if err != nil {
+			return nil, err
+		}
 
-	rVal, err := e.right.ValueFrom(row)
-	if err != nil {
-		return false, err
-	}
+		relation := shared.CompareValues(lVal, rVal)
 
-	return lVal >= rVal, nil
+		if relation == shared.OrderTypeIncomparable {
+			return nil, fmt.Errorf("incomparable types")
+		}
+
+		return f(relation)
+	})
 }

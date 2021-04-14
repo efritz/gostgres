@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -30,14 +29,6 @@ func (r *offsetRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 
 	buf.WriteString(fmt.Sprintf("%soffset %d\n", indent(indentationLevel), r.offset))
 	r.Relation.Serialize(buf, indentationLevel+1)
-}
-
-func (r *offsetRelation) Optimize() {
-	r.Relation.Optimize()
-}
-
-func (r *offsetRelation) SinkFilter(filter expressions.Expression) bool {
-	return false
 }
 
 func (r *offsetRelation) Scan(visitor VisitorFunc) error {

@@ -1,8 +1,6 @@
 package syntax
 
-import (
-	"strings"
-)
+import "strings"
 
 var keywordSet = map[string]TokenType{
 	"and":     TokenTypeAnd,
@@ -155,7 +153,7 @@ func isDigit(r rune) bool {
 }
 
 func isIdent(r rune) bool {
-	return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z')
+	return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z') || r == '_'
 }
 
 func isSpace(r rune) bool {

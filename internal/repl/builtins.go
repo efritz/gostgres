@@ -6,46 +6,84 @@ import (
 )
 
 var builtins = map[string]relations.Relation{
-	"A": tableA,
-	"B": tableB,
-	"C": tableC,
+	"employees":   employeesRelation,
+	"departments": departmentsRelation,
+	"locations":   locationsRelation,
+	"regions":     regionsRelation,
 }
 
-var tableA = relations.NewData(
-	"A",
+var employeesRelation = relations.NewData(
+	"employees",
 	shared.Rows{
-		Fields: []shared.Field{{RelationName: "A", Name: "a"}},
+		Fields: []shared.Field{
+			{RelationName: "employees", Name: "employee_id"},
+			{RelationName: "employees", Name: "first_name"},
+			{RelationName: "employees", Name: "last_name"},
+			{RelationName: "employees", Name: "email"},
+			{RelationName: "employees", Name: "manager_id"},
+			{RelationName: "employees", Name: "department_id"},
+		},
 		Values: [][]interface{}{
-			{6},
-			{5},
-			{7},
-			{3},
-			{4},
+			{1, "Annalisa", "Head", "annalisa.head@company.com", 1, 1},
+			{2, "Clayton", "Mahaffey", "clayton.mahaffey@company.com", 4, 2},
+			{3, "Manuel", "Pattison", "manuel.pattison@company.com", 1, 3},
+			{4, "Maria", "Warren", "maria.warren@company.com", 1, 1},
+			{5, "Robert", "Medina", "robert.medina@company.com", 1, 1},
+			{6, "Timothy", "Cornish", "timothy.cornish@company.com", 4, 2},
+			{7, "Linda", "Dollar", "linda.dollar@company.com", 1, 1},
+			{8, "Frederick", "McLendon", "frederick.mclendon@company.com", 4, 2},
+			{9, "Jimmy", "Barnette", "jimmy.barnette@company.com", 1, 3},
+			{10, "Emma", "Howard", "emma.howard@company.com", 9, 3},
+			{11, "Deborah", "Glasser", "deborah.glasser@company.com", 9, 1},
 		},
 	},
 )
 
-var tableB = relations.NewData(
-	"B",
+var departmentsRelation = relations.NewData(
+	"departments",
 	shared.Rows{
-		Fields: []shared.Field{{RelationName: "B", Name: "b"}},
+		Fields: []shared.Field{
+			{RelationName: "departments", Name: "department_id"},
+			{RelationName: "departments", Name: "department_name"},
+			{RelationName: "departments", Name: "location_id"},
+		},
 		Values: [][]interface{}{
-			{2},
-			{3},
-			{8},
+			{1, "Team A", 1},
+			{2, "Team B", 1},
+			{3, "Team C", 4},
 		},
 	},
 )
 
-var tableC = relations.NewData(
-	"C",
+var locationsRelation = relations.NewData(
+	"locations",
 	shared.Rows{
-		Fields: []shared.Field{{RelationName: "C", Name: "c"}},
+		Fields: []shared.Field{
+			{RelationName: "locations", Name: "location_id"},
+			{RelationName: "locations", Name: "location_name"},
+			{RelationName: "locations", Name: "region_id"},
+		},
 		Values: [][]interface{}{
-			{"89d29124d43623cc32f8d9f999fd"},
-			{"33623cc32f8d9f999fd69189d29124d4368c20ab"},
-			{"189d29124d4368c20ab33623cc32f8d9fd69"},
-			{"0ad2e75d529bda744b07fe7"},
+			{1, "San Francisco", 1},
+			{2, "Toronto", 1},
+			{3, "New York", 1},
+			{4, "Barcelona", 2},
+			{5, "Cape Town", 2},
+			{6, "Guangzhou", 2},
+		},
+	},
+)
+
+var regionsRelation = relations.NewData(
+	"regions",
+	shared.Rows{
+		Fields: []shared.Field{
+			{RelationName: "regions", Name: "region_id"},
+			{RelationName: "regions", Name: "region_name"},
+		},
+		Values: [][]interface{}{
+			{1, "NA"},
+			{2, "EMEA"},
 		},
 	},
 )

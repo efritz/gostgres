@@ -225,6 +225,9 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 		if !ok {
 			return nil, fmt.Errorf("unknown table %s", fromToken.Text)
 		}
+		if p.current().Type == TokenTypeIdent {
+			left = relations.NewAlias(left, p.advance().Text)
+		}
 
 		if relation == nil {
 			relation = left
@@ -240,6 +243,9 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 			right, ok := p.builtins[fromToken.Text]
 			if !ok {
 				return nil, fmt.Errorf("unknown table %s", fromToken.Text)
+			}
+			if p.current().Type == TokenTypeIdent {
+				right = relations.NewAlias(right, p.advance().Text)
 			}
 
 			var condition expressions.BoolExpression

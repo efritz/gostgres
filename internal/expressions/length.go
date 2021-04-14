@@ -18,6 +18,10 @@ func NewLength(expression Expression) Expression {
 	}
 }
 
+func (e lengthExpression) Name() string {
+	return "length"
+}
+
 func (e lengthExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	raw, err := e.expression.ValueFrom(row)
 	if err != nil {

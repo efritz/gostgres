@@ -14,10 +14,10 @@ type orderRelation struct {
 
 var _ Relation = &orderRelation{}
 
-func NewOrder(relation Relation, expression expressions.IntExpression) Relation {
+func NewOrder(relation Relation, order expressions.IntExpression) Relation {
 	return &orderRelation{
 		Relation: relation,
-		order:    expression,
+		order:    order,
 	}
 }
 

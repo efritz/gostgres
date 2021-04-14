@@ -20,9 +20,8 @@ func NewNamed(relationName, name string) Expression {
 	}
 }
 
-func (e namedExpression) UsesField(field shared.Field) bool {
-	_, err := e.indexFor([]shared.Field{field})
-	return err == nil
+func (e namedExpression) Name() string {
+	return e.name
 }
 
 func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
@@ -48,15 +47,13 @@ func (e namedExpression) indexFor(fields []shared.Field) (int, error) {
 		unqualifiedIndexes = append(unqualifiedIndexes, index)
 	}
 
-	if e.relationName != "" {
-		return 0, fmt.Errorf("unknown field %s.%s", e.relationName, e.name)
-	}
-
-	if len(unqualifiedIndexes) == 1 {
-		return unqualifiedIndexes[0], nil
-	}
-	if len(unqualifiedIndexes) > 1 {
-		return 0, fmt.Errorf("ambiguous field %s", e.name)
+	if e.relationName == "" {
+		if len(unqualifiedIndexes) == 1 {
+			return unqualifiedIndexes[0], nil
+		}
+		if len(unqualifiedIndexes) > 1 {
+			return 0, fmt.Errorf("ambiguous field %s", e.name)
+		}
 	}
 
 	return 0, fmt.Errorf("unknown field %s", e.name)

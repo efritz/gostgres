@@ -21,6 +21,8 @@ const (
 	TokenTypeLeftParen
 	TokenTypeRightParen
 	TokenTypeAsterisk
+	TokenTypePlus
+	TokenTypeEquals
 	TokenTypeUnknown
 )
 

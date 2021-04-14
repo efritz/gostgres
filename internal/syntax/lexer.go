@@ -26,6 +26,8 @@ var punctuationMap = map[rune]TokenType{
 	'(': TokenTypeLeftParen,
 	')': TokenTypeRightParen,
 	'*': TokenTypeAsterisk,
+	'+': TokenTypePlus,
+	'=': TokenTypeEquals,
 }
 
 func Lex(text string) (tokens []Token) {

@@ -35,7 +35,7 @@ type typedExpression struct {
 func (f typedExpression) valueFromInt(row shared.Row) (int, error) {
 	val, err := f.expression.ValueFrom(row)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	typedVal, ok := val.(int)
@@ -48,7 +48,7 @@ func (f typedExpression) valueFromInt(row shared.Row) (int, error) {
 func (f typedExpression) valueFromBool(row shared.Row) (bool, error) {
 	val, err := f.expression.ValueFrom(row)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	typedVal, ok := val.(bool)

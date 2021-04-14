@@ -23,7 +23,7 @@ func NewData(name string, rows shared.Rows) Relation {
 	}
 }
 
-func NewDataTemp(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.IntExpression) Relation {
+func NewDataWithFilters(name string, rows shared.Rows, filter expressions.BoolExpression, order expressions.IntExpression) Relation {
 	return &dataRelation{
 		name:   name,
 		rows:   rows,

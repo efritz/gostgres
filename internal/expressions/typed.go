@@ -40,7 +40,7 @@ func (f typedExpression) valueFromInt(row shared.Row) (int, error) {
 
 	typedVal, ok := val.(int)
 	if !ok {
-		return 0, fmt.Errorf("unexpected type")
+		return 0, fmt.Errorf("unexpected type (wanted int, have %v)", val)
 	}
 	return typedVal, nil
 }
@@ -53,7 +53,7 @@ func (f typedExpression) valueFromBool(row shared.Row) (bool, error) {
 
 	typedVal, ok := val.(bool)
 	if !ok {
-		return false, fmt.Errorf("unexpected type")
+		return false, fmt.Errorf("unexpected type (wanted bool, have %v)", val)
 	}
 	return typedVal, nil
 }

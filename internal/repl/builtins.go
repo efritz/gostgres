@@ -1,7 +1,6 @@
 package repl
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/relations"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -38,7 +37,7 @@ var tableB = relations.NewData(
 	},
 )
 
-var tableC = relations.NewDataTemp(
+var tableC = relations.NewData(
 	"C",
 	shared.Rows{
 		Fields: []shared.Field{{RelationName: "C", Name: "c"}},
@@ -49,6 +48,4 @@ var tableC = relations.NewDataTemp(
 			{"0ad2e75d529bda744b07fe7"},
 		},
 	},
-	nil,
-	expressions.Int(expressions.NewLength(expressions.NewNamed("", "c"))),
 )

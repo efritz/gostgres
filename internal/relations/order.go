@@ -22,11 +22,28 @@ func NewOrder(relation Relation, order expressions.Expression) Relation {
 }
 
 func (r *orderRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+	if r.order == nil {
+		r.Relation.Serialize(buf, indentationLevel)
+		return
+	}
+
 	buf.WriteString(fmt.Sprintf("%sorder by %s\n", indent(indentationLevel), r.order))
 	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
+func (r *orderRelation) Optimize() {
+	r.Relation.Optimize()
+}
+
+func (r *orderRelation) SinkFilter(filter expressions.Expression) bool {
+	return r.Relation.SinkFilter(filter)
+}
+
 func (r *orderRelation) Scan(visitor VisitorFunc) error {
+	if r.order == nil {
+		return r.Relation.Scan(visitor)
+	}
+
 	rows, err := ScanRows(r.Relation)
 	if err != nil {
 		return err

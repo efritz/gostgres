@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -29,6 +30,14 @@ func (r *aliasRelation) Fields() []shared.Field { return r.fields }
 func (r *aliasRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	buf.WriteString(fmt.Sprintf("%salias as %s\n", indent(indentationLevel), r.name))
 	r.Relation.Serialize(buf, indentationLevel+1)
+}
+
+func (r *aliasRelation) Optimize() {
+	r.Relation.Optimize()
+}
+
+func (r *aliasRelation) SinkFilter(filter expressions.Expression) bool {
+	return r.Relation.SinkFilter(filter)
 }
 
 func (r *aliasRelation) Scan(visitor VisitorFunc) error {

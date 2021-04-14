@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -24,6 +25,14 @@ func NewLimit(table Relation, limit int) Relation {
 func (r *limitRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	buf.WriteString(fmt.Sprintf("%slimit %d\n", indent(indentationLevel), r.limit))
 	r.Relation.Serialize(buf, indentationLevel+1)
+}
+
+func (r *limitRelation) Optimize() {
+	r.Relation.Optimize()
+}
+
+func (r *limitRelation) SinkFilter(filter expressions.Expression) bool {
+	return false
 }
 
 func (r *limitRelation) Scan(visitor VisitorFunc) error {

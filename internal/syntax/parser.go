@@ -327,21 +327,21 @@ func (p *parser) parseJoin(relation relations.Relation) (relations.Relation, err
 		return nil, err
 	}
 
-	var condition expressions.BoolExpression
+	var condition expressions.Expression
 	if p.advanceIf(isType(TokenTypeOn)) {
 		rawCondition, err := p.parseExpression(0)
 		if err != nil {
 			return nil, err
 		}
 
-		condition = expressions.Bool(rawCondition)
+		condition = rawCondition
 	}
 
 	return relations.NewJoin(relation, right, condition), nil
 }
 
 // consumes: [`WHERE` expression]
-func (p *parser) parseWhereClause() (expressions.BoolExpression, bool, error) {
+func (p *parser) parseWhereClause() (expressions.Expression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeWhere)) {
 		return nil, false, nil
 	}
@@ -351,7 +351,7 @@ func (p *parser) parseWhereClause() (expressions.BoolExpression, bool, error) {
 		return nil, false, err
 	}
 
-	return expressions.Bool(whereExpression), true, nil
+	return whereExpression, true, nil
 }
 
 // consumes: [`ORDER` `BY` expression]

@@ -37,8 +37,15 @@ func Start() error {
 
 		var buf bytes.Buffer
 		relation.Serialize(&buf, 0)
-		fmt.Printf("Query plan:\n\n%s\nResults:\n\n", buf.String())
+		fmt.Printf("Query plan:\n\n%s\n", buf.String())
 
+		relation.Optimize()
+
+		buf.Reset()
+		relation.Serialize(&buf, 0)
+		fmt.Printf("Optimized query plan:\n\n%s\n", buf.String())
+
+		fmt.Printf("Results:\n\n")
 		rows, err := relations.ScanRows(relation)
 		if err != nil {
 			fmt.Printf("failed to execute query: %s\n\n", err)
@@ -50,5 +57,10 @@ func Start() error {
 }
 
 func parseRelation(text string) (relations.Relation, error) {
+	builtins := make(map[string]relations.Relation, len(builtinFactories))
+	for k, factory := range builtinFactories {
+		builtins[k] = factory()
+	}
+
 	return syntax.Parse(syntax.Lex(text), builtins)
 }

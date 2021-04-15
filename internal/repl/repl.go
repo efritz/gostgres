@@ -1,82 +1,86 @@
 package repl
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"os"
+	"io"
+	"log"
 	"strings"
+	"time"
 
+	"github.com/chzyer/readline"
 	"github.com/efritz/gostgres/internal/relations"
 	"github.com/efritz/gostgres/internal/syntax"
 )
 
 func Start() error {
-	reader := bufio.NewReader(os.Stdin)
+	l, err := readline.NewEx(&readline.Config{
+		Prompt:            "gostgres \033[32m❯\033[0m ",
+		HistoryFile:       "/tmp/gostgres.tmp",
+		HistorySearchFold: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer l.Close()
 
-	// i := 0
+	log.SetOutput(l.Stderr())
 loop:
 	for {
-		// i++
-		// if i > 1 {
-		// 	break
-		// }
-
-		fmt.Print("> ")
-		text, err := reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-		// text := `
-		// 	select *
-		// 	from locations
-		// 	join regions r
-		// 	on (r.region_id = locations.region_id and r.region_id <> 5 or false)
-		// 	where
-		// 		(
-		// 			locations.location_id < 10 or
-		// 			(1 > 3 and 4 > 5)
-		// 		) and
-		// 		r.region_id < 5 * 5 and
-		// 		(3 < 5 or 5 < 8 - 4)
-		// `
-		// // text := "INSERT INTO regions VALUES (4, 'foo'), (5, 'bar'), (6, 'baz')"
-		// fmt.Printf("> %s\n", text)
-
-		text = strings.TrimSpace(text)
-		if text == "" {
-			continue
-		}
-		if text == "exit" {
+		line, err := l.Readline()
+		if err == readline.ErrInterrupt {
+			if len(line) == 0 {
+				break loop
+			} else {
+				continue
+			}
+		} else if err == io.EOF {
 			break loop
 		}
 
-		relation, err := parseRelation(text)
-		if err != nil {
-			fmt.Printf("failed to parse relation: %s\n\n", err)
+		line = strings.TrimSpace(line)
+		switch {
+		case line == "":
 			continue
+		case line == "exit":
+			break loop
+		default:
+			if err := handleQuery(line); err != nil {
+				fmt.Printf("error: %s\n", err)
+			}
 		}
-
-		var buf bytes.Buffer
-		relation.Serialize(&buf, 0)
-		fmt.Printf("Query plan:\n\n%s\n", buf.String())
-
-		relation.Optimize()
-
-		buf.Reset()
-		relation.Serialize(&buf, 0)
-		fmt.Printf("Optimized query plan:\n\n%s\n", buf.String())
-
-		fmt.Printf("Results:\n\n")
-		rows, err := relations.ScanRows(relation)
-		if err != nil {
-			fmt.Printf("failed to execute query: %s\n\n", err)
-			continue
-		}
-
-		displayValues(rows)
 	}
 
+	return nil
+}
+
+func handleQuery(line string) error {
+	start := time.Now()
+
+	relation, err := parseRelation(line)
+	if err != nil {
+		return fmt.Errorf("failed to parse relation: %s", err)
+	}
+
+	var buf bytes.Buffer
+	relation.Serialize(&buf, 0)
+	fmt.Printf("Query plan:\n\n%s\n", buf.String())
+
+	relation.Optimize()
+
+	buf.Reset()
+	relation.Serialize(&buf, 0)
+	fmt.Printf("Optimized query plan:\n\n%s\n", buf.String())
+
+	fmt.Printf("Results:\n\n")
+	rows, err := relations.ScanRows(relation)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %s", err)
+	}
+	elapsed := time.Since(start)
+
+	displayValues(rows)
+	fmt.Printf("\nTime: %s\n", elapsed)
 	return nil
 }
 

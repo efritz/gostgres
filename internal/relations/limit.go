@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -22,9 +22,9 @@ func NewLimit(relation Relation, limit int) Relation {
 	}
 }
 
-func (r *limitRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
-	buf.WriteString(fmt.Sprintf("%slimit %d\n", indent(indentationLevel), r.limit))
-	r.Relation.Serialize(buf, indentationLevel+1)
+func (r *limitRelation) Serialize(w io.Writer, indentationLevel int) {
+	io.WriteString(w, fmt.Sprintf("%slimit %d\n", indent(indentationLevel), r.limit))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *limitRelation) Optimize() {

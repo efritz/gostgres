@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 )
@@ -21,14 +21,14 @@ func NewOrder(relation Relation, order expressions.Expression) Relation {
 	}
 }
 
-func (r *orderRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *orderRelation) Serialize(w io.Writer, indentationLevel int) {
 	if r.order == nil {
-		r.Relation.Serialize(buf, indentationLevel)
+		r.Relation.Serialize(w, indentationLevel)
 		return
 	}
 
-	buf.WriteString(fmt.Sprintf("%sorder by %s\n", indent(indentationLevel), r.order))
-	r.Relation.Serialize(buf, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%sorder by %s\n", indent(indentationLevel), r.order))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *orderRelation) Optimize() {

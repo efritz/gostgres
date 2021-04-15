@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -26,9 +26,9 @@ func (r *insertRelation) Fields() []shared.Field {
 	return nil
 }
 
-func (r *insertRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
-	buf.WriteString(fmt.Sprintf("%sinsert\n", indent(indentationLevel)))
-	r.Relation.Serialize(buf, indentationLevel+1)
+func (r *insertRelation) Serialize(w io.Writer, indentationLevel int) {
+	io.WriteString(w, fmt.Sprintf("%sinsert\n", indent(indentationLevel)))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *insertRelation) Optimize() {

@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -22,14 +22,14 @@ func NewFilter(relation Relation, filter expressions.Expression) Relation {
 	}
 }
 
-func (r *filterRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *filterRelation) Serialize(w io.Writer, indentationLevel int) {
 	if r.filter == nil {
-		r.Relation.Serialize(buf, indentationLevel)
+		r.Relation.Serialize(w, indentationLevel)
 		return
 	}
 
-	buf.WriteString(fmt.Sprintf("%sfilter by %s\n", indent(indentationLevel), r.filter))
-	r.Relation.Serialize(buf, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%sfilter by %s\n", indent(indentationLevel), r.filter))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *filterRelation) Optimize() {

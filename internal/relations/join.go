@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -34,15 +34,15 @@ func (r *joinRelation) Fields() []shared.Field {
 	return copyFields(r.fields)
 }
 
-func (r *joinRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *joinRelation) Serialize(w io.Writer, indentationLevel int) {
 	indentation := indent(indentationLevel)
-	buf.WriteString(fmt.Sprintf("%sjoin\n", indentation))
-	r.left.Serialize(buf, indentationLevel+1)
-	buf.WriteString(fmt.Sprintf("%swith\n", indentation))
-	r.right.Serialize(buf, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%sjoin\n", indentation))
+	r.left.Serialize(w, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
+	r.right.Serialize(w, indentationLevel+1)
 
 	if r.filter != nil {
-		buf.WriteString(fmt.Sprintf("%son %s\n", indentation, r.filter))
+		io.WriteString(w, fmt.Sprintf("%son %s\n", indentation, r.filter))
 	}
 }
 

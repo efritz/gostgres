@@ -3,7 +3,6 @@ package repl
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"strings"
 	"time"
@@ -28,22 +27,19 @@ func Start() error {
 loop:
 	for {
 		line, err := l.Readline()
-		if err == readline.ErrInterrupt {
-			if len(line) == 0 {
-				break loop
-			} else {
-				continue
-			}
-		} else if err == io.EOF {
-			break loop
+		if err != nil {
+			return err
 		}
 
 		line = strings.TrimSpace(line)
+
 		switch {
 		case line == "":
 			continue
+
 		case line == "exit":
 			break loop
+
 		default:
 			if err := handleQuery(line); err != nil {
 				fmt.Printf("error: %s\n", err)
@@ -54,34 +50,49 @@ loop:
 	return nil
 }
 
-func handleQuery(line string) error {
+func handleQuery(line string) (err error) {
 	start := time.Now()
+	defer func() {
+		if err == nil {
+			fmt.Printf("Time: %s\n", time.Since(start))
+		}
+	}()
+
+	var explain bool
+	line, explain = eatExplain(line)
 
 	relation, err := parseRelation(line)
 	if err != nil {
 		return fmt.Errorf("failed to parse relation: %s", err)
 	}
-
-	var buf bytes.Buffer
-	relation.Serialize(&buf, 0)
-	fmt.Printf("Query plan:\n\n%s\n", buf.String())
-
 	relation.Optimize()
 
-	buf.Reset()
-	relation.Serialize(&buf, 0)
-	fmt.Printf("Optimized query plan:\n\n%s\n", buf.String())
+	if explain {
+		var buf bytes.Buffer
+		serializePlan(&buf, relation)
+		fmt.Println(buf.String())
+		return nil
+	}
 
-	fmt.Printf("Results:\n\n")
 	rows, err := relations.ScanRows(relation)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %s", err)
 	}
-	elapsed := time.Since(start)
 
-	displayValues(rows)
-	fmt.Printf("\nTime: %s\n", elapsed)
+	var buf bytes.Buffer
+	serializeRows(&buf, rows)
+	fmt.Println(buf.String())
 	return nil
+}
+
+const explainPrefix = "explain "
+
+func eatExplain(line string) (string, bool) {
+	if len(line) < len(explainPrefix) || strings.ToLower(line[:len(explainPrefix)]) != explainPrefix {
+		return line, false
+	}
+
+	return line[len(explainPrefix):], true
 }
 
 func parseRelation(text string) (relations.Relation, error) {

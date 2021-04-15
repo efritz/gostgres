@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -34,15 +34,15 @@ func (r *dataRelation) Fields() []shared.Field {
 	return updateRelationName(r.table.Fields(), r.name)
 }
 
-func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *dataRelation) Serialize(w io.Writer, indentationLevel int) {
 	scanType := "seq"
 	if r.filter != nil {
 		scanType = "index"
 	}
 
-	buf.WriteString(fmt.Sprintf("%s%s scan over %s\n", indent(indentationLevel), scanType, r.name))
+	io.WriteString(w, fmt.Sprintf("%s%s scan over %s\n", indent(indentationLevel), scanType, r.name))
 	if r.filter != nil {
-		buf.WriteString(fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), r.filter))
+		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), r.filter))
 	}
 	if r.order != nil {
 		// TODO - how to serialize this?

@@ -1,7 +1,7 @@
 package relations
 
 import (
-	"bytes"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -10,7 +10,7 @@ import (
 type Relation interface {
 	Name() string
 	Fields() []shared.Field
-	Serialize(buf *bytes.Buffer, indentationLevel int)
+	Serialize(w io.Writer, indentationLevel int)
 	Optimize()
 	PushDownFilter(filter expressions.Expression) bool
 	Scan(visitor VisitorFunc) error

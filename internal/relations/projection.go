@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -46,7 +46,7 @@ type named interface {
 	Name() string
 }
 
-func (r *projectionRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *projectionRelation) Serialize(w io.Writer, indentationLevel int) {
 	fields := make([]string, 0, len(r.expressions))
 	for _, expression := range r.expressions {
 		if named, ok := expression.Expression.(named); ok && named.Name() == expression.Alias {
@@ -56,8 +56,8 @@ func (r *projectionRelation) Serialize(buf *bytes.Buffer, indentationLevel int) 
 		}
 	}
 
-	buf.WriteString(fmt.Sprintf("%sselect (%s)\n", indent(indentationLevel), strings.Join(fields, ", ")))
-	r.Relation.Serialize(buf, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%sselect (%s)\n", indent(indentationLevel), strings.Join(fields, ", ")))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *projectionRelation) Optimize() {

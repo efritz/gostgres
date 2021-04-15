@@ -1,8 +1,8 @@
 package relations
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -22,14 +22,14 @@ func NewOffset(relation Relation, offset int) Relation {
 	}
 }
 
-func (r *offsetRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
+func (r *offsetRelation) Serialize(w io.Writer, indentationLevel int) {
 	if r.offset == 0 {
-		r.Relation.Serialize(buf, indentationLevel)
+		r.Relation.Serialize(w, indentationLevel)
 		return
 	}
 
-	buf.WriteString(fmt.Sprintf("%soffset %d\n", indent(indentationLevel), r.offset))
-	r.Relation.Serialize(buf, indentationLevel+1)
+	io.WriteString(w, fmt.Sprintf("%soffset %d\n", indent(indentationLevel), r.offset))
+	r.Relation.Serialize(w, indentationLevel+1)
 }
 
 func (r *offsetRelation) Optimize() {

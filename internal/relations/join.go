@@ -58,42 +58,44 @@ func (r *joinRelation) Optimize() {
 func (r *joinRelation) distributeFilter(filter expressions.Expression) expressions.Expression {
 	var conjunctions []expressions.Expression
 	for _, expression := range filter.Conjunctions() {
-		namesMissingFromLeft := false
-		namesMissingFromRight := false
-
-		for _, field := range expression.Fields() {
-			if _, err := shared.FindMatchingFieldIndex(field, r.left.Fields()); err != nil {
-				namesMissingFromLeft = true
-			}
-			if _, err := shared.FindMatchingFieldIndex(field, r.right.Fields()); err != nil {
-				namesMissingFromRight = true
-			}
+		if !r.distributeExpression(expression) {
+			conjunctions = append(conjunctions, expression)
 		}
-
-		if !namesMissingFromLeft || !namesMissingFromRight {
-			pushedDown := true
-
-			if !namesMissingFromLeft {
-				if !r.left.PushDownFilter(expression) {
-					pushedDown = false
-				}
-			}
-
-			if !namesMissingFromRight {
-				if !r.right.PushDownFilter(expression) {
-					pushedDown = false
-				}
-			}
-
-			if pushedDown {
-				continue
-			}
-		}
-
-		conjunctions = append(conjunctions, expression)
 	}
 
 	return combineConjunctions(conjunctions)
+}
+
+func (r *joinRelation) distributeExpression(expression expressions.Expression) bool {
+	namesMatchingInLeft := false
+	namesMissingFromLeft := false
+	namesMatchingInRight := false
+	namesMissingFromRight := false
+
+	for _, field := range expression.Fields() {
+		if _, err := shared.FindMatchingFieldIndex(field, r.left.Fields()); err != nil {
+			namesMissingFromLeft = true
+		} else {
+			namesMatchingInLeft = true
+		}
+		if _, err := shared.FindMatchingFieldIndex(field, r.right.Fields()); err != nil {
+			namesMissingFromRight = true
+		} else {
+			namesMatchingInRight = true
+		}
+	}
+
+	pushedLeft := false
+	if !namesMissingFromLeft {
+		pushedLeft = r.left.PushDownFilter(expression)
+	}
+
+	pushedRight := false
+	if !namesMissingFromRight {
+		pushedRight = r.right.PushDownFilter(expression)
+	}
+
+	return (namesMatchingInLeft || !namesMissingFromLeft) == pushedLeft && (namesMatchingInRight || !namesMissingFromRight) == pushedRight
 }
 
 func (r *joinRelation) PushDownFilter(filter expressions.Expression) bool {

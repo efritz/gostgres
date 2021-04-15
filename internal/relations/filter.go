@@ -43,12 +43,16 @@ func (r *filterRelation) Optimize() {
 func (r *filterRelation) distributeFilter(filter expressions.Expression) expressions.Expression {
 	var conjunctions []expressions.Expression
 	for _, expression := range filter.Conjunctions() {
-		if !r.Relation.PushDownFilter(expression) {
+		if !r.distributeExpression(expression) {
 			conjunctions = append(conjunctions, expression)
 		}
 	}
 
 	return combineConjunctions(conjunctions)
+}
+
+func (r *filterRelation) distributeExpression(expression expressions.Expression) bool {
+	return r.Relation.PushDownFilter(expression)
 }
 
 func (r *filterRelation) PushDownFilter(filter expressions.Expression) bool {

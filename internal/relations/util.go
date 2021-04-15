@@ -38,8 +38,8 @@ func combineConjunctions(conjunctions []expressions.Expression) expressions.Expr
 	}
 
 	expression := conjunctions[0]
-	for _, expression := range conjunctions[1:] {
-		expression = expressions.NewAnd(expression, expression)
+	for _, conjunction := range conjunctions[1:] {
+		expression = expressions.NewAnd(expression, conjunction)
 	}
 
 	return expression

@@ -22,7 +22,7 @@ type unaryExpression struct {
 
 type unaryValueFromFunc func(expression Expression, row shared.Row) (interface{}, error)
 
-func newUnaryExpression(expression Expression, operatorText string, valueFrom unaryValueFromFunc) unaryExpression {
+func newUnaryExpression(expression Expression, operatorText string, valueFrom unaryValueFromFunc) Expression {
 	return unaryExpression{
 		expression:   expression,
 		operatorText: operatorText,
@@ -39,14 +39,13 @@ func (e unaryExpression) Fields() []shared.Field {
 }
 
 func (e unaryExpression) Fold() Expression {
-	e = newUnaryExpression(e.expression.Fold(), e.operatorText, e.valueFrom)
-
-	value, err := e.valueFrom(e.expression, shared.Row{})
+	expression := newUnaryExpression(e.expression.Fold(), e.operatorText, e.valueFrom)
+	value, err := expression.ValueFrom(shared.Row{})
 	if err == nil {
 		return NewConstant(value)
 	}
 
-	return e
+	return expression
 }
 
 func (e unaryExpression) Alias(field shared.Field, expression Expression) Expression {
@@ -70,7 +69,7 @@ type binaryExpression struct {
 
 type binaryValueFromFunc func(left, right Expression, row shared.Row) (interface{}, error)
 
-func newBinaryExpression(left, right Expression, operatorText string, valueFrom binaryValueFromFunc) binaryExpression {
+func newBinaryExpression(left, right Expression, operatorText string, valueFrom binaryValueFromFunc) Expression {
 	return binaryExpression{
 		left:         left,
 		right:        right,
@@ -88,14 +87,13 @@ func (e binaryExpression) Fields() []shared.Field {
 }
 
 func (e binaryExpression) Fold() Expression {
-	e = newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom)
-
-	value, err := e.valueFrom(e.left, e.right, shared.Row{})
+	expression := newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom)
+	value, err := expression.ValueFrom(shared.Row{})
 	if err == nil {
 		return NewConstant(value)
 	}
 
-	return e
+	return expression
 }
 
 func (e binaryExpression) Alias(field shared.Field, expression Expression) Expression {

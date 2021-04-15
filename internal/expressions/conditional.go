@@ -18,97 +18,76 @@ func NewNot(expression Expression) Expression {
 }
 
 func NewAnd(left, right Expression) Expression {
-	binaryExpression := newConditionalExpression(left, right, "and", func(a, b bool) (interface{}, error) {
-		return a && b, nil
-	})
-
-	return andExpression{conditionalExpression{binaryExpression, simplifyAnd}}
+	return newConditionalExpression(left, right, "and", andOp, simplifyAnd, true)
 }
 
 func NewOr(left, right Expression) Expression {
-	binaryExpression := newConditionalExpression(left, right, "or", func(a, b bool) (interface{}, error) {
-		return a || b, nil
-	})
-
-	return conditionalExpression{binaryExpression, simplifyOr}
-}
-
-type andExpression struct {
-	conditionalExpression
-}
-
-func (e andExpression) Fold() Expression {
-	folded := e.conditionalExpression.Fold()
-	if conditionalExpression, ok := folded.(conditionalExpression); ok {
-		return andExpression{conditionalExpression}
-	}
-
-	return folded
-}
-
-func (e andExpression) Alias(field shared.Field, expression Expression) Expression {
-	aliased := e.binaryExpression.Alias(field, expression)
-
-	if bin, ok := aliased.(binaryExpression); ok {
-		return conditionalExpression{bin, e.foldFunc}
-	}
-
-	return aliased
-}
-
-func (e andExpression) Conjunctions() []Expression {
-	return append(
-		e.conditionalExpression.left.Conjunctions(),
-		e.conditionalExpression.right.Conjunctions()...,
-	)
+	return newConditionalExpression(left, right, "or", orOp, simplifyOr, false)
 }
 
 type conditionalExpression struct {
-	binaryExpression
-	foldFunc foldFunc
+	left         Expression
+	right        Expression
+	operatorText string
+	foldFunc     foldFunc
+	valueFrom    conditionalValueFromFunc
+	conjunctions bool
 }
 
-type boolFunc func(a, b bool) (interface{}, error)
+type foldFunc func(left, right Expression) Expression
+type conditionalValueFromFunc func(a, b bool) (interface{}, error)
+
+func newConditionalExpression(left, right Expression, operatorText string, valueFrom conditionalValueFromFunc, foldFunc foldFunc, conjunctions bool) Expression {
+	return conditionalExpression{
+		left:         left,
+		right:        right,
+		operatorText: operatorText,
+		valueFrom:    valueFrom,
+		foldFunc:     foldFunc,
+		conjunctions: conjunctions,
+	}
+}
 
 func (e conditionalExpression) String() string {
-	return fmt.Sprintf("%s", e.binaryExpression)
+	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
+}
+
+func (e conditionalExpression) Fields() []shared.Field {
+	return append(e.left.Fields(), e.right.Fields()...)
 }
 
 func (e conditionalExpression) Fold() Expression {
-	folded := e.binaryExpression.Fold()
-
-	if bin, ok := folded.(binaryExpression); ok {
-		return e.foldFunc(bin.left, bin.right)
-	}
-
-	return folded
+	return tryEvaluate(e.foldFunc(e.left.Fold(), e.right.Fold()))
 }
 
 func (e conditionalExpression) Alias(field shared.Field, expression Expression) Expression {
-	aliased := e.binaryExpression.Alias(field, expression)
+	return newConditionalExpression(e.left.Alias(field, expression), e.right.Alias(field, expression), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions)
+}
 
-	if bin, ok := aliased.(binaryExpression); ok {
-		return conditionalExpression{bin, e.foldFunc}
+func (e conditionalExpression) Conjunctions() []Expression {
+	if !e.conjunctions {
+		return []Expression{e}
 	}
 
-	return aliased
+	return append(e.left.Conjunctions(), e.right.Conjunctions()...)
 }
 
-func newConditionalExpression(left, right Expression, operatorText string, f boolFunc) binaryExpression {
-	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (interface{}, error) {
-		lVal, err := EnsureBool(left.ValueFrom(row))
-		if err != nil {
-			return nil, err
-		}
+func (e conditionalExpression) ValueFrom(row shared.Row) (interface{}, error) {
+	lVal, err := EnsureBool(e.left.ValueFrom(row))
+	if err != nil {
+		return nil, err
+	}
 
-		rVal, err := EnsureBool(right.ValueFrom(row))
-		if err != nil {
-			return nil, err
-		}
+	rVal, err := EnsureBool(e.right.ValueFrom(row))
+	if err != nil {
+		return nil, err
+	}
 
-		return f(lVal, rVal)
-	})
+	return e.valueFrom(lVal, rVal)
 }
+
+func andOp(a, b bool) (interface{}, error) { return a && b, nil }
+func orOp(a, b bool) (interface{}, error)  { return a || b, nil }
 
 func simplifyAnd(left, right Expression) Expression {
 	return simplifyConditional(left, right, NewAnd, func(value bool) (Expression, bool) {
@@ -129,8 +108,6 @@ func simplifyOr(left, right Expression) Expression {
 		return NewConstant(true), true
 	})
 }
-
-type foldFunc func(left, right Expression) Expression
 
 func simplifyConditional(left, right Expression, factory foldFunc, f func(value bool) (Expression, bool)) Expression {
 	if value, err := EnsureBool(left.ValueFrom(shared.Row{})); err == nil {

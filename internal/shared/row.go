@@ -26,11 +26,16 @@ func NewRows(Fields []Field) Rows {
 	}
 }
 
-func (rows Rows) AddValues(values []interface{}) Rows {
+func (rows Rows) AddValues(values []interface{}) (Rows, error) {
+	if len(rows.Fields) != len(values) {
+		// TODO - check for field types, ordering
+		return rows, fmt.Errorf("unexpected number of columns")
+	}
+
 	return Rows{
 		Fields: rows.Fields,
 		Values: append(rows.Values, values),
-	}
+	}, nil
 }
 
 func (rows Rows) Row(index int) Row {

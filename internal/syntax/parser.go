@@ -477,7 +477,12 @@ func (p *parser) parseInsertRelation(fields []shared.Field) (relations.Relation,
 				break
 			}
 		}
-		rows.Values = append(rows.Values, values)
+
+		var err error
+		rows, err = rows.AddValues(values)
+		if err != nil {
+			return nil, err
+		}
 
 		if _, err := p.mustAdvance(isType(TokenTypeRightParen)); err != nil {
 			return nil, err

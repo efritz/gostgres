@@ -1,8 +1,6 @@
 package relations
 
 import (
-	"fmt"
-
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -20,12 +18,7 @@ func (r *Table) Fields() []shared.Field {
 	return copyFields(r.rows.Fields)
 }
 
-func (t *Table) Insert(row shared.Row) error {
-	if len(t.rows.Fields) != len(row.Fields) {
-		// TODO - check for field types, ordering
-		return fmt.Errorf("unexpected number of columns")
-	}
-
-	t.rows = t.rows.AddValues(row.Values)
-	return nil
+func (t *Table) Insert(row shared.Row) (err error) {
+	t.rows, err = t.rows.AddValues(row.Values)
+	return err
 }

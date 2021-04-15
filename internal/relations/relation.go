@@ -21,9 +21,9 @@ type VisitorFunc func(row shared.Row) (bool, error)
 func ScanRows(relation Relation) (shared.Rows, error) {
 	rows := shared.NewRows(relation.Fields())
 
-	if err := relation.Scan(func(row shared.Row) (bool, error) {
-		rows = rows.AddValues(row.Values)
-		return true, nil
+	if err := relation.Scan(func(row shared.Row) (_ bool, err error) {
+		rows, err = rows.AddValues(row.Values)
+		return true, err
 	}); err != nil {
 		return rows, err
 	}

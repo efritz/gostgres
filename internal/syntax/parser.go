@@ -273,6 +273,7 @@ func (p *parser) parseTableExpression() (relations.Relation, error) {
 
 // consumes: ident [alias]
 // consumes: (select) alias
+// consumes: (`VALUES` `(` expr [, ...] `)` [, ...]) alias
 // consumes: (table_expression) [alias]
 func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
 	expectParen := false
@@ -280,9 +281,9 @@ func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
 	parseFunc := p.parseTableReference
 
 	if p.advanceIf(isType(TokenTypeLeftParen)) {
-		if p.advanceIf(isType(TokenTypeSelect)) {
+		if p.current().Type == TokenTypeSelect || p.current().Type == TokenTypeValues {
 			requireAlias = true
-			parseFunc = p.parseSelect
+			parseFunc = p.parseSelectOrValues
 		} else {
 			parseFunc = p.parseTableExpression
 		}
@@ -433,7 +434,7 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	relation, err := p.parseInsertRelation(table.Fields())
+	relation, err := p.parseSelectOrValues()
 	if err != nil {
 		return nil, err
 	}
@@ -441,19 +442,28 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 	return relations.NewInsert(relation, table), nil
 }
 
-// consumes: select
+// consumes: `SELECT` select
 // consumes: `VALUES` `(` expr [, ...] `)` [, ...]
-func (p *parser) parseInsertRelation(fields []shared.Field) (relations.Relation, error) {
+func (p *parser) parseSelectOrValues() (relations.Relation, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
 	}
 
+	return p.parseValues()
+}
+
+// consumes: `VALUES` `(` expr [, ...] `)` [, ...]
+func (p *parser) parseValues() (relations.Relation, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeValues)); err != nil {
 		return nil, err
 	}
 
-	rows := shared.NewRows(fields)
+	return p.parseValuesList()
+}
 
+// consumes: (` expr [, ...] `)` [, ...]
+func (p *parser) parseValuesList() (relations.Relation, error) {
+	var allRows [][]interface{}
 	for {
 		if _, err := p.mustAdvance(isType(TokenTypeLeftParen)); err != nil {
 			return nil, err
@@ -468,6 +478,7 @@ func (p *parser) parseInsertRelation(fields []shared.Field) (relations.Relation,
 
 			value, err := expression.ValueFrom(shared.Row{})
 			if err != nil {
+
 				return nil, err
 			}
 
@@ -478,22 +489,36 @@ func (p *parser) parseInsertRelation(fields []shared.Field) (relations.Relation,
 			}
 		}
 
-		var err error
-		rows, err = rows.AddValues(values)
-		if err != nil {
-			return nil, err
-		}
-
 		if _, err := p.mustAdvance(isType(TokenTypeRightParen)); err != nil {
 			return nil, err
 		}
+
+		allRows = append(allRows, values)
 
 		if !p.advanceIf(isType(TokenTypeComma)) {
 			break
 		}
 	}
 
-	return relations.NewData("<table literal>", relations.NewTable(rows)), nil
+	fields := make([]shared.Field, 0, len(allRows[0]))
+	for i := range allRows[0] {
+		fields = append(fields, shared.Field{
+			RelationName: "",
+			Name:         fmt.Sprintf("column%d", i+1),
+		})
+	}
+
+	rows := shared.NewRows(fields)
+
+	for _, values := range allRows {
+		var err error
+		rows, err = rows.AddValues(values)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return relations.NewData("", relations.NewTable(rows)), nil
 }
 
 //

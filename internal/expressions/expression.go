@@ -9,7 +9,7 @@ import (
 type Expression interface {
 	Fields() []shared.Field
 	Fold() Expression
-	Alias(from, to string) Expression
+	Alias(field shared.Field, expression Expression) Expression
 	Conjunctions() []Expression
 	ValueFrom(row shared.Row) (interface{}, error)
 }
@@ -49,8 +49,8 @@ func (e unaryExpression) Fold() Expression {
 	return e
 }
 
-func (e unaryExpression) Alias(from, to string) Expression {
-	return newUnaryExpression(e.expression.Alias(from, to), e.operatorText, e.valueFrom)
+func (e unaryExpression) Alias(field shared.Field, expression Expression) Expression {
+	return newUnaryExpression(e.expression.Alias(field, expression), e.operatorText, e.valueFrom)
 }
 
 func (e unaryExpression) Conjunctions() []Expression {
@@ -98,8 +98,8 @@ func (e binaryExpression) Fold() Expression {
 	return e
 }
 
-func (e binaryExpression) Alias(from, to string) Expression {
-	return newBinaryExpression(e.left.Alias(from, to), e.right.Alias(from, to), e.operatorText, e.valueFrom)
+func (e binaryExpression) Alias(field shared.Field, expression Expression) Expression {
+	return newBinaryExpression(e.left.Alias(field, expression), e.right.Alias(field, expression), e.operatorText, e.valueFrom)
 }
 
 func (e binaryExpression) Conjunctions() []Expression {

@@ -31,8 +31,9 @@ func (r *limitRelation) Optimize() {
 	r.Relation.Optimize()
 }
 
-func (r *limitRelation) PushDownFilter(filter expressions.Expression) {
+func (r *limitRelation) PushDownFilter(filter expressions.Expression) bool {
 	// filter boundary
+	return false
 }
 
 func (r *limitRelation) Scan(visitor VisitorFunc) error {

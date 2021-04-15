@@ -41,8 +41,15 @@ func (r *aliasRelation) Optimize() {
 	r.Relation.Optimize()
 }
 
-func (r *aliasRelation) PushDownFilter(filter expressions.Expression) {
-	r.Relation.PushDownFilter(filter.Alias(r.name, r.Relation.Name()))
+func (r *aliasRelation) PushDownFilter(filter expressions.Expression) bool {
+	for _, field := range r.fields {
+		filter = filter.Alias(field, expressions.NewNamed(shared.Field{
+			RelationName: r.Relation.Name(),
+			Name:         field.Name,
+		}))
+	}
+
+	return r.Relation.PushDownFilter(filter)
 }
 
 func (r *aliasRelation) Scan(visitor VisitorFunc) error {

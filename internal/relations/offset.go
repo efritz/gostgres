@@ -36,8 +36,9 @@ func (r *offsetRelation) Optimize() {
 	r.Relation.Optimize()
 }
 
-func (r *offsetRelation) PushDownFilter(filter expressions.Expression) {
+func (r *offsetRelation) PushDownFilter(filter expressions.Expression) bool {
 	// filter boundary
+	return false
 }
 
 func (r *offsetRelation) Scan(visitor VisitorFunc) error {

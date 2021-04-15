@@ -59,16 +59,16 @@ func (r *dataRelation) Optimize() {
 	}
 }
 
-func (r *dataRelation) PushDownFilter(filter expressions.Expression) {
+func (r *dataRelation) PushDownFilter(filter expressions.Expression) bool {
 	if r.filter != nil {
 		filter = expressions.NewAnd(r.filter, filter)
 	}
 
 	r.filter = filter
+	return true
 }
 
 func (r *dataRelation) Scan(visitor VisitorFunc) error {
-
 	indexes, err := findIndexIterationOrder(r.order, r.rows)
 	if err != nil {
 		return err

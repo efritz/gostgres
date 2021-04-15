@@ -9,20 +9,20 @@ import (
 )
 
 type joinRelation struct {
-	left      Relation
-	right     Relation
-	condition expressions.Expression
-	fields    []shared.Field
+	left   Relation
+	right  Relation
+	filter expressions.Expression
+	fields []shared.Field
 }
 
 var _ Relation = &joinRelation{}
 
 func NewJoin(left Relation, right Relation, condition expressions.Expression) Relation {
 	return &joinRelation{
-		left:      left,
-		right:     right,
-		condition: condition,
-		fields:    append(joinFieldsForRelation(left), joinFieldsForRelation(right)...),
+		left:   left,
+		right:  right,
+		filter: condition,
+		fields: append(joinFieldsForRelation(left), joinFieldsForRelation(right)...),
 	}
 }
 
@@ -41,43 +41,77 @@ func (r *joinRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	buf.WriteString(fmt.Sprintf("%swith\n", indentation))
 	r.right.Serialize(buf, indentationLevel+1)
 
-	if r.condition != nil {
-		buf.WriteString(fmt.Sprintf("%son %s\n", indentation, r.condition))
+	if r.filter != nil {
+		buf.WriteString(fmt.Sprintf("%son %s\n", indentation, r.filter))
 	}
 }
 
 func (r *joinRelation) Optimize() {
-	if r.condition != nil {
-		r.condition = r.condition.Fold()
-		r.PushDownFilter(r.condition)
+	if r.filter != nil {
+		r.filter = r.distributeFilter(r.filter.Fold())
 	}
 
 	r.left.Optimize()
 	r.right.Optimize()
 }
 
-func (r *joinRelation) PushDownFilter(filter expressions.Expression) {
+func (r *joinRelation) distributeFilter(filter expressions.Expression) expressions.Expression {
+	var conjunctions []expressions.Expression
 	for _, expression := range filter.Conjunctions() {
-		namesMissingFromLeft := 0
-		namesMissingFromRight := 0
+		namesMissingFromLeft := false
+		namesMissingFromRight := false
 
 		for _, field := range expression.Fields() {
 			if _, err := shared.FindMatchingFieldIndex(field, r.left.Fields()); err != nil {
-				namesMissingFromLeft++
+				namesMissingFromLeft = true
 			}
 			if _, err := shared.FindMatchingFieldIndex(field, r.right.Fields()); err != nil {
-				namesMissingFromRight++
+				namesMissingFromRight = true
 			}
 		}
 
-		if namesMissingFromLeft == 0 {
-			r.left.PushDownFilter(expression)
+		if !namesMissingFromLeft || !namesMissingFromRight {
+			pushedDown := true
+
+			if !namesMissingFromLeft {
+				if !r.left.PushDownFilter(expression) {
+					pushedDown = false
+				}
+			}
+
+			if !namesMissingFromRight {
+				if !r.right.PushDownFilter(expression) {
+					pushedDown = false
+				}
+			}
+
+			if pushedDown {
+				continue
+			}
 		}
 
-		if namesMissingFromRight == 0 {
-			r.right.PushDownFilter(expression)
-		}
+		conjunctions = append(conjunctions, expression)
 	}
+
+	if len(conjunctions) == 0 {
+		return nil
+	}
+
+	filter = conjunctions[0]
+	for _, expression := range conjunctions[1:] {
+		filter = expressions.NewAnd(filter, expression)
+	}
+
+	return filter
+}
+
+func (r *joinRelation) PushDownFilter(filter expressions.Expression) bool {
+	if r.filter != nil {
+		filter = expressions.NewAnd(r.filter, filter)
+	}
+
+	r.filter = filter
+	return true
 }
 
 func (r *joinRelation) Scan(visitor VisitorFunc) error {
@@ -94,8 +128,8 @@ func (r *joinRelation) decorateRightVisitor(visitor VisitorFunc, leftRow shared.
 	return func(rightRow shared.Row) (bool, error) {
 		row := shared.NewRow(r.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 
-		if r.condition != nil {
-			if ok, err := expressions.EnsureBool(r.condition.ValueFrom(row)); err != nil {
+		if r.filter != nil {
+			if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {
 				return false, err
 			} else if !ok {
 				return true, nil

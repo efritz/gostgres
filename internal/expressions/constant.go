@@ -30,7 +30,7 @@ func (e constantExpression) Fold() Expression {
 	return e
 }
 
-func (e constantExpression) Alias(from, to string) Expression {
+func (e constantExpression) Alias(field shared.Field, expression Expression) Expression {
 	return e
 }
 

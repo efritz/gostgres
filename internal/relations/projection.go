@@ -68,8 +68,12 @@ func (r *projectionRelation) Optimize() {
 	r.Relation.Optimize()
 }
 
-func (r *projectionRelation) PushDownFilter(filter expressions.Expression) {
-	r.Relation.PushDownFilter(filter)
+func (r *projectionRelation) PushDownFilter(filter expressions.Expression) bool {
+	for _, expression := range r.expressions {
+		filter = filter.Alias(shared.Field{Name: expression.Alias}, expression.Expression)
+	}
+
+	return r.Relation.PushDownFilter(filter)
 }
 
 func (r *projectionRelation) Scan(visitor VisitorFunc) error {

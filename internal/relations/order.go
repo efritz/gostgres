@@ -39,8 +39,8 @@ func (r *orderRelation) Optimize() {
 	r.Relation.Optimize()
 }
 
-func (r *orderRelation) PushDownFilter(filter expressions.Expression) {
-	r.Relation.PushDownFilter(filter)
+func (r *orderRelation) PushDownFilter(filter expressions.Expression) bool {
+	return r.Relation.PushDownFilter(filter)
 }
 
 func (r *orderRelation) Scan(visitor VisitorFunc) error {

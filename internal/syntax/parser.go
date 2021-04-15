@@ -9,10 +9,10 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func Parse(tokens []Token, builtins map[string]relations.Relation) (relations.Relation, error) {
+func Parse(tokens []Token, builtinFactories map[string]func() relations.Relation) (relations.Relation, error) {
 	parser := &parser{
-		tokens:   tokens,
-		builtins: builtins,
+		tokens:           tokens,
+		builtinFactories: builtinFactories,
 	}
 	parser.init()
 
@@ -30,11 +30,11 @@ func Parse(tokens []Token, builtins map[string]relations.Relation) (relations.Re
 }
 
 type parser struct {
-	tokens        []Token
-	cursor        int
-	builtins      map[string]relations.Relation
-	prefixParsers map[TokenType]prefixParserFunc
-	infixParsers  map[TokenType]infixParserFunc
+	tokens           []Token
+	cursor           int
+	builtinFactories map[string]func() relations.Relation
+	prefixParsers    map[TokenType]prefixParserFunc
+	infixParsers     map[TokenType]infixParserFunc
 }
 
 type tokenFilterFunc func(t Token) bool
@@ -100,7 +100,7 @@ func (p *parser) init() {
 		TokenTypeLessThan:           p.parseBinary(PrecedenceComparison, expressions.NewLessThan),
 		TokenTypeEquals:             p.parseBinary(PrecedenceEquality, expressions.NewEquals),
 		TokenTypeGreaterThan:        p.parseBinary(PrecedenceComparison, expressions.NewGreaterThan),
-		TokenTypeLessThanOrEqual:    p.parseBinary(PrecedenceComparison, expressions.NewGreaterThanEquals),
+		TokenTypeLessThanOrEqual:    p.parseBinary(PrecedenceComparison, expressions.NewLessThanEquals),
 		TokenTypeNotEquals:          negate(p.parseBinary(PrecedenceEquality, expressions.NewEquals)),
 		TokenTypeGreaterThanOrEqual: p.parseBinary(PrecedenceComparison, expressions.NewGreaterThanEquals),
 	}
@@ -313,12 +313,12 @@ func (p *parser) parseTableReference() (relations.Relation, error) {
 		return nil, err
 	}
 
-	relation, ok := p.builtins[fromToken.Text]
+	factory, ok := p.builtinFactories[fromToken.Text]
 	if !ok {
 		return nil, fmt.Errorf("unknown table %s", fromToken.Text)
 	}
 
-	return relation, nil
+	return factory(), nil
 }
 
 // consumes: table_expression [`ON` expression]

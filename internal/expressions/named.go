@@ -38,14 +38,9 @@ func (e namedExpression) Fold() Expression {
 	return e
 }
 
-func (e namedExpression) Alias(from, to string) Expression {
-	if e.field.RelationName == from {
-		return namedExpression{
-			field: shared.Field{
-				RelationName: to,
-				Name:         e.field.Name,
-			},
-		}
+func (e namedExpression) Alias(field shared.Field, expression Expression) Expression {
+	if e.field.Name == field.Name && (e.field.RelationName == field.RelationName || field.RelationName == "") {
+		return expression
 	}
 
 	return e

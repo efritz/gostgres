@@ -34,15 +34,39 @@ func (r *filterRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 
 func (r *filterRelation) Optimize() {
 	if r.filter != nil {
-		r.filter = r.filter.Fold()
-		r.PushDownFilter(r.filter)
+		r.filter = r.distributeFilter(r.filter.Fold())
 	}
 
 	r.Relation.Optimize()
 }
 
-func (r *filterRelation) PushDownFilter(filter expressions.Expression) {
-	r.Relation.PushDownFilter(filter)
+func (r *filterRelation) distributeFilter(filter expressions.Expression) expressions.Expression {
+	var conjunctions []expressions.Expression
+	for _, expression := range filter.Conjunctions() {
+		if !r.Relation.PushDownFilter(expression) {
+			conjunctions = append(conjunctions, expression)
+		}
+	}
+
+	if len(conjunctions) == 0 {
+		return nil
+	}
+
+	filter = conjunctions[0]
+	for _, expression := range conjunctions[1:] {
+		filter = expressions.NewAnd(filter, expression)
+	}
+
+	return filter
+}
+
+func (r *filterRelation) PushDownFilter(filter expressions.Expression) bool {
+	if r.filter != nil {
+		filter = expressions.NewAnd(r.filter, filter)
+	}
+
+	r.filter = filter
+	return true
 }
 
 func (r *filterRelation) Scan(visitor VisitorFunc) error {

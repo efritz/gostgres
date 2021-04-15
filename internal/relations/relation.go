@@ -12,7 +12,7 @@ type Relation interface {
 	Fields() []shared.Field
 	Serialize(buf *bytes.Buffer, indentationLevel int)
 	Optimize()
-	PushDownFilter(filter expressions.Expression)
+	PushDownFilter(filter expressions.Expression) bool
 	Scan(visitor VisitorFunc) error
 }
 

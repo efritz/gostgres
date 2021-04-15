@@ -46,8 +46,8 @@ func (e andExpression) Fold() Expression {
 	return folded
 }
 
-func (e andExpression) Alias(from, to string) Expression {
-	aliased := e.binaryExpression.Alias(from, to)
+func (e andExpression) Alias(field shared.Field, expression Expression) Expression {
+	aliased := e.binaryExpression.Alias(field, expression)
 
 	if bin, ok := aliased.(binaryExpression); ok {
 		return conditionalExpression{bin, e.foldFunc}
@@ -84,8 +84,8 @@ func (e conditionalExpression) Fold() Expression {
 	return folded
 }
 
-func (e conditionalExpression) Alias(from, to string) Expression {
-	aliased := e.binaryExpression.Alias(from, to)
+func (e conditionalExpression) Alias(field shared.Field, expression Expression) Expression {
+	aliased := e.binaryExpression.Alias(field, expression)
 
 	if bin, ok := aliased.(binaryExpression); ok {
 		return conditionalExpression{bin, e.foldFunc}

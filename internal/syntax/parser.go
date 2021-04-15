@@ -9,10 +9,10 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func Parse(tokens []Token, builtinFactories map[string]func() relations.Relation) (relations.Relation, error) {
+func Parse(tokens []Token, tables map[string]*relations.Table) (relations.Relation, error) {
 	parser := &parser{
-		tokens:           tokens,
-		builtinFactories: builtinFactories,
+		tokens: tokens,
+		tables: tables,
 	}
 	parser.init()
 
@@ -30,11 +30,11 @@ func Parse(tokens []Token, builtinFactories map[string]func() relations.Relation
 }
 
 type parser struct {
-	tokens           []Token
-	cursor           int
-	builtinFactories map[string]func() relations.Relation
-	prefixParsers    map[TokenType]prefixParserFunc
-	infixParsers     map[TokenType]infixParserFunc
+	tokens        []Token
+	cursor        int
+	tables        map[string]*relations.Table
+	prefixParsers map[TokenType]prefixParserFunc
+	infixParsers  map[TokenType]infixParserFunc
 }
 
 type tokenFilterFunc func(t Token) bool
@@ -78,6 +78,7 @@ func (p *parser) init() {
 	p.prefixParsers = map[TokenType]prefixParserFunc{
 		TokenTypeIdent:     p.parseNamedExpression,
 		TokenTypeNumber:    p.parseNumericLiteralExpression,
+		TokenTypeString:    p.parseStringLiteralExpression,
 		TokenTypeFalse:     p.parseBooleanLiteralExpression,
 		TokenTypeNot:       p.parseUnary(expressions.NewNot),
 		TokenTypeNull:      p.parseNullLiteralExpression,
@@ -107,13 +108,22 @@ func (p *parser) init() {
 }
 
 // consumes: `SELECT` select
+// consumes: `INSERT` `INTO` ident select
+// consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
 func (p *parser) parseStatement() (relations.Relation, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
 	}
 
+	if p.advanceIf(isType(TokenTypeInsert)) {
+		return p.parseInsert()
+	}
+
 	return nil, fmt.Errorf("expected start of statement (near %s)", p.current().Text)
 }
+
+//
+// Select expressions
 
 // consumes: select_expressions from [where] [order] [limit] [offset]
 func (p *parser) parseSelect() (relations.Relation, error) {
@@ -308,17 +318,17 @@ func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
 
 // consumes: ident
 func (p *parser) parseTableReference() (relations.Relation, error) {
-	fromToken, err := p.mustAdvance(isType(TokenTypeIdent))
+	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
 	if err != nil {
 		return nil, err
 	}
 
-	factory, ok := p.builtinFactories[fromToken.Text]
+	table, ok := p.tables[nameToken.Text]
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", fromToken.Text)
+		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	return factory(), nil
+	return relations.NewData(nameToken.Text, table), nil
 }
 
 // consumes: table_expression [`ON` expression]
@@ -403,6 +413,87 @@ func (p *parser) parseOffsetClause() (int, bool, error) {
 	return limitValue, true, err
 }
 
+//
+// Insert statements
+
+// consumes: `INSERT` `INTO` ident select
+// consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
+func (p *parser) parseInsert() (relations.Relation, error) {
+	if _, err := p.mustAdvance(isType(TokenTypeInto)); err != nil {
+		return nil, err
+	}
+
+	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	table, ok := p.tables[nameToken.Text]
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
+	}
+
+	relation, err := p.parseInsertRelation(table.Fields())
+	if err != nil {
+		return nil, err
+	}
+
+	return relations.NewInsert(relation, table), nil
+}
+
+// consumes: select
+// consumes: `VALUES` `(` expr [, ...] `)` [, ...]
+func (p *parser) parseInsertRelation(fields []shared.Field) (relations.Relation, error) {
+	if p.advanceIf(isType(TokenTypeSelect)) {
+		return p.parseSelect()
+	}
+
+	if _, err := p.mustAdvance(isType(TokenTypeValues)); err != nil {
+		return nil, err
+	}
+
+	rows := shared.NewRows(fields)
+
+	for {
+		if _, err := p.mustAdvance(isType(TokenTypeLeftParen)); err != nil {
+			return nil, err
+		}
+
+		var values []interface{}
+		for {
+			expression, err := p.parseExpression(PrecedenceAny)
+			if err != nil {
+				return nil, err
+			}
+
+			value, err := expression.ValueFrom(shared.Row{})
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, value)
+
+			if !p.advanceIf(isType(TokenTypeComma)) {
+				break
+			}
+		}
+		rows.Values = append(rows.Values, values)
+
+		if _, err := p.mustAdvance(isType(TokenTypeRightParen)); err != nil {
+			return nil, err
+		}
+
+		if !p.advanceIf(isType(TokenTypeComma)) {
+			break
+		}
+	}
+
+	return relations.NewData("<table literal>", relations.NewTable(rows)), nil
+}
+
+//
+// Value expressions
+
 func (p *parser) parseExpression(precedence Precedence) (expressions.Expression, error) {
 	expression, err := p.parseExpressionPrefix()
 	if err != nil {
@@ -473,6 +564,11 @@ func (p *parser) parseNumericLiteralExpression(token Token) (expressions.Express
 	}
 
 	return expressions.NewConstant(value), nil
+}
+
+// consumes: nothing
+func (p *parser) parseStringLiteralExpression(token Token) (expressions.Expression, error) {
+	return expressions.NewConstant(token.Text), nil
 }
 
 // consumes: nothing

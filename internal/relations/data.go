@@ -9,8 +9,8 @@ import (
 )
 
 type dataRelation struct {
-	name string
-	rows shared.Rows
+	name  string
+	table *Table
 
 	filter expressions.Expression
 	order  expressions.Expression
@@ -19,10 +19,10 @@ type dataRelation struct {
 
 var _ Relation = &dataRelation{}
 
-func NewData(name string, rows shared.Rows) Relation {
+func NewData(name string, table *Table) Relation {
 	return &dataRelation{
-		name: name,
-		rows: rows,
+		name:  name,
+		table: table,
 	}
 }
 
@@ -31,7 +31,7 @@ func (r *dataRelation) Name() string {
 }
 
 func (r *dataRelation) Fields() []shared.Field {
-	return copyFields(r.rows.Fields)
+	return updateRelationName(r.table.Fields(), r.name)
 }
 
 func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
@@ -69,13 +69,13 @@ func (r *dataRelation) PushDownFilter(filter expressions.Expression) bool {
 }
 
 func (r *dataRelation) Scan(visitor VisitorFunc) error {
-	indexes, err := findIndexIterationOrder(r.order, r.rows)
+	indexes, err := findIndexIterationOrder(r.order, r.table.rows)
 	if err != nil {
 		return err
 	}
 
 	for _, i := range indexes {
-		row := r.rows.Row(i)
+		row := r.table.rows.Row(i)
 
 		if r.filter != nil {
 			if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {

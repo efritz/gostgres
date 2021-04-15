@@ -3,6 +3,7 @@ package relations
 import (
 	"strings"
 
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -29,4 +30,17 @@ func updateRelationName(fields []shared.Field, relationName string) []shared.Fie
 
 func indent(level int) string {
 	return strings.Repeat(" ", level*4)
+}
+
+func combineConjunctions(conjunctions []expressions.Expression) expressions.Expression {
+	if len(conjunctions) == 0 {
+		return nil
+	}
+
+	expression := conjunctions[0]
+	for _, expression := range conjunctions[1:] {
+		expression = expressions.NewAnd(expression, expression)
+	}
+
+	return expression
 }

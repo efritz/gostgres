@@ -1,6 +1,8 @@
 package syntax
 
-import "strings"
+import (
+	"strings"
+)
 
 var keywordSet = map[string]TokenType{
 	"and":     TokenTypeAnd,
@@ -8,6 +10,8 @@ var keywordSet = map[string]TokenType{
 	"by":      TokenTypeBy,
 	"false":   TokenTypeFalse,
 	"from":    TokenTypeFrom,
+	"insert":  TokenTypeInsert,
+	"into":    TokenTypeInto,
 	"is":      TokenTypeIs,
 	"isnull":  TokenTypeIsNull,
 	"join":    TokenTypeJoin,
@@ -21,6 +25,7 @@ var keywordSet = map[string]TokenType{
 	"order":   TokenTypeOrder,
 	"select":  TokenTypeSelect,
 	"true":    TokenTypeTrue,
+	"values":  TokenTypeValues,
 	"where":   TokenTypeWhere,
 }
 
@@ -101,13 +106,24 @@ func (l *lexer) next() Token {
 	return NewToken(tokenType, startOfToken, string(r))
 }
 
-func (l *lexer) scan(filter func(r rune) bool) (string, bool) {
-	startOfToken := l.cursor
-	for l.advanceIf(filter) {
-		// no-op, advancing position
+func (l *lexer) scan(filter scanner) (string, bool) {
+	start := l.cursor
+
+	if l.advanceIf(filter.canStart) {
+		for l.advanceIf(filter.canContinue) {
+			// no-op, advancing position
+		}
+
+		end := l.cursor
+		if !filter.inclusive {
+			start++
+			l.cursor++
+		}
+
+		return l.text[start:end], true
 	}
 
-	return l.text[startOfToken:l.cursor], startOfToken != l.cursor
+	return "", false
 }
 
 func (l *lexer) current() rune {
@@ -142,20 +158,22 @@ func (l *lexer) advanceIf(filter func(r rune) bool) bool {
 	return true
 }
 
-var scanners = map[TokenType]func(r rune) bool{
-	TokenTypeNumber:     isDigit,
-	TokenTypeIdent:      isIdent,
-	TokenTypeWhitespace: isSpace,
+type scanner struct {
+	canStart    func(r rune) bool
+	canContinue func(r rune) bool
+	inclusive   bool
 }
 
-func isDigit(r rune) bool {
-	return ('0' <= r && r <= '9')
+var scanners = map[TokenType]scanner{
+	TokenTypeWhitespace: {isSpace, isSpace, true},
+	TokenTypeString:     {isQuote, isNotQuote, false},
+	TokenTypeIdent:      {isIdent, isIdentOrDigit, true},
+	TokenTypeNumber:     {isDigit, isDigit, true},
 }
 
-func isIdent(r rune) bool {
-	return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z') || r == '_'
-}
-
-func isSpace(r rune) bool {
-	return r == ' ' || r == '\t' || r == '\n'
-}
+func isSpace(r rune) bool        { return r == ' ' || r == '\t' || r == '\n' }
+func isQuote(r rune) bool        { return r == '\'' }
+func isNotQuote(r rune) bool     { return r != '\'' }
+func isIdent(r rune) bool        { return ('a' <= r && r <= 'z') || ('A' <= r && r <= 'Z') || r == '_' }
+func isDigit(r rune) bool        { return ('0' <= r && r <= '9') }
+func isIdentOrDigit(r rune) bool { return isIdent(r) || isDigit(r) }

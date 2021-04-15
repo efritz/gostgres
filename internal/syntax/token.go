@@ -19,6 +19,7 @@ const (
 	TokenTypeWhitespace
 	TokenTypeIdent
 	TokenTypeNumber
+	TokenTypeString
 
 	// Keywords
 
@@ -27,6 +28,8 @@ const (
 	TokenTypeBy
 	TokenTypeFalse
 	TokenTypeFrom
+	TokenTypeInsert
+	TokenTypeInto
 	TokenTypeIs // TODO - IS NULL <-> IS NULL; IS NOT NULL <-> NOT NULL
 	TokenTypeIsNull
 	TokenTypeJoin
@@ -40,6 +43,7 @@ const (
 	TokenTypeOrder
 	TokenTypeSelect
 	TokenTypeTrue
+	TokenTypeValues
 	TokenTypeWhere
 
 	// Single-character operators

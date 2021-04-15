@@ -93,16 +93,7 @@ func (r *joinRelation) distributeFilter(filter expressions.Expression) expressio
 		conjunctions = append(conjunctions, expression)
 	}
 
-	if len(conjunctions) == 0 {
-		return nil
-	}
-
-	filter = conjunctions[0]
-	for _, expression := range conjunctions[1:] {
-		filter = expressions.NewAnd(filter, expression)
-	}
-
-	return filter
+	return combineConjunctions(conjunctions)
 }
 
 func (r *joinRelation) PushDownFilter(filter expressions.Expression) bool {

@@ -15,9 +15,9 @@ type limitRelation struct {
 
 var _ Relation = &limitRelation{}
 
-func NewLimit(table Relation, limit int) Relation {
+func NewLimit(relation Relation, limit int) Relation {
 	return &limitRelation{
-		Relation: table,
+		Relation: relation,
 		limit:    limit,
 	}
 }

@@ -15,9 +15,9 @@ type filterRelation struct {
 
 var _ Relation = &filterRelation{}
 
-func NewFilter(table Relation, filter expressions.Expression) Relation {
+func NewFilter(relation Relation, filter expressions.Expression) Relation {
 	return &filterRelation{
-		Relation: table,
+		Relation: relation,
 		filter:   filter,
 	}
 }
@@ -48,16 +48,7 @@ func (r *filterRelation) distributeFilter(filter expressions.Expression) express
 		}
 	}
 
-	if len(conjunctions) == 0 {
-		return nil
-	}
-
-	filter = conjunctions[0]
-	for _, expression := range conjunctions[1:] {
-		filter = expressions.NewAnd(filter, expression)
-	}
-
-	return filter
+	return combineConjunctions(conjunctions)
 }
 
 func (r *filterRelation) PushDownFilter(filter expressions.Expression) bool {

@@ -15,9 +15,9 @@ type offsetRelation struct {
 
 var _ Relation = &offsetRelation{}
 
-func NewOffset(table Relation, offset int) Relation {
+func NewOffset(relation Relation, offset int) Relation {
 	return &offsetRelation{
-		Relation: table,
+		Relation: relation,
 		offset:   offset,
 	}
 }

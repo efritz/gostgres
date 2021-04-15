@@ -32,6 +32,19 @@ func (r *filterRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
+func (r *filterRelation) Optimize() {
+	if r.filter != nil {
+		r.filter = r.filter.Fold()
+		r.PushDownFilter(r.filter)
+	}
+
+	r.Relation.Optimize()
+}
+
+func (r *filterRelation) PushDownFilter(filter expressions.Expression) {
+	r.Relation.PushDownFilter(filter)
+}
+
 func (r *filterRelation) Scan(visitor VisitorFunc) error {
 	if r.filter == nil {
 		return r.Relation.Scan(visitor)

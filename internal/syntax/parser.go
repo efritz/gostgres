@@ -6,6 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/relations"
+	"github.com/efritz/gostgres/internal/shared"
 )
 
 func Parse(tokens []Token, builtins map[string]relations.Relation) (relations.Relation, error) {
@@ -448,7 +449,9 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 // consumes: [`.` ident]
 func (p *parser) parseNamedExpression(token Token) (expressions.Expression, error) {
 	if !p.advanceIf(isType(TokenTypeDot)) {
-		return expressions.NewNamed("", token.Text), nil
+		return expressions.NewNamed(shared.Field{
+			Name: token.Text,
+		}), nil
 	}
 
 	qualifiedNameToken, err := p.mustAdvance(isType(TokenTypeIdent))
@@ -456,7 +459,10 @@ func (p *parser) parseNamedExpression(token Token) (expressions.Expression, erro
 		return nil, err
 	}
 
-	return expressions.NewNamed(token.Text, qualifiedNameToken.Text), nil
+	return expressions.NewNamed(shared.Field{
+		RelationName: token.Text,
+		Name:         qualifiedNameToken.Text,
+	}), nil
 }
 
 // consumes: nothing

@@ -26,8 +26,13 @@ func NewJoin(left Relation, right Relation, condition expressions.Expression) Re
 	}
 }
 
-func (r *joinRelation) Name() string           { return "" }
-func (r *joinRelation) Fields() []shared.Field { return r.fields }
+func (r *joinRelation) Name() string {
+	return ""
+}
+
+func (r *joinRelation) Fields() []shared.Field {
+	return copyFields(r.fields)
+}
 
 func (r *joinRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	indentation := indent(indentationLevel)
@@ -38,6 +43,40 @@ func (r *joinRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 
 	if r.condition != nil {
 		buf.WriteString(fmt.Sprintf("%son %s\n", indentation, r.condition))
+	}
+}
+
+func (r *joinRelation) Optimize() {
+	if r.condition != nil {
+		r.condition = r.condition.Fold()
+		r.PushDownFilter(r.condition)
+	}
+
+	r.left.Optimize()
+	r.right.Optimize()
+}
+
+func (r *joinRelation) PushDownFilter(filter expressions.Expression) {
+	for _, expression := range filter.Conjunctions() {
+		namesMissingFromLeft := 0
+		namesMissingFromRight := 0
+
+		for _, field := range expression.Fields() {
+			if _, err := shared.FindMatchingFieldIndex(field, r.left.Fields()); err != nil {
+				namesMissingFromLeft++
+			}
+			if _, err := shared.FindMatchingFieldIndex(field, r.right.Fields()); err != nil {
+				namesMissingFromRight++
+			}
+		}
+
+		if namesMissingFromLeft == 0 {
+			r.left.PushDownFilter(expression)
+		}
+
+		if namesMissingFromRight == 0 {
+			r.right.PushDownFilter(expression)
+		}
 	}
 }
 

@@ -37,7 +37,7 @@ func NewGreaterThanEquals(left, right Expression) Expression {
 }
 
 func newComparison(left, right Expression, operatorText string, f func(relation shared.OrderType) (interface{}, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(row shared.Row) (interface{}, error) {
+	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (interface{}, error) {
 		lVal, err := left.ValueFrom(row)
 		if err != nil {
 			return nil, err

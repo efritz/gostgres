@@ -29,6 +29,7 @@ func displayValues(rows shared.Rows) {
 		}
 	}
 
+	fmt.Printf(" ")
 	for i, field := range rows.Fields {
 		if i != 0 {
 			fmt.Printf(" | ")
@@ -42,15 +43,19 @@ func displayValues(rows shared.Rows) {
 	}
 	fmt.Printf("\n")
 
+	fmt.Printf("-")
 	for i := range rows.Fields {
 		if i != 0 {
 			fmt.Printf("-+-")
 		}
 		fmt.Printf(strings.Repeat("-", columnWidths[i]))
 	}
+	fmt.Printf("-")
 	fmt.Printf("\n")
 
 	for _, values := range allValues {
+		fmt.Printf(" ")
+
 		for i, value := range values {
 			if i != 0 {
 				fmt.Printf(" | ")

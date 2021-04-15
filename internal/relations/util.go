@@ -19,6 +19,7 @@ func copyValues(values []interface{}) []interface{} {
 }
 
 func updateRelationName(fields []shared.Field, relationName string) []shared.Field {
+	fields = copyFields(fields)
 	for i := range fields {
 		fields[i].RelationName = relationName
 	}

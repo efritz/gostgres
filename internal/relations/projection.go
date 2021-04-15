@@ -39,7 +39,7 @@ func NewProjection(relation Relation, expressions []AliasedExpression) Relation 
 }
 
 func (r *projectionRelation) Fields() []shared.Field {
-	return r.fields
+	return copyFields(r.fields)
 }
 
 type named interface {
@@ -58,6 +58,18 @@ func (r *projectionRelation) Serialize(buf *bytes.Buffer, indentationLevel int) 
 
 	buf.WriteString(fmt.Sprintf("%sselect (%s)\n", indent(indentationLevel), strings.Join(fields, ", ")))
 	r.Relation.Serialize(buf, indentationLevel+1)
+}
+
+func (r *projectionRelation) Optimize() {
+	for i := range r.expressions {
+		r.expressions[i].Expression = r.expressions[i].Expression.Fold()
+	}
+
+	r.Relation.Optimize()
+}
+
+func (r *projectionRelation) PushDownFilter(filter expressions.Expression) {
+	r.Relation.PushDownFilter(filter)
 }
 
 func (r *projectionRelation) Scan(visitor VisitorFunc) error {

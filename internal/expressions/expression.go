@@ -7,19 +7,23 @@ import (
 )
 
 type Expression interface {
+	Fields() []shared.Field
+	Fold() Expression
+	Alias(from, to string) Expression
+	Conjunctions() []Expression
 	ValueFrom(row shared.Row) (interface{}, error)
 }
-
-type valueFromFunc func(row shared.Row) (interface{}, error)
 
 type unaryExpression struct {
 	expression   Expression
 	operatorText string
-	valueFrom    valueFromFunc
+	valueFrom    unaryValueFromFunc
 }
 
-func newUnaryExpression(expression Expression, operatorText string, valueFrom valueFromFunc) Expression {
-	return &unaryExpression{
+type unaryValueFromFunc func(expression Expression, row shared.Row) (interface{}, error)
+
+func newUnaryExpression(expression Expression, operatorText string, valueFrom unaryValueFromFunc) unaryExpression {
+	return unaryExpression{
 		expression:   expression,
 		operatorText: operatorText,
 		valueFrom:    valueFrom,
@@ -30,19 +34,44 @@ func (e unaryExpression) String() string {
 	return fmt.Sprintf("%s %s", e.operatorText, e.expression)
 }
 
+func (e unaryExpression) Fields() []shared.Field {
+	return e.expression.Fields()
+}
+
+func (e unaryExpression) Fold() Expression {
+	e = newUnaryExpression(e.expression.Fold(), e.operatorText, e.valueFrom)
+
+	value, err := e.valueFrom(e.expression, shared.Row{})
+	if err == nil {
+		return NewConstant(value)
+	}
+
+	return e
+}
+
+func (e unaryExpression) Alias(from, to string) Expression {
+	return newUnaryExpression(e.expression.Alias(from, to), e.operatorText, e.valueFrom)
+}
+
+func (e unaryExpression) Conjunctions() []Expression {
+	return []Expression{e}
+}
+
 func (e unaryExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	return e.valueFrom(row)
+	return e.valueFrom(e.expression, row)
 }
 
 type binaryExpression struct {
 	left         Expression
 	right        Expression
 	operatorText string
-	valueFrom    valueFromFunc
+	valueFrom    binaryValueFromFunc
 }
 
-func newBinaryExpression(left, right Expression, operatorText string, valueFrom valueFromFunc) Expression {
-	return &binaryExpression{
+type binaryValueFromFunc func(left, right Expression, row shared.Row) (interface{}, error)
+
+func newBinaryExpression(left, right Expression, operatorText string, valueFrom binaryValueFromFunc) binaryExpression {
+	return binaryExpression{
 		left:         left,
 		right:        right,
 		operatorText: operatorText,
@@ -54,6 +83,29 @@ func (e binaryExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
+func (e binaryExpression) Fields() []shared.Field {
+	return append(e.left.Fields(), e.right.Fields()...)
+}
+
+func (e binaryExpression) Fold() Expression {
+	e = newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom)
+
+	value, err := e.valueFrom(e.left, e.right, shared.Row{})
+	if err == nil {
+		return NewConstant(value)
+	}
+
+	return e
+}
+
+func (e binaryExpression) Alias(from, to string) Expression {
+	return newBinaryExpression(e.left.Alias(from, to), e.right.Alias(from, to), e.operatorText, e.valueFrom)
+}
+
+func (e binaryExpression) Conjunctions() []Expression {
+	return []Expression{e}
+}
+
 func (e binaryExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	return e.valueFrom(row)
+	return e.valueFrom(e.left, e.right, row)
 }

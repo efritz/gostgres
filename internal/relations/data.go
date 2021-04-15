@@ -26,8 +26,13 @@ func NewData(name string, rows shared.Rows) Relation {
 	}
 }
 
-func (r *dataRelation) Name() string           { return r.name }
-func (r *dataRelation) Fields() []shared.Field { return copyFields(r.rows.Fields) }
+func (r *dataRelation) Name() string {
+	return r.name
+}
+
+func (r *dataRelation) Fields() []shared.Field {
+	return copyFields(r.rows.Fields)
+}
 
 func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	scanType := "seq"
@@ -44,7 +49,26 @@ func (r *dataRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	}
 }
 
+func (r *dataRelation) Optimize() {
+	if r.filter != nil {
+		r.filter = r.filter.Fold()
+	}
+
+	if r.order != nil {
+		r.order = r.order.Fold()
+	}
+}
+
+func (r *dataRelation) PushDownFilter(filter expressions.Expression) {
+	if r.filter != nil {
+		filter = expressions.NewAnd(r.filter, filter)
+	}
+
+	r.filter = filter
+}
+
 func (r *dataRelation) Scan(visitor VisitorFunc) error {
+
 	indexes, err := findIndexIterationOrder(r.order, r.rows)
 	if err != nil {
 		return err

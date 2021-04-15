@@ -31,7 +31,7 @@ func NewUnaryMinus(expression Expression) Expression {
 }
 
 func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b int) (interface{}, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(row shared.Row) (interface{}, error) {
+	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (interface{}, error) {
 		lVal, err := EnsureInt(left.ValueFrom(row))
 		if err != nil {
 			return nil, err
@@ -46,9 +46,17 @@ func newBinaryIntExpression(left, right Expression, operatorText string, f func(
 	})
 }
 
-func add(a, b int) (interface{}, error) { return a + b, nil }
-func sub(a, b int) (interface{}, error) { return a - b, nil }
-func mul(a, b int) (interface{}, error) { return a * b, nil }
+func add(a, b int) (interface{}, error) {
+	return a + b, nil
+}
+
+func sub(a, b int) (interface{}, error) {
+	return a - b, nil
+}
+
+func mul(a, b int) (interface{}, error) {
+	return a * b, nil
+}
 
 func div(a, b int) (interface{}, error) {
 	if b == 0 {

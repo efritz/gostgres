@@ -7,62 +7,59 @@ import (
 )
 
 type namedExpression struct {
-	relationName string
-	name         string
+	field shared.Field
 }
 
 var _ Expression = &namedExpression{}
 
-func NewNamed(relationName, name string) Expression {
+func NewNamed(field shared.Field) Expression {
 	return &namedExpression{
-		relationName: relationName,
-		name:         name,
+		field: field,
 	}
-}
-
-func (e namedExpression) Name() string {
-	return e.name
 }
 
 func (e namedExpression) String() string {
-	if e.relationName != "" {
-		return fmt.Sprintf("%s.%s", e.relationName, e.name)
+	if e.field.RelationName != "" {
+		return fmt.Sprintf("%s.%s", e.field.RelationName, e.field.Name)
 	}
 
-	return e.name
+	return e.field.Name
+}
+
+func (e namedExpression) Name() string {
+	return e.field.Name
+}
+
+func (e namedExpression) Fields() []shared.Field {
+	return []shared.Field{e.field}
+}
+
+func (e namedExpression) Fold() Expression {
+	return e
+}
+
+func (e namedExpression) Alias(from, to string) Expression {
+	if e.field.RelationName == from {
+		return namedExpression{
+			field: shared.Field{
+				RelationName: to,
+				Name:         e.field.Name,
+			},
+		}
+	}
+
+	return e
+}
+
+func (e namedExpression) Conjunctions() []Expression {
+	return []Expression{e}
 }
 
 func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	index, err := e.indexFor(row.Fields)
+	index, err := shared.FindMatchingFieldIndex(e.field, row.Fields)
 	if err != nil {
 		return nil, err
 	}
 
 	return row.Values[index], nil
-}
-
-func (e namedExpression) indexFor(fields []shared.Field) (int, error) {
-	unqualifiedIndexes := make([]int, 0, len(fields))
-	for index, field := range fields {
-		if field.Name != e.name {
-			continue
-		}
-
-		if field.RelationName == e.relationName {
-			return index, nil
-		}
-
-		unqualifiedIndexes = append(unqualifiedIndexes, index)
-	}
-
-	if e.relationName == "" {
-		if len(unqualifiedIndexes) == 1 {
-			return unqualifiedIndexes[0], nil
-		}
-		if len(unqualifiedIndexes) > 1 {
-			return 0, fmt.Errorf("ambiguous field %s", e.name)
-		}
-	}
-
-	return 0, fmt.Errorf("unknown field %s", e.name)
 }

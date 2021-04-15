@@ -31,6 +31,18 @@ func (r *orderRelation) Serialize(buf *bytes.Buffer, indentationLevel int) {
 	r.Relation.Serialize(buf, indentationLevel+1)
 }
 
+func (r *orderRelation) Optimize() {
+	if r.order != nil {
+		r.order = r.order.Fold()
+	}
+
+	r.Relation.Optimize()
+}
+
+func (r *orderRelation) PushDownFilter(filter expressions.Expression) {
+	r.Relation.PushDownFilter(filter)
+}
+
 func (r *orderRelation) Scan(visitor VisitorFunc) error {
 	if r.order == nil {
 		return r.Relation.Scan(visitor)

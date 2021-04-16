@@ -8,7 +8,7 @@ import (
 
 func NewNot(expression Expression) Expression {
 	return newUnaryExpression(expression, "not", func(expression Expression, row shared.Row) (interface{}, error) {
-		val, err := EnsureBool(expression.ValueFrom(row))
+		val, err := shared.EnsureBool(expression.ValueFrom(row))
 		if err != nil {
 			return nil, err
 		}
@@ -18,11 +18,27 @@ func NewNot(expression Expression) Expression {
 }
 
 func NewAnd(left, right Expression) Expression {
-	return newConditionalExpression(left, right, "and", andOp, simplifyAnd, true)
+	return newConditionalExpression(left, right, "and", func(a, b bool) (interface{}, error) {
+		return a && b, nil
+	}, simplifyConditional(NewAnd, func(value bool) (Expression, bool) {
+		if !value {
+			return NewConstant(false), true
+		}
+
+		return nil, false
+	}), true)
 }
 
 func NewOr(left, right Expression) Expression {
-	return newConditionalExpression(left, right, "or", orOp, simplifyOr, false)
+	return newConditionalExpression(left, right, "or", func(a, b bool) (interface{}, error) {
+		return a || b, nil
+	}, simplifyConditional(NewOr, func(value bool) (Expression, bool) {
+		if value {
+			return NewConstant(true), true
+		}
+
+		return nil, false
+	}), false)
 }
 
 type conditionalExpression struct {
@@ -73,12 +89,12 @@ func (e conditionalExpression) Conjunctions() []Expression {
 }
 
 func (e conditionalExpression) ValueFrom(row shared.Row) (interface{}, error) {
-	lVal, err := EnsureBool(e.left.ValueFrom(row))
+	lVal, err := shared.EnsureBool(e.left.ValueFrom(row))
 	if err != nil {
 		return nil, err
 	}
 
-	rVal, err := EnsureBool(e.right.ValueFrom(row))
+	rVal, err := shared.EnsureBool(e.right.ValueFrom(row))
 	if err != nil {
 		return nil, err
 	}
@@ -86,45 +102,24 @@ func (e conditionalExpression) ValueFrom(row shared.Row) (interface{}, error) {
 	return e.valueFrom(lVal, rVal)
 }
 
-func andOp(a, b bool) (interface{}, error) { return a && b, nil }
-func orOp(a, b bool) (interface{}, error)  { return a || b, nil }
+func simplifyConditional(factory foldFunc, f func(value bool) (Expression, bool)) func(left, right Expression) Expression {
+	return func(left, right Expression) Expression {
+		if value, err := shared.EnsureBool(left.ValueFrom(shared.Row{})); err == nil {
+			if expression, ok := f(value); ok {
+				return expression
+			}
 
-func simplifyAnd(left, right Expression) Expression {
-	return simplifyConditional(left, right, NewAnd, func(value bool) (Expression, bool) {
-		if value {
-			return nil, false
+			return right
 		}
 
-		return NewConstant(false), true
-	})
-}
+		if value, err := shared.EnsureBool(right.ValueFrom(shared.Row{})); err == nil {
+			if expression, ok := f(value); ok {
+				return expression
+			}
 
-func simplifyOr(left, right Expression) Expression {
-	return simplifyConditional(left, right, NewOr, func(value bool) (Expression, bool) {
-		if !value {
-			return nil, false
+			return left
 		}
 
-		return NewConstant(true), true
-	})
-}
-
-func simplifyConditional(left, right Expression, factory foldFunc, f func(value bool) (Expression, bool)) Expression {
-	if value, err := EnsureBool(left.ValueFrom(shared.Row{})); err == nil {
-		if expression, ok := f(value); ok {
-			return expression
-		}
-
-		return right
+		return factory(left, right)
 	}
-
-	if value, err := EnsureBool(right.ValueFrom(shared.Row{})); err == nil {
-		if expression, ok := f(value); ok {
-			return expression
-		}
-
-		return left
-	}
-
-	return factory(left, right)
 }

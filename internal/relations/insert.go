@@ -56,11 +56,12 @@ func (r *insertRelation) PushDownFilter(filter expressions.Expression) bool {
 }
 
 func (r *insertRelation) Scan(visitor VisitorFunc) error {
-	return r.Relation.Scan(func(row shared.Row) (bool, error) {
-		insertedRow := shared.NewRow(
-			r.table.Fields(),
-			r.prepareValuesForRow(row),
-		)
+	return r.Relation.Scan(r.decorateVisitor(visitor))
+}
+
+func (r *insertRelation) decorateVisitor(visitor VisitorFunc) VisitorFunc {
+	return func(row shared.Row) (bool, error) {
+		insertedRow := shared.NewRow(r.table.Fields(), r.prepareValuesForRow(row))
 		if err := r.table.Insert(insertedRow); err != nil {
 			return false, err
 		}
@@ -75,7 +76,7 @@ func (r *insertRelation) Scan(visitor VisitorFunc) error {
 		}
 
 		return visitor(projectedRow)
-	})
+	}
 }
 
 func (r *insertRelation) prepareValuesForRow(row shared.Row) []interface{} {

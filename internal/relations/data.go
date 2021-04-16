@@ -45,7 +45,7 @@ func (r *dataRelation) Serialize(w io.Writer, indentationLevel int) {
 		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), r.filter))
 	}
 	if r.order != nil {
-		// TODO - how to serialize this?
+		// TODO - not yet populated
 	}
 }
 
@@ -78,7 +78,7 @@ func (r *dataRelation) Scan(visitor VisitorFunc) error {
 		row := r.table.rows.Row(i)
 
 		if r.filter != nil {
-			if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {
+			if ok, err := shared.EnsureBool(r.filter.ValueFrom(row)); err != nil {
 				return err
 			} else if !ok {
 				continue

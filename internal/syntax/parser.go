@@ -636,15 +636,12 @@ func (p *parser) parseExpressionPrefix() (expressions.Expression, error) {
 func (p *parser) parseExpressionSuffix(expression expressions.Expression, precedence Precedence) (_ expressions.Expression, err error) {
 	for {
 		tokenType := p.current().Type
-		tokenPrecedence, ok := precedenceMap[tokenType]
-		if !ok {
-			break
-		}
-		if tokenPrecedence < precedence {
-			break
-		}
 		parseFunc, ok := p.infixParsers[tokenType]
 		if !ok {
+			break
+		}
+		tokenPrecedence, ok := precedenceMap[tokenType]
+		if !ok || tokenPrecedence < precedence {
 			break
 		}
 

@@ -49,11 +49,11 @@ func newComparison(left, right Expression, operatorText string, f func(relation 
 		}
 
 		relation := shared.CompareValues(lVal, rVal)
-
-		if relation == shared.OrderTypeIncomparable {
+		switch relation {
+		case shared.OrderTypeIncomparable:
 			return nil, fmt.Errorf("incomparable types")
+		default:
+			return f(relation)
 		}
-
-		return f(relation)
 	})
 }

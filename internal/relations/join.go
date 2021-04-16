@@ -122,7 +122,7 @@ func (r *joinRelation) decorateRightVisitor(visitor VisitorFunc, leftRow shared.
 		row := shared.NewRow(r.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 
 		if r.filter != nil {
-			if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {
+			if ok, err := shared.EnsureBool(r.filter.ValueFrom(row)); err != nil {
 				return false, err
 			} else if !ok {
 				return true, nil

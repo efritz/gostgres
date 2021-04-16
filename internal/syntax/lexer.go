@@ -56,15 +56,15 @@ var multipleCharacterPunctuationMap = map[rune]map[string]TokenType{
 
 func Lex(text string) (tokens []Token) {
 	lexer := lexer{text: text}
+loop:
 	for {
 		token := lexer.next()
-		if token.Type == TokenTypeEOF {
-			break
-		}
-		if token.Type == TokenTypeWhitespace {
+		switch token.Type {
+		case TokenTypeEOF:
+			break loop
+		case TokenTypeWhitespace:
 			continue
-		}
-		if token.Type == TokenTypeIdent {
+		case TokenTypeIdent:
 			if tokenType, ok := keywordSet[strings.ToLower(token.Text)]; ok {
 				token.Type = tokenType
 			}
@@ -92,21 +92,18 @@ func (l *lexer) next() Token {
 
 	r := l.advance()
 
-	suffixMap, ok := multipleCharacterPunctuationMap[r]
-	if ok {
-		for suffix, tokenType := range suffixMap {
-			if l.peek(len(suffix)) == suffix {
-				l.cursor += len(suffix)
-				return NewToken(tokenType, startOfToken, string(r)+suffix)
-			}
+	punctuationScanners := []func(r rune) (TokenType, string, bool){
+		l.scanMultipleCharacterPunctuation,
+		l.scanPunctuation,
+	}
+
+	for _, scan := range punctuationScanners {
+		if tokenType, value, ok := scan(r); ok {
+			return NewToken(tokenType, startOfToken, value)
 		}
 	}
 
-	tokenType, ok := punctuationMap[r]
-	if !ok {
-		tokenType = TokenTypeInvalid
-	}
-	return NewToken(tokenType, startOfToken, string(r))
+	panic("unreachable")
 }
 
 func (l *lexer) scan(filter scanner) (string, bool) {
@@ -129,6 +126,29 @@ func (l *lexer) scan(filter scanner) (string, bool) {
 	return "", false
 }
 
+func (l *lexer) scanMultipleCharacterPunctuation(r rune) (TokenType, string, bool) {
+	suffixMap, ok := multipleCharacterPunctuationMap[r]
+	if ok {
+		for suffix, tokenType := range suffixMap {
+			if l.peekSubstring(len(suffix)) == suffix {
+				l.cursor += len(suffix)
+				return tokenType, string(r) + suffix, true
+			}
+		}
+	}
+
+	return TokenTypeInvalid, "", false
+}
+
+func (l *lexer) scanPunctuation(r rune) (TokenType, string, bool) {
+	tokenType, ok := punctuationMap[r]
+	if !ok {
+		tokenType = TokenTypeInvalid
+	}
+
+	return tokenType, string(r), true
+}
+
 func (l *lexer) current() rune {
 	if l.cursor >= len(l.text) {
 		return 0
@@ -137,19 +157,19 @@ func (l *lexer) current() rune {
 	return rune(l.text[l.cursor])
 }
 
-func (l *lexer) advance() rune {
-	r := l.current()
-	l.cursor++
-	return r
-}
-
-func (l *lexer) peek(dist int) string {
+func (l *lexer) peekSubstring(dist int) string {
 	end := l.cursor + dist
 	if end >= len(l.text) {
 		end = len(l.text)
 	}
 
 	return l.text[l.cursor:end]
+}
+
+func (l *lexer) advance() rune {
+	r := l.current()
+	l.cursor++
+	return r
 }
 
 func (l *lexer) advanceIf(filter func(r rune) bool) bool {

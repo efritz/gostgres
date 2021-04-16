@@ -70,7 +70,7 @@ func (r *filterRelation) Scan(visitor VisitorFunc) error {
 	}
 
 	return r.Relation.Scan(func(row shared.Row) (bool, error) {
-		if ok, err := expressions.EnsureBool(r.filter.ValueFrom(row)); err != nil {
+		if ok, err := shared.EnsureBool(r.filter.ValueFrom(row)); err != nil {
 			return false, err
 		} else if !ok {
 			return true, nil

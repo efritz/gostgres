@@ -2,13 +2,11 @@
 
 Postgres in Go over a short vacation.
 
-
 ## TODO
 
 - Short-term
     - Add types to values and rows
     - Support `t.*` selection
-    - Make AS optional in column alias (furthermore, aliases)
     - Support CTEs
     - Support builtin functions
     - Support DISTINCT (ON)

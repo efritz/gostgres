@@ -222,7 +222,12 @@ func (p *parser) parseColumnAlias(expression expressions.Expression) (string, er
 			return "", err
 		}
 
-		alias = aliasToken.Text
+		return aliasToken.Text, nil
+	}
+
+	nameToken := p.current()
+	if p.advanceIf(isType(TokenTypeIdent)) {
+		return nameToken.Text, nil
 	}
 
 	return alias, nil

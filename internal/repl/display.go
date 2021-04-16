@@ -24,6 +24,11 @@ func serializeRows(w io.Writer, rows shared.Rows) {
 		allValues = append(allValues, strValues)
 	}
 
+	// TODO - this is temporary
+	for i, field := range rows.Fields {
+		rows.Fields[i].Name += fmt.Sprintf("::%s", field.TypeKind)
+	}
+
 	columnWidths := make([]int, len(rows.Fields))
 	for i, field := range rows.Fields {
 		columnWidths[i] = len(field.Name)

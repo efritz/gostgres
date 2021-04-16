@@ -5,13 +5,14 @@ import "fmt"
 type Field struct {
 	RelationName string
 	Name         string
-	// TODO - value types
+	TypeKind     TypeKind
 }
 
-func NewField(relationName, name string) Field {
+func NewField(relationName, name string, TypeKind TypeKind) Field {
 	return Field{
 		RelationName: relationName,
 		Name:         name,
+		TypeKind:     TypeKind,
 	}
 }
 

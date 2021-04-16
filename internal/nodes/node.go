@@ -19,7 +19,10 @@ type Node interface {
 type VisitorFunc func(row shared.Row) (bool, error)
 
 func ScanRows(node Node) (shared.Rows, error) {
-	rows := shared.NewRows(node.Fields())
+	rows, err := shared.NewRows(node.Fields())
+	if err != nil {
+		return shared.Rows{}, err
+	}
 
 	if err := node.Scan(func(row shared.Row) (_ bool, err error) {
 		rows, err = rows.AddValues(row.Values)

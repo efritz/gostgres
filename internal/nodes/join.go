@@ -119,7 +119,10 @@ func (n *joinNode) decorateLeftVisitor(visitor VisitorFunc) VisitorFunc {
 
 func (n *joinNode) decorateRightVisitor(visitor VisitorFunc, leftRow shared.Row) VisitorFunc {
 	return func(rightRow shared.Row) (bool, error) {
-		row := shared.NewRow(n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+		row, err := shared.NewRow(n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+		if err != nil {
+			return false, err
+		}
 
 		if n.filter != nil {
 			if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {

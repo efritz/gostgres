@@ -5,7 +5,6 @@ Postgres in Go over a short vacation.
 ## TODO
 
 - Short-term
-    - Add types to values and rows
     - Support CTEs
     - Support builtin functions
     - Support DISTINCT (ON)

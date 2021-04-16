@@ -441,6 +441,8 @@ func (p *parser) parseOffsetClause() (int, bool, error) {
 
 // consumes: `INSERT` `INTO` ident select
 // consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
+// consumes: `INSERT` `INTO` ident `(` ident [, ...]`)` select
+// consumes: `INSERT` `INTO` ident `(` ident [, ...]`)` `VALUES` `(` expr [, ...] `)` [, ...]
 func (p *parser) parseInsert() (relations.Relation, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeInto)); err != nil {
 		return nil, err
@@ -456,12 +458,34 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
+	var columnNames []string
+	if p.current().Type == TokenTypeLeftParen && p.peek(1).Type == TokenTypeIdent {
+		p.advance()
+
+		for {
+			nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
+			if err != nil {
+				return nil, err
+			}
+
+			columnNames = append(columnNames, nameToken.Text)
+
+			if !p.advanceIf(isType(TokenTypeComma)) {
+				break
+			}
+		}
+
+		if _, err := p.mustAdvance(isType(TokenTypeRightParen)); err != nil {
+			return nil, err
+		}
+	}
+
 	relation, err := p.parseSelectOrValues()
 	if err != nil {
 		return nil, err
 	}
 
-	return relations.NewInsert(relation, table), nil
+	return relations.NewInsert(relation, table, columnNames), nil
 }
 
 // consumes: `SELECT` select
@@ -670,11 +694,15 @@ func (p *parser) parseBinary(precedence Precedence, factory binaryExpressionPars
 }
 
 func (p *parser) current() Token {
-	if p.cursor >= len(p.tokens) {
+	return p.peek(0)
+}
+
+func (p *parser) peek(n int) Token {
+	if p.cursor+n >= len(p.tokens) {
 		return InvalidToken
 	}
 
-	return p.tokens[p.cursor]
+	return p.tokens[p.cursor+n]
 }
 
 func (p *parser) advance() Token {

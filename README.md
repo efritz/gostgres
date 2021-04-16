@@ -13,7 +13,6 @@ Postgres in Go over a short vacation.
     - Support UNION/INTERSECT/EXCEPT
     - Support multiple sort expressions
     - Support sort directions
-    - Support inserts with explicit column refs
     - Support UPDATE
     - Support DELETE
     - Support RETURNING

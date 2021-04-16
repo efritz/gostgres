@@ -10,15 +10,17 @@ import (
 
 type insertRelation struct {
 	Relation
-	table *Table
+	table       *Table
+	columnNames []string
 }
 
 var _ Relation = &insertRelation{}
 
-func NewInsert(relation Relation, table *Table) Relation {
+func NewInsert(relation Relation, table *Table, columnNames []string) Relation {
 	return &insertRelation{
-		Relation: relation,
-		table:    table,
+		Relation:    relation,
+		table:       table,
+		columnNames: columnNames,
 	}
 }
 
@@ -41,6 +43,28 @@ func (r *insertRelation) PushDownFilter(filter expressions.Expression) bool {
 
 func (r *insertRelation) Scan(visitor VisitorFunc) error {
 	return r.Relation.Scan(func(row shared.Row) (bool, error) {
-		return true, r.table.Insert(row)
+		var fields []shared.Field
+		for _, columnName := range r.columnNames {
+			fields = append(fields, shared.Field{
+				Name: columnName,
+			})
+		}
+
+		var values []interface{}
+		for _, field := range r.table.Fields() {
+			var value interface{}
+			for i, f2 := range fields {
+				if f2.Name == field.Name {
+					value = row.Values[i]
+				}
+			}
+
+			values = append(values, value)
+		}
+
+		return true, r.table.Insert(shared.Row{
+			Fields: r.table.Fields(),
+			Values: values,
+		})
 	})
 }

@@ -57,30 +57,10 @@ func (r *insertRelation) PushDownFilter(filter expressions.Expression) bool {
 
 func (r *insertRelation) Scan(visitor VisitorFunc) error {
 	return r.Relation.Scan(func(row shared.Row) (bool, error) {
-		var values []interface{}
-		if r.columnNames == nil {
-			values = row.Values
-		} else {
-			var fields []shared.Field
-			for _, columnName := range r.columnNames {
-				fields = append(fields, shared.Field{
-					Name: columnName,
-				})
-			}
-
-			for _, f1 := range r.table.Fields() {
-				var value interface{}
-				for i, f2 := range fields {
-					if f1.Name == f2.Name {
-						value = row.Values[i]
-					}
-				}
-
-				values = append(values, value)
-			}
-		}
-
-		insertedRow := shared.NewRow(r.table.Fields(), values)
+		insertedRow := shared.NewRow(
+			r.table.Fields(),
+			r.prepareValuesForRow(row),
+		)
 		if err := r.table.Insert(insertedRow); err != nil {
 			return false, err
 		}
@@ -96,4 +76,22 @@ func (r *insertRelation) Scan(visitor VisitorFunc) error {
 
 		return visitor(projectedRow)
 	})
+}
+
+func (r *insertRelation) prepareValuesForRow(row shared.Row) []interface{} {
+	if r.columnNames == nil {
+		return row.Values
+	}
+
+	valueMap := make(map[string]interface{}, len(r.columnNames))
+	for i, name := range r.columnNames {
+		valueMap[name] = row.Values[i]
+	}
+
+	values := make([]interface{}, 0, len(r.table.Fields()))
+	for _, field := range r.table.Fields() {
+		values = append(values, valueMap[field.Name])
+	}
+
+	return values
 }

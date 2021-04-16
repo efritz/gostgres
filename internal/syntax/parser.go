@@ -221,13 +221,14 @@ func (p *parser) parseSelectExpression() (relations.ProjectionExpression, error)
 	return relations.NewAliasProjectionExpression(expression, alias), nil
 }
 
-type named interface {
-	Name() string
-}
-
+// consumes: nothing
 // consumes: ident
 // consumes: `AS` ident
 func (p *parser) parseColumnAlias(expression expressions.Expression) (string, error) {
+	type named interface {
+		Name() string
+	}
+
 	alias := "?column?"
 	if named, ok := expression.(named); ok {
 		alias = named.Name()
@@ -439,10 +440,8 @@ func (p *parser) parseOffsetClause() (int, bool, error) {
 //
 // Insert statements
 
-// consumes: `INSERT` `INTO` ident select
-// consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
-// consumes: `INSERT` `INTO` ident `(` ident [, ...]`)` select
-// consumes: `INSERT` `INTO` ident `(` ident [, ...]`)` `VALUES` `(` expr [, ...] `)` [, ...]
+// consumes: `INSERT` `INTO` alias? ident { `(` ident [, ...]`)` }? select
+// consumes: `INSERT` `INTO` alias? ident { `(` ident [, ...]`)` }? `VALUES` `(` expr [, ...] `)` [, ...]
 func (p *parser) parseInsert() (relations.Relation, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeInto)); err != nil {
 		return nil, err
@@ -456,6 +455,18 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 	table, ok := p.tables[nameToken.Text]
 	if !ok {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
+	}
+
+	if p.advanceIf(isType(TokenTypeAs)) {
+		if p.current().Type != TokenTypeIdent {
+			return nil, fmt.Errorf("expected alias (near %s)", p.current().Text)
+		}
+	}
+
+	alias := ""
+	aliasToken := p.current()
+	if p.advanceIf(isType(TokenTypeIdent)) {
+		alias = aliasToken.Text
 	}
 
 	var columnNames []string
@@ -485,7 +496,21 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 		return nil, err
 	}
 
-	return relations.NewInsert(relation, table, columnNames), nil
+	var returningExpressions []relations.ProjectionExpression
+	if p.advanceIf(isType(TokenTypeReturning)) {
+		returningExpressions, err = p.parseSelectExpressions()
+		if err != nil {
+			return nil, err
+		}
+
+		if returningExpressions == nil {
+			returningExpressions = []relations.ProjectionExpression{
+				relations.NewWildcardProjectionExpression(nameToken.Text),
+			}
+		}
+	}
+
+	return relations.NewInsert(relation, table, nameToken.Text, alias, columnNames, returningExpressions)
 }
 
 // consumes: `SELECT` select

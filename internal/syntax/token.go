@@ -41,6 +41,7 @@ const (
 	TokenTypeOn
 	TokenTypeOr
 	TokenTypeOrder
+	TokenTypeReturning
 	TokenTypeSelect
 	TokenTypeTrue
 	TokenTypeValues

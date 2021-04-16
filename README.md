@@ -15,7 +15,6 @@ Postgres in Go over a short vacation.
     - Support sort directions
     - Support UPDATE
     - Support DELETE
-    - Support RETURNING
 
 - Medium-term
     - Support default values

@@ -2,53 +2,17 @@ package shared
 
 import "fmt"
 
-type Row struct {
-	Fields []Field
-	Values []interface{}
-}
-
-func NewRow(fields []Field, values []interface{}) Row {
-	return Row{
-		Fields: fields,
-		Values: values,
-	}
-}
-
-type Rows struct {
-	Fields []Field
-	Values [][]interface{}
-}
-
-func NewRows(Fields []Field) Rows {
-	return Rows{
-		Fields: Fields,
-		Values: nil,
-	}
-}
-
-func (rows Rows) AddValues(values []interface{}) (Rows, error) {
-	if len(rows.Fields) != len(values) {
-		// TODO - check for field types, ordering
-		return rows, fmt.Errorf("unexpected number of columns")
-	}
-
-	return Rows{
-		Fields: rows.Fields,
-		Values: append(rows.Values, values),
-	}, nil
-}
-
-func (rows Rows) Row(index int) Row {
-	return Row{
-		Fields: rows.Fields,
-		Values: rows.Values[index],
-	}
-}
-
 type Field struct {
 	RelationName string
 	Name         string
 	// TODO - value types
+}
+
+func NewField(relationName, name string) Field {
+	return Field{
+		RelationName: relationName,
+		Name:         name,
+	}
 }
 
 func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {

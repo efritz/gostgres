@@ -592,10 +592,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 
 	fields := make([]shared.Field, 0, len(allRows[0]))
 	for i := range allRows[0] {
-		fields = append(fields, shared.Field{
-			RelationName: "",
-			Name:         fmt.Sprintf("column%d", i+1),
-		})
+		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1)))
 	}
 
 	rows := shared.NewRows(fields)
@@ -657,9 +654,7 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 // consumes: [`.` ident]
 func (p *parser) parseNamedExpression(token Token) (expressions.Expression, error) {
 	if !p.advanceIf(isType(TokenTypeDot)) {
-		return expressions.NewNamed(shared.Field{
-			Name: token.Text,
-		}), nil
+		return expressions.NewNamed(shared.NewField("", token.Text)), nil
 	}
 
 	qualifiedNameToken, err := p.mustAdvance(isType(TokenTypeIdent))
@@ -667,10 +662,7 @@ func (p *parser) parseNamedExpression(token Token) (expressions.Expression, erro
 		return nil, err
 	}
 
-	return expressions.NewNamed(shared.Field{
-		RelationName: token.Text,
-		Name:         qualifiedNameToken.Text,
-	}), nil
+	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text)), nil
 }
 
 // consumes: nothing

@@ -64,7 +64,7 @@ func (p *projector) projectRow(row shared.Row) (shared.Row, error) {
 
 func (p *projector) projectExpression(filter expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		filter = filter.Alias(shared.Field{Name: alias.alias}, alias.expression)
+		filter = filter.Alias(shared.NewField("", alias.alias), alias.expression)
 	}
 
 	return filter
@@ -87,10 +87,7 @@ func expandProjection(fields []shared.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []aliasProjection) []shared.Field {
 	fields := make([]shared.Field, 0, len(aliases))
 	for _, field := range aliases {
-		fields = append(fields, shared.Field{
-			RelationName: relationName,
-			Name:         field.alias,
-		})
+		fields = append(fields, shared.NewField(relationName, field.alias))
 	}
 
 	return fields
@@ -119,14 +116,8 @@ func (p aliasProjection) String() string {
 
 func (p aliasProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	expression := p.expression
-
 	for _, field := range fields {
-		aliasedField := shared.Field{
-			RelationName: alias,
-			Name:         field.Name,
-		}
-
-		expression = expression.Alias(aliasedField, expressions.NewNamed(field))
+		expression = expression.Alias(shared.NewField(alias, field.Name), expressions.NewNamed(field))
 	}
 
 	return aliasProjection{

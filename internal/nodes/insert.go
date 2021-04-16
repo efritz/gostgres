@@ -37,40 +37,40 @@ func NewInsert(node Node, table *Table, name, alias string, columnNames []string
 	}, nil
 }
 
-func (r *insertNode) Fields() []shared.Field {
-	return copyFields(r.projector.fields)
+func (n *insertNode) Fields() []shared.Field {
+	return copyFields(n.projector.fields)
 }
 
-func (r *insertNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sinsert returning (%s)\n", indent(indentationLevel), r.projector))
-	r.Node.Serialize(w, indentationLevel+1)
+func (n *insertNode) Serialize(w io.Writer, indentationLevel int) {
+	io.WriteString(w, fmt.Sprintf("%sinsert returning (%s)\n", indent(indentationLevel), n.projector))
+	n.Node.Serialize(w, indentationLevel+1)
 }
 
-func (r *insertNode) Optimize() {
-	r.projector.optimize()
-	r.Node.Optimize()
+func (n *insertNode) Optimize() {
+	n.projector.optimize()
+	n.Node.Optimize()
 }
 
-func (r *insertNode) PushDownFilter(filter expressions.Expression) bool {
+func (n *insertNode) PushDownFilter(filter expressions.Expression) bool {
 	return false
 }
 
-func (r *insertNode) Scan(visitor VisitorFunc) error {
-	return r.Node.Scan(r.decorateVisitor(visitor))
+func (n *insertNode) Scan(visitor VisitorFunc) error {
+	return n.Node.Scan(n.decorateVisitor(visitor))
 }
 
-func (r *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
+func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	return func(row shared.Row) (bool, error) {
-		insertedRow := shared.NewRow(r.table.Fields(), r.prepareValuesForRow(row))
-		if err := r.table.Insert(insertedRow); err != nil {
+		insertedRow := shared.NewRow(n.table.Fields(), n.prepareValuesForRow(row))
+		if err := n.table.Insert(insertedRow); err != nil {
 			return false, err
 		}
 
-		if len(r.projector.aliases) == 0 {
+		if len(n.projector.aliases) == 0 {
 			return true, nil
 		}
 
-		projectedRow, err := r.projector.projectRow(insertedRow)
+		projectedRow, err := n.projector.projectRow(insertedRow)
 		if err != nil {
 			return false, err
 		}
@@ -79,18 +79,18 @@ func (r *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	}
 }
 
-func (r *insertNode) prepareValuesForRow(row shared.Row) []interface{} {
-	if r.columnNames == nil {
+func (n *insertNode) prepareValuesForRow(row shared.Row) []interface{} {
+	if n.columnNames == nil {
 		return row.Values
 	}
 
-	valueMap := make(map[string]interface{}, len(r.columnNames))
-	for i, name := range r.columnNames {
+	valueMap := make(map[string]interface{}, len(n.columnNames))
+	for i, name := range n.columnNames {
 		valueMap[name] = row.Values[i]
 	}
 
-	values := make([]interface{}, 0, len(r.table.Fields()))
-	for _, field := range r.table.Fields() {
+	values := make([]interface{}, 0, len(n.table.Fields()))
+	for _, field := range n.table.Fields() {
 		values = append(values, valueMap[field.Name])
 	}
 

@@ -13,7 +13,7 @@ type dataRelation struct {
 	table *Table
 
 	filter expressions.Expression
-	order  expressions.Expression
+	order  OrderExpression
 	// TODO - track fields for index only scans as well
 }
 

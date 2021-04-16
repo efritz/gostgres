@@ -389,8 +389,8 @@ func (p *parser) parseWhereClause() (expressions.Expression, bool, error) {
 	return whereExpression, true, nil
 }
 
-// consumes: [`ORDER` `BY` expression]
-func (p *parser) parseOrderByClause() (expressions.Expression, bool, error) {
+// consumes: [`ORDER` `BY` expression [`ASC` | `DESC`] [, ...]]
+func (p *parser) parseOrderByClause() (relations.OrderExpression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeOrder)) {
 		return nil, false, nil
 	}
@@ -399,12 +399,31 @@ func (p *parser) parseOrderByClause() (expressions.Expression, bool, error) {
 		return nil, false, err
 	}
 
-	orderExpression, err := p.parseExpression(0)
-	if err != nil {
-		return nil, false, err
+	var expressions []relations.FieldExpression
+	for {
+		orderExpression, err := p.parseExpression(0)
+		if err != nil {
+			return nil, false, err
+		}
+
+		reverse := false
+		if !p.advanceIf(isType(TokenTypeAscending)) {
+			if p.advanceIf(isType(TokenTypeDescending)) {
+				reverse = true
+			}
+		}
+
+		expressions = append(expressions, relations.FieldExpression{
+			Expression: orderExpression,
+			Reverse:    reverse,
+		})
+
+		if !p.advanceIf(isType(TokenTypeComma)) {
+			break
+		}
 	}
 
-	return orderExpression, true, nil
+	return relations.NewOrderExpression(expressions), true, nil
 }
 
 // consumes: [`LIMIT` expression]

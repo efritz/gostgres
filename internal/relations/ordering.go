@@ -8,29 +8,74 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type indexValue struct {
-	index int
-	value interface{}
+type OrderExpression interface {
+	Fold() OrderExpression
+	Expressions() []FieldExpression
 }
 
-func findIndexIterationOrder(order expressions.Expression, rows shared.Rows) ([]int, error) {
-	indexValues := make([]indexValue, 0, len(rows.Values))
-	for i := range rows.Values {
-		value, err := indexValueFrom(order, i, rows.Row(i))
-		if err != nil {
-			return nil, err
-		}
+type orderExpression struct {
+	expressions []FieldExpression
+}
 
-		indexValues = append(indexValues, value)
+func NewOrderExpression(expressions []FieldExpression) OrderExpression {
+	return orderExpression{
+		expressions: expressions,
+	}
+}
+
+func (e orderExpression) Fold() OrderExpression {
+	expressions := make([]FieldExpression, 0, len(e.expressions))
+	for _, expression := range e.expressions {
+		expressions = append(expressions, expression.Fold())
+	}
+
+	return orderExpression{expressions: expressions}
+}
+
+func (e orderExpression) Expressions() []FieldExpression {
+	return e.expressions
+}
+
+type FieldExpression struct {
+	Expression expressions.Expression
+	Reverse    bool
+}
+
+func (e FieldExpression) Fold() FieldExpression {
+	return FieldExpression{
+		Expression: e.Expression.Fold(),
+		Reverse:    e.Reverse,
+	}
+}
+
+func findIndexIterationOrder(order OrderExpression, rows shared.Rows) ([]int, error) {
+	var expressions []FieldExpression
+	if order != nil {
+		expressions = order.Expressions()
+	}
+
+	indexValues, err := makeIndexValues(expressions, rows)
+	if err != nil {
+		return nil, err
 	}
 
 	incomparable := false
-	sort.Slice(indexValues, func(i, j int) bool {
-		relation := shared.CompareValues(indexValues[i].value, indexValues[j].value)
-		if relation == shared.OrderTypeIncomparable {
-			incomparable = true
+	sort.SliceStable(indexValues, func(i, j int) bool {
+		for k, value := range indexValues[i].values {
+			reverse := expressions[k].Reverse
+
+			switch shared.CompareValues(value, indexValues[j].values[k]) {
+			case shared.OrderTypeIncomparable:
+				incomparable = true
+				return false
+			case shared.OrderTypeBefore:
+				return !reverse
+			case shared.OrderTypeAfter:
+				return reverse
+			}
 		}
-		return relation == shared.OrderTypeBefore
+
+		return false
 	})
 	if incomparable {
 		return nil, fmt.Errorf("incomparable types")
@@ -44,15 +89,26 @@ func findIndexIterationOrder(order expressions.Expression, rows shared.Rows) ([]
 	return indexes, nil
 }
 
-func indexValueFrom(expression expressions.Expression, index int, row shared.Row) (indexValue, error) {
-	if expression == nil {
-		return indexValue{index: index, value: index}, nil
+type indexValue struct {
+	index  int
+	values []interface{}
+}
+
+func makeIndexValues(expressions []FieldExpression, rows shared.Rows) ([]indexValue, error) {
+	indexValues := make([]indexValue, 0, len(rows.Values))
+	for i := range rows.Values {
+		values := make([]interface{}, 0, len(expressions))
+		for _, expression := range expressions {
+			value, err := expression.Expression.ValueFrom(rows.Row(i))
+			if err != nil {
+				return nil, err
+			}
+
+			values = append(values, value)
+		}
+
+		indexValues = append(indexValues, indexValue{index: i, values: values})
 	}
 
-	value, err := expression.ValueFrom(row)
-	if err != nil {
-		return indexValue{}, err
-	}
-
-	return indexValue{index: index, value: value}, nil
+	return indexValues, nil
 }

@@ -9,12 +9,12 @@ import (
 
 type orderRelation struct {
 	Relation
-	order expressions.Expression
+	order OrderExpression
 }
 
 var _ Relation = &orderRelation{}
 
-func NewOrder(relation Relation, order expressions.Expression) Relation {
+func NewOrder(relation Relation, order OrderExpression) Relation {
 	return &orderRelation{
 		Relation: relation,
 		order:    order,

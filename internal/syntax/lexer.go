@@ -7,7 +7,9 @@ import (
 var keywordSet = map[string]TokenType{
 	"and":       TokenTypeAnd,
 	"as":        TokenTypeAs,
+	"asc":       TokenTypeAscending,
 	"by":        TokenTypeBy,
+	"desc":      TokenTypeDescending,
 	"false":     TokenTypeFalse,
 	"from":      TokenTypeFrom,
 	"insert":    TokenTypeInsert,

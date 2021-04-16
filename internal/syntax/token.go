@@ -25,7 +25,9 @@ const (
 
 	TokenTypeAnd
 	TokenTypeAs
+	TokenTypeAscending
 	TokenTypeBy
+	TokenTypeDescending
 	TokenTypeFalse
 	TokenTypeFrom
 	TokenTypeInsert

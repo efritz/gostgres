@@ -1,4 +1,4 @@
-package relations
+package nodes
 
 import (
 	"fmt"
@@ -8,58 +8,58 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type insertRelation struct {
-	Relation
+type insertNode struct {
+	Node
 	table       *Table
 	columnNames []string
 	projector   *projector
 }
 
-var _ Relation = &insertRelation{}
+var _ Node = &insertNode{}
 
-func NewInsert(relation Relation, table *Table, name, alias string, columnNames []string, expressions []ProjectionExpression) (Relation, error) {
+func NewInsert(node Node, table *Table, name, alias string, columnNames []string, expressions []ProjectionExpression) (Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(name, table.Fields(), alias)
 		}
 	}
 
-	projector, err := newProjector(relation.Name(), table.Fields(), expressions)
+	projector, err := newProjector(node.Name(), table.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
 
-	return &insertRelation{
-		Relation:    relation,
+	return &insertNode{
+		Node:        node,
 		table:       table,
 		columnNames: columnNames,
 		projector:   projector,
 	}, nil
 }
 
-func (r *insertRelation) Fields() []shared.Field {
+func (r *insertNode) Fields() []shared.Field {
 	return copyFields(r.projector.fields)
 }
 
-func (r *insertRelation) Serialize(w io.Writer, indentationLevel int) {
+func (r *insertNode) Serialize(w io.Writer, indentationLevel int) {
 	io.WriteString(w, fmt.Sprintf("%sinsert returning (%s)\n", indent(indentationLevel), r.projector))
-	r.Relation.Serialize(w, indentationLevel+1)
+	r.Node.Serialize(w, indentationLevel+1)
 }
 
-func (r *insertRelation) Optimize() {
+func (r *insertNode) Optimize() {
 	r.projector.optimize()
-	r.Relation.Optimize()
+	r.Node.Optimize()
 }
 
-func (r *insertRelation) PushDownFilter(filter expressions.Expression) bool {
+func (r *insertNode) PushDownFilter(filter expressions.Expression) bool {
 	return false
 }
 
-func (r *insertRelation) Scan(visitor VisitorFunc) error {
-	return r.Relation.Scan(r.decorateVisitor(visitor))
+func (r *insertNode) Scan(visitor VisitorFunc) error {
+	return r.Node.Scan(r.decorateVisitor(visitor))
 }
 
-func (r *insertRelation) decorateVisitor(visitor VisitorFunc) VisitorFunc {
+func (r *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	return func(row shared.Row) (bool, error) {
 		insertedRow := shared.NewRow(r.table.Fields(), r.prepareValuesForRow(row))
 		if err := r.table.Insert(insertedRow); err != nil {
@@ -79,7 +79,7 @@ func (r *insertRelation) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	}
 }
 
-func (r *insertRelation) prepareValuesForRow(row shared.Row) []interface{} {
+func (r *insertNode) prepareValuesForRow(row shared.Row) []interface{} {
 	if r.columnNames == nil {
 		return row.Values
 	}

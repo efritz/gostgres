@@ -1,4 +1,4 @@
-package relations
+package nodes
 
 import (
 	"io"
@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type Relation interface {
+type Node interface {
 	Name() string
 	Fields() []shared.Field
 	Serialize(w io.Writer, indentationLevel int)
@@ -18,10 +18,10 @@ type Relation interface {
 
 type VisitorFunc func(row shared.Row) (bool, error)
 
-func ScanRows(relation Relation) (shared.Rows, error) {
-	rows := shared.NewRows(relation.Fields())
+func ScanRows(node Node) (shared.Rows, error) {
+	rows := shared.NewRows(node.Fields())
 
-	if err := relation.Scan(func(row shared.Row) (_ bool, err error) {
+	if err := node.Scan(func(row shared.Row) (_ bool, err error) {
 		rows, err = rows.AddValues(row.Values)
 		return true, err
 	}); err != nil {

@@ -5,12 +5,12 @@ import (
 	"io"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/relations"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func serializePlan(w io.Writer, relation relations.Relation) {
-	relation.Serialize(w, 0)
+func serializePlan(w io.Writer, node nodes.Node) {
+	node.Serialize(w, 0)
 }
 
 func serializeRows(w io.Writer, rows shared.Rows) {

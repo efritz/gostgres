@@ -1,18 +1,18 @@
 package repl
 
 import (
-	"github.com/efritz/gostgres/internal/relations"
+	nodes "github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-var tables = map[string]*relations.Table{
+var tables = map[string]*nodes.Table{
 	"employees":   employeesTable,
 	"departments": departmentsTable,
 	"locations":   locationsTable,
 	"regions":     regionsTable,
 }
 
-var employeesTable = relations.NewTable(shared.Rows{
+var employeesTable = nodes.NewTable(shared.Rows{
 	Fields: []shared.Field{
 		{RelationName: "employees", Name: "employee_id"},
 		{RelationName: "employees", Name: "first_name"},
@@ -36,7 +36,7 @@ var employeesTable = relations.NewTable(shared.Rows{
 	},
 })
 
-var departmentsTable = relations.NewTable(shared.Rows{
+var departmentsTable = nodes.NewTable(shared.Rows{
 	Fields: []shared.Field{
 		{RelationName: "departments", Name: "department_id"},
 		{RelationName: "departments", Name: "department_name"},
@@ -49,7 +49,7 @@ var departmentsTable = relations.NewTable(shared.Rows{
 	},
 })
 
-var locationsTable = relations.NewTable(shared.Rows{
+var locationsTable = nodes.NewTable(shared.Rows{
 	Fields: []shared.Field{
 		{RelationName: "locations", Name: "location_id"},
 		{RelationName: "locations", Name: "location_name"},
@@ -65,7 +65,7 @@ var locationsTable = relations.NewTable(shared.Rows{
 	},
 })
 
-var regionsTable = relations.NewTable(shared.Rows{
+var regionsTable = nodes.NewTable(shared.Rows{
 	Fields: []shared.Field{
 		{RelationName: "regions", Name: "region_id"},
 		{RelationName: "regions", Name: "region_name"},

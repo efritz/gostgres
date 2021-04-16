@@ -5,11 +5,11 @@ import (
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/relations"
+	nodes "github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func Parse(tokens []Token, tables map[string]*relations.Table) (relations.Relation, error) {
+func Parse(tokens []Token, tables map[string]*nodes.Table) (nodes.Node, error) {
 	parser := &parser{
 		tokens: tokens,
 		tables: tables,
@@ -32,7 +32,7 @@ func Parse(tokens []Token, tables map[string]*relations.Table) (relations.Relati
 type parser struct {
 	tokens        []Token
 	cursor        int
-	tables        map[string]*relations.Table
+	tables        map[string]*nodes.Table
 	prefixParsers map[TokenType]prefixParserFunc
 	infixParsers  map[TokenType]infixParserFunc
 }
@@ -110,7 +110,7 @@ func (p *parser) init() {
 // consumes: `SELECT` select
 // consumes: `INSERT` `INTO` ident select
 // consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
-func (p *parser) parseStatement() (relations.Relation, error) {
+func (p *parser) parseStatement() (nodes.Node, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
 	}
@@ -126,13 +126,13 @@ func (p *parser) parseStatement() (relations.Relation, error) {
 // Select expressions
 
 // consumes: select_expressions from [where] [order] [limit] [offset]
-func (p *parser) parseSelect() (relations.Relation, error) {
+func (p *parser) parseSelect() (nodes.Node, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
 		return nil, err
 	}
 
-	relation, err := p.parseFrom()
+	node, err := p.parseFrom()
 	if err != nil {
 		return nil, err
 	}
@@ -155,31 +155,31 @@ func (p *parser) parseSelect() (relations.Relation, error) {
 	}
 
 	if hasWhere {
-		relation = relations.NewFilter(relation, whereExpression)
+		node = nodes.NewFilter(node, whereExpression)
 	}
 	if hasOrder {
-		relation = relations.NewOrder(relation, orderExpression)
+		node = nodes.NewOrder(node, orderExpression)
 	}
 	if hasOffset {
-		relation = relations.NewOffset(relation, offsetValue)
+		node = nodes.NewOffset(node, offsetValue)
 	}
 	if hasLimit {
-		relation = relations.NewLimit(relation, limitValue)
+		node = nodes.NewLimit(node, limitValue)
 	}
 
 	if len(selectExpressions) > 0 {
-		relation, err = relations.NewProjection(relation, selectExpressions)
+		node, err = nodes.NewProjection(node, selectExpressions)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return relation, nil
+	return node, nil
 }
 
 // consumes: `*`
 // consumes: alias_expression [, ...]
-func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.ProjectionExpression, _ error) {
+func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(TokenTypeAsterisk)) {
 		return nil, nil
 	}
@@ -202,10 +202,10 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.Projec
 
 // consumes: ident `.` `*`
 // consumes: expression [alias]
-func (p *parser) parseSelectExpression() (relations.ProjectionExpression, error) {
+func (p *parser) parseSelectExpression() (nodes.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(TokenTypeIdent), isType(TokenTypeDot), isType(TokenTypeAsterisk)) {
-		return relations.NewWildcardProjectionExpression(nameToken.Text), nil
+		return nodes.NewWildcardProjectionExpression(nameToken.Text), nil
 	}
 
 	expression, err := p.parseExpression(0)
@@ -218,7 +218,7 @@ func (p *parser) parseSelectExpression() (relations.ProjectionExpression, error)
 		return nil, err
 	}
 
-	return relations.NewAliasProjectionExpression(expression, alias), nil
+	return nodes.NewAliasProjectionExpression(expression, alias), nil
 }
 
 // consumes: nothing
@@ -252,7 +252,7 @@ func (p *parser) parseColumnAlias(expression expressions.Expression) (string, er
 }
 
 // consumes: `FROM` table_expression [, ...]
-func (p *parser) parseFrom() (relation relations.Relation, _ error) {
+func (p *parser) parseFrom() (node nodes.Node, _ error) {
 	if _, err := p.mustAdvance(isType(TokenTypeFrom)); err != nil {
 		return nil, err
 	}
@@ -263,10 +263,10 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 			return nil, err
 		}
 
-		if relation == nil {
-			relation = tableExpression
+		if node == nil {
+			node = tableExpression
 		} else {
-			relation = relations.NewJoin(relation, tableExpression, nil)
+			node = nodes.NewJoin(node, tableExpression, nil)
 		}
 
 		if !p.advanceIf(isType(TokenTypeComma)) {
@@ -274,31 +274,31 @@ func (p *parser) parseFrom() (relation relations.Relation, _ error) {
 		}
 	}
 
-	return relation, nil
+	return node, nil
 }
 
 // consumes: base_table_expression [`JOIN` join [`JOIN` ...]]
-func (p *parser) parseTableExpression() (relations.Relation, error) {
-	relation, err := p.parseBaseTableExpression()
+func (p *parser) parseTableExpression() (nodes.Node, error) {
+	node, err := p.parseBaseTableExpression()
 	if err != nil {
 		return nil, err
 	}
 
 	for p.advanceIf(isType(TokenTypeJoin)) {
-		relation, err = p.parseJoin(relation)
+		node, err = p.parseJoin(node)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return relation, nil
+	return node, nil
 }
 
 // consumes: ident [alias]
 // consumes: (select) alias
 // consumes: (`VALUES` `(` expr [, ...] `)` [, ...]) alias
 // consumes: (table_expression) [alias]
-func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
+func (p *parser) parseBaseTableExpression() (nodes.Node, error) {
 	expectParen := false
 	requireAlias := false
 	parseFunc := p.parseTableReference
@@ -314,7 +314,7 @@ func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
 		expectParen = true
 	}
 
-	relation, err := parseFunc()
+	node, err := parseFunc()
 	if err != nil {
 		return nil, err
 	}
@@ -332,16 +332,16 @@ func (p *parser) parseBaseTableExpression() (relations.Relation, error) {
 	}
 
 	if p.current().Type == TokenTypeIdent {
-		relation = relations.NewAlias(relation, p.advance().Text)
+		node = nodes.NewAlias(node, p.advance().Text)
 	} else if requireAlias {
 		return nil, fmt.Errorf("expected subselect alias (near %s)", p.current().Text)
 	}
 
-	return relation, nil
+	return node, nil
 }
 
 // consumes: ident
-func (p *parser) parseTableReference() (relations.Relation, error) {
+func (p *parser) parseTableReference() (nodes.Node, error) {
 	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -352,11 +352,11 @@ func (p *parser) parseTableReference() (relations.Relation, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	return relations.NewData(nameToken.Text, table), nil
+	return nodes.NewData(nameToken.Text, table), nil
 }
 
 // consumes: table_expression [`ON` expression]
-func (p *parser) parseJoin(relation relations.Relation) (relations.Relation, error) {
+func (p *parser) parseJoin(node nodes.Node) (nodes.Node, error) {
 	right, err := p.parseTableExpression()
 	if err != nil {
 		return nil, err
@@ -372,7 +372,7 @@ func (p *parser) parseJoin(relation relations.Relation) (relations.Relation, err
 		condition = rawCondition
 	}
 
-	return relations.NewJoin(relation, right, condition), nil
+	return nodes.NewJoin(node, right, condition), nil
 }
 
 // consumes: [`WHERE` expression]
@@ -390,7 +390,7 @@ func (p *parser) parseWhereClause() (expressions.Expression, bool, error) {
 }
 
 // consumes: [`ORDER` `BY` expression [`ASC` | `DESC`] [, ...]]
-func (p *parser) parseOrderByClause() (relations.OrderExpression, bool, error) {
+func (p *parser) parseOrderByClause() (nodes.OrderExpression, bool, error) {
 	if !p.advanceIf(isType(TokenTypeOrder)) {
 		return nil, false, nil
 	}
@@ -399,7 +399,7 @@ func (p *parser) parseOrderByClause() (relations.OrderExpression, bool, error) {
 		return nil, false, err
 	}
 
-	var expressions []relations.FieldExpression
+	var expressions []nodes.FieldExpression
 	for {
 		orderExpression, err := p.parseExpression(0)
 		if err != nil {
@@ -413,7 +413,7 @@ func (p *parser) parseOrderByClause() (relations.OrderExpression, bool, error) {
 			}
 		}
 
-		expressions = append(expressions, relations.FieldExpression{
+		expressions = append(expressions, nodes.FieldExpression{
 			Expression: orderExpression,
 			Reverse:    reverse,
 		})
@@ -423,7 +423,7 @@ func (p *parser) parseOrderByClause() (relations.OrderExpression, bool, error) {
 		}
 	}
 
-	return relations.NewOrderExpression(expressions), true, nil
+	return nodes.NewOrderExpression(expressions), true, nil
 }
 
 // consumes: [`LIMIT` expression]
@@ -461,7 +461,7 @@ func (p *parser) parseOffsetClause() (int, bool, error) {
 
 // consumes: `INSERT` `INTO` alias? ident { `(` ident [, ...]`)` }? select
 // consumes: `INSERT` `INTO` alias? ident { `(` ident [, ...]`)` }? `VALUES` `(` expr [, ...] `)` [, ...]
-func (p *parser) parseInsert() (relations.Relation, error) {
+func (p *parser) parseInsert() (nodes.Node, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeInto)); err != nil {
 		return nil, err
 	}
@@ -510,12 +510,12 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 		}
 	}
 
-	relation, err := p.parseSelectOrValues()
+	node, err := p.parseSelectOrValues()
 	if err != nil {
 		return nil, err
 	}
 
-	var returningExpressions []relations.ProjectionExpression
+	var returningExpressions []nodes.ProjectionExpression
 	if p.advanceIf(isType(TokenTypeReturning)) {
 		returningExpressions, err = p.parseSelectExpressions()
 		if err != nil {
@@ -523,18 +523,18 @@ func (p *parser) parseInsert() (relations.Relation, error) {
 		}
 
 		if returningExpressions == nil {
-			returningExpressions = []relations.ProjectionExpression{
-				relations.NewWildcardProjectionExpression(nameToken.Text),
+			returningExpressions = []nodes.ProjectionExpression{
+				nodes.NewWildcardProjectionExpression(nameToken.Text),
 			}
 		}
 	}
 
-	return relations.NewInsert(relation, table, nameToken.Text, alias, columnNames, returningExpressions)
+	return nodes.NewInsert(node, table, nameToken.Text, alias, columnNames, returningExpressions)
 }
 
 // consumes: `SELECT` select
 // consumes: `VALUES` `(` expr [, ...] `)` [, ...]
-func (p *parser) parseSelectOrValues() (relations.Relation, error) {
+func (p *parser) parseSelectOrValues() (nodes.Node, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
 	}
@@ -543,7 +543,7 @@ func (p *parser) parseSelectOrValues() (relations.Relation, error) {
 }
 
 // consumes: `VALUES` `(` expr [, ...] `)` [, ...]
-func (p *parser) parseValues() (relations.Relation, error) {
+func (p *parser) parseValues() (nodes.Node, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeValues)); err != nil {
 		return nil, err
 	}
@@ -552,7 +552,7 @@ func (p *parser) parseValues() (relations.Relation, error) {
 }
 
 // consumes: (` expr [, ...] `)` [, ...]
-func (p *parser) parseValuesList() (relations.Relation, error) {
+func (p *parser) parseValuesList() (nodes.Node, error) {
 	var allRows [][]interface{}
 	for {
 		if _, err := p.mustAdvance(isType(TokenTypeLeftParen)); err != nil {
@@ -608,7 +608,7 @@ func (p *parser) parseValuesList() (relations.Relation, error) {
 		}
 	}
 
-	return relations.NewData("", relations.NewTable(rows)), nil
+	return nodes.NewData("", nodes.NewTable(rows)), nil
 }
 
 //

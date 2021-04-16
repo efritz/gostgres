@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/chzyer/readline"
-	"github.com/efritz/gostgres/internal/relations"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/syntax"
 )
 
@@ -61,20 +61,20 @@ func handleQuery(line string) (err error) {
 	var explain bool
 	line, explain = eatExplain(line)
 
-	relation, err := parseRelation(line)
+	node, err := syntax.Parse(syntax.Lex(line), tables)
 	if err != nil {
-		return fmt.Errorf("failed to parse relation: %s", err)
+		return fmt.Errorf("failed to parse node: %s", err)
 	}
-	relation.Optimize()
+	node.Optimize()
 
 	if explain {
 		var buf bytes.Buffer
-		serializePlan(&buf, relation)
+		serializePlan(&buf, node)
 		fmt.Println(buf.String())
 		return nil
 	}
 
-	rows, err := relations.ScanRows(relation)
+	rows, err := nodes.ScanRows(node)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %s", err)
 	}
@@ -93,8 +93,4 @@ func eatExplain(line string) (string, bool) {
 	}
 
 	return line[len(explainPrefix):], true
-}
-
-func parseRelation(text string) (relations.Relation, error) {
-	return syntax.Parse(syntax.Lex(text), tables)
 }

@@ -1,4 +1,4 @@
-package relations
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/shared"
@@ -14,8 +14,8 @@ func NewTable(rows shared.Rows) *Table {
 	}
 }
 
-func (r *Table) Fields() []shared.Field {
-	return copyFields(r.rows.Fields)
+func (t *Table) Fields() []shared.Field {
+	return copyFields(t.rows.Fields)
 }
 
 func (t *Table) Insert(row shared.Row) (err error) {

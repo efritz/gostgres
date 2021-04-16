@@ -6,7 +6,6 @@ Postgres in Go over a short vacation.
 
 - Short-term
     - Add types to values and rows
-    - Support `t.*` selection
     - Support CTEs
     - Support builtin functions
     - Support DISTINCT (ON)

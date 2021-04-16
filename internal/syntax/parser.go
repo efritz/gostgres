@@ -166,35 +166,31 @@ func (p *parser) parseSelect() (relations.Relation, error) {
 	if hasLimit {
 		relation = relations.NewLimit(relation, limitValue)
 	}
+
 	if len(selectExpressions) > 0 {
-		relation = relations.NewProjection(relation, selectExpressions)
+		relation, err = relations.NewProjection(relation, selectExpressions)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return relation, nil
 }
 
 // consumes: `*`
-// consumes: expression [alias] [, ...]
-func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.AliasedExpression, _ error) {
+// consumes: alias_expression [, ...]
+func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(TokenTypeAsterisk)) {
 		return nil, nil
 	}
 
 	for {
-		expression, err := p.parseExpression(0)
+		aliasedExpression, err := p.parseSelectExpression()
 		if err != nil {
 			return nil, err
 		}
 
-		alias, err := p.parseColumnAlias(expression)
-		if err != nil {
-			return nil, err
-		}
-
-		aliasedExpressions = append(aliasedExpressions, relations.AliasedExpression{
-			Alias:      alias,
-			Expression: expression,
-		})
+		aliasedExpressions = append(aliasedExpressions, aliasedExpression)
 
 		if !p.advanceIf(isType(TokenTypeComma)) {
 			break
@@ -202,6 +198,27 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []relations.Aliase
 	}
 
 	return aliasedExpressions, nil
+}
+
+// consumes: ident `.` `*`
+// consumes: expression [alias]
+func (p *parser) parseSelectExpression() (relations.ProjectionExpression, error) {
+	nameToken := p.current()
+	if p.advanceIf(isType(TokenTypeIdent), isType(TokenTypeDot), isType(TokenTypeAsterisk)) {
+		return relations.NewWildcardProjectionExpression(nameToken.Text), nil
+	}
+
+	expression, err := p.parseExpression(0)
+	if err != nil {
+		return nil, err
+	}
+
+	alias, err := p.parseColumnAlias(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	return relations.NewAliasProjectionExpression(expression, alias), nil
 }
 
 type named interface {
@@ -666,12 +683,17 @@ func (p *parser) advance() Token {
 	return r
 }
 
-func (p *parser) advanceIf(filter tokenFilterFunc) bool {
-	if !filter(p.current()) {
-		return false
+func (p *parser) advanceIf(filters ...tokenFilterFunc) bool {
+	start := p.cursor
+	for _, filter := range filters {
+		if !filter(p.current()) {
+			p.cursor = start
+			return false
+		}
+
+		p.cursor++
 	}
 
-	p.cursor++
 	return true
 }
 

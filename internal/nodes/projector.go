@@ -117,7 +117,6 @@ func (p aliasProjection) String() string {
 func (p aliasProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
-		// TODO - abstract
 		expression = expression.Alias(shared.NewField(alias, field.Name, field.TypeKind, field.Internal), expressions.NewNamed(field))
 	}
 
@@ -131,23 +130,23 @@ func (p aliasProjection) Expand(fields []shared.Field) ([]aliasProjection, error
 	return []aliasProjection{p}, nil
 }
 
-type wildcardProjection struct {
+type tableWildcardProjection struct {
 	relationName string
 }
 
-func NewWildcardProjectionExpression(relationName string) ProjectionExpression {
-	return wildcardProjection{
+func NewTableWildcardProjectionExpression(relationName string) ProjectionExpression {
+	return tableWildcardProjection{
 		relationName: relationName,
 	}
 }
 
-func (p wildcardProjection) String() string {
+func (p tableWildcardProjection) String() string {
 	return fmt.Sprintf("%s.*", p.relationName)
 }
 
-func (p wildcardProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
+func (p tableWildcardProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	if p.relationName == alias {
-		return wildcardProjection{
+		return tableWildcardProjection{
 			relationName: name,
 		}
 	}
@@ -155,7 +154,7 @@ func (p wildcardProjection) Dealias(name string, fields []shared.Field, alias st
 	return p
 }
 
-func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
+func (p tableWildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	matched := false
 	for _, field := range fields {
 		if field.Internal || field.RelationName != p.relationName {
@@ -176,23 +175,21 @@ func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasPr
 	return projections, nil
 }
 
-// TODO - rename this
-type trueWildcardProjection struct {
+type wildcardProjection struct{}
+
+func NewWildcardProjectionExpression() ProjectionExpression {
+	return wildcardProjection{}
 }
 
-func NewTrueWildcardProjectionExpression() ProjectionExpression {
-	return trueWildcardProjection{}
-}
-
-func (p trueWildcardProjection) String() string {
+func (p wildcardProjection) String() string {
 	return "*"
 }
 
-func (p trueWildcardProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
+func (p wildcardProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	return p
 }
 
-func (p trueWildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
+func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	for _, field := range fields {
 		if field.Internal {
 			continue

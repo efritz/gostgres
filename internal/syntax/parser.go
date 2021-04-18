@@ -179,7 +179,7 @@ func (p *parser) parseSelect() (nodes.Node, error) {
 // consumes: alias_expression [, ...]
 func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(TokenTypeAsterisk)) {
-		return []nodes.ProjectionExpression{nodes.NewTrueWildcardProjectionExpression()}, nil
+		return []nodes.ProjectionExpression{nodes.NewWildcardProjectionExpression()}, nil
 	}
 
 	for {
@@ -203,7 +203,7 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.Projection
 func (p *parser) parseSelectExpression() (nodes.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(TokenTypeIdent), isType(TokenTypeDot), isType(TokenTypeAsterisk)) {
-		return nodes.NewWildcardProjectionExpression(nameToken.Text), nil
+		return nodes.NewTableWildcardProjectionExpression(nameToken.Text), nil
 	}
 
 	expression, err := p.parseExpression(0)
@@ -522,7 +522,7 @@ func (p *parser) parseInsert() (nodes.Node, error) {
 
 		if returningExpressions == nil {
 			returningExpressions = []nodes.ProjectionExpression{
-				nodes.NewWildcardProjectionExpression(nameToken.Text),
+				nodes.NewTableWildcardProjectionExpression(nameToken.Text),
 			}
 		}
 	}

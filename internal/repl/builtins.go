@@ -10,12 +10,12 @@ var tables map[string]*nodes.Table
 func init() {
 	employeesRows, err := shared.NewRowsWithValues(
 		[]shared.Field{
-			shared.NewField("employees", "employee_id", shared.TypeKindNumeric),
-			shared.NewField("employees", "first_name", shared.TypeKindText),
-			shared.NewField("employees", "last_name", shared.TypeKindText),
-			shared.NewField("employees", "email", shared.TypeKindText),
-			shared.NewField("employees", "manager_id", shared.TypeKindNumeric),
-			shared.NewField("employees", "department_id", shared.TypeKindNumeric),
+			shared.NewField("employees", "employee_id", shared.TypeKindNumeric, false),
+			shared.NewField("employees", "first_name", shared.TypeKindText, false),
+			shared.NewField("employees", "last_name", shared.TypeKindText, false),
+			shared.NewField("employees", "email", shared.TypeKindText, false),
+			shared.NewField("employees", "manager_id", shared.TypeKindNumeric, false),
+			shared.NewField("employees", "department_id", shared.TypeKindNumeric, false),
 		},
 		[][]interface{}{
 			{1, "Annalisa", "Head", "annalisa.head@company.com", 1, 1},
@@ -34,12 +34,16 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
+	employeesTable, err := nodes.NewTable("employees", employeesRows)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	departmentsRows, err := shared.NewRowsWithValues(
 		[]shared.Field{
-			shared.NewField("departments", "department_id", shared.TypeKindNumeric),
-			shared.NewField("departments", "department_name", shared.TypeKindText),
-			shared.NewField("departments", "location_id", shared.TypeKindNumeric),
+			shared.NewField("departments", "department_id", shared.TypeKindNumeric, false),
+			shared.NewField("departments", "department_name", shared.TypeKindText, false),
+			shared.NewField("departments", "location_id", shared.TypeKindNumeric, false),
 		},
 		[][]interface{}{
 			{1, "Team A", 1},
@@ -50,12 +54,16 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
+	departmentsTable, err := nodes.NewTable("departments", departmentsRows)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	locationsRows, err := shared.NewRowsWithValues(
 		[]shared.Field{
-			shared.NewField("locations", "location_id", shared.TypeKindNumeric),
-			shared.NewField("locations", "location_name", shared.TypeKindText),
-			shared.NewField("locations", "region_id", shared.TypeKindNumeric),
+			shared.NewField("locations", "location_id", shared.TypeKindNumeric, false),
+			shared.NewField("locations", "location_name", shared.TypeKindText, false),
+			shared.NewField("locations", "region_id", shared.TypeKindNumeric, false),
 		},
 		[][]interface{}{
 			{1, "San Francisco", 1},
@@ -69,11 +77,15 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
+	locationsTable, err := nodes.NewTable("locations", locationsRows)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	regionsRows, err := shared.NewRowsWithValues(
 		[]shared.Field{
-			shared.NewField("regions", "region_id", shared.TypeKindNumeric),
-			shared.NewField("regions", "region_name", shared.TypeKindText),
+			shared.NewField("regions", "region_id", shared.TypeKindNumeric, false),
+			shared.NewField("regions", "region_name", shared.TypeKindText, false),
 		},
 		[][]interface{}{
 			{1, "NA"},
@@ -83,11 +95,15 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
+	regionsTable, err := nodes.NewTable("regions", regionsRows)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	tables = map[string]*nodes.Table{
-		"employees":   nodes.NewTable(employeesRows),
-		"departments": nodes.NewTable(departmentsRows),
-		"locations":   nodes.NewTable(locationsRows),
-		"regions":     nodes.NewTable(regionsRows),
+		"employees":   employeesTable,
+		"departments": departmentsTable,
+		"locations":   locationsTable,
+		"regions":     regionsTable,
 	}
 }

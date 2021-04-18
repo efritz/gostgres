@@ -64,7 +64,7 @@ func (p *projector) projectRow(row shared.Row) (shared.Row, error) {
 
 func (p *projector) projectExpression(filter expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		filter = filter.Alias(shared.NewField("", alias.alias, shared.TypeKindAny), alias.expression)
+		filter = filter.Alias(shared.NewField("", alias.alias, shared.TypeKindAny, false), alias.expression)
 	}
 
 	return filter
@@ -87,7 +87,7 @@ func expandProjection(fields []shared.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []aliasProjection) []shared.Field {
 	fields := make([]shared.Field, 0, len(aliases))
 	for _, field := range aliases {
-		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeKindAny))
+		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeKindAny, false))
 	}
 
 	return fields
@@ -118,7 +118,7 @@ func (p aliasProjection) Dealias(name string, fields []shared.Field, alias strin
 	expression := p.expression
 	for _, field := range fields {
 		// TODO - abstract
-		expression = expression.Alias(shared.NewField(alias, field.Name, field.TypeKind), expressions.NewNamed(field))
+		expression = expression.Alias(shared.NewField(alias, field.Name, field.TypeKind, field.Internal), expressions.NewNamed(field))
 	}
 
 	return aliasProjection{
@@ -158,7 +158,7 @@ func (p wildcardProjection) Dealias(name string, fields []shared.Field, alias st
 func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	matched := false
 	for _, field := range fields {
-		if field.RelationName != p.relationName {
+		if field.Internal || field.RelationName != p.relationName {
 			continue
 		}
 
@@ -194,6 +194,10 @@ func (p trueWildcardProjection) Dealias(name string, fields []shared.Field, alia
 
 func (p trueWildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	for _, field := range fields {
+		if field.Internal {
+			continue
+		}
+
 		projections = append(projections, aliasProjection{
 			alias:      field.Name,
 			expression: expressions.NewNamed(field),

@@ -6,13 +6,15 @@ type Field struct {
 	RelationName string
 	Name         string
 	TypeKind     TypeKind
+	Internal     bool
 }
 
-func NewField(relationName, name string, TypeKind TypeKind) Field {
+func NewField(relationName, name string, TypeKind TypeKind, internal bool) Field {
 	return Field{
 		RelationName: relationName,
 		Name:         name,
 		TypeKind:     TypeKind,
+		Internal:     internal,
 	}
 }
 

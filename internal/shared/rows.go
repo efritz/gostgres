@@ -47,6 +47,7 @@ func (rows Rows) Row(index int) Row {
 
 func refineFieldTypes(fields []Field, values []interface{}) ([]Field, error) {
 	if len(fields) != len(values) {
+		panic("WHOOPS")
 		return nil, fmt.Errorf("unexpected number of columns")
 	}
 
@@ -57,7 +58,7 @@ func refineFieldTypes(fields []Field, values []interface{}) ([]Field, error) {
 			return nil, fmt.Errorf("type error (%v is not %s)", values[i], field.TypeKind)
 		}
 
-		refined = append(refined, NewField(field.RelationName, field.Name, refinedType))
+		refined = append(refined, NewField(field.RelationName, field.Name, refinedType, field.Internal))
 	}
 
 	return refined, nil

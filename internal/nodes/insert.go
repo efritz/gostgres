@@ -61,12 +61,20 @@ func (n *insertNode) Scan(visitor VisitorFunc) error {
 
 func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	return func(row shared.Row) (bool, error) {
-		insertedRow, err := shared.NewRow(n.table.Fields(), n.prepareValuesForRow(row))
+		fields := make([]shared.Field, 0, len(n.table.Fields()))
+		for _, field := range n.table.Fields() {
+			if !field.Internal {
+				fields = append(fields, field)
+			}
+		}
+
+		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row))
 		if err != nil {
 			return false, err
 		}
 
-		if err := n.table.Insert(insertedRow); err != nil {
+		insertedRow, err = n.table.Insert(insertedRow)
+		if err != nil {
 			return false, err
 		}
 

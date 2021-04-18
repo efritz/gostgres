@@ -9,7 +9,6 @@ import (
 )
 
 type dataNode struct {
-	name  string
 	table *Table
 
 	filter expressions.Expression
@@ -19,19 +18,18 @@ type dataNode struct {
 
 var _ Node = &dataNode{}
 
-func NewData(name string, table *Table) Node {
+func NewData(table *Table) Node {
 	return &dataNode{
-		name:  name,
 		table: table,
 	}
 }
 
 func (n *dataNode) Name() string {
-	return n.name
+	return n.table.name
 }
 
 func (n *dataNode) Fields() []shared.Field {
-	return updateRelationName(n.table.Fields(), n.name)
+	return updateRelationName(n.table.Fields(), n.table.name)
 }
 
 func (n *dataNode) Serialize(w io.Writer, indentationLevel int) {
@@ -40,7 +38,7 @@ func (n *dataNode) Serialize(w io.Writer, indentationLevel int) {
 		scanType = "index"
 	}
 
-	io.WriteString(w, fmt.Sprintf("%s%s scan over %s\n", indent(indentationLevel), scanType, n.name))
+	io.WriteString(w, fmt.Sprintf("%s%s scan over %s\n", indent(indentationLevel), scanType, n.table.name))
 	if n.filter != nil {
 		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), n.filter))
 	}
@@ -69,6 +67,7 @@ func (n *dataNode) PushDownFilter(filter expressions.Expression) bool {
 }
 
 func (n *dataNode) Scan(visitor VisitorFunc) error {
+	// TODO - scan order needs to be aliased?
 	indexes, err := findIndexIterationOrder(n.order, n.table.rows)
 	if err != nil {
 		return err

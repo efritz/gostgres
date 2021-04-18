@@ -350,7 +350,7 @@ func (p *parser) parseTableReference() (nodes.Node, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	return nodes.NewData(nameToken.Text, table), nil
+	return nodes.NewData(table), nil
 }
 
 // consumes: table_expression [`ON` expression]
@@ -590,7 +590,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 
 	fields := make([]shared.Field, 0, len(allRows[0]))
 	for i := range allRows[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeKindAny))
+		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeKindAny, false))
 	}
 
 	rows, err := shared.NewRows(fields)
@@ -606,7 +606,12 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 		}
 	}
 
-	return nodes.NewData("", nodes.NewTable(rows)), nil
+	table, err := nodes.NewTable("", rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return nodes.NewData(table), nil
 }
 
 //
@@ -655,7 +660,7 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 // consumes: [`.` ident]
 func (p *parser) parseNamedExpression(token Token) (expressions.Expression, error) {
 	if !p.advanceIf(isType(TokenTypeDot)) {
-		return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeKindAny)), nil
+		return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeKindAny, false)), nil
 	}
 
 	qualifiedNameToken, err := p.mustAdvance(isType(TokenTypeIdent))
@@ -663,7 +668,7 @@ func (p *parser) parseNamedExpression(token Token) (expressions.Expression, erro
 		return nil, err
 	}
 
-	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeKindAny)), nil
+	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeKindAny, false)), nil
 }
 
 // consumes: nothing

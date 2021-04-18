@@ -44,7 +44,7 @@ func (n *aliasNode) Optimize() {
 func (n *aliasNode) PushDownFilter(filter expressions.Expression) bool {
 	for _, field := range n.fields {
 		// TODO - abstract
-		filter = filter.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind)))
+		filter = filter.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind, field.Internal)))
 	}
 
 	return n.Node.PushDownFilter(filter)

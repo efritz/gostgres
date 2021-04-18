@@ -175,3 +175,30 @@ func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasPr
 
 	return projections, nil
 }
+
+// TODO - rename this
+type trueWildcardProjection struct {
+}
+
+func NewTrueWildcardProjectionExpression() ProjectionExpression {
+	return trueWildcardProjection{}
+}
+
+func (p trueWildcardProjection) String() string {
+	return "*"
+}
+
+func (p trueWildcardProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
+	return p
+}
+
+func (p trueWildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
+	for _, field := range fields {
+		projections = append(projections, aliasProjection{
+			alias:      field.Name,
+			expression: expressions.NewNamed(field),
+		})
+	}
+
+	return projections, nil
+}

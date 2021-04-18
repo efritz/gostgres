@@ -167,11 +167,9 @@ func (p *parser) parseSelect() (nodes.Node, error) {
 		node = nodes.NewLimit(node, limitValue)
 	}
 
-	if len(selectExpressions) > 0 {
-		node, err = nodes.NewProjection(node, selectExpressions)
-		if err != nil {
-			return nil, err
-		}
+	node, err = nodes.NewProjection(node, selectExpressions)
+	if err != nil {
+		return nil, err
 	}
 
 	return node, nil
@@ -181,7 +179,7 @@ func (p *parser) parseSelect() (nodes.Node, error) {
 // consumes: alias_expression [, ...]
 func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(TokenTypeAsterisk)) {
-		return nil, nil
+		return []nodes.ProjectionExpression{nodes.NewTrueWildcardProjectionExpression()}, nil
 	}
 
 	for {

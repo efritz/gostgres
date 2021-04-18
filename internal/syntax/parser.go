@@ -30,14 +30,16 @@ func Parse(tokens []Token, tables map[string]*nodes.Table) (nodes.Node, error) {
 }
 
 type parser struct {
-	tokens        []Token
-	cursor        int
-	tables        map[string]*nodes.Table
-	prefixParsers map[TokenType]prefixParserFunc
-	infixParsers  map[TokenType]infixParserFunc
+	tokens           []Token
+	cursor           int
+	tables           map[string]*nodes.Table
+	statementParsers map[TokenType]statementParserFunc
+	prefixParsers    map[TokenType]prefixParserFunc
+	infixParsers     map[TokenType]infixParserFunc
 }
 
-type tokenFilterFunc func(t Token) bool
+type tokenFilterFunc func(token Token) bool
+type statementParserFunc func(token Token) (nodes.Node, error)
 type prefixParserFunc func(token Token) (expressions.Expression, error)
 type infixParserFunc func(left expressions.Expression, token Token) (expressions.Expression, error)
 type unaryExpressionParserFunc func(expression expressions.Expression) expressions.Expression
@@ -75,6 +77,13 @@ var precedenceMap = map[TokenType]Precedence{
 }
 
 func (p *parser) init() {
+	p.statementParsers = map[TokenType]statementParserFunc{
+		TokenTypeSelect: p.parseSelect,
+		TokenTypeInsert: p.parseInsert,
+		TokenTypeUpdate: p.parseUpdate,
+		TokenTypeDelete: p.parseDelete,
+	}
+
 	p.prefixParsers = map[TokenType]prefixParserFunc{
 		TokenTypeIdent:     p.parseNamedExpression,
 		TokenTypeNumber:    p.parseNumericLiteralExpression,
@@ -109,20 +118,11 @@ func (p *parser) init() {
 //            | `UPDATE` update
 //            | `DELETE` delete
 func (p *parser) parseStatement() (nodes.Node, error) {
-	if p.advanceIf(isType(TokenTypeSelect)) {
-		return p.parseSelect()
-	}
-
-	if p.advanceIf(isType(TokenTypeInsert)) {
-		return p.parseInsert()
-	}
-
-	if p.advanceIf(isType(TokenTypeUpdate)) {
-		return p.parseUpdate()
-	}
-
-	if p.advanceIf(isType(TokenTypeDelete)) {
-		return p.parseDelete()
+	token := p.current()
+	for tokenType, parser := range p.statementParsers {
+		if p.advanceIf(isType(tokenType)) {
+			return parser(token)
+		}
 	}
 
 	return nil, fmt.Errorf("expected start of statement (near %s)", p.current().Text)
@@ -132,7 +132,7 @@ func (p *parser) parseStatement() (nodes.Node, error) {
 // Select expressions
 
 // select := selectExpressions from where order limit offset
-func (p *parser) parseSelect() (nodes.Node, error) {
+func (p *parser) parseSelect(token Token) (nodes.Node, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
 		return nil, err
@@ -466,7 +466,7 @@ func (p *parser) parseOffsetClause() (int, bool, error) {
 // Insert statements
 
 // insert := `INTO` ident [[`AS` ident]] [`(` ident [, ...] `)`] selectOrValues [`RETURNING` selectExpressions]
-func (p *parser) parseInsert() (nodes.Node, error) {
+func (p *parser) parseInsert(token Token) (nodes.Node, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeInto)); err != nil {
 		return nil, err
 	}
@@ -540,8 +540,9 @@ func (p *parser) parseInsert() (nodes.Node, error) {
 // selectOrValues := `SELECT` select
 //                 | values
 func (p *parser) parseSelectOrValues() (nodes.Node, error) {
+	token := p.current()
 	if p.advanceIf(isType(TokenTypeSelect)) {
-		return p.parseSelect()
+		return p.parseSelect(token)
 	}
 
 	return p.parseValues()
@@ -625,7 +626,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 // Update statements
 
 // update := ident [[`AS`] ident] `SET` ( ident `=` expression [, ...] ) where [`RETURNING` selectExpressions]
-func (p *parser) parseUpdate() (nodes.Node, error) {
+func (p *parser) parseUpdate(token Token) (nodes.Node, error) {
 	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -722,7 +723,7 @@ func (p *parser) parseUpdate() (nodes.Node, error) {
 // Delete statements
 
 // delete := `FROM` ident [[`AS`] ident] where [`RETURNING` selectExpressions]
-func (p *parser) parseDelete() (nodes.Node, error) {
+func (p *parser) parseDelete(token Token) (nodes.Node, error) {
 	if _, err := p.mustAdvance(isType(TokenTypeFrom)); err != nil {
 		return nil, err
 	}

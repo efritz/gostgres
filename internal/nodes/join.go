@@ -95,6 +95,11 @@ func (n *joinNode) distributeExpression(expression expressions.Expression) bool 
 		pushedRight = n.right.PushDownFilter(expression)
 	}
 
+	if !pushedLeft && !pushedRight && !namesMatchingInLeft && !namesMatchingInRight {
+		// Temporary - used to catch invalid fields because we don't have a query validation pass
+		return false
+	}
+
 	return (namesMatchingInLeft || !namesMissingFromLeft) == pushedLeft && (namesMatchingInRight || !namesMissingFromRight) == pushedRight
 }
 

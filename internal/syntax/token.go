@@ -27,12 +27,13 @@ const (
 	TokenTypeAs
 	TokenTypeAscending
 	TokenTypeBy
+	TokenTypeDelete
 	TokenTypeDescending
 	TokenTypeFalse
 	TokenTypeFrom
 	TokenTypeInsert
 	TokenTypeInto
-	TokenTypeIs // TODO - IS NULL <-> IS NULL; IS NOT NULL <-> NOT NULL
+	TokenTypeIs
 	TokenTypeIsNull
 	TokenTypeJoin
 	TokenTypeLimit
@@ -45,7 +46,9 @@ const (
 	TokenTypeOrder
 	TokenTypeReturning
 	TokenTypeSelect
+	TokenTypeSet
 	TokenTypeTrue
+	TokenTypeUpdate
 	TokenTypeValues
 	TokenTypeWhere
 

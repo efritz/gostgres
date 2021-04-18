@@ -9,6 +9,7 @@ var keywordSet = map[string]TokenType{
 	"as":        TokenTypeAs,
 	"asc":       TokenTypeAscending,
 	"by":        TokenTypeBy,
+	"delete":    TokenTypeDelete,
 	"desc":      TokenTypeDescending,
 	"false":     TokenTypeFalse,
 	"from":      TokenTypeFrom,
@@ -27,7 +28,9 @@ var keywordSet = map[string]TokenType{
 	"order":     TokenTypeOrder,
 	"returning": TokenTypeReturning,
 	"select":    TokenTypeSelect,
+	"set":       TokenTypeSet,
 	"true":      TokenTypeTrue,
+	"update":    TokenTypeUpdate,
 	"values":    TokenTypeValues,
 	"where":     TokenTypeWhere,
 }

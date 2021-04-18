@@ -73,9 +73,15 @@ func (n *dataNode) Scan(visitor VisitorFunc) error {
 		return err
 	}
 
+	// Keep a copy so we don't modify it while iterating a subquery
+	// of a delete statement. This will probably be able to remove
+	// once we have MVCC semantics on each tuple.
+	rows := make([]shared.Row, 0, len(indexes))
 	for _, i := range indexes {
-		row := n.table.rows.Row(i)
+		rows = append(rows, n.table.rows.Row(i))
+	}
 
+	for _, row := range rows {
 		if n.filter != nil {
 			if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {
 				return err

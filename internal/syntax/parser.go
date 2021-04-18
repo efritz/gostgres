@@ -89,12 +89,9 @@ func (p *parser) init() {
 	}
 
 	p.infixParsers = map[TokenType]infixParserFunc{
-		TokenTypeAnd: p.parseBinary(PrecedenceConditionalAnd, expressions.NewAnd),
-		// TokenTypeIs: nil, // TODO - also not, null, isnull, notnull
-		TokenTypeOr:    p.parseBinary(PrecedenceConditionalOr, expressions.NewOr),
-		TokenTypeMinus: p.parseBinary(PrecedenceAdditive, expressions.NewSubtraction),
-		// TokenTypeDot:         nil, // TODO - make projection more general
-		// TokenTypeLeftParen:   nil, // TODO - function calls
+		TokenTypeAnd:                p.parseBinary(PrecedenceConditionalAnd, expressions.NewAnd),
+		TokenTypeOr:                 p.parseBinary(PrecedenceConditionalOr, expressions.NewOr),
+		TokenTypeMinus:              p.parseBinary(PrecedenceAdditive, expressions.NewSubtraction),
 		TokenTypeAsterisk:           p.parseBinary(PrecedenceMultiplicative, expressions.NewMultiplication),
 		TokenTypeSlash:              p.parseBinary(PrecedenceMultiplicative, expressions.NewDivision),
 		TokenTypePlus:               p.parseBinary(PrecedenceAdditive, expressions.NewAddition),
@@ -108,8 +105,7 @@ func (p *parser) init() {
 }
 
 // consumes: `SELECT` select
-// consumes: `INSERT` `INTO` ident select
-// consumes: `INSERT` `INTO` ident `VALUES` `(` expr [, ...] `)` [, ...]
+// consumes: `INSERT` insert
 func (p *parser) parseStatement() (nodes.Node, error) {
 	if p.advanceIf(isType(TokenTypeSelect)) {
 		return p.parseSelect()
@@ -119,13 +115,21 @@ func (p *parser) parseStatement() (nodes.Node, error) {
 		return p.parseInsert()
 	}
 
+	if p.advanceIf(isType(TokenTypeUpdate)) {
+		return p.parseUpdate()
+	}
+
+	if p.advanceIf(isType(TokenTypeDelete)) {
+		return p.parseDelete()
+	}
+
 	return nil, fmt.Errorf("expected start of statement (near %s)", p.current().Text)
 }
 
 //
 // Select expressions
 
-// consumes: select_expressions from [where] [order] [limit] [offset]
+// consumes: select_expressions from where order limit offset
 func (p *parser) parseSelect() (nodes.Node, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
@@ -559,7 +563,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 
 		var values []interface{}
 		for {
-			expression, err := p.parseExpression(PrecedenceAny)
+			expression, err := p.parseExpression(0)
 			if err != nil {
 				return nil, err
 			}
@@ -612,6 +616,165 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 	}
 
 	return nodes.NewData(table), nil
+}
+
+//
+// Update statements
+
+// consumes: `UPDATE` ident alias? SET { ident | (ident [, ...]) } = expression [, ...] [where] [RETURNING select]
+func (p *parser) parseUpdate() (nodes.Node, error) {
+	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	table, ok := p.tables[nameToken.Text]
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
+	}
+
+	if p.advanceIf(isType(TokenTypeAs)) {
+		if p.current().Type != TokenTypeIdent {
+			return nil, fmt.Errorf("expected alias (near %s)", p.current().Text)
+		}
+	}
+
+	alias := ""
+	aliasToken := p.current()
+	if p.advanceIf(isType(TokenTypeIdent)) {
+		alias = aliasToken.Text
+	}
+
+	if _, err := p.mustAdvance(isType(TokenTypeSet)); err != nil {
+		return nil, err
+	}
+
+	var setExpressions []nodes.SetExpression
+	for {
+		var name string
+		if p.advanceIf(isType(TokenTypeLeftParen)) {
+			// TODO - implement
+			panic("Multi-column sets unimplemented")
+		} else {
+			nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
+			if err != nil {
+				return nil, err
+			}
+
+			name = nameToken.Text
+		}
+
+		if _, err := p.mustAdvance(isType(TokenTypeEquals)); err != nil {
+			return nil, err
+		}
+
+		// TODO - or subselect
+		expr, err := p.parseExpression(0)
+		if err != nil {
+			return nil, err
+		}
+
+		setExpressions = append(setExpressions, nodes.SetExpression{
+			Name:       name,
+			Expression: expr,
+		})
+
+		if !p.advanceIf(isType(TokenTypeComma)) {
+			break
+		}
+	}
+
+	// TODO - parse/support FROM
+
+	whereExpression, hasWhere, err := p.parseWhereClause()
+	if err != nil {
+		return nil, err
+	}
+
+	var returningExpressions []nodes.ProjectionExpression
+	if p.advanceIf(isType(TokenTypeReturning)) {
+		returningExpressions, err = p.parseSelectExpressions()
+		if err != nil {
+			return nil, err
+		}
+
+		if returningExpressions == nil {
+			returningExpressions = []nodes.ProjectionExpression{
+				nodes.NewTableWildcardProjectionExpression(nameToken.Text),
+			}
+		}
+	}
+
+	node := nodes.NewData(table)
+	if alias != "" {
+		node = nodes.NewAlias(node, alias)
+	}
+	if hasWhere {
+		node = nodes.NewFilter(node, whereExpression)
+	}
+	return nodes.NewUpdate(node, table, setExpressions, alias, returningExpressions)
+}
+
+//
+// Delete statements
+
+// consumes: `DELETE` `FROM` ident alias? [where] [RETURNING select]
+func (p *parser) parseDelete() (nodes.Node, error) {
+	if _, err := p.mustAdvance(isType(TokenTypeFrom)); err != nil {
+		return nil, err
+	}
+
+	nameToken, err := p.mustAdvance(isType(TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	table, ok := p.tables[nameToken.Text]
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
+	}
+
+	if p.advanceIf(isType(TokenTypeAs)) {
+		if p.current().Type != TokenTypeIdent {
+			return nil, fmt.Errorf("expected alias (near %s)", p.current().Text)
+		}
+	}
+
+	alias := ""
+	aliasToken := p.current()
+	if p.advanceIf(isType(TokenTypeIdent)) {
+		alias = aliasToken.Text
+	}
+
+	// TODO - parse/support FROM
+
+	whereExpression, hasWhere, err := p.parseWhereClause()
+	if err != nil {
+		return nil, err
+	}
+
+	var returningExpressions []nodes.ProjectionExpression
+	if p.advanceIf(isType(TokenTypeReturning)) {
+		returningExpressions, err = p.parseSelectExpressions()
+		if err != nil {
+			return nil, err
+		}
+
+		if returningExpressions == nil {
+			returningExpressions = []nodes.ProjectionExpression{
+				nodes.NewTableWildcardProjectionExpression(nameToken.Text),
+			}
+		}
+	}
+
+	node := nodes.NewData(table)
+	if alias != "" {
+		node = nodes.NewAlias(node, alias)
+	}
+	if hasWhere {
+		node = nodes.NewFilter(node, whereExpression)
+	}
+	return nodes.NewDelete(node, table, alias, returningExpressions)
 }
 
 //

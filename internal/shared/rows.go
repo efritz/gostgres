@@ -47,7 +47,6 @@ func (rows Rows) Row(index int) Row {
 
 func refineFieldTypes(fields []Field, values []interface{}) ([]Field, error) {
 	if len(fields) != len(values) {
-		panic("WHOOPS")
 		return nil, fmt.Errorf("unexpected number of columns")
 	}
 

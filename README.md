@@ -10,8 +10,6 @@ Postgres in Go over a short vacation.
     - Support DISTINCT (ON)
     - Support GROUP BY and HAVING
     - Support UNION/INTERSECT/EXCEPT
-    - Support UPDATE
-    - Support DELETE
 
 - Medium-term
     - Support default values

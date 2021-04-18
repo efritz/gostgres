@@ -47,3 +47,35 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 
 	return t.rows.Row(len(t.rows.Values) - 1), nil
 }
+
+func (t *Table) Update(row shared.Row) (bool, error) {
+	// TODO - check row types
+
+	for i, values := range t.rows.Values {
+		if values[0] != row.Values[0] {
+			continue
+		}
+
+		t.rows.Values[i] = row.Values
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
+	// TODO - check row types
+
+	for i, values := range t.rows.Values {
+		if values[0] != row.Values[0] {
+			continue
+		}
+
+		copy(t.rows.Values[i:], t.rows.Values[i+1:])
+		t.rows.Values = t.rows.Values[:len(t.rows.Values)-1]
+		row, err := shared.NewRow(t.rows.Fields, values)
+		return row, true, err
+	}
+
+	return shared.Row{}, false, nil
+}

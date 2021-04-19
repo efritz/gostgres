@@ -14,15 +14,19 @@ const (
 	//
 	// Keywords
 
+	TokenTypeAll
 	TokenTypeAnd
 	TokenTypeAs
 	TokenTypeAscending
 	TokenTypeBy
 	TokenTypeDelete
 	TokenTypeDescending
+	TokenTypeDistinct
+	TokenTypeExcept
 	TokenTypeFalse
 	TokenTypeFrom
 	TokenTypeInsert
+	TokenTypeIntersect
 	TokenTypeInto
 	TokenTypeIs
 	TokenTypeIsNull

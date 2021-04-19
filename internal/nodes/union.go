@@ -9,14 +9,15 @@ import (
 )
 
 type unionNode struct {
-	left   Node
-	right  Node
-	fields []shared.Field
+	left     Node
+	right    Node
+	fields   []shared.Field
+	distinct bool
 }
 
 var _ Node = &unionNode{}
 
-func NewUnion(left Node, right Node) (Node, error) {
+func NewUnion(left Node, right Node, distinct bool) (Node, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -31,9 +32,10 @@ func NewUnion(left Node, right Node) (Node, error) {
 	}
 
 	return &unionNode{
-		left:   left,
-		right:  right,
-		fields: leftFields,
+		left:     left,
+		right:    right,
+		fields:   leftFields,
+		distinct: distinct,
 	}, nil
 }
 
@@ -60,7 +62,6 @@ func (n *unionNode) Optimize() {
 
 func (n *unionNode) PushDownFilter(filter expressions.Expression) bool {
 	// TODO - only push down if they're valid (see join)
-
 	// pushedLeft := n.left.PushDownFilter(filter)
 	// pushedRight := n.right.PushDownFilter(filter)
 	// return pushedLeft && pushedRight
@@ -68,11 +69,32 @@ func (n *unionNode) PushDownFilter(filter expressions.Expression) bool {
 }
 
 func (n *unionNode) Scan(visitor VisitorFunc) error {
-	if err := n.left.Scan(visitor); err != nil {
+	hash := map[string]struct{}{}
+	mark := func(row shared.Row) bool {
+		key := hashValues(row.Values)
+		if _, ok := hash[key]; ok {
+			return !n.distinct
+		}
+
+		hash[key] = struct{}{}
+		return true
+	}
+
+	if err := n.left.Scan(func(row shared.Row) (bool, error) {
+		if !mark(row) {
+			return true, nil
+		}
+
+		return visitor(row)
+	}); err != nil {
 		return err
 	}
 
 	return n.right.Scan(func(row shared.Row) (bool, error) {
+		if !mark(row) {
+			return true, nil
+		}
+
 		row, err := shared.NewRow(n.Fields(), row.Values)
 		if err != nil {
 			return false, err

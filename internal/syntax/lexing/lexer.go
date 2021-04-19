@@ -14,15 +14,19 @@ func newLexer(text string) *lexer {
 }
 
 var keywordSet = map[string]tokens.TokenType{
+	"all":       tokens.TokenTypeAll,
 	"and":       tokens.TokenTypeAnd,
 	"as":        tokens.TokenTypeAs,
 	"asc":       tokens.TokenTypeAscending,
 	"by":        tokens.TokenTypeBy,
 	"delete":    tokens.TokenTypeDelete,
 	"desc":      tokens.TokenTypeDescending,
+	"distinct":  tokens.TokenTypeDistinct,
+	"except":    tokens.TokenTypeExcept,
 	"false":     tokens.TokenTypeFalse,
 	"from":      tokens.TokenTypeFrom,
 	"insert":    tokens.TokenTypeInsert,
+	"intersect": tokens.TokenTypeIntersect,
 	"into":      tokens.TokenTypeInto,
 	"is":        tokens.TokenTypeIs,
 	"isnull":    tokens.TokenTypeIsNull,

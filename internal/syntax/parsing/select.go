@@ -85,7 +85,7 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 	// TODO - support [ `HAVING` condition [, ...] ]
 	// TODO - support [ `WINDOW` window_name `AS` ( window_definition ) [, ...] ]
 
-	if p.current().Type != tokens.TokenTypeUnion {
+	if p.current().Type != tokens.TokenTypeUnion && p.current().Type != tokens.TokenTypeIntersect && p.current().Type != tokens.TokenTypeExcept {
 		return selectNode{
 			node:              node,
 			selectExpressions: selectExpressions,
@@ -107,19 +107,33 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 	}, nil
 }
 
-// combinedQuery := [ `UNION` unionTarget [, ...] ]
+// combinedQuery := [ ( `UNION` | `INTERSECT` | `EXCEPT` ) [( `ALL` | `DISTINCT` )] combinationTarget [, ...] ]
 func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
-	// TODO - support ALL vs DISTINCT
-	// TODO - support INTERSECT
-	// TODO - support EXCEPT
+	for {
+		var factory func(left, right nodes.Node, distinct bool) (nodes.Node, error)
+		if p.advanceIf(isType(tokens.TokenTypeUnion)) {
+			factory = nodes.NewUnion
+		} else if p.advanceIf(isType(tokens.TokenTypeIntersect)) {
+			factory = nodes.NewIntersect
+		} else if p.advanceIf(isType(tokens.TokenTypeExcept)) {
+			factory = nodes.NewExcept
+		} else {
+			break
+		}
 
-	for p.advanceIf(isType(tokens.TokenTypeUnion)) {
-		unionTarget, err := p.parseUnionTarget()
+		distinct := true
+		if p.advanceIf(isType(tokens.TokenTypeDistinct)) {
+			// token is explicitly supplying the default
+		} else if p.advanceIf(isType(tokens.TokenTypeAll)) {
+			distinct = false
+		}
+
+		unionTarget, err := p.parseCombinationTarget()
 		if err != nil {
 			return nil, err
 		}
 
-		node, err = nodes.NewUnion(node, unionTarget)
+		node, err = factory(node, unionTarget, distinct)
 		if err != nil {
 			return nil, err
 		}
@@ -128,9 +142,9 @@ func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
 	return node, nil
 }
 
-// unionTarget := simpleSelect
-//              | `(` selectOrValues `)`
-func (p *parser) parseUnionTarget() (nodes.Node, error) {
+// combinationTarget := simpleSelect
+//                    | `(` selectOrValues `)`
+func (p *parser) parseCombinationTarget() (nodes.Node, error) {
 	expectParen := false
 	var parseFunc func() (nodes.Node, error)
 

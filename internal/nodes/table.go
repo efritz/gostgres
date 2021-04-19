@@ -49,14 +49,18 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 }
 
 func (t *Table) Update(row shared.Row) (bool, error) {
-	// TODO - check row types
+	mergedRow, err := shared.NewRow(t.rows.Fields, row.Values)
+	if err != nil {
+		return false, err
+	}
 
 	for i, values := range t.rows.Values {
 		if values[0] != row.Values[0] {
 			continue
 		}
 
-		t.rows.Values[i] = row.Values
+		t.rows.Fields = mergedRow.Fields
+		t.rows.Values[i] = mergedRow.Values
 		return true, nil
 	}
 
@@ -64,8 +68,6 @@ func (t *Table) Update(row shared.Row) (bool, error) {
 }
 
 func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
-	// TODO - check row types
-
 	for i, values := range t.rows.Values {
 		if values[0] != row.Values[0] {
 			continue

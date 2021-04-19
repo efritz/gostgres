@@ -93,18 +93,29 @@ func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 
 func (n *insertNode) prepareValuesForRow(row shared.Row) []interface{} {
 	if n.columnNames == nil {
-		return row.Values
+		values := make([]interface{}, 0, len(row.Values))
+		for i, value := range row.Values {
+			if !row.Fields[i].Internal {
+				values = append(values, value)
+			}
+		}
+
+		return values
 	}
 
-	valueMap := make(map[string]interface{}, len(n.columnNames))
-	for i, name := range n.columnNames {
-		valueMap[name] = row.Values[i]
+	return reorderValues(n.columnNames, row.Values, n.table.Fields())
+}
+
+func reorderValues(columnNames []string, values []interface{}, fields []shared.Field) []interface{} {
+	valueMap := make(map[string]interface{}, len(columnNames))
+	for i, name := range columnNames {
+		valueMap[name] = values[i]
 	}
 
-	values := make([]interface{}, 0, len(n.table.Fields()))
-	for _, field := range n.table.Fields() {
-		values = append(values, valueMap[field.Name])
+	reordered := make([]interface{}, 0, len(fields))
+	for _, field := range fields {
+		reordered = append(reordered, valueMap[field.Name])
 	}
 
-	return values
+	return reordered
 }

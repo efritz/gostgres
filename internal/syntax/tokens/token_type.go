@@ -1,14 +1,4 @@
-package syntax
-
-type Token struct {
-	Type   TokenType
-	Offset int
-	Text   string
-}
-
-var InvalidToken = Token{
-	Type: TokenTypeInvalid,
-}
+package tokens
 
 type TokenType int
 
@@ -21,6 +11,7 @@ const (
 	TokenTypeNumber
 	TokenTypeString
 
+	//
 	// Keywords
 
 	TokenTypeAnd
@@ -49,9 +40,11 @@ const (
 	TokenTypeSet
 	TokenTypeTrue
 	TokenTypeUpdate
+	TokenTypeUsing
 	TokenTypeValues
 	TokenTypeWhere
 
+	//
 	// Single-character operators
 
 	TokenTypeMinus
@@ -67,6 +60,7 @@ const (
 	TokenTypeEquals
 	TokenTypeGreaterThan
 
+	//
 	// Multiple-character operators
 
 	TokenTypeLessThanOrEqual
@@ -75,11 +69,3 @@ const (
 
 	TokenTypeUnknown
 )
-
-func NewToken(tokenType TokenType, offset int, text string) Token {
-	return Token{
-		Type:   tokenType,
-		Offset: offset,
-		Text:   text,
-	}
-}

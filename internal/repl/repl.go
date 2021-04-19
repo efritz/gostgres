@@ -9,7 +9,8 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/efritz/gostgres/internal/nodes"
-	"github.com/efritz/gostgres/internal/syntax"
+	"github.com/efritz/gostgres/internal/syntax/lexing"
+	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
 
 func Start() error {
@@ -61,7 +62,7 @@ func handleQuery(line string) (err error) {
 	var explain bool
 	line, explain = eatExplain(line)
 
-	node, err := syntax.Parse(syntax.Lex(line), tables)
+	node, err := parsing.Parse(lexing.Lex(line), tables)
 	if err != nil {
 		return fmt.Errorf("failed to parse node: %s", err)
 	}

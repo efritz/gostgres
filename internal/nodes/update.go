@@ -24,6 +24,12 @@ type SetExpression struct {
 }
 
 func NewUpdate(node Node, table *Table, setExpressions []SetExpression, alias string, expressions []ProjectionExpression) (Node, error) {
+	if alias != "" {
+		for i, pe := range expressions {
+			expressions[i] = pe.Dealias(table.name, table.Fields(), alias)
+		}
+	}
+
 	projector, err := newProjector(node.Name(), table.Fields(), expressions)
 	if err != nil {
 		return nil, err

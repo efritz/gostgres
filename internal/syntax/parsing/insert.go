@@ -5,7 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// insert := `INTO` table columnNames selectOrValues [`RETURNING` selectExpressions]
+// insert := `INTO` table columnNames selectOrValues returning
 func (p *parser) parseInsert(token tokens.Token) (nodes.Node, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
@@ -21,6 +21,7 @@ func (p *parser) parseInsert(token tokens.Token) (nodes.Node, error) {
 		return nil, err
 	}
 
+	// TODO - support `DEFAULT VALUES`
 	node, err := p.parseSelectOrValues()
 	if err != nil {
 		return nil, err
@@ -32,33 +33,4 @@ func (p *parser) parseInsert(token tokens.Token) (nodes.Node, error) {
 	}
 
 	return nodes.NewInsert(node, table, name, alias, columnNames, returningExpressions)
-}
-
-// columnNames := [ `(` ident [, ...] `)` ]
-func (p *parser) parseColumnNames() ([]string, error) {
-	if p.current().Type != tokens.TokenTypeLeftParen || p.peek(1).Type != tokens.TokenTypeIdent {
-		return nil, nil
-	}
-
-	p.advance()
-
-	var columnNames []string
-	for {
-		nameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
-		if err != nil {
-			return nil, err
-		}
-
-		columnNames = append(columnNames, nameToken.Text)
-
-		if !p.advanceIf(isType(tokens.TokenTypeComma)) {
-			break
-		}
-	}
-
-	if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
-		return nil, err
-	}
-
-	return columnNames, nil
 }

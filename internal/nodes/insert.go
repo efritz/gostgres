@@ -68,7 +68,7 @@ func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 			}
 		}
 
-		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row))
+		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
 		if err != nil {
 			return false, err
 		}
@@ -91,19 +91,19 @@ func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
 	}
 }
 
-func (n *insertNode) prepareValuesForRow(row shared.Row) []interface{} {
-	if n.columnNames == nil {
-		values := make([]interface{}, 0, len(row.Values))
-		for i, value := range row.Values {
-			if !row.Fields[i].Internal {
-				values = append(values, value)
-			}
+func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []interface{} {
+	values := make([]interface{}, 0, len(row.Values))
+	for i, value := range row.Values {
+		if !row.Fields[i].Internal {
+			values = append(values, value)
 		}
+	}
 
+	if n.columnNames == nil {
 		return values
 	}
 
-	return reorderValues(n.columnNames, row.Values, n.table.Fields())
+	return reorderValues(n.columnNames, values, fields)
 }
 
 func reorderValues(columnNames []string, values []interface{}, fields []shared.Field) []interface{} {

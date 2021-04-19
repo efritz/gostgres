@@ -30,7 +30,7 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 		node = joinNodes(append([]nodes.Node{node}, usingExpressions...))
 	}
 
-	whereExpression, hasWhere, err := p.parseWhereClause()
+	whereExpression, hasWhere, err := p.parseWhere()
 	if err != nil {
 		return nil, err
 	}

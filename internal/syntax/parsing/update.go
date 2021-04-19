@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// update := table `SET` setExpressions [`FROM` tableExpressions] [`RETURNING` selectExpressions]
+// update := table `SET` setExpressions [`FROM` tableExpressions] where returning
 func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 	table, name, alias, err := p.parseTable()
 	if err != nil {
@@ -35,7 +35,7 @@ func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 		node = joinNodes(append([]nodes.Node{node}, fromExpressions...))
 	}
 
-	whereExpression, hasWhere, err := p.parseWhereClause()
+	whereExpression, hasWhere, err := p.parseWhere()
 	if err != nil {
 		return nil, err
 	}
@@ -85,11 +85,13 @@ func (p *parser) parseSetExpressions() ([]nodes.SetExpression, error) {
 	return setExpressions, nil
 }
 
+// TODO - support ident `=` `DEFAULT`
+// TODO - support `(` ( ident [, ...] ) `)` = ( `(` sub-select `)` | [ `ROW` ] `(` expression | `DEFAULT` `)` )
+
 // setExpression := ident `=` expression
 func (p *parser) parseSetExpression() (nodes.SetExpression, error) {
 	var name string
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
-		// TODO - implement
 		panic("Multi-column sets unimplemented")
 	} else {
 		nameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))

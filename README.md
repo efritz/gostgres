@@ -43,6 +43,8 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Support GROUP BY and HAVING
     - Support INTERSECT/EXCEPT
     - Support TRUNCATE
+    - Support subquery expressions (EXISTS/IN/NOT IN/ANY/SOME/ALL)
+    - Support row comparisons (IN/NOT IN/ANY/SOME/ALL)
 
 - Medium-term
     - Support default values

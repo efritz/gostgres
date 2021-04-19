@@ -57,7 +57,7 @@ type selectNode struct {
 	selectExpressions []nodes.ProjectionExpression
 }
 
-// simpleSelect := selectExpressions from where [combinedQuery]
+// simpleSelect := selectExpressions from where combinedQuery
 func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 	// TODO - support [ `ALL` | `DISTINCT` [ `ON` ( expression [, ...] ) ] ]
 
@@ -107,7 +107,7 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 	}, nil
 }
 
-// combinedQuery := `UNION` unionTarget [, ...]
+// combinedQuery := [ `UNION` unionTarget [, ...] ]
 func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
 	// TODO - support ALL vs DISTINCT
 	// TODO - support INTERSECT

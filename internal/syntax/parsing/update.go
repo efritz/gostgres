@@ -86,7 +86,7 @@ func (p *parser) parseSetExpressions() ([]nodes.SetExpression, error) {
 }
 
 // TODO - support ident `=` `DEFAULT`
-// TODO - support `(` ( ident [, ...] ) `)` = ( `(` sub-select `)` | [ `ROW` ] `(` expression | `DEFAULT` `)` )
+// TODO - support `(` ( ident [, ...] ) `)` = ( `(` sub-select `)` | [ `ROW` ] `(` ( expression | `DEFAULT` [, ...]) `)` )
 
 // setExpression := ident `=` expression
 func (p *parser) parseSetExpression() (nodes.SetExpression, error) {
@@ -106,7 +106,7 @@ func (p *parser) parseSetExpression() (nodes.SetExpression, error) {
 		return nodes.SetExpression{}, err
 	}
 
-	// TODO - or subselect
+	// TODO - or subselect, or values
 	expr, err := p.parseExpression(0)
 	if err != nil {
 		return nodes.SetExpression{}, err

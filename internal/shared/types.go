@@ -51,6 +51,18 @@ func EnsureBool(val interface{}, err error) (bool, error) {
 	return typedVal, nil
 }
 
+func EnsureNullableBool(val interface{}, err error) (*bool, error) {
+	if err != nil || val == nil {
+		return nil, err
+	}
+
+	typedVal, ok := val.(bool)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type (wanted bool, have %v)", val)
+	}
+	return &typedVal, nil
+}
+
 func refineType(expectedType TypeKind, value interface{}) TypeKind {
 	if _, ok := value.(string); ok {
 		if expectedType == TypeKindAny || expectedType == TypeKindText {

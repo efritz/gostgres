@@ -10,31 +10,12 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// select := selectExpressions from where orderby limit offset
+// select := simpleSelect orderby limit offset
 func (p *parser) parseSelect(token tokens.Token) (nodes.Node, error) {
-	// TODO - support [ `ALL` | `DISTINCT` [ `ON` ( expression [, ...] ) ] ]
-
-	selectExpressions, err := p.parseSelectExpressions()
+	selectNode, err := p.parseSimpleSelect(token)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO - make from optional
-
-	node, err := p.parseFrom()
-	if err != nil {
-		return nil, err
-	}
-
-	whereExpression, hasWhere, err := p.parseWhere()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO - support [ `GROUP` `BY` expression [, ...] ]
-	// TODO - support [ `HAVING` condition [, ...] ]
-	// TODO - support [ `WINDOW` window_name `AS` ( window_definition ) [, ...] ]
-	// TODO - support ( `UNION` | `INTERSECT` | `EXCEPT` ) [ `ALL` | `DISTINCT`]
 
 	orderExpression, hasOrder, err := p.parseOrderBy()
 	if err != nil {
@@ -52,9 +33,7 @@ func (p *parser) parseSelect(token tokens.Token) (nodes.Node, error) {
 	// TODO - support [ FETCH { FIRST | NEXT } [ count ] { ROW | ROWS } ONLY ]
 	// TODO - support [ FOR { UPDATE | SHARE } [ OF table_name [, ...] ] [ NOWAIT ] [...] ]
 
-	if hasWhere {
-		node = nodes.NewFilter(node, whereExpression)
-	}
+	node := selectNode.node
 	if hasOrder {
 		node = nodes.NewOrder(node, orderExpression)
 	}
@@ -65,9 +44,124 @@ func (p *parser) parseSelect(token tokens.Token) (nodes.Node, error) {
 		node = nodes.NewLimit(node, limitValue)
 	}
 
-	node, err = nodes.NewProjection(node, selectExpressions)
+	node, err = nodes.NewProjection(node, selectNode.selectExpressions)
 	if err != nil {
 		return nil, err
+	}
+
+	return node, nil
+}
+
+type selectNode struct {
+	node              nodes.Node
+	selectExpressions []nodes.ProjectionExpression
+}
+
+// simpleSelect := selectExpressions from where [combinedQuery]
+func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
+	// TODO - support [ `ALL` | `DISTINCT` [ `ON` ( expression [, ...] ) ] ]
+
+	selectExpressions, err := p.parseSelectExpressions()
+	if err != nil {
+		return selectNode{}, err
+	}
+
+	// TODO - make from optional
+
+	node, err := p.parseFrom()
+	if err != nil {
+		return selectNode{}, err
+	}
+
+	whereExpression, hasWhere, err := p.parseWhere()
+	if err != nil {
+		return selectNode{}, err
+	}
+	if hasWhere {
+		node = nodes.NewFilter(node, whereExpression)
+	}
+
+	// TODO - support [ `GROUP` `BY` expression [, ...] ]
+	// TODO - support [ `HAVING` condition [, ...] ]
+	// TODO - support [ `WINDOW` window_name `AS` ( window_definition ) [, ...] ]
+
+	if p.current().Type != tokens.TokenTypeUnion {
+		return selectNode{
+			node:              node,
+			selectExpressions: selectExpressions,
+		}, nil
+	}
+
+	node, err = nodes.NewProjection(node, selectExpressions)
+	if err != nil {
+		return selectNode{}, err
+	}
+	node, err = p.parseCombinedQuery(node)
+	if err != nil {
+		return selectNode{}, err
+	}
+
+	return selectNode{
+		node:              node,
+		selectExpressions: []nodes.ProjectionExpression{nodes.NewWildcardProjectionExpression()},
+	}, nil
+}
+
+// combinedQuery := `UNION` unionTarget [, ...]
+func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
+	// TODO - support ALL vs DISTINCT
+	// TODO - support INTERSECT
+	// TODO - support EXCEPT
+
+	for p.advanceIf(isType(tokens.TokenTypeUnion)) {
+		unionTarget, err := p.parseUnionTarget()
+		if err != nil {
+			return nil, err
+		}
+
+		node, err = nodes.NewUnion(node, unionTarget)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return node, nil
+}
+
+// unionTarget := simpleSelect
+//              | `(` selectOrValues `)`
+func (p *parser) parseUnionTarget() (nodes.Node, error) {
+	expectParen := false
+	var parseFunc func() (nodes.Node, error)
+
+	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
+		expectParen = true
+		parseFunc = p.parseSelectOrValues
+	} else {
+		parseFunc = func() (nodes.Node, error) {
+			token, err := p.mustAdvance(isType(tokens.TokenTypeSelect))
+			if err != nil {
+				return nil, err
+			}
+
+			selectNode, err := p.parseSimpleSelect(token)
+			if err != nil {
+				return nil, err
+			}
+
+			return nodes.NewProjection(selectNode.node, selectNode.selectExpressions)
+		}
+	}
+
+	node, err := parseFunc()
+	if err != nil {
+		return nil, err
+	}
+
+	if expectParen {
+		if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+			return nil, err
+		}
 	}
 
 	return node, nil
@@ -265,8 +359,6 @@ func (p *parser) parseTableExpressions() ([]nodes.Node, error) {
 
 	return tableExpressions, nil
 }
-
-// where from_item can be one of:
 
 // tableExpression := baseTableExpression [( `JOIN` join [...] )]
 func (p *parser) parseTableExpression() (nodes.Node, error) {

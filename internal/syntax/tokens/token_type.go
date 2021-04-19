@@ -39,6 +39,7 @@ const (
 	TokenTypeSelect
 	TokenTypeSet
 	TokenTypeTrue
+	TokenTypeUnion
 	TokenTypeUpdate
 	TokenTypeUsing
 	TokenTypeValues

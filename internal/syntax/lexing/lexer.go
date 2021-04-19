@@ -14,8 +14,7 @@ func newLexer(text string) *lexer {
 }
 
 var keywordSet = map[string]tokens.TokenType{
-	"and": tokens.TokenTypeAnd,
-
+	"and":       tokens.TokenTypeAnd,
 	"as":        tokens.TokenTypeAs,
 	"asc":       tokens.TokenTypeAscending,
 	"by":        tokens.TokenTypeBy,
@@ -40,6 +39,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"select":    tokens.TokenTypeSelect,
 	"set":       tokens.TokenTypeSet,
 	"true":      tokens.TokenTypeTrue,
+	"union":     tokens.TokenTypeUnion,
 	"update":    tokens.TokenTypeUpdate,
 	"using":     tokens.TokenTypeUsing,
 	"values":    tokens.TokenTypeValues,

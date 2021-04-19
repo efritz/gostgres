@@ -9,6 +9,22 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
+// TODO:
+//
+// - x ISNULL
+// - x NOTNULL
+// - x IS [NOT] NULL
+// - x IS [NOT] TRUE
+// - x IS [NOT] FALSE
+// - x IS [NOT] UNKNOWN
+//
+// - x IS [NOT] DISTINCT FROM y
+// - x [NOT] BETWEEN [SYMMETRIC] y AND z
+//
+// - x || y (text concat)
+// - x [NOT] LIKE pattern
+//
+
 func (p *parser) parseExpression(precedence Precedence) (expressions.Expression, error) {
 	expression, err := p.parseExpressionPrefix()
 	if err != nil {

@@ -133,26 +133,9 @@ func (p *parser) parsePostfix(precedence Precedence, factory unaryExpressionPars
 
 func (p *parser) parseBetween(factory ternaryExpressionParserFunc) infixParserFunc {
 	return func(left expressions.Expression, token tokens.Token) (expressions.Expression, error) {
-		var middle expressions.Expression
-		if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
-			var err error
-			middle, err = p.parseExpression(0)
-			if err != nil {
-				return nil, err
-			}
-
-			if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
-				return nil, err
-			}
-		} else {
-			nameToken := p.current()
-			if p.advanceIf(isType(tokens.TokenTypeIdent)) {
-				// TODO - also allow literals
-				middle = expressions.NewNamed(shared.NewField("", nameToken.Text, shared.TypeKindAny, false))
-			} else {
-				// TODO - check was postgres allows here
-				return nil, fmt.Errorf("complex expression must be parenthesized")
-			}
+		middle, err := p.parseExpressionPrefix()
+		if err != nil {
+			return nil, err
 		}
 
 		if _, err := p.mustAdvance(isType(tokens.TokenTypeAnd)); err != nil {

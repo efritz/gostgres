@@ -18,6 +18,7 @@ const (
 	TokenTypeAnd
 	TokenTypeAs
 	TokenTypeAscending
+	TokenTypeBetween
 	TokenTypeBy
 	TokenTypeDelete
 	TokenTypeDescending
@@ -25,15 +26,15 @@ const (
 	TokenTypeExcept
 	TokenTypeFalse
 	TokenTypeFrom
+	TokenTypeILike
 	TokenTypeInsert
 	TokenTypeIntersect
 	TokenTypeInto
 	TokenTypeIs
-	TokenTypeIsNull
 	TokenTypeJoin
+	TokenTypeLike
 	TokenTypeLimit
 	TokenTypeNot
-	TokenTypeNotNull
 	TokenTypeNull
 	TokenTypeOffset
 	TokenTypeOn
@@ -42,8 +43,10 @@ const (
 	TokenTypeReturning
 	TokenTypeSelect
 	TokenTypeSet
+	TokenTypeSymmetric
 	TokenTypeTrue
 	TokenTypeUnion
+	TokenTypeKwUnknown
 	TokenTypeUpdate
 	TokenTypeUsing
 	TokenTypeValues
@@ -71,6 +74,26 @@ const (
 	TokenTypeLessThanOrEqual
 	TokenTypeNotEquals
 	TokenTypeGreaterThanOrEqual
+	TokenTypeConcat
+
+	//
+	// Multiple-keyword operators
+
+	TokenTypeBetweenSymmetric
+	TokenTypeIsDistinctFrom
+	TokenTypeIsFalse
+	TokenTypeIsNotDistinctFrom
+	TokenTypeIsNotFalse
+	TokenTypeIsNotNull
+	TokenTypeIsNotTrue
+	TokenTypeIsNotUnknown
+	TokenTypeIsNull
+	TokenTypeIsTrue
+	TokenTypeIsUnknown
+	TokenTypeNotBetween
+	TokenTypeNotBetweenSymmetric
+	TokenTypeNotLike
+	TokenTypeNotILike
 
 	TokenTypeUnknown
 )

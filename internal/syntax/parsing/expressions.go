@@ -9,22 +9,6 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// TODO:
-//
-// - x ISNULL
-// - x NOTNULL
-// - x IS [NOT] NULL
-// - x IS [NOT] TRUE
-// - x IS [NOT] FALSE
-// - x IS [NOT] UNKNOWN
-//
-// - x IS [NOT] DISTINCT FROM y
-// - x [NOT] BETWEEN [SYMMETRIC] y AND z
-//
-// - x || y (text concat)
-// - x [NOT] LIKE pattern
-//
-
 func (p *parser) parseExpression(precedence Precedence) (expressions.Expression, error) {
 	expression, err := p.parseExpressionPrefix()
 	if err != nil {
@@ -138,5 +122,48 @@ func (p *parser) parseBinary(precedence Precedence, factory binaryExpressionPars
 		}
 
 		return factory(left, right), nil
+	}
+}
+
+func (p *parser) parsePostfix(precedence Precedence, factory unaryExpressionParserFunc) infixParserFunc {
+	return func(left expressions.Expression, token tokens.Token) (expressions.Expression, error) {
+		return factory(left), nil
+	}
+}
+
+func (p *parser) parseBetween(factory ternaryExpressionParserFunc) infixParserFunc {
+	return func(left expressions.Expression, token tokens.Token) (expressions.Expression, error) {
+		var middle expressions.Expression
+		if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
+			var err error
+			middle, err = p.parseExpression(0)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+				return nil, err
+			}
+		} else {
+			nameToken := p.current()
+			if p.advanceIf(isType(tokens.TokenTypeIdent)) {
+				// TODO - also allow literals
+				middle = expressions.NewNamed(shared.NewField("", nameToken.Text, shared.TypeKindAny, false))
+			} else {
+				// TODO - check was postgres allows here
+				return nil, fmt.Errorf("complex expression must be parenthesized")
+			}
+		}
+
+		if _, err := p.mustAdvance(isType(tokens.TokenTypeAnd)); err != nil {
+			return nil, err
+		}
+
+		right, err := p.parseExpression(0)
+		if err != nil {
+			return nil, err
+		}
+
+		return factory(left, middle, right), nil
 	}
 }

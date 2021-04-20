@@ -7,36 +7,56 @@ import (
 )
 
 func NewEquals(left, right Expression) Expression {
-	return newComparison(left, right, "=", func(ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, "=", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		return ot == shared.OrderTypeEqual, nil
 	})
 }
 
+func NewIsDistinctFrom(left, right Expression) Expression {
+	return newComparison(left, right, "=", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
+		if lVal == nil && rVal == nil {
+			return false, nil
+		}
+		if lVal == nil || rVal == nil {
+			return true, nil
+		}
+		return ot != shared.OrderTypeEqual, nil
+	})
+}
+
+func NewBetween(left, middle, right Expression) Expression {
+	return NewAnd(NewLessThanEquals(middle, left), NewLessThanEquals(left, right))
+}
+
+func NewBetweenSymmetric(left, middle, right Expression) Expression {
+	return NewOr(NewBetween(left, middle, right), NewBetween(left, right, middle))
+}
+
 func NewLessThan(left, right Expression) Expression {
-	return newComparison(left, right, "<", func(ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, "<", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		return ot == shared.OrderTypeBefore, nil
 	})
 }
 
 func NewLessThanEquals(left, right Expression) Expression {
-	return newComparison(left, right, "<=", func(ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, "<=", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		return ot == shared.OrderTypeBefore || ot == shared.OrderTypeEqual, nil
 	})
 }
 
 func NewGreaterThan(left, right Expression) Expression {
-	return newComparison(left, right, ">", func(ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, ">", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		return ot == shared.OrderTypeAfter, nil
 	})
 }
 
 func NewGreaterThanEquals(left, right Expression) Expression {
-	return newComparison(left, right, ">=", func(ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, ">=", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		return ot == shared.OrderTypeAfter || ot == shared.OrderTypeEqual, nil
 	})
 }
 
-func newComparison(left, right Expression, operatorText string, f func(ot shared.OrderType) (interface{}, error)) Expression {
+func newComparison(left, right Expression, operatorText string, f func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error)) Expression {
 	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (interface{}, error) {
 		lVal, err := left.ValueFrom(row)
 		if err != nil {
@@ -49,11 +69,10 @@ func newComparison(left, right Expression, operatorText string, f func(ot shared
 		}
 
 		ot := shared.CompareValues(lVal, rVal)
-		switch ot {
-		case shared.OrderTypeIncomparable:
+		if ot == shared.OrderTypeIncomparable {
 			return nil, fmt.Errorf("incomparable types")
-		default:
-			return f(ot)
 		}
+
+		return f(lVal, rVal, ot)
 	})
 }

@@ -23,6 +23,7 @@ type prefixParserFunc func(token tokens.Token) (expressions.Expression, error)
 type infixParserFunc func(left expressions.Expression, token tokens.Token) (expressions.Expression, error)
 type unaryExpressionParserFunc func(expression expressions.Expression) expressions.Expression
 type binaryExpressionParserFunc func(left, right expressions.Expression) expressions.Expression
+type ternaryExpressionParserFunc func(left, middle, right expressions.Expression) expressions.Expression
 
 func newParser(tokenStream []tokens.Token, tables map[string]*nodes.Table) *parser {
 	parser := &parser{
@@ -48,18 +49,37 @@ func newParser(tokenStream []tokens.Token, tables map[string]*nodes.Table) *pars
 		tokens.TokenTypePlus:      parser.parseUnary(expressions.NewUnaryPlus),
 	}
 	parser.infixParsers = map[tokens.TokenType]infixParserFunc{
-		tokens.TokenTypeAnd:                parser.parseBinary(PrecedenceConditionalAnd, expressions.NewAnd),
-		tokens.TokenTypeOr:                 parser.parseBinary(PrecedenceConditionalOr, expressions.NewOr),
-		tokens.TokenTypeMinus:              parser.parseBinary(PrecedenceAdditive, expressions.NewSubtraction),
-		tokens.TokenTypeAsterisk:           parser.parseBinary(PrecedenceMultiplicative, expressions.NewMultiplication),
-		tokens.TokenTypeSlash:              parser.parseBinary(PrecedenceMultiplicative, expressions.NewDivision),
-		tokens.TokenTypePlus:               parser.parseBinary(PrecedenceAdditive, expressions.NewAddition),
-		tokens.TokenTypeLessThan:           parser.parseBinary(PrecedenceComparison, expressions.NewLessThan),
-		tokens.TokenTypeEquals:             parser.parseBinary(PrecedenceEquality, expressions.NewEquals),
-		tokens.TokenTypeGreaterThan:        parser.parseBinary(PrecedenceComparison, expressions.NewGreaterThan),
-		tokens.TokenTypeLessThanOrEqual:    parser.parseBinary(PrecedenceComparison, expressions.NewLessThanEquals),
-		tokens.TokenTypeNotEquals:          negate(parser.parseBinary(PrecedenceEquality, expressions.NewEquals)),
-		tokens.TokenTypeGreaterThanOrEqual: parser.parseBinary(PrecedenceComparison, expressions.NewGreaterThanEquals),
+		tokens.TokenTypeAnd:                 parser.parseBinary(PrecedenceConditionalAnd, expressions.NewAnd),
+		tokens.TokenTypeOr:                  parser.parseBinary(PrecedenceConditionalOr, expressions.NewOr),
+		tokens.TokenTypeMinus:               parser.parseBinary(PrecedenceAdditive, expressions.NewSubtraction),
+		tokens.TokenTypeAsterisk:            parser.parseBinary(PrecedenceMultiplicative, expressions.NewMultiplication),
+		tokens.TokenTypeSlash:               parser.parseBinary(PrecedenceMultiplicative, expressions.NewDivision),
+		tokens.TokenTypePlus:                parser.parseBinary(PrecedenceAdditive, expressions.NewAddition),
+		tokens.TokenTypeLessThan:            parser.parseBinary(PrecedenceComparison, expressions.NewLessThan),
+		tokens.TokenTypeEquals:              parser.parseBinary(PrecedenceEquality, expressions.NewEquals),
+		tokens.TokenTypeGreaterThan:         parser.parseBinary(PrecedenceComparison, expressions.NewGreaterThan),
+		tokens.TokenTypeLessThanOrEqual:     parser.parseBinary(PrecedenceComparison, expressions.NewLessThanEquals),
+		tokens.TokenTypeNotEquals:           negate(parser.parseBinary(PrecedenceEquality, expressions.NewEquals)),
+		tokens.TokenTypeGreaterThanOrEqual:  parser.parseBinary(PrecedenceComparison, expressions.NewGreaterThanEquals),
+		tokens.TokenTypeIsTrue:              parser.parsePostfix(PrecedencePostfix, expressions.NewIsTrue),
+		tokens.TokenTypeIsNotTrue:           negate(parser.parsePostfix(PrecedencePostfix, expressions.NewIsTrue)),
+		tokens.TokenTypeIsFalse:             parser.parsePostfix(PrecedencePostfix, expressions.NewIsFalse),
+		tokens.TokenTypeIsNotFalse:          negate(parser.parsePostfix(PrecedencePostfix, expressions.NewIsFalse)),
+		tokens.TokenTypeIsNull:              parser.parsePostfix(PrecedencePostfix, expressions.NewIsNull),
+		tokens.TokenTypeIsNotNull:           negate(parser.parsePostfix(PrecedencePostfix, expressions.NewIsNull)),
+		tokens.TokenTypeIsUnknown:           parser.parsePostfix(PrecedencePostfix, expressions.NewIsUnknown),
+		tokens.TokenTypeIsNotUnknown:        negate(parser.parsePostfix(PrecedencePostfix, expressions.NewIsUnknown)),
+		tokens.TokenTypeConcat:              parser.parseBinary(PrecedenceGenericOperator, expressions.NewConcat),
+		tokens.TokenTypeIsDistinctFrom:      parser.parseBinary(PrecedenceIs, expressions.NewIsDistinctFrom),
+		tokens.TokenTypeIsNotDistinctFrom:   negate(parser.parseBinary(PrecedenceIs, expressions.NewIsDistinctFrom)),
+		tokens.TokenTypeLike:                parser.parseBinary(PrecedenceLike, expressions.NewLike),
+		tokens.TokenTypeNotLike:             negate(parser.parseBinary(PrecedenceLike, expressions.NewLike)),
+		tokens.TokenTypeILike:               parser.parseBinary(PrecedenceLike, expressions.NewILike),
+		tokens.TokenTypeNotILike:            negate(parser.parseBinary(PrecedenceLike, expressions.NewILike)),
+		tokens.TokenTypeBetween:             parser.parseBetween(expressions.NewBetween),
+		tokens.TokenTypeNotBetween:          negate(parser.parseBetween(expressions.NewBetween)),
+		tokens.TokenTypeBetweenSymmetric:    parser.parseBetween(expressions.NewBetweenSymmetric),
+		tokens.TokenTypeNotBetweenSymmetric: negate(parser.parseBetween(expressions.NewBetweenSymmetric)),
 	}
 
 	return parser

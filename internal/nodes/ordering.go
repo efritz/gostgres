@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -21,6 +22,20 @@ func NewOrderExpression(expressions []FieldExpression) OrderExpression {
 	return orderExpression{
 		expressions: expressions,
 	}
+}
+
+func (e orderExpression) String() string {
+	parts := make([]string, 0, len(e.expressions))
+	for _, expression := range e.expressions {
+		part := fmt.Sprintf("%s", expression.Expression)
+		if expression.Reverse {
+			part += " desc"
+		}
+
+		parts = append(parts, part)
+	}
+
+	return strings.Join(parts, ", ")
 }
 
 func (e orderExpression) Fold() OrderExpression {

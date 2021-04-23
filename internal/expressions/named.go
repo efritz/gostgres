@@ -18,17 +18,36 @@ func NewNamed(field shared.Field) Expression {
 	}
 }
 
-func (e namedExpression) Name() string               { return e.field.Name }
-func (e namedExpression) Fields() []shared.Field     { return []shared.Field{e.field} }
-func (e namedExpression) Fold() Expression           { return e }
-func (e namedExpression) Conjunctions() []Expression { return []Expression{e} }
-
 func (e namedExpression) String() string {
 	if e.field.RelationName != "" {
 		return fmt.Sprintf("%s.%s", e.field.RelationName, e.field.Name)
 	}
 
 	return e.field.Name
+}
+
+func (e namedExpression) Equal(other Expression) bool {
+	if o, ok := other.(namedExpression); ok {
+		return e.field.Name == e.field.Name && (e.field.RelationName == e.field.RelationName || e.field.RelationName == "" || o.field.RelationName == "")
+	}
+
+	return false
+}
+
+func (e namedExpression) Name() string {
+	return e.field.Name
+}
+
+func (e namedExpression) Fields() []shared.Field {
+	return []shared.Field{e.field}
+}
+
+func (e namedExpression) Fold() Expression {
+	return e
+}
+
+func (e namedExpression) Conjunctions() []Expression {
+	return []Expression{e}
 }
 
 func (e namedExpression) Alias(field shared.Field, expression Expression) Expression {

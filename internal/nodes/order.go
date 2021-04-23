@@ -34,13 +34,58 @@ func (n *orderNode) Serialize(w io.Writer, indentationLevel int) {
 func (n *orderNode) Optimize() {
 	if n.order != nil {
 		n.order = n.order.Fold()
+		n.Node.AddOrder(n.order)
 	}
 
 	n.Node.Optimize()
+
+	if n.order == nil {
+		return
+	}
+
+	childOrdering := n.Node.Ordering()
+	if childOrdering == nil {
+		return
+	}
+
+	expressions := n.order.Expressions()
+	childExpressions := childOrdering.Expressions()
+
+	if len(childExpressions) < len(expressions) {
+		return
+	}
+
+	for i, expression := range expressions {
+		if expression.Reverse != childExpressions[i].Reverse {
+			return
+		}
+
+		if !expression.Expression.Equal(childExpressions[i].Expression) {
+			return
+		}
+	}
+
+	n.order = nil
 }
 
-func (n *orderNode) PushDownFilter(filter expressions.Expression) bool {
-	return n.Node.PushDownFilter(filter)
+func (n *orderNode) AddFilter(filter expressions.Expression) {
+	n.Node.AddFilter(filter)
+}
+
+func (n *orderNode) AddOrder(order OrderExpression) {
+	// We are nested in a parent sort and un-separated by an ordering boundary
+	// (such as limit or offset). We'll ignore our old sort criteria and adopt
+	// our parent since the ordering of rows at this point in the query should
+	// not have an effect on the result.
+	n.order = order
+}
+
+func (n *orderNode) Ordering() OrderExpression {
+	if n.order == nil {
+		return n.Node.Ordering()
+	}
+
+	return n.order
 }
 
 func (n *orderNode) Scan(visitor VisitorFunc) error {

@@ -41,8 +41,18 @@ func (n *projectionNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *projectionNode) PushDownFilter(filter expressions.Expression) bool {
-	return n.Node.PushDownFilter(n.projector.projectExpression(filter))
+func (n *projectionNode) AddFilter(filter expressions.Expression) {
+	n.Node.AddFilter(n.projector.projectExpression(filter))
+}
+
+func (n *projectionNode) AddOrder(order OrderExpression) {
+	n.Node.AddOrder(mapOrderExpressions(order, func(expression expressions.Expression) expressions.Expression {
+		return n.projector.projectExpression(expression)
+	}))
+}
+
+func (n *projectionNode) Ordering() OrderExpression {
+	panic("projection.Ordering unimplemented")
 }
 
 func (n *projectionNode) Scan(visitor VisitorFunc) error {

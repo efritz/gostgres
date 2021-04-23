@@ -31,9 +31,16 @@ func (n *limitNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *limitNode) PushDownFilter(filter expressions.Expression) bool {
-	// filter boundary
-	return false
+func (n *limitNode) AddFilter(filter expressions.Expression) {
+	// filter boundary: do not recurse
+}
+
+func (n *limitNode) AddOrder(order OrderExpression) {
+	// filter boundary: do not recurse
+}
+
+func (n *limitNode) Ordering() OrderExpression {
+	return n.Node.Ordering()
 }
 
 func (n *limitNode) Scan(visitor VisitorFunc) error {

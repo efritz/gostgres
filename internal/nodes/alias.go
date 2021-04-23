@@ -41,12 +41,26 @@ func (n *aliasNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *aliasNode) PushDownFilter(filter expressions.Expression) bool {
+func (n *aliasNode) AddFilter(filter expressions.Expression) {
 	for _, field := range n.fields {
 		filter = filter.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind, field.Internal)))
 	}
 
-	return n.Node.PushDownFilter(filter)
+	n.Node.AddFilter(filter)
+}
+
+func (n *aliasNode) AddOrder(order OrderExpression) {
+	n.Node.AddOrder(mapOrderExpressions(order, func(expression expressions.Expression) expressions.Expression {
+		for _, field := range n.fields {
+			expression = expression.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind, field.Internal)))
+		}
+
+		return expression
+	}))
+}
+
+func (n *aliasNode) Ordering() OrderExpression {
+	panic("alias.Ordering unimplemented")
 }
 
 func (n *aliasNode) Scan(visitor VisitorFunc) error {

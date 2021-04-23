@@ -13,7 +13,7 @@ func NewEquals(left, right Expression) Expression {
 }
 
 func NewIsDistinctFrom(left, right Expression) Expression {
-	return newComparison(left, right, "=", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
+	return newComparison(left, right, "is distinct from", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		if lVal == nil && rVal == nil {
 			return false, nil
 		}

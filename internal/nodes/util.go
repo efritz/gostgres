@@ -44,3 +44,58 @@ func combineConjunctions(conjunctions []expressions.Expression) expressions.Expr
 
 	return expression
 }
+
+func lowerFilter(filter expressions.Expression, nodes ...Node) {
+	for _, expression := range filter.Conjunctions() {
+		missing := make([]bool, len(nodes))
+		for _, field := range expression.Fields() {
+			for i, node := range nodes {
+				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
+					missing[i] = true
+				}
+			}
+		}
+
+		for i, missing := range missing {
+			if !missing {
+				nodes[i].AddFilter(expression)
+			}
+		}
+	}
+}
+
+func lowerOrder(order OrderExpression, nodes ...Node) {
+	expressions := order.Expressions()
+
+	for _, node := range nodes {
+		filteredExpressions := make([]FieldExpression, 0, len(expressions))
+	exprLoop:
+		for _, expression := range expressions {
+			for _, field := range expression.Expression.Fields() {
+				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
+					continue exprLoop
+				}
+			}
+
+			filteredExpressions = append(filteredExpressions, expression)
+		}
+
+		if len(filteredExpressions) != 0 {
+			node.AddOrder(NewOrderExpression(filteredExpressions))
+		}
+	}
+}
+
+func mapOrderExpressions(order OrderExpression, f func(expressions.Expression) expressions.Expression) OrderExpression {
+	fieldExpressions := order.Expressions()
+	aliasedExpressions := make([]FieldExpression, 0, len(fieldExpressions))
+
+	for _, fieldExpression := range fieldExpressions {
+		aliasedExpressions = append(aliasedExpressions, FieldExpression{
+			Expression: f(fieldExpression.Expression),
+			Reverse:    fieldExpression.Reverse,
+		})
+	}
+
+	return NewOrderExpression(aliasedExpressions)
+}

@@ -50,8 +50,14 @@ func (n *deleteNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *deleteNode) PushDownFilter(filter expressions.Expression) bool {
-	return false
+func (n *deleteNode) AddFilter(filter expressions.Expression) {
+}
+
+func (n *deleteNode) AddOrder(order OrderExpression) {
+}
+
+func (n *deleteNode) Ordering() OrderExpression {
+	return nil
 }
 
 func (n *deleteNode) Scan(visitor VisitorFunc) error {

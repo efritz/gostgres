@@ -12,7 +12,11 @@ type Node interface {
 	Fields() []shared.Field
 	Serialize(w io.Writer, indentationLevel int)
 	Optimize()
-	PushDownFilter(filter expressions.Expression) bool
+	AddFilter(filter expressions.Expression)
+	AddOrder(order OrderExpression)
+	// TODO
+	// Filter() expressions.Expression
+	Ordering() OrderExpression
 	Scan(visitor VisitorFunc) error
 }
 

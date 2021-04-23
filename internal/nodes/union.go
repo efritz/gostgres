@@ -60,12 +60,16 @@ func (n *unionNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *unionNode) PushDownFilter(filter expressions.Expression) bool {
-	// TODO - only push down if they're valid (see join)
-	// pushedLeft := n.left.PushDownFilter(filter)
-	// pushedRight := n.right.PushDownFilter(filter)
-	// return pushedLeft && pushedRight
-	return false
+func (n *unionNode) AddFilter(filter expressions.Expression) {
+	lowerFilter(filter, n.left, n.right)
+}
+
+func (n *unionNode) AddOrder(order OrderExpression) {
+	lowerOrder(order, n.left, n.right)
+}
+
+func (n *unionNode) Ordering() OrderExpression {
+	return nil
 }
 
 func (n *unionNode) Scan(visitor VisitorFunc) error {

@@ -9,11 +9,9 @@ import (
 )
 
 type dataNode struct {
-	table *Table
-
+	table  *Table
 	filter expressions.Expression
 	order  OrderExpression
-	// TODO - track fields for index only scans as well
 }
 
 var _ Node = &dataNode{}
@@ -33,17 +31,12 @@ func (n *dataNode) Fields() []shared.Field {
 }
 
 func (n *dataNode) Serialize(w io.Writer, indentationLevel int) {
-	scanType := "seq"
-	if n.filter != nil {
-		scanType = "index"
-	}
-
-	io.WriteString(w, fmt.Sprintf("%s%s scan over %s\n", indent(indentationLevel), scanType, n.table.name))
+	io.WriteString(w, fmt.Sprintf("%saccess of %s\n", indent(indentationLevel), n.table.name))
 	if n.filter != nil {
 		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), n.filter))
 	}
 	if n.order != nil {
-		// TODO - not yet populated
+		io.WriteString(w, fmt.Sprintf("%sorder: %s\n", indent(indentationLevel+1), n.order))
 	}
 }
 
@@ -57,17 +50,27 @@ func (n *dataNode) Optimize() {
 	}
 }
 
-func (n *dataNode) PushDownFilter(filter expressions.Expression) bool {
+func (n *dataNode) AddFilter(filter expressions.Expression) {
 	if n.filter != nil {
 		filter = expressions.NewAnd(n.filter, filter)
 	}
 
 	n.filter = filter
-	return true
+}
+
+func (n *dataNode) AddOrder(order OrderExpression) {
+	if n.order != nil {
+		panic("unreachable")
+	}
+
+	n.order = order
+}
+
+func (n *dataNode) Ordering() OrderExpression {
+	return n.order
 }
 
 func (n *dataNode) Scan(visitor VisitorFunc) error {
-	// TODO - scan order needs to be aliased?
 	indexes, err := findIndexIterationOrder(n.order, n.table.rows)
 	if err != nil {
 		return err

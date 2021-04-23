@@ -34,34 +34,27 @@ func (n *filterNode) Serialize(w io.Writer, indentationLevel int) {
 
 func (n *filterNode) Optimize() {
 	if n.filter != nil {
-		n.filter = n.distributeFilter(n.filter.Fold())
+		n.filter = n.filter.Fold()
+		n.Node.AddFilter(n.filter)
 	}
 
 	n.Node.Optimize()
 }
 
-func (n *filterNode) distributeFilter(filter expressions.Expression) expressions.Expression {
-	var conjunctions []expressions.Expression
-	for _, expression := range filter.Conjunctions() {
-		if !n.distributeExpression(expression) {
-			conjunctions = append(conjunctions, expression)
-		}
-	}
-
-	return combineConjunctions(conjunctions)
-}
-
-func (n *filterNode) distributeExpression(expression expressions.Expression) bool {
-	return n.Node.PushDownFilter(expression)
-}
-
-func (n *filterNode) PushDownFilter(filter expressions.Expression) bool {
+func (n *filterNode) AddFilter(filter expressions.Expression) {
 	if n.filter != nil {
 		filter = expressions.NewAnd(n.filter, filter)
 	}
 
 	n.filter = filter
-	return true
+}
+
+func (n *filterNode) AddOrder(order OrderExpression) {
+	n.Node.AddOrder(order)
+}
+
+func (n *filterNode) Ordering() OrderExpression {
+	return n.Node.Ordering()
 }
 
 func (n *filterNode) Scan(visitor VisitorFunc) error {

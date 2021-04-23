@@ -48,68 +48,28 @@ func (n *joinNode) Serialize(w io.Writer, indentationLevel int) {
 
 func (n *joinNode) Optimize() {
 	if n.filter != nil {
-		n.filter = n.distributeFilter(n.filter.Fold())
+		n.filter = n.filter.Fold()
+		lowerFilter(n.filter, n.left, n.right)
 	}
 
 	n.left.Optimize()
 	n.right.Optimize()
 }
 
-func (n *joinNode) distributeFilter(filter expressions.Expression) expressions.Expression {
-	var conjunctions []expressions.Expression
-	for _, expression := range filter.Conjunctions() {
-		if !n.distributeExpression(expression) {
-			conjunctions = append(conjunctions, expression)
-		}
-	}
-
-	return combineConjunctions(conjunctions)
-}
-
-func (n *joinNode) distributeExpression(expression expressions.Expression) bool {
-	namesMatchingInLeft := false
-	namesMissingFromLeft := false
-	namesMatchingInRight := false
-	namesMissingFromRight := false
-
-	for _, field := range expression.Fields() {
-		if _, err := shared.FindMatchingFieldIndex(field, n.left.Fields()); err != nil {
-			namesMissingFromLeft = true
-		} else {
-			namesMatchingInLeft = true
-		}
-		if _, err := shared.FindMatchingFieldIndex(field, n.right.Fields()); err != nil {
-			namesMissingFromRight = true
-		} else {
-			namesMatchingInRight = true
-		}
-	}
-
-	pushedLeft := false
-	if !namesMissingFromLeft {
-		pushedLeft = n.left.PushDownFilter(expression)
-	}
-
-	pushedRight := false
-	if !namesMissingFromRight {
-		pushedRight = n.right.PushDownFilter(expression)
-	}
-
-	if !pushedLeft && !pushedRight && !namesMatchingInLeft && !namesMatchingInRight {
-		// Temporary - used to catch invalid fields because we don't have a query validation pass
-		return false
-	}
-
-	return (namesMatchingInLeft || !namesMissingFromLeft) == pushedLeft && (namesMatchingInRight || !namesMissingFromRight) == pushedRight
-}
-
-func (n *joinNode) PushDownFilter(filter expressions.Expression) bool {
+func (n *joinNode) AddFilter(filter expressions.Expression) {
 	if n.filter != nil {
 		filter = expressions.NewAnd(n.filter, filter)
 	}
 
 	n.filter = filter
-	return true
+}
+
+func (n *joinNode) AddOrder(order OrderExpression) {
+	lowerOrder(order, n.left, n.right)
+}
+
+func (n *joinNode) Ordering() OrderExpression {
+	panic("join.Ordering unimplemented")
 }
 
 func (n *joinNode) Scan(visitor VisitorFunc) error {

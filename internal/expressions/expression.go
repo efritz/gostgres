@@ -5,6 +5,7 @@ import (
 )
 
 type Expression interface {
+	Equal(other Expression) bool
 	Fields() []shared.Field
 	Fold() Expression
 	Alias(field shared.Field, expression Expression) Expression

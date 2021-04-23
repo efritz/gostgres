@@ -36,9 +36,16 @@ func (n *offsetNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *offsetNode) PushDownFilter(filter expressions.Expression) bool {
-	// filter boundary
-	return false
+func (n *offsetNode) AddFilter(filter expressions.Expression) {
+	// filter boundary: do not recurse
+}
+
+func (n *offsetNode) AddOrder(order OrderExpression) {
+	// order boundary: do not recurse
+}
+
+func (n *offsetNode) Ordering() OrderExpression {
+	return n.Node.Ordering()
 }
 
 func (n *offsetNode) Scan(visitor VisitorFunc) error {

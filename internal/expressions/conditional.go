@@ -82,6 +82,14 @@ func (e conditionalExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
+func (e conditionalExpression) Equal(other Expression) bool {
+	if o, ok := other.(conditionalExpression); ok {
+		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
+	}
+
+	return false
+}
+
 func (e conditionalExpression) Fields() []shared.Field {
 	return append(e.left.Fields(), e.right.Fields()...)
 }

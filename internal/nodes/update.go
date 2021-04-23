@@ -57,8 +57,14 @@ func (n *updateNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *updateNode) PushDownFilter(filter expressions.Expression) bool {
-	return false
+func (n *updateNode) AddFilter(filter expressions.Expression) {
+}
+
+func (n *updateNode) AddOrder(order OrderExpression) {
+}
+
+func (n *updateNode) Ordering() OrderExpression {
+	return nil
 }
 
 func (n *updateNode) Scan(visitor VisitorFunc) error {

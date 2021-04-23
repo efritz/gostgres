@@ -3,7 +3,6 @@ package nodes
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
@@ -29,6 +28,7 @@ type groupedRowFilterFunc func(rows []sourcedRow) bool
 func NewIntersect(left Node, right Node, distinct bool) (Node, error) {
 	return newCombination(left, right, intersectFilter, distinct)
 }
+
 func NewExcept(left Node, right Node, distinct bool) (Node, error) {
 	return newCombination(left, right, exceptFilter, distinct)
 }
@@ -77,12 +77,16 @@ func (n *combinationNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *combinationNode) PushDownFilter(filter expressions.Expression) bool {
-	// TODO - only push down if they're valid (see join)
-	// pushedLeft := n.left.PushDownFilter(filter)
-	// pushedRight := n.right.PushDownFilter(filter)
-	// return pushedLeft && pushedRight
-	return false
+func (n *combinationNode) AddFilter(filter expressions.Expression) {
+	lowerFilter(filter, n.left, n.right)
+}
+
+func (n *combinationNode) AddOrder(order OrderExpression) {
+	lowerOrder(order, n.left, n.right)
+}
+
+func (n *combinationNode) Ordering() OrderExpression {
+	return nil
 }
 
 func (n *combinationNode) Scan(visitor VisitorFunc) error {
@@ -97,7 +101,7 @@ func (n *combinationNode) Scan(visitor VisitorFunc) error {
 outer:
 	for _, rows := range hash {
 		if !n.groupedRowFilter(rows) {
-			continue outer
+			continue
 		}
 
 		for _, row := range rows {
@@ -121,28 +125,6 @@ outer:
 	}
 
 	return nil
-}
-
-func hashVisitor(hash map[string][]sourcedRow, index int) VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		key := hashValues(row.Values)
-
-		hash[key] = append(hash[key], sourcedRow{
-			index: index,
-			row:   row,
-		})
-
-		return true, nil
-	}
-}
-
-func hashValues(values []interface{}) string {
-	strValues := make([]string, 0, len(values))
-	for _, value := range values {
-		strValues = append(strValues, fmt.Sprintf("%v", value))
-	}
-
-	return strings.Join(strValues, ":")
 }
 
 func intersectFilter(rows []sourcedRow) bool {

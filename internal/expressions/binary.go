@@ -28,6 +28,14 @@ func (e binaryExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
+func (e binaryExpression) Equal(other Expression) bool {
+	if o, ok := other.(binaryExpression); ok {
+		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
+	}
+
+	return false
+}
+
 func (e binaryExpression) Fields() []shared.Field {
 	return append(e.left.Fields(), e.right.Fields()...)
 }

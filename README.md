@@ -4,12 +4,12 @@ Postgres in Go over a short vacation.
 
 ## Try me out
 
-Simply run `go build && ./gostgres` to drop into a psql-like shell where you can issue SQL commands to an in-memory database.
+Simply run `go build ./cmd/repl && ./repl` to drop into a psql-like shell where you can issue SQL commands to an in-memory database.
 
 Currently this shell pre-loads a number of relations and data (`employees`, `departments`, `locations`, and `regions`).
 
 ```
-$ go build && ./gostgres
+$ go build ./cmd/repl && ./repl
 gostgres ❯ select * from employees where department_id = 2 order by last_name;
  employee_id | first_name | last_name |              email             | manager_id | department_id
 -------------+------------+-----------+--------------------------------+------------+---------------

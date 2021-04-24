@@ -1,19 +1,21 @@
-package repl
+package serialization
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func serializePlan(w io.Writer, node nodes.Node) {
-	node.Serialize(w, 0)
+func SerializeRowsString(rows shared.Rows) string {
+	var buf bytes.Buffer
+	SerializeRows(&buf, rows)
+	return buf.String()
 }
 
-func serializeRows(w io.Writer, rows shared.Rows) {
+func SerializeRows(w io.Writer, rows shared.Rows) {
 	allValues := make([][]string, 0, len(rows.Fields))
 	for _, rowValues := range rows.Values {
 		strValues := make([]string, 0, len(rowValues))

@@ -43,7 +43,7 @@ func (n *filterNode) Optimize() {
 }
 
 func (n *filterNode) AddFilter(filter expressions.Expression) {
-	n.filter = combineFilters(n.filter, filter)
+	n.filter = unionFilters(n.filter, filter)
 }
 
 func (n *filterNode) AddOrder(order OrderExpression) {
@@ -51,7 +51,7 @@ func (n *filterNode) AddOrder(order OrderExpression) {
 }
 
 func (n *filterNode) Filter() expressions.Expression {
-	return combineFilters(n.filter, n.Node.Filter())
+	return unionFilters(n.filter, n.Node.Filter())
 }
 
 func (n *filterNode) Ordering() OrderExpression {

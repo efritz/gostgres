@@ -51,7 +51,7 @@ func (n *dataNode) Optimize() {
 }
 
 func (n *dataNode) AddFilter(filter expressions.Expression) {
-	n.filter = combineFilters(n.filter, filter)
+	n.filter = unionFilters(n.filter, filter)
 }
 
 func (n *dataNode) AddOrder(order OrderExpression) {

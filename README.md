@@ -36,6 +36,11 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
 
 ## TODO
 
+- Tech debt
+    - Combine limit and offset nodes
+    - Combine alias and projection nodes (if possible)
+    - Document internals
+
 - Short-term
     - Support CTEs
     - Support builtin functions

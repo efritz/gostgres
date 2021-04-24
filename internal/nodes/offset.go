@@ -44,6 +44,10 @@ func (n *offsetNode) AddOrder(order OrderExpression) {
 	// order boundary: do not recurse
 }
 
+func (n *offsetNode) Filter() expressions.Expression {
+	return n.Node.Filter()
+}
+
 func (n *offsetNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }

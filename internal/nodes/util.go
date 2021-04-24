@@ -32,17 +32,96 @@ func indent(level int) string {
 	return strings.Repeat(" ", level*4)
 }
 
-func combineConjunctions(conjunctions []expressions.Expression) expressions.Expression {
+func unionFilters(filters ...expressions.Expression) expressions.Expression {
+	var conjunctions []expressions.Expression
+	for _, expression := range filters {
+		if expression == nil {
+			continue
+		}
+
+		conjunctions = append(conjunctions, expression.Conjunctions()...)
+	}
 	if len(conjunctions) == 0 {
 		return nil
 	}
 
-	expression := conjunctions[0]
-	for _, conjunction := range conjunctions[1:] {
-		expression = expressions.NewAnd(expression, conjunction)
+	for i, c1 := range conjunctions {
+		for j, c2 := range conjunctions {
+			if c1 == nil || c2 == nil || j <= i {
+				continue
+			}
+
+			if c1.Equal(c2) {
+				conjunctions[j] = nil
+			}
+		}
 	}
 
-	return expression
+	filter := conjunctions[0]
+	for _, conjunction := range conjunctions[1:] {
+		if conjunction == nil {
+			continue
+		}
+
+		filter = expressions.NewAnd(filter, conjunction)
+	}
+
+	return filter
+}
+
+func filterIntersection(filter, childFilter expressions.Expression) expressions.Expression {
+	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
+	outer:
+		for i, f1 := range conjunctions {
+			for _, f2 := range childConjunctions {
+				if f1.Equal(f2) {
+					continue outer
+				}
+			}
+
+			conjunctions[i] = nil
+		}
+	})
+}
+
+func filterDifference(filter, childFilter expressions.Expression) expressions.Expression {
+	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
+	outer:
+		for i, f1 := range conjunctions {
+			for _, f2 := range childConjunctions {
+				if f1.Equal(f2) {
+					conjunctions[i] = nil
+					continue outer
+				}
+			}
+		}
+	})
+}
+
+func combineFilters(filter, childFilter expressions.Expression, filterConjunctions func(conjunctions, childConjunctions []expressions.Expression)) expressions.Expression {
+	if filter == nil {
+		return nil
+	}
+	if childFilter == nil {
+		return filter
+	}
+
+	conjunctions := filter.Conjunctions()
+	childConjunctions := childFilter.Conjunctions()
+
+	filterConjunctions(conjunctions, childConjunctions)
+
+	temp := conjunctions
+	conjunctions = conjunctions[:]
+	for _, v := range temp {
+		if v == nil {
+			continue
+		}
+
+		conjunctions = append(conjunctions, v)
+	}
+
+	return unionFilters(conjunctions...)
 }
 
 func lowerFilter(filter expressions.Expression, nodes ...Node) {

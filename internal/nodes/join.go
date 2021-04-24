@@ -54,18 +54,19 @@ func (n *joinNode) Optimize() {
 
 	n.left.Optimize()
 	n.right.Optimize()
+	n.filter = filterDifference(n.filter, combineFilters(n.left.Filter(), n.right.Filter()))
 }
 
 func (n *joinNode) AddFilter(filter expressions.Expression) {
-	if n.filter != nil {
-		filter = expressions.NewAnd(n.filter, filter)
-	}
-
-	n.filter = filter
+	n.filter = combineFilters(n.filter, filter)
 }
 
 func (n *joinNode) AddOrder(order OrderExpression) {
 	lowerOrder(order, n.left, n.right)
+}
+
+func (n *joinNode) Filter() expressions.Expression {
+	return combineFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
 func (n *joinNode) Ordering() OrderExpression {
@@ -73,15 +74,13 @@ func (n *joinNode) Ordering() OrderExpression {
 	if leftOrdering == nil {
 		return nil
 	}
-	leftExpressions := leftOrdering.Expressions()
 
 	rightOrdering := n.right.Ordering()
 	if rightOrdering == nil {
 		return leftOrdering
 	}
-	rightExpressions := rightOrdering.Expressions()
 
-	return NewOrderExpression(append(append([]FieldExpression(nil), leftExpressions...), rightExpressions...))
+	return NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
 func (n *joinNode) Scan(visitor VisitorFunc) error {

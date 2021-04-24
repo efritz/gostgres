@@ -63,6 +63,10 @@ func (n *updateNode) AddFilter(filter expressions.Expression) {
 func (n *updateNode) AddOrder(order OrderExpression) {
 }
 
+func (n *updateNode) Filter() expressions.Expression {
+	return nil
+}
+
 func (n *updateNode) Ordering() OrderExpression {
 	return nil
 }

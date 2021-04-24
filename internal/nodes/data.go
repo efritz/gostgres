@@ -51,11 +51,7 @@ func (n *dataNode) Optimize() {
 }
 
 func (n *dataNode) AddFilter(filter expressions.Expression) {
-	if n.filter != nil {
-		filter = expressions.NewAnd(n.filter, filter)
-	}
-
-	n.filter = filter
+	n.filter = combineFilters(n.filter, filter)
 }
 
 func (n *dataNode) AddOrder(order OrderExpression) {
@@ -64,6 +60,10 @@ func (n *dataNode) AddOrder(order OrderExpression) {
 	}
 
 	n.order = order
+}
+
+func (n *dataNode) Filter() expressions.Expression {
+	return n.filter
 }
 
 func (n *dataNode) Ordering() OrderExpression {

@@ -68,6 +68,10 @@ func (n *unionNode) AddOrder(order OrderExpression) {
 	lowerOrder(order, n.left, n.right)
 }
 
+func (n *unionNode) Filter() expressions.Expression {
+	return filterIntersection(n.left.Filter(), n.right.Filter())
+}
+
 func (n *unionNode) Ordering() OrderExpression {
 	return nil
 }

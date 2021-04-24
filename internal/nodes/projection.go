@@ -51,6 +51,15 @@ func (n *projectionNode) AddOrder(order OrderExpression) {
 	}))
 }
 
+func (n *projectionNode) Filter() expressions.Expression {
+	filter := n.Node.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	return n.projector.deprojectExtension(filter)
+}
+
 func (n *projectionNode) Ordering() OrderExpression {
 	ordering := n.Node.Ordering()
 	if ordering == nil {
@@ -58,13 +67,7 @@ func (n *projectionNode) Ordering() OrderExpression {
 	}
 
 	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
-		// TODO - move this into projector
-		for i, alias := range n.projector.aliases {
-			if field, ok := alias.expression.Named(); ok {
-				expression = expression.Alias(field, expressions.NewNamed(n.projector.projectedFields[i]))
-			}
-		}
-		return expression
+		return n.projector.deprojectExtension(expression)
 	})
 }
 

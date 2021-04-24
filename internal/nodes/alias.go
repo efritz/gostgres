@@ -43,7 +43,7 @@ func (n *aliasNode) Optimize() {
 
 func (n *aliasNode) AddFilter(filter expressions.Expression) {
 	for _, field := range n.fields {
-		filter = filter.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind, field.Internal)))
+		filter = filter.Alias(field, namedFromField(field, n.Node.Name()))
 	}
 
 	n.Node.AddFilter(filter)
@@ -52,11 +52,24 @@ func (n *aliasNode) AddFilter(filter expressions.Expression) {
 func (n *aliasNode) AddOrder(order OrderExpression) {
 	n.Node.AddOrder(mapOrderExpressions(order, func(expression expressions.Expression) expressions.Expression {
 		for _, field := range n.fields {
-			expression = expression.Alias(field, expressions.NewNamed(shared.NewField(n.Node.Name(), field.Name, field.TypeKind, field.Internal)))
+			expression = expression.Alias(field, namedFromField(field, n.Node.Name()))
 		}
 
 		return expression
 	}))
+}
+
+func (n *aliasNode) Filter() expressions.Expression {
+	filter := n.Node.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	for _, field := range filter.Fields() {
+		filter = filter.Alias(field, namedFromField(field, n.name))
+	}
+
+	return filter
 }
 
 func (n *aliasNode) Ordering() OrderExpression {
@@ -67,8 +80,7 @@ func (n *aliasNode) Ordering() OrderExpression {
 
 	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
 		for _, field := range expression.Fields() {
-			temp := expression.Alias(field, expressions.NewNamed(shared.NewField(n.name, field.Name, field.TypeKind, field.Internal)))
-			expression = temp
+			expression = expression.Alias(field, namedFromField(field, n.name))
 		}
 
 		return expression
@@ -84,4 +96,8 @@ func (n *aliasNode) Scan(visitor VisitorFunc) error {
 
 		return visitor(aliasedRow)
 	})
+}
+
+func namedFromField(field shared.Field, relationName string) expressions.Expression {
+	return expressions.NewNamed(shared.NewField(relationName, field.Name, field.TypeKind, field.Internal))
 }

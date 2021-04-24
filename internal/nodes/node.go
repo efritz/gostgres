@@ -14,8 +14,7 @@ type Node interface {
 	Optimize()
 	AddFilter(filter expressions.Expression)
 	AddOrder(order OrderExpression)
-	// TODO
-	// Filter() expressions.Expression
+	Filter() expressions.Expression
 	Ordering() OrderExpression
 	Scan(visitor VisitorFunc) error
 }

@@ -85,6 +85,10 @@ func (n *combinationNode) AddOrder(order OrderExpression) {
 	lowerOrder(order, n.left, n.right)
 }
 
+func (n *combinationNode) Filter() expressions.Expression {
+	return n.left.Filter()
+}
+
 func (n *combinationNode) Ordering() OrderExpression {
 	return nil
 }

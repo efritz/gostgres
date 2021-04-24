@@ -39,18 +39,19 @@ func (n *filterNode) Optimize() {
 	}
 
 	n.Node.Optimize()
+	n.filter = filterDifference(n.filter, n.Node.Filter())
 }
 
 func (n *filterNode) AddFilter(filter expressions.Expression) {
-	if n.filter != nil {
-		filter = expressions.NewAnd(n.filter, filter)
-	}
-
-	n.filter = filter
+	n.filter = combineFilters(n.filter, filter)
 }
 
 func (n *filterNode) AddOrder(order OrderExpression) {
 	n.Node.AddOrder(order)
+}
+
+func (n *filterNode) Filter() expressions.Expression {
+	return combineFilters(n.filter, n.Node.Filter())
 }
 
 func (n *filterNode) Ordering() OrderExpression {

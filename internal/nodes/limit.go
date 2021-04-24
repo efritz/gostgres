@@ -39,6 +39,10 @@ func (n *limitNode) AddOrder(order OrderExpression) {
 	// filter boundary: do not recurse
 }
 
+func (n *limitNode) Filter() expressions.Expression {
+	return n.Node.Filter()
+}
+
 func (n *limitNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }

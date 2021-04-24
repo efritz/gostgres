@@ -38,7 +38,7 @@ func NewInsert(node Node, table *Table, name, alias string, columnNames []string
 }
 
 func (n *insertNode) Fields() []shared.Field {
-	return copyFields(n.projector.fields)
+	return copyFields(n.projector.projectedFields)
 }
 
 func (n *insertNode) Serialize(w io.Writer, indentationLevel int) {

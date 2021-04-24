@@ -28,7 +28,7 @@ func NewProjection(node Node, expressions []ProjectionExpression) (Node, error) 
 }
 
 func (n *projectionNode) Fields() []shared.Field {
-	return copyFields(n.projector.fields)
+	return copyFields(n.projector.projectedFields)
 }
 
 func (n *projectionNode) Serialize(w io.Writer, indentationLevel int) {
@@ -52,7 +52,20 @@ func (n *projectionNode) AddOrder(order OrderExpression) {
 }
 
 func (n *projectionNode) Ordering() OrderExpression {
-	panic("projection.Ordering unimplemented")
+	ordering := n.Node.Ordering()
+	if ordering == nil {
+		return nil
+	}
+
+	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
+		// TODO - move this into projector
+		for i, alias := range n.projector.aliases {
+			if field, ok := alias.expression.Named(); ok {
+				expression = expression.Alias(field, expressions.NewNamed(n.projector.projectedFields[i]))
+			}
+		}
+		return expression
+	})
 }
 
 func (n *projectionNode) Scan(visitor VisitorFunc) error {

@@ -9,8 +9,9 @@ import (
 )
 
 type projector struct {
-	aliases []aliasProjection
-	fields  []shared.Field
+	aliases         []aliasProjection
+	fields          []shared.Field
+	projectedFields []shared.Field
 }
 
 func newProjector(name string, fields []shared.Field, expressions []ProjectionExpression) (*projector, error) {
@@ -20,8 +21,9 @@ func newProjector(name string, fields []shared.Field, expressions []ProjectionEx
 	}
 
 	return &projector{
-		aliases: aliases,
-		fields:  fieldsFromProjection(name, aliases),
+		aliases:         aliases,
+		fields:          fields,
+		projectedFields: fieldsFromProjection(name, aliases),
 	}, nil
 }
 
@@ -59,15 +61,15 @@ func (p *projector) projectRow(row shared.Row) (shared.Row, error) {
 		values = append(values, value)
 	}
 
-	return shared.NewRow(p.fields, values)
+	return shared.NewRow(p.projectedFields, values)
 }
 
-func (p *projector) projectExpression(filter expressions.Expression) expressions.Expression {
+func (p *projector) projectExpression(expression expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		filter = filter.Alias(shared.NewField("", alias.alias, shared.TypeKindAny, false), alias.expression)
+		expression = expression.Alias(shared.NewField("", alias.alias, shared.TypeKindAny, false), alias.expression)
 	}
 
-	return filter
+	return expression
 }
 
 func expandProjection(fields []shared.Field, expressions []ProjectionExpression) ([]aliasProjection, error) {

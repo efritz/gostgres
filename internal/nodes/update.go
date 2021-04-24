@@ -44,7 +44,7 @@ func NewUpdate(node Node, table *Table, setExpressions []SetExpression, alias st
 }
 
 func (n *updateNode) Fields() []shared.Field {
-	return copyFields(n.projector.fields)
+	return copyFields(n.projector.projectedFields)
 }
 
 func (n *updateNode) Serialize(w io.Writer, indentationLevel int) {

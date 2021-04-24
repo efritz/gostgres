@@ -69,7 +69,20 @@ func (n *joinNode) AddOrder(order OrderExpression) {
 }
 
 func (n *joinNode) Ordering() OrderExpression {
-	panic("join.Ordering unimplemented")
+	leftOrdering := n.left.Ordering()
+	if leftOrdering == nil {
+		return nil
+	}
+	leftExpressions := leftOrdering.Expressions()
+
+	rightOrdering := n.right.Ordering()
+	if rightOrdering == nil {
+		return leftOrdering
+	}
+	rightExpressions := rightOrdering.Expressions()
+
+	// TODO - do we need to map relation names?
+	return NewOrderExpression(append(append([]FieldExpression(nil), leftExpressions...), rightExpressions...))
 }
 
 func (n *joinNode) Scan(visitor VisitorFunc) error {
@@ -106,5 +119,7 @@ func joinFieldsForNode(node Node) []shared.Field {
 		return node.Fields()
 	}
 
+	// TODO - check ordering above as well
+	// TODO - this seems to be a no-op (should we be mapping to "" always?)
 	return updateRelationName(node.Fields(), node.Name())
 }

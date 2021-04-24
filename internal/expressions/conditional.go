@@ -94,6 +94,10 @@ func (e conditionalExpression) Fields() []shared.Field {
 	return append(e.left.Fields(), e.right.Fields()...)
 }
 
+func (e conditionalExpression) Named() (shared.Field, bool) {
+	return shared.Field{}, false
+}
+
 func (e conditionalExpression) Fold() Expression {
 	return tryEvaluate(e.foldFunc(e.left.Fold(), e.right.Fold()))
 }

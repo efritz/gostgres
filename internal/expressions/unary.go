@@ -38,6 +38,10 @@ func (e unaryExpression) Fields() []shared.Field {
 	return e.expression.Fields()
 }
 
+func (e unaryExpression) Named() (shared.Field, bool) {
+	return shared.Field{}, false
+}
+
 func (e unaryExpression) Conjunctions() []Expression {
 	return []Expression{e}
 }

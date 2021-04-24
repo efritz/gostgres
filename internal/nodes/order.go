@@ -50,7 +50,6 @@ func (n *orderNode) Optimize() {
 
 	expressions := n.order.Expressions()
 	childExpressions := childOrdering.Expressions()
-
 	if len(childExpressions) < len(expressions) {
 		return
 	}

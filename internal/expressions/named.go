@@ -13,7 +13,7 @@ type namedExpression struct {
 var _ Expression = &namedExpression{}
 
 func NewNamed(field shared.Field) Expression {
-	return &namedExpression{
+	return namedExpression{
 		field: field,
 	}
 }
@@ -40,6 +40,10 @@ func (e namedExpression) Name() string {
 
 func (e namedExpression) Fields() []shared.Field {
 	return []shared.Field{e.field}
+}
+
+func (e namedExpression) Named() (shared.Field, bool) {
+	return e.field, true
 }
 
 func (e namedExpression) Fold() Expression {

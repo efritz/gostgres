@@ -60,7 +60,19 @@ func (n *aliasNode) AddOrder(order OrderExpression) {
 }
 
 func (n *aliasNode) Ordering() OrderExpression {
-	panic("alias.Ordering unimplemented")
+	ordering := n.Node.Ordering()
+	if ordering == nil {
+		return nil
+	}
+
+	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
+		for _, field := range expression.Fields() {
+			temp := expression.Alias(field, expressions.NewNamed(shared.NewField(n.name, field.Name, field.TypeKind, field.Internal)))
+			expression = temp
+		}
+
+		return expression
+	})
 }
 
 func (n *aliasNode) Scan(visitor VisitorFunc) error {

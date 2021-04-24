@@ -37,7 +37,7 @@ func NewDelete(node Node, table *Table, alias string, expressions []ProjectionEx
 }
 
 func (n *deleteNode) Fields() []shared.Field {
-	return copyFields(n.projector.fields)
+	return copyFields(n.projector.projectedFields)
 }
 
 func (n *deleteNode) Serialize(w io.Writer, indentationLevel int) {

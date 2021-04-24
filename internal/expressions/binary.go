@@ -40,6 +40,10 @@ func (e binaryExpression) Fields() []shared.Field {
 	return append(e.left.Fields(), e.right.Fields()...)
 }
 
+func (e binaryExpression) Named() (shared.Field, bool) {
+	return shared.Field{}, false
+}
+
 func (e binaryExpression) Fold() Expression {
 	return tryEvaluate(newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom))
 }

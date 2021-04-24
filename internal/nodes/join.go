@@ -22,7 +22,7 @@ func NewJoin(left Node, right Node, condition expressions.Expression) Node {
 		left:   left,
 		right:  right,
 		filter: condition,
-		fields: append(joinFieldsForNode(left), joinFieldsForNode(right)...),
+		fields: append(left.Fields(), right.Fields()...),
 	}
 }
 
@@ -81,7 +81,6 @@ func (n *joinNode) Ordering() OrderExpression {
 	}
 	rightExpressions := rightOrdering.Expressions()
 
-	// TODO - do we need to map relation names?
 	return NewOrderExpression(append(append([]FieldExpression(nil), leftExpressions...), rightExpressions...))
 }
 
@@ -112,14 +111,4 @@ func (n *joinNode) decorateRightVisitor(visitor VisitorFunc, leftRow shared.Row)
 
 		return visitor(row)
 	}
-}
-
-func joinFieldsForNode(node Node) []shared.Field {
-	if node.Name() == "" {
-		return node.Fields()
-	}
-
-	// TODO - check ordering above as well
-	// TODO - this seems to be a no-op (should we be mapping to "" always?)
-	return updateRelationName(node.Fields(), node.Name())
 }

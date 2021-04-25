@@ -116,7 +116,7 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
             union
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
                     access of employees
-                        filter: department_id = 1
+                        filter: department_id = 1 and employees.manager_id = 1
             with
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
                     access of employees
@@ -124,14 +124,13 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
 
 Results:
 
- employee_id | first_name | last_name |            email            | manager_id | department_id
--------------+------------+-----------+-----------------------------+------------+---------------
-           1 |   Annalisa |      Head |   annalisa.head@company.com |          1 |             1
-           4 |      Maria |    Warren |    maria.warren@company.com |          1 |             1
-           5 |     Robert |    Medina |   robert.medina@company.com |          1 |             1
-           7 |      Linda |    Dollar |    linda.dollar@company.com |          1 |             1
-          11 |    Deborah |   Glasser | deborah.glasser@company.com |          9 |             1
-(5 rows)
+ employee_id | first_name | last_name |           email           | manager_id | department_id
+-------------+------------+-----------+---------------------------+------------+---------------
+           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
+           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1
+           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1
+           7 |      Linda |    Dollar |  linda.dollar@company.com |          1 |             1
+(4 rows)
 `),
 		},
 		{

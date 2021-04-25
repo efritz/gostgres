@@ -28,7 +28,7 @@ func (e namedExpression) String() string {
 
 func (e namedExpression) Equal(other Expression) bool {
 	if o, ok := other.(namedExpression); ok {
-		return e.field.Name == e.field.Name && (e.field.RelationName == e.field.RelationName || e.field.RelationName == "" || o.field.RelationName == "")
+		return e.field.Name == o.field.Name && (e.field.RelationName == o.field.RelationName || e.field.RelationName == "" || o.field.RelationName == "")
 	}
 
 	return false

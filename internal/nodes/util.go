@@ -107,20 +107,7 @@ func combineFilters(filter, childFilter expressions.Expression, filterConjunctio
 	}
 
 	conjunctions := filter.Conjunctions()
-	childConjunctions := childFilter.Conjunctions()
-
-	filterConjunctions(conjunctions, childConjunctions)
-
-	temp := conjunctions
-	conjunctions = conjunctions[:]
-	for _, v := range temp {
-		if v == nil {
-			continue
-		}
-
-		conjunctions = append(conjunctions, v)
-	}
-
+	filterConjunctions(conjunctions, childFilter.Conjunctions())
 	return unionFilters(conjunctions...)
 }
 

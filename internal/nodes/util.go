@@ -86,12 +86,11 @@ func filterIntersection(filter, childFilter expressions.Expression) expressions.
 
 func filterDifference(filter, childFilter expressions.Expression) expressions.Expression {
 	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
-	outer:
 		for i, f1 := range conjunctions {
 			for _, f2 := range childConjunctions {
 				if f1.Equal(f2) {
 					conjunctions[i] = nil
-					continue outer
+					break
 				}
 			}
 		}

@@ -20,7 +20,7 @@ func TestSimpleSelfJoinQueries(t *testing.T) {
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
-    join
+    join using hash
         alias as e
             access of employees
     with
@@ -61,7 +61,7 @@ Results:
 Plan:
 
 select (employee_id, last_name, m.employee_id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name)
-    join
+    join using hash
         alias as e
             access of employees
     with
@@ -97,7 +97,7 @@ Results:
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
-    join
+    join using hash
         alias as e
             access of employees
     with
@@ -133,7 +133,7 @@ Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     order by m.last_name, e.last_name
-        join
+        join using hash
             alias as e
                 access of employees
                     order: employees.last_name
@@ -174,7 +174,7 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     limit 2
         offset 3
-            join
+            join using hash
                 alias as e
                     access of employees
             with

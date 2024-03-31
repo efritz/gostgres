@@ -20,7 +20,7 @@ func TestSimpleJoinQueries(t *testing.T) {
 Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
-    join
+    join using hash
         alias as l
             access of locations
     with
@@ -53,7 +53,7 @@ Results:
 Plan:
 
 select (location_name as lname, r.region_name as rname)
-    join
+    join using hash
         alias as l
             access of locations
     with
@@ -83,7 +83,7 @@ Results:
 Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
-    join
+    join using hash
         alias as l
             access of locations
     with
@@ -113,7 +113,7 @@ Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
     order by region_name, location_name desc
-        join
+        join using hash
             alias as l
                 access of locations
                     order: location_name desc
@@ -149,7 +149,7 @@ Plan:
 select (location_id, location_name, region_id, region_id, region_name)
     limit 2
         offset 3
-            join
+            join using nested loop
                 access of locations
             with
                 access of regions

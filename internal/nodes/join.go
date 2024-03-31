@@ -9,20 +9,28 @@ import (
 )
 
 type joinNode struct {
-	left   Node
-	right  Node
-	filter expressions.Expression
-	fields []shared.Field
+	left     Node
+	right    Node
+	filter   expressions.Expression
+	fields   []shared.Field
+	strategy joinStrategy
+}
+
+type joinStrategy interface {
+	Name() string
+	Ordering() OrderExpression
+	Scan(visitor VisitorFunc) error
 }
 
 var _ Node = &joinNode{}
 
 func NewJoin(left Node, right Node, condition expressions.Expression) Node {
 	return &joinNode{
-		left:   left,
-		right:  right,
-		filter: condition,
-		fields: append(left.Fields(), right.Fields()...),
+		left:     left,
+		right:    right,
+		filter:   condition,
+		fields:   append(left.Fields(), right.Fields()...),
+		strategy: nil,
 	}
 }
 
@@ -36,7 +44,7 @@ func (n *joinNode) Fields() []shared.Field {
 
 func (n *joinNode) Serialize(w io.Writer, indentationLevel int) {
 	indentation := indent(indentationLevel)
-	io.WriteString(w, fmt.Sprintf("%sjoin\n", indentation))
+	io.WriteString(w, fmt.Sprintf("%sjoin using %s\n", indentation, n.strategy.Name()))
 	n.left.Serialize(w, indentationLevel+1)
 	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
 	n.right.Serialize(w, indentationLevel+1)
@@ -55,6 +63,42 @@ func (n *joinNode) Optimize() {
 	n.left.Optimize()
 	n.right.Optimize()
 	n.filter = filterDifference(n.filter, unionFilters(n.left.Filter(), n.right.Filter()))
+	n.strategy = n.selectStrategy()
+}
+
+func (n *joinNode) selectStrategy() joinStrategy {
+	// TODO - expand to handle (a == b AND c == d)
+	if expressions.IsEquality(n.filter) {
+		if fields := n.filter.Fields(); len(fields) == 2 {
+			_, err1 := shared.FindMatchingFieldIndex(fields[0], n.left.Fields())
+			_, err2 := shared.FindMatchingFieldIndex(fields[1], n.right.Fields())
+			_, err3 := shared.FindMatchingFieldIndex(fields[1], n.left.Fields())
+			_, err4 := shared.FindMatchingFieldIndex(fields[0], n.right.Fields())
+
+			if (err1 == nil && err2 == nil) && (err3 != nil && err4 != nil) {
+				return &hashJoinStrategy{
+					n:          n,
+					leftField:  fields[0],
+					rightField: fields[1],
+				}
+			}
+
+			if (err1 != nil && err2 != nil) && (err3 == nil && err4 == nil) {
+				return &hashJoinStrategy{
+					n:          n,
+					leftField:  fields[1],
+					rightField: fields[0],
+				}
+			}
+		}
+	}
+
+	// TODO - attempt merge join strategy when applicable
+	if false {
+		return &mergeJoinStrategy{n: n}
+	}
+
+	return &nestedLoopJoinStrategy{n: n}
 }
 
 func (n *joinNode) AddFilter(filter expressions.Expression) {
@@ -70,44 +114,17 @@ func (n *joinNode) Filter() expressions.Expression {
 }
 
 func (n *joinNode) Ordering() OrderExpression {
-	leftOrdering := n.left.Ordering()
-	if leftOrdering == nil {
-		return nil
+	if n.strategy == nil {
+		panic("No strategy set - optimization required before ordering can be determined")
 	}
 
-	rightOrdering := n.right.Ordering()
-	if rightOrdering == nil {
-		return leftOrdering
-	}
-
-	return NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
+	return n.strategy.Ordering()
 }
 
 func (n *joinNode) Scan(visitor VisitorFunc) error {
-	return n.left.Scan(n.decorateLeftVisitor(visitor))
-}
-
-func (n *joinNode) decorateLeftVisitor(visitor VisitorFunc) VisitorFunc {
-	return func(leftRow shared.Row) (bool, error) {
-		return true, n.right.Scan(n.decorateRightVisitor(visitor, leftRow))
+	if n.strategy == nil {
+		panic("No strategy set - optimization required before scanning can be performed")
 	}
-}
 
-func (n *joinNode) decorateRightVisitor(visitor VisitorFunc, leftRow shared.Row) VisitorFunc {
-	return func(rightRow shared.Row) (bool, error) {
-		row, err := shared.NewRow(n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
-		if err != nil {
-			return false, err
-		}
-
-		if n.filter != nil {
-			if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {
-				return false, err
-			} else if !ok {
-				return true, nil
-			}
-		}
-
-		return visitor(row)
-	}
+	return n.strategy.Scan(visitor)
 }

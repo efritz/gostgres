@@ -58,7 +58,6 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Support inserts on conflict
     - Fetch optimization
     - Outer joins
-    - Non-nested-loop joins
 
 - Long-term
     - Write to disk

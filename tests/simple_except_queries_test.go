@@ -41,7 +41,7 @@ select (location_id, location_name, region_id)
                             order: locations.region_id, locations.location_id
                 with
                     select (location_id, location_name, region_id)
-                        join
+                        join using hash
                             alias as l
                                 access of locations
                         with

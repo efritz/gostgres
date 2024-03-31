@@ -12,6 +12,16 @@ func NewEquals(left, right Expression) Expression {
 	})
 }
 
+func IsEquality(expr Expression) bool {
+	if e, ok := expr.(binaryExpression); ok {
+		_, leftNamed := e.left.Named() // TODO - too restrictive
+		_, rightNamed := e.right.Named()
+		return e.operatorText == "=" && leftNamed && rightNamed
+	}
+
+	return false
+}
+
 func NewIsDistinctFrom(left, right Expression) Expression {
 	return newComparison(left, right, "is distinct from", func(lVal, rVal interface{}, ot shared.OrderType) (interface{}, error) {
 		if lVal == nil && rVal == nil {

@@ -42,7 +42,7 @@ func (e binaryExpression) Equal(other Expression) bool {
 		//
 		// A normalization path would mean that we only choose one set of operators
 		// from an equivalency (rewrite > in terms of <), and we must also be able
-		// to sort expressions in a determinstic way for operators that are associative.
+		// to sort expressions in a deterministic way for operators that are associative.
 
 		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
 	}

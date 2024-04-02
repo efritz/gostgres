@@ -67,29 +67,12 @@ func (n *joinNode) Optimize() {
 }
 
 func (n *joinNode) selectStrategy() joinStrategy {
-	// TODO - expand to handle (a == b AND c == d)
-	if expressions.IsEquality(n.filter) {
-		if fields := n.filter.Fields(); len(fields) == 2 {
-			_, err1 := shared.FindMatchingFieldIndex(fields[0], n.left.Fields())
-			_, err2 := shared.FindMatchingFieldIndex(fields[1], n.right.Fields())
-			_, err3 := shared.FindMatchingFieldIndex(fields[1], n.left.Fields())
-			_, err4 := shared.FindMatchingFieldIndex(fields[0], n.right.Fields())
-
-			if (err1 == nil && err2 == nil) && (err3 != nil && err4 != nil) {
-				return &hashJoinStrategy{
-					n:          n,
-					leftField:  fields[0],
-					rightField: fields[1],
-				}
-			}
-
-			if (err1 != nil && err2 != nil) && (err3 == nil && err4 == nil) {
-				return &hashJoinStrategy{
-					n:          n,
-					leftField:  fields[1],
-					rightField: fields[0],
-				}
-			}
+	comparisonType, left, right := n.decomposeFilter()
+	if comparisonType == expressions.ComparisonTypeEquals {
+		return &hashJoinStrategy{
+			n:     n,
+			left:  left,
+			right: right,
 		}
 	}
 
@@ -99,6 +82,30 @@ func (n *joinNode) selectStrategy() joinStrategy {
 	}
 
 	return &nestedLoopJoinStrategy{n: n}
+}
+
+func (n *joinNode) decomposeFilter() (_ expressions.ComparisonType, left, right expressions.Expression) {
+	if comparisonType, left, right := expressions.IsComparison(n.filter); comparisonType != expressions.ComparisonTypeUnknown {
+		if bindsAllFields(n.left, left) && bindsAllFields(n.right, right) {
+			return comparisonType, left, right
+		}
+
+		if bindsAllFields(n.left, right) && bindsAllFields(n.right, left) {
+			return comparisonType.Flip(), right, left
+		}
+	}
+
+	return expressions.ComparisonTypeUnknown, nil, nil
+}
+
+func bindsAllFields(n Node, expr expressions.Expression) bool {
+	for _, field := range expr.Fields() {
+		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (n *joinNode) AddFilter(filter expressions.Expression) {

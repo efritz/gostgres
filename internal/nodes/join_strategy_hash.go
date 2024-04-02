@@ -1,11 +1,14 @@
 package nodes
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type hashJoinStrategy struct {
-	n          *joinNode
-	leftField  shared.Field
-	rightField shared.Field
+	n     *joinNode
+	left  expressions.Expression
+	right expressions.Expression
 }
 
 func (s *hashJoinStrategy) Name() string {
@@ -20,11 +23,10 @@ func (s *hashJoinStrategy) Scan(visitor VisitorFunc) error {
 	h := map[interface{}]shared.Row{}
 
 	if err := s.n.right.Scan(func(row shared.Row) (bool, error) {
-		i, err := shared.FindMatchingFieldIndex(s.rightField, row.Fields)
+		key, err := s.right.ValueFrom(row)
 		if err != nil {
 			return false, err
 		}
-		key := row.Values[i]
 
 		h[key] = row
 		return true, nil
@@ -33,11 +35,10 @@ func (s *hashJoinStrategy) Scan(visitor VisitorFunc) error {
 	}
 
 	return s.n.left.Scan(func(row shared.Row) (bool, error) {
-		i, err := shared.FindMatchingFieldIndex(s.leftField, row.Fields)
+		key, err := s.left.ValueFrom(row)
 		if err != nil {
 			return false, err
 		}
-		key := row.Values[i]
 
 		if rightRow, ok := h[key]; ok {
 			row, err := shared.NewRow(s.n.Fields(), append(copyValues(row.Values), rightRow.Values...))

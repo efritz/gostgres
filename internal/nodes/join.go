@@ -76,9 +76,14 @@ func (n *joinNode) selectStrategy() joinStrategy {
 		}
 	}
 
-	// TODO - attempt merge join strategy when applicable
+	// TODO - determine condition
 	if false {
-		return &mergeJoinStrategy{n: n}
+		return &mergeJoinStrategy{
+			n:              n,
+			left:           left,
+			right:          right,
+			comparisonType: comparisonType,
+		}
 	}
 
 	return &nestedLoopJoinStrategy{n: n}

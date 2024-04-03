@@ -1,7 +1,12 @@
 package nodes
 
+import "github.com/efritz/gostgres/internal/expressions"
+
 type mergeJoinStrategy struct {
-	n *joinNode
+	n              *joinNode
+	left           expressions.Expression
+	right          expressions.Expression
+	comparisonType expressions.ComparisonType
 }
 
 func (s *mergeJoinStrategy) Name() string {
@@ -9,9 +14,10 @@ func (s *mergeJoinStrategy) Name() string {
 }
 
 func (s *mergeJoinStrategy) Ordering() OrderExpression {
-	panic("merge join strategy unimplemented")
+	return nil // TODO - ordered on the left + right fields?
 }
 
 func (s *mergeJoinStrategy) Scan(visitor VisitorFunc) error {
-	panic("merge join strategy unimplemented")
+	// TODO - how to do this with scanners?
+	panic("unimplemented")
 }

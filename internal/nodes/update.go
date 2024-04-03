@@ -71,56 +71,60 @@ func (n *updateNode) Ordering() OrderExpression {
 	return nil
 }
 
-func (n *updateNode) Scan(visitor VisitorFunc) error {
-	return n.Node.Scan(n.decorateVisitor(visitor))
-}
+func (n *updateNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
+	}
 
-func (n *updateNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		values := make([]interface{}, len(row.Values))
-		copy(values, row.Values)
-
-		for _, set := range n.setExpressions {
-			value, err := set.Expression.ValueFrom(row)
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			row, err := scanner.Scan()
 			if err != nil {
-				return false, err
+				return shared.Row{}, err
 			}
 
-			found := false
-			for i, field := range row.Fields {
-				if field.Name == set.Name {
-					found = true
-					values[i] = value
+			values := make([]interface{}, len(row.Values))
+			copy(values, row.Values)
+
+			for _, set := range n.setExpressions {
+				value, err := set.Expression.ValueFrom(row)
+				if err != nil {
+					return shared.Row{}, err
+				}
+
+				found := false
+				for i, field := range row.Fields {
+					if field.Name == set.Name {
+						found = true
+						values[i] = value
+					}
+				}
+
+				if !found {
+					return shared.Row{}, fmt.Errorf("unknown column %s", set.Name)
 				}
 			}
 
-			if !found {
-				return false, fmt.Errorf("unknown column %s", set.Name)
+			updatedRow, err := shared.NewRow(row.Fields, values)
+			if err != nil {
+				return shared.Row{}, err
 			}
-		}
 
-		updatedRow, err := shared.NewRow(row.Fields, values)
-		if err != nil {
-			return false, err
-		}
+			ok, err := n.table.Update(updatedRow)
+			if err != nil {
+				return shared.Row{}, err
+			}
+			if !ok {
+				continue
+			}
 
-		ok, err := n.table.Update(updatedRow)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return true, nil
-		}
+			// TODO - necessary?
+			if len(n.projector.aliases) == 0 {
+				return shared.Row{}, nil
+			}
 
-		if len(n.projector.aliases) == 0 {
-			return true, nil
+			return n.projector.projectRow(updatedRow)
 		}
-
-		projectedRow, err := n.projector.projectRow(updatedRow)
-		if err != nil {
-			return false, err
-		}
-
-		return visitor(projectedRow)
-	}
+	}), nil
 }

@@ -24,23 +24,59 @@ func (s *nestedLoopJoinStrategy) Ordering() OrderExpression {
 	return NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scan(visitor VisitorFunc) error {
-	return s.n.left.Scan(func(leftRow shared.Row) (bool, error) {
-		return true, s.n.right.Scan(func(rightRow shared.Row) (bool, error) {
+func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
+	leftScanner, err := s.n.left.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		leftRow      *shared.Row
+		rightScanner Scanner
+	)
+
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			if leftRow == nil {
+				row, err := leftScanner.Scan()
+				if err != nil {
+					return shared.Row{}, err
+				}
+
+				scanner, err := s.n.right.Scanner()
+				if err != nil {
+					return shared.Row{}, nil
+				}
+
+				leftRow = &row
+				rightScanner = scanner
+			}
+
+			rightRow, err := rightScanner.Scan()
+			if err != nil {
+				if err == ErrNoRows {
+					leftRow = nil
+					rightScanner = nil
+					continue
+				}
+
+				return shared.Row{}, err
+			}
+
 			row, err := shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 			if err != nil {
-				return false, err
+				return shared.Row{}, err
 			}
 
 			if s.n.filter != nil {
 				if ok, err := shared.EnsureBool(s.n.filter.ValueFrom(row)); err != nil {
-					return false, err
+					return shared.Row{}, err
 				} else if !ok {
-					return true, nil
+					continue
 				}
 			}
 
-			return visitor(row)
-		})
-	})
+			return row, nil
+		}
+	}), nil
 }

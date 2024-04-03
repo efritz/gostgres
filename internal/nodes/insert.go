@@ -65,40 +65,44 @@ func (n *insertNode) Ordering() OrderExpression {
 	return nil
 }
 
-func (n *insertNode) Scan(visitor VisitorFunc) error {
-	return n.Node.Scan(n.decorateVisitor(visitor))
-}
-
-func (n *insertNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		fields := make([]shared.Field, 0, len(n.table.Fields()))
-		for _, field := range n.table.Fields() {
-			if !field.Internal {
-				fields = append(fields, field)
-			}
-		}
-
-		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
-		if err != nil {
-			return false, err
-		}
-
-		insertedRow, err = n.table.Insert(insertedRow)
-		if err != nil {
-			return false, err
-		}
-
-		if len(n.projector.aliases) == 0 {
-			return true, nil
-		}
-
-		projectedRow, err := n.projector.projectRow(insertedRow)
-		if err != nil {
-			return false, err
-		}
-
-		return visitor(projectedRow)
+func (n *insertNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
 	}
+
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			row, err := scanner.Scan()
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			fields := make([]shared.Field, 0, len(n.table.Fields()))
+			for _, field := range n.table.Fields() {
+				if !field.Internal {
+					fields = append(fields, field)
+				}
+			}
+
+			insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			insertedRow, err = n.table.Insert(insertedRow)
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			// TODO - necessary?
+			if len(n.projector.aliases) == 0 {
+				return shared.Row{}, nil
+			}
+
+			return n.projector.projectRow(insertedRow)
+		}
+	}), nil
 }
 
 func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []interface{} {

@@ -52,18 +52,30 @@ func (n *offsetNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }
 
-func (n *offsetNode) Scan(visitor VisitorFunc) error {
-	if n.offset == 0 {
-		return n.Node.Scan(visitor)
+func (n *offsetNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
 	}
 
 	offset := n.offset
-	return n.Node.Scan(func(row shared.Row) (bool, error) {
-		offset--
-		if offset >= 0 {
-			return true, nil
-		}
+	if offset == 0 {
+		return scanner, nil
+	}
 
-		return visitor(row)
-	})
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			row, err := scanner.Scan()
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			offset--
+			if offset >= 0 {
+				continue
+			}
+
+			return row, err
+		}
+	}), nil
 }

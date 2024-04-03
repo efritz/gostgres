@@ -19,10 +19,15 @@ func (s *hashJoinStrategy) Ordering() OrderExpression {
 	return nil // TODO - ordered on the left field?
 }
 
-func (s *hashJoinStrategy) Scan(visitor VisitorFunc) error {
+func (s *hashJoinStrategy) Scanner() (Scanner, error) {
+	// TODO - can share with grouping?
 	h := map[interface{}]shared.Row{}
+	rightScanner, err := s.n.right.Scanner()
+	if err != nil {
+		return nil, err
+	}
 
-	if err := s.n.right.Scan(func(row shared.Row) (bool, error) {
+	if err := VisitRows(rightScanner, func(row shared.Row) (bool, error) {
 		key, err := s.right.ValueFrom(row)
 		if err != nil {
 			return false, err
@@ -31,24 +36,29 @@ func (s *hashJoinStrategy) Scan(visitor VisitorFunc) error {
 		h[key] = row
 		return true, nil
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	return s.n.left.Scan(func(row shared.Row) (bool, error) {
-		key, err := s.left.ValueFrom(row)
-		if err != nil {
-			return false, err
-		}
+	leftScanner, err := s.n.left.Scanner()
+	if err != nil {
+		return nil, err
+	}
 
-		if rightRow, ok := h[key]; ok {
-			row, err := shared.NewRow(s.n.Fields(), append(copyValues(row.Values), rightRow.Values...))
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			leftRow, err := leftScanner.Scan()
 			if err != nil {
-				return false, err
+				return shared.Row{}, err
 			}
 
-			return visitor(row)
-		}
+			key, err := s.left.ValueFrom(leftRow)
+			if err != nil {
+				return shared.Row{}, err
+			}
 
-		return true, nil
-	})
+			if rightRow, ok := h[key]; ok {
+				return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+			}
+		}
+	}), nil
 }

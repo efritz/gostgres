@@ -71,17 +71,18 @@ func (n *projectionNode) Ordering() OrderExpression {
 	})
 }
 
-func (n *projectionNode) Scan(visitor VisitorFunc) error {
-	return n.Node.Scan(n.decorateVisitor(visitor))
-}
+func (n *projectionNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
+	}
 
-func (n *projectionNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		row, err := n.projector.projectRow(row)
+	return ScannerFunc(func() (shared.Row, error) {
+		row, err := scanner.Scan()
 		if err != nil {
-			return false, err
+			return shared.Row{}, err
 		}
 
-		return visitor(row)
-	}
+		return n.projector.projectRow(row)
+	}), nil
 }

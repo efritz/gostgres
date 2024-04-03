@@ -19,7 +19,7 @@ type joinNode struct {
 type joinStrategy interface {
 	Name() string
 	Ordering() OrderExpression
-	Scan(visitor VisitorFunc) error
+	Scanner() (Scanner, error)
 }
 
 var _ Node = &joinNode{}
@@ -133,10 +133,10 @@ func (n *joinNode) Ordering() OrderExpression {
 	return n.strategy.Ordering()
 }
 
-func (n *joinNode) Scan(visitor VisitorFunc) error {
+func (n *joinNode) Scanner() (Scanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}
 
-	return n.strategy.Scan(visitor)
+	return n.strategy.Scanner()
 }

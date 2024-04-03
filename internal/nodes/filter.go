@@ -58,18 +58,30 @@ func (n *filterNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }
 
-func (n *filterNode) Scan(visitor VisitorFunc) error {
-	if n.filter == nil {
-		return n.Node.Scan(visitor)
+func (n *filterNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
 	}
 
-	return n.Node.Scan(func(row shared.Row) (bool, error) {
-		if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {
-			return false, err
-		} else if !ok {
-			return true, nil
-		}
+	if n.filter == nil {
+		return scanner, nil
+	}
 
-		return visitor(row)
-	})
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			row, err := scanner.Scan()
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {
+				return shared.Row{}, err
+			} else if !ok {
+				continue
+			}
+
+			return row, nil
+		}
+	}), nil
 }

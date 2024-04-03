@@ -47,14 +47,20 @@ func (n *limitNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }
 
-func (n *limitNode) Scan(visitor VisitorFunc) error {
+func (n *limitNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
 	remaining := n.limit
-	return n.Node.Scan(func(row shared.Row) (bool, error) {
+
+	return ScannerFunc(func() (shared.Row, error) {
 		if remaining <= 0 {
-			return false, nil
+			return shared.Row{}, ErrNoRows
 		}
 
 		remaining--
-		return visitor(row)
-	})
+		return scanner.Scan()
+	}), nil
 }

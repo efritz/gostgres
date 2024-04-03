@@ -76,7 +76,7 @@ func (n *unionNode) Ordering() OrderExpression {
 	return nil
 }
 
-func (n *unionNode) Scan(visitor VisitorFunc) error {
+func (n *unionNode) Scanner() (Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := hashValues(row.Values)
@@ -88,26 +88,43 @@ func (n *unionNode) Scan(visitor VisitorFunc) error {
 		return true
 	}
 
-	if err := n.left.Scan(func(row shared.Row) (bool, error) {
-		if !mark(row) {
-			return true, nil
-		}
-
-		return visitor(row)
-	}); err != nil {
-		return err
+	leftScanner, err := n.left.Scanner()
+	if err != nil {
+		return nil, err
 	}
 
-	return n.right.Scan(func(row shared.Row) (bool, error) {
-		if !mark(row) {
-			return true, nil
+	// TODO - can do lazily?
+	rightScanner, err := n.right.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
+	return ScannerFunc(func() (shared.Row, error) {
+		for leftScanner != nil {
+			row, err := leftScanner.Scan()
+			if err != nil {
+				if err == ErrNoRows {
+					leftScanner = nil
+					continue
+				}
+
+				return shared.Row{}, err
+			}
+
+			if mark(row) {
+				return row, nil
+			}
 		}
 
-		row, err := shared.NewRow(n.Fields(), row.Values)
-		if err != nil {
-			return false, err
-		}
+		for {
+			row, err := rightScanner.Scan()
+			if err != nil {
+				return shared.Row{}, err
+			}
 
-		return visitor(row)
-	})
+			if mark(row) {
+				return shared.NewRow(n.Fields(), row.Values)
+			}
+		}
+	}), nil
 }

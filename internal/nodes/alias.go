@@ -87,15 +87,20 @@ func (n *aliasNode) Ordering() OrderExpression {
 	})
 }
 
-func (n *aliasNode) Scan(visitor VisitorFunc) error {
-	return n.Node.Scan(func(row shared.Row) (bool, error) {
-		aliasedRow, err := shared.NewRow(n.fields, row.Values)
+func (n *aliasNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
+	return ScannerFunc(func() (shared.Row, error) {
+		row, err := scanner.Scan()
 		if err != nil {
-			return false, err
+			return shared.Row{}, err
 		}
 
-		return visitor(aliasedRow)
-	})
+		return shared.NewRow(n.fields, row.Values)
+	}), nil
 }
 
 func namedFromField(field shared.Field, relationName string) expressions.Expression {

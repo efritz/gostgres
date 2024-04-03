@@ -93,42 +93,53 @@ func (n *combinationNode) Ordering() OrderExpression {
 	return nil
 }
 
-func (n *combinationNode) Scan(visitor VisitorFunc) error {
+func (n *combinationNode) Scanner() (Scanner, error) {
+	leftScanner, err := n.left.Scanner()
+	if err != nil {
+		return nil, err
+	}
+	rightScanner, err := n.right.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
 	hash := map[string][]sourcedRow{}
-	if err := n.left.Scan(hashVisitor(hash, 0)); err != nil {
-		return err
+	if err := VisitRows(leftScanner, hashVisitor(hash, 0)); err != nil {
+		return nil, err
 	}
-	if err := n.right.Scan(hashVisitor(hash, 1)); err != nil {
-		return err
+	if err := VisitRows(rightScanner, hashVisitor(hash, 1)); err != nil {
+		return nil, err
 	}
 
-outer:
-	for _, rows := range hash {
-		if !n.groupedRowFilter(rows) {
-			continue
+	var selection []sourcedRow
+
+	return ScannerFunc(func() (shared.Row, error) {
+	outer:
+		for {
+			if len(selection) > 0 {
+				row := selection[0]
+				selection = selection[1:]
+				return shared.NewRow(n.Fields(), row.row.Values)
+			}
+
+			for key, rows := range hash {
+				if n.groupedRowFilter(rows) {
+					if n.distinct {
+						selection = rows[:1]
+					} else {
+						selection = rows
+					}
+				}
+
+				delete(hash, key)
+				continue outer
+			}
+
+			break
 		}
 
-		for _, row := range rows {
-			row, err := shared.NewRow(n.Fields(), row.row.Values)
-			if err != nil {
-				return err
-			}
-
-			ok, err := visitor(row)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				break outer
-			}
-
-			if n.distinct {
-				break
-			}
-		}
-	}
-
-	return nil
+		return shared.Row{}, ErrNoRows
+	}), nil
 }
 
 func intersectFilter(rows []sourcedRow) bool {

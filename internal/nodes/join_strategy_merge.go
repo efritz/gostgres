@@ -17,7 +17,7 @@ func (s *mergeJoinStrategy) Ordering() OrderExpression {
 	return nil // TODO - ordered on the left + right fields?
 }
 
-func (s *mergeJoinStrategy) Scan(visitor VisitorFunc) error {
+func (s *mergeJoinStrategy) Scanner() (Scanner, error) {
 	// TODO - how to do this with scanners?
 	panic("unimplemented")
 }

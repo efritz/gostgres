@@ -64,29 +64,33 @@ func (n *deleteNode) Ordering() OrderExpression {
 	return nil
 }
 
-func (n *deleteNode) Scan(visitor VisitorFunc) error {
-	return n.Node.Scan(n.decorateVisitor(visitor))
-}
-
-func (n *deleteNode) decorateVisitor(visitor VisitorFunc) VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		deletedRow, ok, err := n.table.Delete(row)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return true, nil
-		}
-
-		if len(n.projector.aliases) == 0 {
-			return true, nil
-		}
-
-		projectedRow, err := n.projector.projectRow(deletedRow)
-		if err != nil {
-			return false, err
-		}
-
-		return visitor(projectedRow)
+func (n *deleteNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
 	}
+
+	return ScannerFunc(func() (shared.Row, error) {
+		for {
+			row, err := scanner.Scan()
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			deletedRow, ok, err := n.table.Delete(row)
+			if err != nil {
+				return shared.Row{}, err
+			}
+			if !ok {
+				continue
+			}
+
+			// TODO - necessary?
+			if len(n.projector.aliases) == 0 {
+				return shared.Row{}, nil
+			}
+
+			return n.projector.projectRow(deletedRow)
+		}
+	}), nil
 }

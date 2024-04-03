@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/shared"
 )
 
 type orderNode struct {
@@ -87,28 +88,35 @@ func (n *orderNode) Ordering() OrderExpression {
 	return n.order
 }
 
-func (n *orderNode) Scan(visitor VisitorFunc) error {
+func (n *orderNode) Scanner() (Scanner, error) {
+	scanner, err := n.Node.Scanner()
+	if err != nil {
+		return nil, err
+	}
+
 	if n.order == nil {
-		return n.Node.Scan(visitor)
+		return scanner, nil
 	}
 
 	rows, err := ScanRows(n.Node)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	indexes, err := findIndexIterationOrder(n.order, rows)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, i := range indexes {
-		if ok, err := visitor(rows.Row(i)); err != nil {
-			return err
-		} else if !ok {
-			break
+	i := 0
+
+	return ScannerFunc(func() (shared.Row, error) {
+		if i < len(indexes) {
+			row := rows.Row(indexes[i])
+			i++
+			return row, nil
 		}
-	}
 
-	return nil
+		return shared.Row{}, ErrNoRows
+	}), nil
 }

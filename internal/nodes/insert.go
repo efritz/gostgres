@@ -65,6 +65,10 @@ func (n *insertNode) Ordering() OrderExpression {
 	return nil
 }
 
+func (n *insertNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *insertNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

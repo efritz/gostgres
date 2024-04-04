@@ -70,6 +70,10 @@ func (n *dataNode) Ordering() OrderExpression {
 	return n.order
 }
 
+func (n *dataNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *dataNode) Scanner() (Scanner, error) {
 	indexes, err := findIndexIterationOrder(n.order, n.table.rows)
 	if err != nil {

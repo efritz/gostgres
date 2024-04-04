@@ -87,6 +87,10 @@ func (n *aliasNode) Ordering() OrderExpression {
 	})
 }
 
+func (n *aliasNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *aliasNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

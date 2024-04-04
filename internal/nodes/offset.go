@@ -52,6 +52,10 @@ func (n *offsetNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }
 
+func (n *offsetNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *offsetNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

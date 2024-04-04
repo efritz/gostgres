@@ -71,6 +71,10 @@ func (n *projectionNode) Ordering() OrderExpression {
 	})
 }
 
+func (n *projectionNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *projectionNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

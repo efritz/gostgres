@@ -17,6 +17,10 @@ type Node interface {
 	AddOrder(order OrderExpression)
 	Filter() expressions.Expression
 	Ordering() OrderExpression
+
+	// TODO: rough implementation
+	// https://sourcegraph.com/github.com/postgres/postgres@06286709ee0637ec7376329a5aa026b7682dcfe2/-/blob/src/backend/executor/execAmi.c?L439:59-439:79
+	SupportsMarkRestore() bool
 	Scanner() (Scanner, error)
 }
 
@@ -26,12 +30,23 @@ type Scanner interface {
 	Scan() (shared.Row, error)
 }
 
+type MarkRestorer interface {
+	Mark()
+	Restore()
+}
+
 var ErrNoRows = fmt.Errorf("no rows")
 
 type ScannerFunc func() (shared.Row, error)
 
 func (f ScannerFunc) Scan() (shared.Row, error) {
 	return f()
+}
+
+func Empty() Scanner {
+	return ScannerFunc(func() (shared.Row, error) {
+		return shared.Row{}, ErrNoRows
+	})
 }
 
 func ScanRows(node Node) (shared.Rows, error) {

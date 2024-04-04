@@ -93,6 +93,10 @@ func (n *combinationNode) Ordering() OrderExpression {
 	return nil
 }
 
+func (n *combinationNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *combinationNode) Scanner() (Scanner, error) {
 	leftScanner, err := n.left.Scanner()
 	if err != nil {
@@ -140,6 +144,19 @@ func (n *combinationNode) Scanner() (Scanner, error) {
 
 		return shared.Row{}, ErrNoRows
 	}), nil
+}
+
+func hashVisitor(hash map[string][]sourcedRow, index int) VisitorFunc {
+	return func(row shared.Row) (bool, error) {
+		key := hashValues(row.Values)
+
+		hash[key] = append(hash[key], sourcedRow{
+			index: index,
+			row:   row,
+		})
+
+		return true, nil
+	}
 }
 
 func intersectFilter(rows []sourcedRow) bool {

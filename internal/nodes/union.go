@@ -76,6 +76,10 @@ func (n *unionNode) Ordering() OrderExpression {
 	return nil
 }
 
+func (n *unionNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *unionNode) Scanner() (Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {

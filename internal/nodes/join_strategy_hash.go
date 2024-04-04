@@ -20,13 +20,12 @@ func (s *hashJoinStrategy) Ordering() OrderExpression {
 }
 
 func (s *hashJoinStrategy) Scanner() (Scanner, error) {
-	// TODO - can share with grouping?
-	h := map[interface{}]shared.Row{}
 	rightScanner, err := s.n.right.Scanner()
 	if err != nil {
 		return nil, err
 	}
 
+	h := map[interface{}]shared.Row{}
 	if err := VisitRows(rightScanner, func(row shared.Row) (bool, error) {
 		key, err := s.right.ValueFrom(row)
 		if err != nil {
@@ -56,9 +55,12 @@ func (s *hashJoinStrategy) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			if rightRow, ok := h[key]; ok {
-				return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+			rightRow, ok := h[key]
+			if !ok {
+				continue
 			}
+
+			return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
 		}
 	}), nil
 }

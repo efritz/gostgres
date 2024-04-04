@@ -88,6 +88,10 @@ func (n *orderNode) Ordering() OrderExpression {
 	return n.order
 }
 
+func (n *orderNode) SupportsMarkRestore() bool {
+	return true
+}
+
 func (n *orderNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {
@@ -108,15 +112,38 @@ func (n *orderNode) Scanner() (Scanner, error) {
 		return nil, err
 	}
 
-	i := 0
+	return &orderScanner{
+		rows:    rows,
+		indexes: indexes,
+		mark:    -1,
+	}, nil
+}
 
-	return ScannerFunc(func() (shared.Row, error) {
-		if i < len(indexes) {
-			row := rows.Row(indexes[i])
-			i++
-			return row, nil
-		}
+type orderScanner struct {
+	rows    shared.Rows
+	indexes []int
+	next    int
+	mark    int
+}
 
-		return shared.Row{}, ErrNoRows
-	}), nil
+func (s *orderScanner) Scan() (shared.Row, error) {
+	if s.next < len(s.indexes) {
+		row := s.rows.Row(s.indexes[s.next])
+		s.next++
+		return row, nil
+	}
+
+	return shared.Row{}, ErrNoRows
+}
+
+func (s *orderScanner) Mark() {
+	s.mark = s.next - 1
+}
+
+func (s *orderScanner) Restore() {
+	if s.mark == -1 {
+		panic("no mark to restore")
+	}
+
+	s.next = s.mark
 }

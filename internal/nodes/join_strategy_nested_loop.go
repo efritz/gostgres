@@ -42,13 +42,12 @@ func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
 				if err != nil {
 					return shared.Row{}, err
 				}
+				leftRow = &row
 
 				scanner, err := s.n.right.Scanner()
 				if err != nil {
 					return shared.Row{}, nil
 				}
-
-				leftRow = &row
 				rightScanner = scanner
 			}
 

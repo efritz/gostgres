@@ -79,16 +79,16 @@ func (n *joinNode) selectStrategy() joinStrategy {
 	// TODO - determine condition
 	if false {
 		return &mergeJoinStrategy{
-			n:              n,
-			left:           left,
-			right:          right,
-			comparisonType: comparisonType,
+			n:     n,
+			left:  left,
+			right: right,
 		}
 	}
 
 	return &nestedLoopJoinStrategy{n: n}
 }
 
+// TODO - decompose multiple equality (e.g., a = b and c = d)
 func (n *joinNode) decomposeFilter() (_ expressions.ComparisonType, left, right expressions.Expression) {
 	if comparisonType, left, right := expressions.IsComparison(n.filter); comparisonType != expressions.ComparisonTypeUnknown {
 		if bindsAllFields(n.left, left) && bindsAllFields(n.right, right) {
@@ -131,6 +131,10 @@ func (n *joinNode) Ordering() OrderExpression {
 	}
 
 	return n.strategy.Ordering()
+}
+
+func (n *joinNode) SupportsMarkRestore() bool {
+	return false
 }
 
 func (n *joinNode) Scanner() (Scanner, error) {

@@ -47,6 +47,10 @@ func (n *limitNode) Ordering() OrderExpression {
 	return n.Node.Ordering()
 }
 
+func (n *limitNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *limitNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

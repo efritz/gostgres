@@ -64,6 +64,10 @@ func (n *deleteNode) Ordering() OrderExpression {
 	return nil
 }
 
+func (n *deleteNode) SupportsMarkRestore() bool {
+	return false
+}
+
 func (n *deleteNode) Scanner() (Scanner, error) {
 	scanner, err := n.Node.Scanner()
 	if err != nil {

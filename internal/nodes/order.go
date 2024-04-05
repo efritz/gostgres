@@ -93,14 +93,16 @@ func (n *orderNode) SupportsMarkRestore() bool {
 }
 
 func (n *orderNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
-	if err != nil {
-		return nil, err
-	}
-
-	if n.order == nil {
-		return scanner, nil
-	}
+	// TODO - commented out to must support mark-restore
+	//
+	// scanner, err := n.Node.Scanner()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// if n.order == nil {
+	// 	return scanner, nil
+	// }
 
 	rows, err := ScanRows(n.Node)
 	if err != nil {

@@ -69,16 +69,18 @@ func (n *joinNode) Optimize() {
 func (n *joinNode) selectStrategy() joinStrategy {
 	comparisonType, left, right := n.decomposeFilter()
 	if comparisonType == expressions.ComparisonTypeEquals {
-		return &hashJoinStrategy{
-			n:     n,
-			left:  left,
-			right: right,
-		}
-	}
+		if true { // n.right.SupportsMarkRestore() {
+			n.left = NewOrder(n.left, NewOrderExpression([]FieldExpression{{Expression: left}}))    // HACK!
+			n.right = NewOrder(n.right, NewOrderExpression([]FieldExpression{{Expression: right}})) // HACK!
 
-	// TODO - determine condition
-	if false {
-		return &mergeJoinStrategy{
+			return &mergeJoinStrategy{
+				n:     n,
+				left:  left,
+				right: right,
+			}
+		}
+
+		return &hashJoinStrategy{
 			n:     n,
 			left:  left,
 			right: right,

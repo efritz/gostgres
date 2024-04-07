@@ -33,6 +33,11 @@ func mainErr() error {
 	}
 	defer l.Close()
 
+	tables, err := tests.CreateStandardTestTables("tests/")
+	if err != nil {
+		return err
+	}
+
 	log.SetOutput(l.Stderr())
 loop:
 	for {
@@ -51,7 +56,7 @@ loop:
 			break loop
 
 		default:
-			if err := handleQuery(line); err != nil {
+			if err := handleQuery(tables, line); err != nil {
 				fmt.Printf("error: %s\n", err)
 			}
 		}
@@ -60,7 +65,7 @@ loop:
 	return nil
 }
 
-func handleQuery(line string) (err error) {
+func handleQuery(tables map[string]*nodes.Table, line string) (err error) {
 	start := time.Now()
 	defer func() {
 		if err == nil {
@@ -70,11 +75,6 @@ func handleQuery(line string) (err error) {
 
 	var explain bool
 	line, explain = eatExplain(line)
-
-	tables, err := tests.CreateStandardTestTables("tests/")
-	if err != nil {
-		return err
-	}
 
 	node, err := parsing.Parse(lexing.Lex(line), tables)
 	if err != nil {

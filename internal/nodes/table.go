@@ -7,6 +7,9 @@ import (
 type Table struct {
 	name string
 	rows shared.Rows
+
+	// TODO
+	// indexes []Index
 }
 
 func NewTable(name string, rows shared.Rows) (*Table, error) {
@@ -48,6 +51,7 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	return t.rows.Row(len(t.rows.Values) - 1), nil
 }
 
+// TODO - should be delete followed by insert
 func (t *Table) Update(row shared.Row) (bool, error) {
 	mergedRow, err := shared.NewRow(t.rows.Fields, row.Values)
 	if err != nil {
@@ -59,6 +63,8 @@ func (t *Table) Update(row shared.Row) (bool, error) {
 			continue
 		}
 
+		// t.Delete(t.rows.Row(i))
+		// t.Insert(mergedRow)
 		t.rows.Fields = mergedRow.Fields
 		t.rows.Values[i] = mergedRow.Values
 		return true, nil

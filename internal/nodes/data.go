@@ -8,6 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
+// TODO - rename to table scan/access (depending on if we use indexes too)
 type dataNode struct {
 	table  *Table
 	filter expressions.Expression

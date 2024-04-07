@@ -61,8 +61,8 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 
 // using := `USING` tableExpressions
 func (p *parser) parseUsing() ([]nodes.Node, error) {
-	if _, err := p.mustAdvance(isType(tokens.TokenTypeUsing)); err != nil {
-		return nil, err
+	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
+		return nil, nil
 	}
 
 	return p.parseTableExpressions()

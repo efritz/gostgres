@@ -40,32 +40,33 @@ func (n *orderNode) Optimize() {
 
 	n.Node.Optimize()
 
-	if n.order == nil {
-		return
+	if subsumesOrder(n.order, n.Node.Ordering()) {
+		n.order = nil
+	}
+}
+
+func subsumesOrder(a, b OrderExpression) bool {
+	if a == nil || b == nil {
+		return false
 	}
 
-	childOrdering := n.Node.Ordering()
-	if childOrdering == nil {
-		return
+	aExpressions := a.Expressions()
+	bExpressions := b.Expressions()
+	if len(bExpressions) < len(aExpressions) {
+		return false
 	}
 
-	expressions := n.order.Expressions()
-	childExpressions := childOrdering.Expressions()
-	if len(childExpressions) < len(expressions) {
-		return
-	}
-
-	for i, expression := range expressions {
-		if expression.Reverse != childExpressions[i].Reverse {
-			return
+	for i, expression := range aExpressions {
+		if expression.Reverse != bExpressions[i].Reverse {
+			return false
 		}
 
-		if !expression.Expression.Equal(childExpressions[i].Expression) {
-			return
+		if !expression.Expression.Equal(bExpressions[i].Expression) {
+			return false
 		}
 	}
 
-	n.order = nil
+	return true
 }
 
 func (n *orderNode) AddFilter(filter expressions.Expression) {
@@ -93,23 +94,38 @@ func (n *orderNode) SupportsMarkRestore() bool {
 }
 
 func (n *orderNode) Scanner() (Scanner, error) {
-	// TODO - commented out to must support mark-restore
-	//
-	// scanner, err := n.Node.Scanner()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//
-	// if n.order == nil {
-	// 	return scanner, nil
-	// }
-
-	rows, err := ScanRows(n.Node)
+	scanner, err := n.Node.Scanner()
 	if err != nil {
 		return nil, err
 	}
 
-	indexes, err := findIndexIterationOrder(n.order, rows)
+	// TODO - commented out to support mark-restore
+	// if n.order == nil {
+	// 	return scanner, nil
+	// }
+
+	return NewOrderScanner(scanner, n.Fields(), n.order)
+}
+
+type orderScanner struct {
+	rows    shared.Rows
+	indexes []int
+	next    int
+	mark    int
+}
+
+func NewOrderScanner(scanner Scanner, fields []shared.Field, order OrderExpression) (Scanner, error) {
+	rows, err := shared.NewRows(fields)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err = ScanIntoRows(scanner, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	indexes, err := findIndexIterationOrder(order, rows)
 	if err != nil {
 		return nil, err
 	}
@@ -119,13 +135,6 @@ func (n *orderNode) Scanner() (Scanner, error) {
 		indexes: indexes,
 		mark:    -1,
 	}, nil
-}
-
-type orderScanner struct {
-	rows    shared.Rows
-	indexes []int
-	next    int
-	mark    int
 }
 
 func (s *orderScanner) Scan() (shared.Row, error) {

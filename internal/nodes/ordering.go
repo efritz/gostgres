@@ -11,14 +11,14 @@ import (
 
 type OrderExpression interface {
 	Fold() OrderExpression
-	Expressions() []FieldExpression
+	Expressions() []ExpressionWithDirection
 }
 
 type orderExpression struct {
-	expressions []FieldExpression
+	expressions []ExpressionWithDirection
 }
 
-func NewOrderExpression(expressions []FieldExpression) OrderExpression {
+func NewOrderExpression(expressions []ExpressionWithDirection) OrderExpression {
 	return orderExpression{
 		expressions: expressions,
 	}
@@ -39,7 +39,7 @@ func (e orderExpression) String() string {
 }
 
 func (e orderExpression) Fold() OrderExpression {
-	expressions := make([]FieldExpression, 0, len(e.expressions))
+	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
 		expressions = append(expressions, expression.Fold())
 	}
@@ -47,24 +47,24 @@ func (e orderExpression) Fold() OrderExpression {
 	return orderExpression{expressions: expressions}
 }
 
-func (e orderExpression) Expressions() []FieldExpression {
+func (e orderExpression) Expressions() []ExpressionWithDirection {
 	return e.expressions
 }
 
-type FieldExpression struct {
+type ExpressionWithDirection struct {
 	Expression expressions.Expression
 	Reverse    bool
 }
 
-func (e FieldExpression) Fold() FieldExpression {
-	return FieldExpression{
+func (e ExpressionWithDirection) Fold() ExpressionWithDirection {
+	return ExpressionWithDirection{
 		Expression: e.Expression.Fold(),
 		Reverse:    e.Reverse,
 	}
 }
 
 func findIndexIterationOrder(order OrderExpression, rows shared.Rows) ([]int, error) {
-	var expressions []FieldExpression
+	var expressions []ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
 	}
@@ -109,7 +109,7 @@ type indexValue struct {
 	values []interface{}
 }
 
-func makeIndexValues(expressions []FieldExpression, rows shared.Rows) ([]indexValue, error) {
+func makeIndexValues(expressions []ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]interface{}, 0, len(expressions))

@@ -523,7 +523,7 @@ func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
 	// TODO - support `USING` operator
 	// TODO - support [`NULLS` ( `FIRST` | `LAST` )]
 
-	var expressions []nodes.FieldExpression
+	var expressions []nodes.ExpressionWithDirection
 	for {
 		orderExpression, err := p.parseExpression(0)
 		if err != nil {
@@ -537,7 +537,7 @@ func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
 			}
 		}
 
-		expressions = append(expressions, nodes.FieldExpression{
+		expressions = append(expressions, nodes.ExpressionWithDirection{
 			Expression: orderExpression,
 			Reverse:    reverse,
 		})

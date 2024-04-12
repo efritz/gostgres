@@ -60,7 +60,12 @@ func ScanRows(node Node) (shared.Rows, error) {
 		return shared.Rows{}, err
 	}
 
+	return ScanIntoRows(scanner, rows)
+}
+
+func ScanIntoRows(scanner Scanner, rows shared.Rows) (shared.Rows, error) {
 	if err := VisitRows(scanner, func(row shared.Row) (bool, error) {
+		var err error
 		rows, err = rows.AddValues(row.Values)
 		return true, err
 	}); err != nil {

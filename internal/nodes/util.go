@@ -133,7 +133,7 @@ func lowerOrder(order OrderExpression, nodes ...Node) {
 	expressions := order.Expressions()
 
 	for _, node := range nodes {
-		filteredExpressions := make([]FieldExpression, 0, len(expressions))
+		filteredExpressions := make([]ExpressionWithDirection, 0, len(expressions))
 	exprLoop:
 		for _, expression := range expressions {
 			for _, field := range expression.Expression.Fields() {
@@ -152,13 +152,13 @@ func lowerOrder(order OrderExpression, nodes ...Node) {
 }
 
 func mapOrderExpressions(order OrderExpression, f func(expressions.Expression) expressions.Expression) OrderExpression {
-	fieldExpressions := order.Expressions()
-	aliasedExpressions := make([]FieldExpression, 0, len(fieldExpressions))
+	expressions := order.Expressions()
+	aliasedExpressions := make([]ExpressionWithDirection, 0, len(expressions))
 
-	for _, fieldExpression := range fieldExpressions {
-		aliasedExpressions = append(aliasedExpressions, FieldExpression{
-			Expression: f(fieldExpression.Expression),
-			Reverse:    fieldExpression.Reverse,
+	for _, expression := range expressions {
+		aliasedExpressions = append(aliasedExpressions, ExpressionWithDirection{
+			Expression: f(expression.Expression),
+			Reverse:    expression.Reverse,
 		})
 	}
 

@@ -645,9 +645,12 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 		}
 	}
 
-	table, err := nodes.NewTable("", rows)
-	if err != nil {
-		return nil, err
+	table := nodes.NewTable("", rows.Fields)
+
+	for i := 0; i < rows.Size(); i++ {
+		if _, err := table.Insert(rows.Row(i)); err != nil {
+			return nil, err
+		}
 	}
 
 	return nodes.NewData(table), nil

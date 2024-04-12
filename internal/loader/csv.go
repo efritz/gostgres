@@ -31,7 +31,15 @@ func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription
 		return nil, err
 	}
 
-	return nodes.NewTable(name, rows)
+	table := nodes.NewTable(name, rows.Fields)
+
+	for i := 0; i < rows.Size(); i++ {
+		if _, err := table.Insert(rows.Row(i)); err != nil {
+			return nil, err
+		}
+	}
+
+	return table, nil
 }
 
 func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) ([][]interface{}, error) {

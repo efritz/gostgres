@@ -110,12 +110,11 @@ func (n *updateNode) Scanner() (Scanner, error) {
 				}
 			}
 
-			updatedRow, err := shared.NewRow(row.Fields, values)
+			deletedRow, err := shared.NewRow(row.Fields[:1], values[:1])
 			if err != nil {
 				return shared.Row{}, err
 			}
-
-			ok, err := n.table.Update(updatedRow)
+			_, ok, err := n.table.Delete(deletedRow)
 			if err != nil {
 				return shared.Row{}, err
 			}
@@ -126,6 +125,16 @@ func (n *updateNode) Scanner() (Scanner, error) {
 			// TODO - necessary?
 			if len(n.projector.aliases) == 0 {
 				return shared.Row{}, nil
+			}
+
+			insertedRow, err := shared.NewRow(row.Fields[1:], values[1:])
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			updatedRow, err := n.table.Insert(insertedRow)
+			if err != nil {
+				return shared.Row{}, err
 			}
 
 			return n.projector.projectRow(updatedRow)

@@ -1,89 +1,69 @@
 package nodes
 
 import (
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type Table struct {
-	name string
-	rows shared.Rows
+	name   string
+	fields []shared.Field
+	rows   map[int]shared.Row
 
 	// TODO
 	// indexes []Index
 }
 
-func NewTable(name string, rows shared.Rows) (*Table, error) {
-	fields := append([]shared.Field{
-		shared.NewField(name, "tid", shared.TypeKindNumeric, true),
-	}, rows.Fields...)
+func NewTable(name string, fields []shared.Field) *Table {
+	tidField := shared.NewField(name, "tid", shared.TypeKindNumeric, true)
 
-	newRows, err := shared.NewRows(fields)
-	if err != nil {
-		return nil, err
+	return &Table{
+		name:   name,
+		fields: append([]shared.Field{tidField}, fields...),
+		rows:   map[int]shared.Row{},
 	}
-
-	table := &Table{
-		name: name,
-		rows: newRows,
-	}
-	for i := range rows.Values {
-		if _, err := table.Insert(rows.Row(i)); err != nil {
-			return nil, err
-		}
-	}
-
-	return table, nil
 }
 
 func (t *Table) Fields() []shared.Field {
-	return copyFields(t.rows.Fields)
+	return copyFields(t.fields)
 }
 
 var tid = 0
 
 func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	tid++
-	t.rows, err = t.rows.AddValues(append([]interface{}{tid}, row.Values...))
+	id := tid
+
+	newRow, err := shared.NewRow(t.fields, append([]interface{}{id}, row.Values...))
 	if err != nil {
 		return shared.Row{}, err
 	}
 
-	return t.rows.Row(len(t.rows.Values) - 1), nil
-}
-
-// TODO - should be delete followed by insert
-func (t *Table) Update(row shared.Row) (bool, error) {
-	mergedRow, err := shared.NewRow(t.rows.Fields, row.Values)
-	if err != nil {
-		return false, err
-	}
-
-	for i, values := range t.rows.Values {
-		if values[0] != row.Values[0] {
-			continue
-		}
-
-		// t.Delete(t.rows.Row(i))
-		// t.Insert(mergedRow)
-		t.rows.Fields = mergedRow.Fields
-		t.rows.Values[i] = mergedRow.Values
-		return true, nil
-	}
-
-	return false, nil
+	t.rows[id] = newRow
+	return newRow, nil
 }
 
 func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
-	for i, values := range t.rows.Values {
-		if values[0] != row.Values[0] {
-			continue
-		}
-
-		copy(t.rows.Values[i:], t.rows.Values[i+1:])
-		t.rows.Values = t.rows.Values[:len(t.rows.Values)-1]
-		row, err := shared.NewRow(t.rows.Fields, values)
-		return row, true, err
+	tid, ok := extractTID(row)
+	if !ok {
+		return shared.Row{}, false, fmt.Errorf("no tid in row")
 	}
 
-	return shared.Row{}, false, nil
+	fullRow, ok := t.rows[tid]
+	if !ok {
+		return shared.Row{}, false, nil
+	}
+
+	delete(t.rows, tid)
+	return fullRow, true, nil
+}
+
+func extractTID(row shared.Row) (int, bool) {
+	if len(row.Fields) == 0 || row.Fields[0].Name != "tid" {
+		return 0, false
+	}
+
+	tid, ok := row.Values[0].(int)
+	return tid, ok
 }

@@ -40,6 +40,10 @@ func (rows Rows) AddValues(values []interface{}) (Rows, error) {
 	return NewRowsWithValues(rows.Fields, append(rows.Values, values))
 }
 
+func (rows Rows) Size() int {
+	return len(rows.Values)
+}
+
 func (rows Rows) Row(index int) Row {
 	row, _ := NewRow(rows.Fields, rows.Values[index])
 	return row

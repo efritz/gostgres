@@ -22,10 +22,10 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     join using hash
         alias as e
-            access of employees
+            table scan of employees
     with
         alias as m
-            access of employees
+            table scan of employees
     on m.employee_id = e.manager_id
 
 Results:
@@ -63,10 +63,10 @@ Plan:
 select (employee_id, last_name, m.employee_id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name)
     join using hash
         alias as e
-            access of employees
+            table scan of employees
     with
         alias as m
-            access of employees
+            table scan of employees
     on m.employee_id = e.manager_id
 
 Results:
@@ -99,10 +99,10 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     join using hash
         alias as e
-            access of employees
+            table scan of employees
     with
         alias as m
-            access of employees
+            table scan of employees
                 filter: not employees.department_id = 3
     on m.employee_id = e.manager_id
 
@@ -135,12 +135,10 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, em
     order by m.last_name, e.last_name
         join using hash
             alias as e
-                access of employees
-                    order: employees.last_name
+                index scan of employees via employees_last_name_first_name_employee_id
         with
             alias as m
-                access of employees
-                    order: employees.last_name
+                index scan of employees via employees_last_name_first_name_employee_id
         on m.employee_id = e.manager_id
 
 Results:
@@ -176,10 +174,10 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, em
         offset 3
             join using hash
                 alias as e
-                    access of employees
+                    table scan of employees
             with
                 alias as m
-                    access of employees
+                    table scan of employees
             on m.employee_id = e.manager_id
 
 Results:

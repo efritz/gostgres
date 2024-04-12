@@ -31,22 +31,22 @@ select (location_id, location_name, region_id)
     order by region_id, location_id
         union
             select (location_id, location_name, region_id)
-                access of locations
+                table scan of locations
                     order: locations.region_id, locations.location_id
         with
             select (location_id, location_name, region_id)
                 combination
                     select (location_id, location_name, region_id)
-                        access of locations
+                        table scan of locations
                             order: locations.region_id, locations.location_id
                 with
                     select (location_id, location_name, region_id)
                         join using hash
                             alias as l
-                                access of locations
+                                table scan of locations
                         with
                             alias as r
-                                access of regions
+                                table scan of regions
                                     filter: regions.region_name = NA
                         on r.region_id = l.region_id
 
@@ -90,12 +90,12 @@ select (id, name)
         combination
             select (employee_id as id, e.last_name as name)
                 alias as e
-                    access of employees
+                    table scan of employees
                         filter: department_id = 1
                         order: employee_id
         with
             select (employee_id, last_name)
-                access of employees
+                table scan of employees
                     filter: not manager_id = 1
 
 Results:
@@ -132,12 +132,12 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
                 combination
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         alias as e
-                            access of employees
+                            table scan of employees
                                 filter: department_id = 1 and employees.employee_id < 5
                                 order: employees.employee_id
                 with
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
-                        access of employees
+                        table scan of employees
                             filter: not manager_id = 1
 
 Results:
@@ -170,12 +170,12 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
                 combination
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         alias as e
-                            access of employees
+                            table scan of employees
                                 filter: department_id = 1
                                 order: employees.employee_id
                 with
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
-                        access of employees
+                        table scan of employees
                             filter: not manager_id = 1
                             order: employees.employee_id
 

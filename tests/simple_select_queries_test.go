@@ -19,7 +19,7 @@ func TestSimpleSelectQueries(t *testing.T) {
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id)
-    access of employees
+    table scan of employees
 
 Results:
 
@@ -52,7 +52,7 @@ Plan:
 
 select (first_name as fname, e.last_name as lname, email)
     alias as e
-        access of employees
+        table scan of employees
 
 Results:
 
@@ -81,7 +81,7 @@ Results:
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id)
-    access of employees
+    table scan of employees
         filter: department_id = 3
 
 Results:
@@ -103,7 +103,7 @@ Results:
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id)
-    access of employees
+    table scan of employees
         order: manager_id, email desc
 
 Results:
@@ -137,7 +137,7 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id)
     limit 2
         offset 3
-            access of employees
+            table scan of employees
                 order: email
 
 Results:

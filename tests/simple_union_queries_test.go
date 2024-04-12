@@ -26,11 +26,11 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id)
     union
         select (employee_id, first_name, last_name, email, manager_id, department_id)
-            access of employees
+            table scan of employees
                 filter: department_id = 1
     with
         select (employee_id, first_name, last_name, email, manager_id, department_id)
-            access of employees
+            table scan of employees
                 filter: manager_id = 1
 
 Results:
@@ -73,11 +73,11 @@ select (id, name)
     union
         select (employee_id as id, e.last_name as name)
             alias as e
-                access of employees
+                table scan of employees
                     filter: department_id = 1
     with
         select (employee_id, last_name)
-            access of employees
+            table scan of employees
                 filter: department_id = 2
 
 Results:
@@ -115,11 +115,11 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
         select (employee_id, first_name, last_name, email, manager_id, department_id)
             union
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
-                    access of employees
+                    table scan of employees
                         filter: department_id = 1 and employees.manager_id = 1
             with
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
-                    access of employees
+                    table scan of employees
                         filter: department_id = 2 and employees.manager_id = 1
 
 Results:
@@ -150,12 +150,12 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
     order by email
         union
             select (employee_id, first_name, last_name, email, manager_id, department_id)
-                access of employees
+                table scan of employees
                     filter: department_id = 1
                     order: employees.email
         with
             select (employee_id, first_name, last_name, email, manager_id, department_id)
-                access of employees
+                table scan of employees
                     filter: department_id = 2
                     order: employees.email
 
@@ -192,11 +192,11 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
         offset 3
             union
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
-                    access of employees
+                    table scan of employees
                         filter: department_id = 1
             with
                 select (employee_id, first_name, last_name, email, manager_id, department_id)
-                    access of employees
+                    table scan of employees
                         filter: department_id = 2
 
 Results:

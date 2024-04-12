@@ -16,12 +16,6 @@ type joinNode struct {
 	strategy joinStrategy
 }
 
-type joinStrategy interface {
-	Name() string
-	Ordering() OrderExpression
-	Scanner() (Scanner, error)
-}
-
 var _ Node = &joinNode{}
 
 func NewJoin(left Node, right Node, condition expressions.Expression) Node {
@@ -63,33 +57,7 @@ func (n *joinNode) Optimize() {
 	n.left.Optimize()
 	n.right.Optimize()
 	n.filter = filterDifference(n.filter, unionFilters(n.left.Filter(), n.right.Filter()))
-	n.strategy = n.selectStrategy()
-}
-
-func (n *joinNode) selectStrategy() joinStrategy {
-	comparisonType, left, right := n.decomposeFilter()
-	if comparisonType == expressions.ComparisonTypeEquals {
-		if false {
-			// if orderable?
-			// if n.right.SupportsMarkRestore()
-			n.left = NewOrder(n.left, NewOrderExpression([]FieldExpression{{Expression: left}}))    // HACK!
-			n.right = NewOrder(n.right, NewOrderExpression([]FieldExpression{{Expression: right}})) // HACK!
-
-			return &mergeJoinStrategy{
-				n:     n,
-				left:  left,
-				right: right,
-			}
-		}
-
-		return &hashJoinStrategy{
-			n:     n,
-			left:  left,
-			right: right,
-		}
-	}
-
-	return &nestedLoopJoinStrategy{n: n}
+	n.strategy = selectJoinStrategy(n)
 }
 
 // TODO - decompose multiple equality (e.g., a = b and c = d)

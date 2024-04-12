@@ -43,11 +43,9 @@ func (f ScannerFunc) Scan() (shared.Row, error) {
 	return f()
 }
 
-func Empty() Scanner {
-	return ScannerFunc(func() (shared.Row, error) {
-		return shared.Row{}, ErrNoRows
-	})
-}
+var EmptyScanner = ScannerFunc(func() (shared.Row, error) {
+	return shared.Row{}, ErrNoRows
+})
 
 func ScanRows(node Node) (shared.Rows, error) {
 	scanner, err := node.Scanner()

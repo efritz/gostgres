@@ -9,6 +9,20 @@ const (
 	OrderTypeAfter
 )
 
+func CompareValueSlices(left, right []interface{}) OrderType {
+	// if len(left) != len(right) {
+	// 	return OrderTypeIncomparable
+	// }
+
+	for i, lVal := range left[:min(len(left), len(right))] {
+		if cmp := CompareValues(lVal, right[i]); cmp != OrderTypeEqual {
+			return cmp
+		}
+	}
+
+	return OrderTypeEqual
+}
+
 func CompareValues(left, right interface{}) OrderType {
 	if lVal, ok := left.(int); ok {
 		if rVal, ok := right.(int); ok {

@@ -7,12 +7,10 @@ import (
 )
 
 type Table struct {
-	name   string
-	fields []shared.Field
-	rows   map[int]shared.Row
-
-	// TODO
-	// indexes []Index
+	name    string
+	fields  []shared.Field
+	rows    map[int]shared.Row
+	indexes []BaseIndex
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -29,6 +27,17 @@ func (t *Table) Fields() []shared.Field {
 	return copyFields(t.fields)
 }
 
+func (t *Table) AddIndex(index BaseIndex) error {
+	for _, row := range t.rows {
+		if err := index.Insert(row); err != nil {
+			return err
+		}
+	}
+
+	t.indexes = append(t.indexes, index)
+	return nil
+}
+
 var tid = 0
 
 func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
@@ -38,6 +47,12 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	newRow, err := shared.NewRow(t.fields, append([]interface{}{id}, row.Values...))
 	if err != nil {
 		return shared.Row{}, err
+	}
+
+	for _, index := range t.indexes {
+		if err := index.Insert(newRow); err != nil {
+			return shared.Row{}, err
+		}
 	}
 
 	t.rows[id] = newRow
@@ -53,6 +68,12 @@ func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
 	fullRow, ok := t.rows[tid]
 	if !ok {
 		return shared.Row{}, false, nil
+	}
+
+	for _, index := range t.indexes {
+		if err := index.Delete(fullRow); err != nil {
+			return shared.Row{}, false, err
+		}
 	}
 
 	delete(t.rows, tid)

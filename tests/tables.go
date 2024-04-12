@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/loader"
 	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
@@ -12,6 +13,18 @@ import (
 func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 	employeesTable, err := createEmployeesTable(root)
 	if err != nil {
+		return nil, err
+	}
+	if err := employeesTable.AddIndex(nodes.NewBTreeIndex("employees_last_name_first_name_employee_id", employeesTable, []nodes.ExpressionWithDirection{
+		{Expression: expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText, false))},
+		{Expression: expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText, false))},
+		{Expression: expressions.NewNamed(shared.NewField("employees", "employee_id", shared.TypeKindNumeric, false))},
+	})); err != nil {
+		return nil, err
+	}
+	if err := employeesTable.AddIndex(nodes.NewHashIndex("employees_first_name", employeesTable, []expressions.Expression{
+		expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText, false)),
+	})); err != nil {
 		return nil, err
 	}
 

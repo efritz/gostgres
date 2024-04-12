@@ -67,6 +67,7 @@ func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
+			// TODO - can push this down to the right scanner construction?
 			if s.n.filter != nil {
 				if ok, err := shared.EnsureBool(s.n.filter.ValueFrom(row)); err != nil {
 					return shared.Row{}, err

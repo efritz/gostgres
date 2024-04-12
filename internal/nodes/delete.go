@@ -86,12 +86,7 @@ func (n *deleteNode) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 			if !ok {
-				continue
-			}
-
-			// TODO - necessary?
-			if len(n.projector.aliases) == 0 {
-				return shared.Row{}, nil
+				return shared.Row{}, ErrNoRows
 			}
 
 			return n.projector.projectRow(deletedRow)

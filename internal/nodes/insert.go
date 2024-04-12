@@ -99,11 +99,6 @@ func (n *insertNode) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			// TODO - necessary?
-			if len(n.projector.aliases) == 0 {
-				return shared.Row{}, nil
-			}
-
 			return n.projector.projectRow(insertedRow)
 		}
 	}), nil

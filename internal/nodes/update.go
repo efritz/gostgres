@@ -114,16 +114,9 @@ func (n *updateNode) Scanner() (Scanner, error) {
 			if err != nil {
 				return shared.Row{}, err
 			}
-			_, ok, err := n.table.Delete(deletedRow)
-			if err != nil {
+			if _, ok, err := n.table.Delete(deletedRow); err != nil {
 				return shared.Row{}, err
-			}
-			if !ok {
-				continue
-			}
-
-			// TODO - necessary?
-			if len(n.projector.aliases) == 0 {
+			} else if !ok {
 				return shared.Row{}, nil
 			}
 

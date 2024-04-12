@@ -68,7 +68,11 @@ func (n *filterNode) Scanner() (Scanner, error) {
 		return nil, err
 	}
 
-	if n.filter == nil {
+	return NewFilterScanner(scanner, n.filter)
+}
+
+func NewFilterScanner(scanner Scanner, filter expressions.Expression) (Scanner, error) {
+	if filter == nil {
 		return scanner, nil
 	}
 
@@ -79,7 +83,7 @@ func (n *filterNode) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			if ok, err := shared.EnsureBool(n.filter.ValueFrom(row)); err != nil {
+			if ok, err := shared.EnsureBool(filter.ValueFrom(row)); err != nil {
 				return shared.Row{}, err
 			} else if !ok {
 				continue

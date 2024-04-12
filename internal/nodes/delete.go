@@ -75,21 +75,19 @@ func (n *deleteNode) Scanner() (Scanner, error) {
 	}
 
 	return ScannerFunc(func() (shared.Row, error) {
-		for {
-			row, err := scanner.Scan()
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			deletedRow, ok, err := n.table.Delete(row)
-			if err != nil {
-				return shared.Row{}, err
-			}
-			if !ok {
-				return shared.Row{}, ErrNoRows
-			}
-
-			return n.projector.projectRow(deletedRow)
+		row, err := scanner.Scan()
+		if err != nil {
+			return shared.Row{}, err
 		}
+
+		deletedRow, ok, err := n.table.Delete(row)
+		if err != nil {
+			return shared.Row{}, err
+		}
+		if !ok {
+			return shared.Row{}, ErrNoRows
+		}
+
+		return n.projector.projectRow(deletedRow)
 	}), nil
 }

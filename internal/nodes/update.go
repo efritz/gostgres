@@ -82,55 +82,57 @@ func (n *updateNode) Scanner() (Scanner, error) {
 	}
 
 	return ScannerFunc(func() (shared.Row, error) {
-		for {
-			row, err := scanner.Scan()
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			values := make([]interface{}, len(row.Values))
-			copy(values, row.Values)
-
-			for _, set := range n.setExpressions {
-				value, err := set.Expression.ValueFrom(row)
-				if err != nil {
-					return shared.Row{}, err
-				}
-
-				found := false
-				for i, field := range row.Fields {
-					if field.Name == set.Name {
-						found = true
-						values[i] = value
-					}
-				}
-
-				if !found {
-					return shared.Row{}, fmt.Errorf("unknown column %s", set.Name)
-				}
-			}
-
-			deletedRow, err := shared.NewRow(row.Fields[:1], values[:1])
-			if err != nil {
-				return shared.Row{}, err
-			}
-			if _, ok, err := n.table.Delete(deletedRow); err != nil {
-				return shared.Row{}, err
-			} else if !ok {
-				return shared.Row{}, nil
-			}
-
-			insertedRow, err := shared.NewRow(row.Fields[1:], values[1:])
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			updatedRow, err := n.table.Insert(insertedRow)
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			return n.projector.projectRow(updatedRow)
+		row, err := scanner.Scan()
+		if err != nil {
+			return shared.Row{}, err
 		}
+
+		values := make([]interface{}, len(row.Values))
+		copy(values, row.Values)
+
+		for _, set := range n.setExpressions {
+			value, err := set.Expression.ValueFrom(row)
+			if err != nil {
+				return shared.Row{}, err
+			}
+
+			found := false
+			for i, field := range row.Fields {
+				if field.Name == set.Name {
+					if field.Internal {
+						return shared.Row{}, fmt.Errorf("cannot update internal field %s", set.Name)
+					}
+
+					found = true
+					values[i] = value
+				}
+			}
+
+			if !found {
+				return shared.Row{}, fmt.Errorf("unknown column %s", set.Name)
+			}
+		}
+
+		deletedRow, err := shared.NewRow(row.Fields[:1], values[:1])
+		if err != nil {
+			return shared.Row{}, err
+		}
+		if _, ok, err := n.table.Delete(deletedRow); err != nil {
+			return shared.Row{}, err
+		} else if !ok {
+			return shared.Row{}, nil
+		}
+
+		insertedRow, err := shared.NewRow(row.Fields[1:], values[1:])
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		updatedRow, err := n.table.Insert(insertedRow)
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		return n.projector.projectRow(updatedRow)
 	}), nil
 }

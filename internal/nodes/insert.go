@@ -76,31 +76,29 @@ func (n *insertNode) Scanner() (Scanner, error) {
 	}
 
 	return ScannerFunc(func() (shared.Row, error) {
-		for {
-			row, err := scanner.Scan()
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			fields := make([]shared.Field, 0, len(n.table.Fields()))
-			for _, field := range n.table.Fields() {
-				if !field.Internal {
-					fields = append(fields, field)
-				}
-			}
-
-			insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			insertedRow, err = n.table.Insert(insertedRow)
-			if err != nil {
-				return shared.Row{}, err
-			}
-
-			return n.projector.projectRow(insertedRow)
+		row, err := scanner.Scan()
+		if err != nil {
+			return shared.Row{}, err
 		}
+
+		fields := make([]shared.Field, 0, len(n.table.Fields()))
+		for _, field := range n.table.Fields() {
+			if !field.Internal {
+				fields = append(fields, field)
+			}
+		}
+
+		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		insertedRow, err = n.table.Insert(insertedRow)
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		return n.projector.projectRow(insertedRow)
 	}), nil
 }
 

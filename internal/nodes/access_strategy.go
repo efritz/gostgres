@@ -12,7 +12,7 @@ type accessStrategy interface {
 	Serialize(w io.Writer, indentationLevel int)
 	Filter() expressions.Expression
 	Ordering() OrderExpression
-	Scanner() (Scanner, error)
+	Scanner(ctx ScanContext) (Scanner, error)
 }
 
 func selectAccessStrategy(
@@ -21,14 +21,16 @@ func selectAccessStrategy(
 	order OrderExpression,
 ) accessStrategy {
 	if filter != nil {
+		// TODO - use btree for filters as well
+
 		for _, index := range table.indexes {
 			if ix, ok := index.(Index[hashIndexScanOptions]); ok {
 				if hi, ok := ix.(*hashIndex); ok {
 					// TODO - partial indexes
 					if values, expr, ok := extractEquality(filter, hi.expressions); ok {
 						return NewIndexAccessStrategy(table, hi, hashIndexScanOptions{
-							values: values,
-							expr:   expr,
+							expressions: values,
+							expr:        expr,
 						})
 					}
 				}
@@ -65,7 +67,7 @@ func selectAccessStrategy(
 	return NewTableAccessStrategy(table)
 }
 
-func extractEquality(filter expressions.Expression, indexedExprs []expressions.Expression) (values []interface{}, expr expressions.Expression, ok bool) {
+func extractEquality(filter expressions.Expression, indexedExprs []expressions.Expression) (_ []expressions.Expression, expr expressions.Expression, ok bool) {
 	// TODO - support multi-column
 	if filter == nil || len(indexedExprs) > 1 {
 		return nil, nil, false
@@ -75,19 +77,9 @@ func extractEquality(filter expressions.Expression, indexedExprs []expressions.E
 		if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
 			// TODO - need a more stable way to compare expression equality
 			if reflect.DeepEqual(left, indexedExpr) {
-				value, err := right.ValueFrom(shared.Row{})
-				if err != nil {
-					return nil, nil, false
-				}
-
-				return []interface{}{value}, filter, true
+				return []expressions.Expression{right}, filter, true
 			} else if reflect.DeepEqual(right, indexedExpr) {
-				value, err := left.ValueFrom(shared.Row{})
-				if err != nil {
-					return nil, nil, false
-				}
-
-				return []interface{}{value}, filter, true
+				return []expressions.Expression{left}, filter, true
 			}
 		}
 	}
@@ -116,25 +108,18 @@ func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithD
 		}
 
 		if bindsAllFields(target.Fields(), left) {
-			// TODO - need to keep as expression
-			value, err := right.ValueFrom(shared.Row{})
-			if err != nil {
-				return nil, nil, nil
-			}
-			values := []interface{}{value}
-
 			switch comparisonType {
 			case expressions.ComparisonTypeEquals:
-				lowerBound = &scanBound{values: values, inclusive: true}
-				upperBound = &scanBound{values: values, inclusive: true}
+				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
+				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
 			case expressions.ComparisonTypeLessThan:
-				upperBound = &scanBound{values: values, inclusive: false}
+				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: false}
 			case expressions.ComparisonTypeLessThanEquals:
-				upperBound = &scanBound{values: values, inclusive: true}
+				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
 			case expressions.ComparisonTypeGreaterThan:
-				lowerBound = &scanBound{values: values, inclusive: false}
+				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: false}
 			case expressions.ComparisonTypeGreaterThanEquals:
-				lowerBound = &scanBound{values: values, inclusive: true}
+				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
 			}
 
 			return lowerBound, upperBound, filter

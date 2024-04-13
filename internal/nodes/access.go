@@ -91,21 +91,21 @@ func (n *accessNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *accessNode) Scanner() (Scanner, error) {
-	scanner, err := n.strategy.Scanner()
+func (n *accessNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.strategy.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if n.filter != nil {
-		scanner, err = NewFilterScanner(scanner, n.filter)
+		scanner, err = NewFilterScanner(ctx, scanner, n.filter)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if n.order != nil {
-		scanner, err = NewOrderScanner(scanner, n.Fields(), n.order)
+		scanner, err = NewOrderScanner(ctx, scanner, n.Fields(), n.order)
 		if err != nil {
 			return nil, err
 		}

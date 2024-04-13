@@ -87,7 +87,7 @@ func handleQuery(tables map[string]*nodes.Table, line string) (err error) {
 		return nil
 	}
 
-	rows, err := nodes.ScanRows(node)
+	rows, err := nodes.ScanRows(node, nodes.ScanContext{})
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %s", err)
 	}

@@ -21,7 +21,7 @@ func testQuery(query string) (string, error) {
 	}
 	node.Optimize()
 
-	rows, err := nodes.ScanRows(node)
+	rows, err := nodes.ScanRows(node, nodes.ScanContext{})
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query: %s", err)
 	}

@@ -24,17 +24,16 @@ type btreeNode struct {
 type btreeIndexScanOptions struct {
 	lowerBound *scanBound
 	upperBound *scanBound
-	// TODO - reconstruct instead of storing explicitly
-	expr expressions.Expression
+	expr       expressions.Expression
 }
 
 func (o btreeIndexScanOptions) Condition() (expr expressions.Expression) {
-	return o.expr
+	return o.expr // TODO - reconstruct instead of storing explicitly
 }
 
 type scanBound struct {
-	values    []interface{}
-	inclusive bool
+	expressions []expressions.Expression
+	inclusive   bool
 }
 
 var _ Index[btreeIndexScanOptions] = &btreeIndex{}
@@ -121,16 +120,26 @@ func (n *btreeNode) delete(values []interface{}, tid int) *btreeNode {
 	return n
 }
 
-func (i *btreeIndex) Scanner(opts btreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 
-	checkBound := func(values []interface{}, bound *scanBound, expected shared.OrderType) bool {
+	checkBound := func(nodeValues []interface{}, bound *scanBound, expected shared.OrderType) bool {
 		if bound == nil {
 			return true
 		}
 
-		orderType := shared.CompareValueSlices(values, bound.values)
+		var boundValues []interface{}
+		for _, expression := range bound.expressions {
+			value, err := ctx.Evaluate(expression, shared.Row{})
+			if err != nil {
+				return false
+			}
+
+			boundValues = append(boundValues, value)
+		}
+
+		orderType := shared.CompareValueSlices(nodeValues, boundValues)
 		return orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)
 	}
 

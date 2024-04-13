@@ -80,7 +80,7 @@ func (n *unionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *unionNode) Scanner() (Scanner, error) {
+func (n *unionNode) Scanner(ctx ScanContext) (Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := hashValues(row.Values)
@@ -92,13 +92,13 @@ func (n *unionNode) Scanner() (Scanner, error) {
 		return true
 	}
 
-	leftScanner, err := n.left.Scanner()
+	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO - can do lazily?
-	rightScanner, err := n.right.Scanner()
+	rightScanner, err := n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}

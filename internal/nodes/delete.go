@@ -68,8 +68,8 @@ func (n *deleteNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *deleteNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *deleteNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +88,6 @@ func (n *deleteNode) Scanner() (Scanner, error) {
 			return shared.Row{}, ErrNoRows
 		}
 
-		return n.projector.projectRow(deletedRow)
+		return n.projector.projectRow(ctx, deletedRow)
 	}), nil
 }

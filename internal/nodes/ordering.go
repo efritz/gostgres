@@ -63,13 +63,13 @@ func (e ExpressionWithDirection) Fold() ExpressionWithDirection {
 	}
 }
 
-func findIndexIterationOrder(order OrderExpression, rows shared.Rows) ([]int, error) {
+func findIndexIterationOrder(ctx ScanContext, order OrderExpression, rows shared.Rows) ([]int, error) {
 	var expressions []ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
 	}
 
-	indexValues, err := makeIndexValues(expressions, rows)
+	indexValues, err := makeIndexValues(ctx, expressions, rows)
 	if err != nil {
 		return nil, err
 	}
@@ -109,12 +109,12 @@ type indexValue struct {
 	values []interface{}
 }
 
-func makeIndexValues(expressions []ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx ScanContext, expressions []ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]interface{}, 0, len(expressions))
 		for _, expression := range expressions {
-			value, err := expression.Expression.ValueFrom(rows.Row(i))
+			value, err := ctx.Evaluate(expression.Expression, rows.Row(i))
 			if err != nil {
 				return nil, err
 			}

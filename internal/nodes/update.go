@@ -75,8 +75,8 @@ func (n *updateNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *updateNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *updateNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (n *updateNode) Scanner() (Scanner, error) {
 		copy(values, row.Values)
 
 		for _, set := range n.setExpressions {
-			value, err := set.Expression.ValueFrom(row)
+			value, err := ctx.Evaluate(set.Expression, row)
 			if err != nil {
 				return shared.Row{}, err
 			}
@@ -133,6 +133,6 @@ func (n *updateNode) Scanner() (Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		return n.projector.projectRow(updatedRow)
+		return n.projector.projectRow(ctx, updatedRow)
 	}), nil
 }

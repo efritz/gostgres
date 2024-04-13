@@ -21,13 +21,12 @@ type hashItem struct {
 }
 
 type hashIndexScanOptions struct {
-	values []interface{}
-	// TODO - reconstruct instead of storing explicitly
-	expr expressions.Expression
+	expressions []expressions.Expression
+	expr        expressions.Expression
 }
 
 func (o hashIndexScanOptions) Condition() expressions.Expression {
-	return o.expr
+	return o.expr // TODO - reconstruct instead of storing explicitly
 }
 
 var _ Index[hashIndexScanOptions] = &hashIndex{}
@@ -84,8 +83,18 @@ func (i *hashIndex) Delete(row shared.Row) error {
 	return nil
 }
 
-func (i *hashIndex) Scanner(opts hashIndexScanOptions) (tidScanner, error) {
-	items := i.entries[i.hash(opts.values)]
+func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
+	var indexValues []interface{}
+	for _, expression := range opts.expressions {
+		value, err := ctx.Evaluate(expression, shared.Row{})
+		if err != nil {
+			return nil, err
+		}
+
+		indexValues = append(indexValues, value)
+	}
+
+	items := i.entries[i.hash(indexValues)]
 
 	j := 0
 

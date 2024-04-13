@@ -62,16 +62,16 @@ func (n *filterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *filterNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *filterNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewFilterScanner(scanner, n.filter)
+	return NewFilterScanner(ctx, scanner, n.filter)
 }
 
-func NewFilterScanner(scanner Scanner, filter expressions.Expression) (Scanner, error) {
+func NewFilterScanner(ctx ScanContext, scanner Scanner, filter expressions.Expression) (Scanner, error) {
 	if filter == nil {
 		return scanner, nil
 	}
@@ -83,7 +83,7 @@ func NewFilterScanner(scanner Scanner, filter expressions.Expression) (Scanner, 
 				return shared.Row{}, err
 			}
 
-			if ok, err := shared.EnsureBool(filter.ValueFrom(row)); err != nil {
+			if ok, err := shared.EnsureBool(ctx.Evaluate(filter, row)); err != nil {
 				return shared.Row{}, err
 			} else if !ok {
 				continue

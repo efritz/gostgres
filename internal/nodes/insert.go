@@ -69,8 +69,8 @@ func (n *insertNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *insertNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *insertNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (n *insertNode) Scanner() (Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		return n.projector.projectRow(insertedRow)
+		return n.projector.projectRow(ctx, insertedRow)
 	}), nil
 }
 

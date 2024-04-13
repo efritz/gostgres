@@ -32,6 +32,11 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := departmentsTable.AddIndex(nodes.NewHashIndex("departments_department_id", departmentsTable, []expressions.Expression{
+		expressions.NewNamed(shared.NewField("departments", "department_id", shared.TypeKindNumeric, false)),
+	})); err != nil {
+		return nil, err
+	}
 
 	locationsTable, err := createLocationsTable(root)
 	if err != nil {

@@ -31,7 +31,7 @@ func (s *tableAccessStrategy) Ordering() OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner() (Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 	tids := make([]int, 0, len(s.table.rows))
 	for tid := range s.table.rows {
 		tids = append(tids, tid)

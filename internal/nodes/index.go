@@ -18,7 +18,7 @@ type ScanOptions interface {
 }
 
 type IndexScanner[O ScanOptions] interface {
-	Scanner(opts O) (tidScanner, error)
+	Scanner(ctx ScanContext, opts O) (tidScanner, error)
 }
 
 type Index[O ScanOptions] interface {

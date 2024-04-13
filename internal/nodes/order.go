@@ -93,8 +93,8 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *orderNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (n *orderNode) Scanner() (Scanner, error) {
 	// 	return scanner, nil
 	// }
 
-	return NewOrderScanner(scanner, n.Fields(), n.order)
+	return NewOrderScanner(ctx, scanner, n.Fields(), n.order)
 }
 
 type orderScanner struct {
@@ -114,7 +114,7 @@ type orderScanner struct {
 	mark    int
 }
 
-func NewOrderScanner(scanner Scanner, fields []shared.Field, order OrderExpression) (Scanner, error) {
+func NewOrderScanner(ctx ScanContext, scanner Scanner, fields []shared.Field, order OrderExpression) (Scanner, error) {
 	rows, err := shared.NewRows(fields)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func NewOrderScanner(scanner Scanner, fields []shared.Field, order OrderExpressi
 		return nil, err
 	}
 
-	indexes, err := findIndexIterationOrder(order, rows)
+	indexes, err := findIndexIterationOrder(ctx, order, rows)
 	if err != nil {
 		return nil, err
 	}

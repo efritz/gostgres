@@ -56,8 +56,8 @@ func (n *offsetNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *offsetNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *offsetNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}

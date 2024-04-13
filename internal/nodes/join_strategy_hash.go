@@ -19,15 +19,15 @@ func (s *hashJoinStrategy) Ordering() OrderExpression {
 	return nil // TODO - ordered on the left field?
 }
 
-func (s *hashJoinStrategy) Scanner() (Scanner, error) {
-	rightScanner, err := s.n.right.Scanner()
+func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+	rightScanner, err := s.n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	h := map[interface{}]shared.Row{}
 	if err := VisitRows(rightScanner, func(row shared.Row) (bool, error) {
-		key, err := s.right.ValueFrom(row)
+		key, err := ctx.Evaluate(s.right, row)
 		if err != nil {
 			return false, err
 		}
@@ -38,7 +38,7 @@ func (s *hashJoinStrategy) Scanner() (Scanner, error) {
 		return nil, err
 	}
 
-	leftScanner, err := s.n.left.Scanner()
+	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *hashJoinStrategy) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			key, err := s.left.ValueFrom(leftRow)
+			key, err := ctx.Evaluate(s.left, leftRow)
 			if err != nil {
 				return shared.Row{}, err
 			}

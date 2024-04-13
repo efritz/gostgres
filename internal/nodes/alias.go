@@ -91,8 +91,8 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *aliasNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}

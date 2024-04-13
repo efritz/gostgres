@@ -19,13 +19,13 @@ func (s *mergeJoinStrategy) Ordering() OrderExpression {
 	return nil // TODO - ordered on the left + right fields?
 }
 
-func (s *mergeJoinStrategy) Scanner() (Scanner, error) {
-	leftScanner, err := s.n.left.Scanner()
+func (s *mergeJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rightScanner, err := s.n.right.Scanner()
+	rightScanner, err := s.n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,8 @@ func (s *mergeJoinStrategy) Scanner() (Scanner, error) {
 	}
 
 	return &mergeJoinScanner{
-		s:            s,
+		ctx:          ctx,
+		strategy:     s,
 		leftScanner:  leftScanner,
 		rightScanner: rightScanner,
 		markRestorer: markRestorer,
@@ -44,7 +45,8 @@ func (s *mergeJoinStrategy) Scanner() (Scanner, error) {
 }
 
 type mergeJoinScanner struct {
-	s            *mergeJoinStrategy
+	ctx          ScanContext
+	strategy     *mergeJoinStrategy
 	leftScanner  Scanner
 	rightScanner Scanner
 	markRestorer MarkRestorer
@@ -104,7 +106,7 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 			if ot, err := s.compareRows(*s.leftRow, *s.rightRow); err != nil {
 				return shared.Row{}, err
 			} else if ot == shared.OrderTypeEqual {
-				row, err := shared.NewRow(s.s.n.Fields(), append(copyValues(s.leftRow.Values), s.rightRow.Values...))
+				row, err := shared.NewRow(s.strategy.n.Fields(), append(copyValues(s.leftRow.Values), s.rightRow.Values...))
 				if err != nil {
 					return shared.Row{}, err
 				}
@@ -178,12 +180,12 @@ func scanIntoTarget(scanner Scanner, target **shared.Row) error {
 }
 
 func (s *mergeJoinScanner) compareRows(leftRow, rightRow shared.Row) (shared.OrderType, error) {
-	leftKey, err := s.s.left.ValueFrom(leftRow)
+	leftKey, err := s.ctx.Evaluate(s.strategy.left, leftRow)
 	if err != nil {
 		return 0, err
 	}
 
-	rightKey, err := s.s.right.ValueFrom(rightRow)
+	rightKey, err := s.ctx.Evaluate(s.strategy.right, rightRow)
 	if err != nil {
 		return 0, err
 	}

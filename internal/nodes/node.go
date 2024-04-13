@@ -21,7 +21,15 @@ type Node interface {
 	// TODO: rough implementation
 	// https://sourcegraph.com/github.com/postgres/postgres@06286709ee0637ec7376329a5aa026b7682dcfe2/-/blob/src/backend/executor/execAmi.c?L439:59-439:79
 	SupportsMarkRestore() bool
-	Scanner() (Scanner, error)
+	Scanner(ctx ScanContext) (Scanner, error)
+}
+
+type ScanContext struct {
+	OuterRow shared.Row
+}
+
+func (ctx ScanContext) Evaluate(expr expressions.Expression, row shared.Row) (interface{}, error) {
+	return expr.ValueFrom(shared.CombineRows(row, ctx.OuterRow))
 }
 
 type VisitorFunc func(row shared.Row) (bool, error)
@@ -47,8 +55,8 @@ var EmptyScanner = ScannerFunc(func() (shared.Row, error) {
 	return shared.Row{}, ErrNoRows
 })
 
-func ScanRows(node Node) (shared.Rows, error) {
-	scanner, err := node.Scanner()
+func ScanRows(node Node, ctx ScanContext) (shared.Rows, error) {
+	scanner, err := node.Scanner(ctx)
 	if err != nil {
 		return shared.Rows{}, err
 	}

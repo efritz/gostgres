@@ -40,8 +40,8 @@ func (s *indexAccessStrategy[ScanOptions]) Ordering() OrderExpression {
 	return s.index.Ordering()
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner() (Scanner, error) {
-	tidScanner, err := s.index.Scanner(s.opts)
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx ScanContext) (Scanner, error) {
+	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err
 	}

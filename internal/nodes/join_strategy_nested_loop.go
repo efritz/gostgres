@@ -1,6 +1,8 @@
 package nodes
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 type nestedLoopJoinStrategy struct {
 	n *joinNode
@@ -24,8 +26,8 @@ func (s *nestedLoopJoinStrategy) Ordering() OrderExpression {
 	return NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
-	leftScanner, err := s.n.left.Scanner()
+func (s *nestedLoopJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,9 @@ func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
 				}
 				leftRow = &row
 
-				scanner, err := s.n.right.Scanner()
+				scanner, err := s.n.right.Scanner(ScanContext{
+					OuterRow: row,
+				})
 				if err != nil {
 					return shared.Row{}, nil
 				}
@@ -67,9 +71,8 @@ func (s *nestedLoopJoinStrategy) Scanner() (Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			// TODO - can push this down to the right scanner construction?
 			if s.n.filter != nil {
-				if ok, err := shared.EnsureBool(s.n.filter.ValueFrom(row)); err != nil {
+				if ok, err := shared.EnsureBool(ctx.Evaluate(s.n.filter, row)); err != nil {
 					return shared.Row{}, err
 				} else if !ok {
 					continue

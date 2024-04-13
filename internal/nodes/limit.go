@@ -51,8 +51,8 @@ func (n *limitNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *limitNode) Scanner() (Scanner, error) {
-	scanner, err := n.Node.Scanner()
+func (n *limitNode) Scanner(ctx ScanContext) (Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}

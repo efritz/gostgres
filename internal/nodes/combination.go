@@ -97,12 +97,12 @@ func (n *combinationNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *combinationNode) Scanner() (Scanner, error) {
-	leftScanner, err := n.left.Scanner()
+func (n *combinationNode) Scanner(ctx ScanContext) (Scanner, error) {
+	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rightScanner, err := n.right.Scanner()
+	rightScanner, err := n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}

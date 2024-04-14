@@ -63,11 +63,6 @@ func (n *accessNode) AddFilter(filter expressions.Expression) {
 }
 
 func (n *accessNode) AddOrder(order OrderExpression) {
-	// TODO - why?
-	// if n.order != nil {
-	// 	panic("unreachable")
-	// }
-
 	n.order = order
 }
 

@@ -22,11 +22,6 @@ type hashItem struct {
 
 type hashIndexScanOptions struct {
 	expressions []expressions.Expression
-	expr        expressions.Expression
-}
-
-func (o hashIndexScanOptions) Condition() expressions.Expression {
-	return o.expr // TODO - reconstruct instead of storing explicitly
 }
 
 var _ Index[hashIndexScanOptions] = &hashIndex{}
@@ -46,6 +41,18 @@ func (i *hashIndex) Name() string {
 
 func (i *hashIndex) Filter() expressions.Expression {
 	return nil
+}
+
+func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expression) {
+	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.expressions))] {
+		if cond := expressions.NewEquals(expression, opts.expressions[j]); expr == nil {
+			expr = cond
+		} else {
+			expr = expressions.NewAnd(expr, cond)
+		}
+	}
+
+	return expr
 }
 
 func (i *hashIndex) Ordering() OrderExpression {

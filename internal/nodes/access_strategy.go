@@ -27,10 +27,10 @@ func selectAccessStrategy(
 			if ix, ok := index.(Index[hashIndexScanOptions]); ok {
 				if hi, ok := ix.(*hashIndex); ok {
 					// TODO - partial indexes
-					if values, expr, ok := extractEquality(filter, hi.expressions); ok {
+
+					if values, ok := extractEquality(filter, hi.expressions); ok {
 						return NewIndexAccessStrategy(table, hi, hashIndexScanOptions{
 							expressions: values,
-							expr:        expr,
 						})
 					}
 				}
@@ -52,12 +52,11 @@ func selectAccessStrategy(
 						continue outer
 					}
 
-					lowerBound, upperBound, expr := extractBounds(filter, bt.expressions)
+					lowerBound, upperBound := extractBounds(filter, bt.expressions)
 
 					return NewIndexAccessStrategy(table, bt, btreeIndexScanOptions{
 						lowerBound: lowerBound,
 						upperBound: upperBound,
-						expr:       expr,
 					})
 				}
 			}
@@ -67,30 +66,30 @@ func selectAccessStrategy(
 	return NewTableAccessStrategy(table)
 }
 
-func extractEquality(filter expressions.Expression, indexedExprs []expressions.Expression) (_ []expressions.Expression, expr expressions.Expression, ok bool) {
+func extractEquality(filter expressions.Expression, indexedExprs []expressions.Expression) (_ []expressions.Expression, ok bool) {
 	// TODO - support multi-column
 	if filter == nil || len(indexedExprs) > 1 {
-		return nil, nil, false
+		return nil, false
 	}
 
 	for _, indexedExpr := range indexedExprs {
 		if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
 			// TODO - need a more stable way to compare expression equality
 			if reflect.DeepEqual(left, indexedExpr) {
-				return []expressions.Expression{right}, filter, true
+				return []expressions.Expression{right}, true
 			} else if reflect.DeepEqual(right, indexedExpr) {
-				return []expressions.Expression{left}, filter, true
+				return []expressions.Expression{left}, true
 			}
 		}
 	}
 
-	return nil, nil, false
+	return nil, false
 
 }
 
-func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithDirection) (lowerBound, upperBound *scanBound, expr expressions.Expression) {
+func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithDirection) (lowerBound, upperBound *scanBound) {
 	if filter == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	target := indexedExprs[0].Expression
@@ -122,9 +121,9 @@ func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithD
 				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
 			}
 
-			return lowerBound, upperBound, filter
+			return lowerBound, upperBound
 		}
 	}
 
-	return nil, nil, nil
+	return nil, nil
 }

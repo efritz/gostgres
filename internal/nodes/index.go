@@ -13,9 +13,7 @@ type BaseIndex interface {
 	Delete(row shared.Row) error
 }
 
-type ScanOptions interface {
-	Condition() expressions.Expression
-}
+type ScanOptions interface{}
 
 type IndexScanner[O ScanOptions] interface {
 	Scanner(ctx ScanContext, opts O) (tidScanner, error)
@@ -23,6 +21,7 @@ type IndexScanner[O ScanOptions] interface {
 
 type Index[O ScanOptions] interface {
 	BaseIndex
+	Condition(opts O) expressions.Expression
 	IndexScanner[O]
 }
 

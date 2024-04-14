@@ -24,11 +24,6 @@ type btreeNode struct {
 type btreeIndexScanOptions struct {
 	lowerBound *scanBound
 	upperBound *scanBound
-	expr       expressions.Expression
-}
-
-func (o btreeIndexScanOptions) Condition() (expr expressions.Expression) {
-	return o.expr // TODO - reconstruct instead of storing explicitly
 }
 
 type scanBound struct {
@@ -52,6 +47,47 @@ func (i *btreeIndex) Name() string {
 
 func (i *btreeIndex) Filter() expressions.Expression {
 	return nil
+}
+
+func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {
+	var lowers []expressions.Expression
+	if opts.lowerBound != nil {
+		for j, expression := range i.expressions[:min(len(i.expressions), len(opts.lowerBound.expressions))] {
+			if opts.lowerBound.expressions[j] != nil {
+				if opts.lowerBound.inclusive {
+					lowers = append(lowers, expressions.NewGreaterThanEquals(expression.Expression, opts.lowerBound.expressions[j]))
+				} else {
+					lowers = append(lowers, expressions.NewGreaterThan(expression.Expression, opts.lowerBound.expressions[j]))
+				}
+			}
+		}
+	}
+
+	var uppers []expressions.Expression
+	if opts.upperBound != nil {
+		for j, expression := range i.expressions[:min(len(i.expressions), len(opts.upperBound.expressions))] {
+			if opts.upperBound.expressions[j] != nil {
+				if opts.upperBound.inclusive {
+					uppers = append(uppers, expressions.NewLessThanEquals(expression.Expression, opts.upperBound.expressions[j]))
+				} else {
+					uppers = append(uppers, expressions.NewLessThan(expression.Expression, opts.upperBound.expressions[j]))
+				}
+			}
+		}
+	}
+
+	// TODO - merge expressions like L <= b <= U where L = U to L = b
+
+	var expr expressions.Expression
+	for _, expression := range append(lowers, uppers...) {
+		if expr == nil {
+			expr = expression
+		} else {
+			expr = expressions.NewAnd(expr, expression)
+		}
+	}
+
+	return expr
 }
 
 func (i *btreeIndex) Ordering() OrderExpression {

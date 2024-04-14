@@ -97,11 +97,7 @@ func (n *unionNode) Scanner(ctx ScanContext) (Scanner, error) {
 		return nil, err
 	}
 
-	// TODO - can do lazily?
-	rightScanner, err := n.right.Scanner(ctx)
-	if err != nil {
-		return nil, err
-	}
+	var rightScanner Scanner
 
 	return ScannerFunc(func() (shared.Row, error) {
 		for leftScanner != nil {
@@ -117,6 +113,13 @@ func (n *unionNode) Scanner(ctx ScanContext) (Scanner, error) {
 
 			if mark(row) {
 				return row, nil
+			}
+		}
+
+		if rightScanner == nil {
+			rightScanner, err = n.right.Scanner(ctx)
+			if err != nil {
+				return shared.Row{}, err
 			}
 		}
 

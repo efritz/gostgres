@@ -22,13 +22,13 @@ type btreeNode struct {
 }
 
 type btreeIndexScanOptions struct {
-	lowerBound *scanBound
-	upperBound *scanBound
+	lowerBounds [][]scanBound
+	upperBounds [][]scanBound
 }
 
 type scanBound struct {
-	expressions []expressions.Expression
-	inclusive   bool
+	expression expressions.Expression
+	inclusive  bool
 }
 
 var _ Index[btreeIndexScanOptions] = &btreeIndex{}
@@ -51,27 +51,27 @@ func (i *btreeIndex) Filter() expressions.Expression {
 
 func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {
 	var lowers []expressions.Expression
-	if opts.lowerBound != nil {
-		for j, expression := range i.expressions[:min(len(i.expressions), len(opts.lowerBound.expressions))] {
-			if opts.lowerBound.expressions[j] != nil {
-				if opts.lowerBound.inclusive {
-					lowers = append(lowers, expressions.NewGreaterThanEquals(expression.Expression, opts.lowerBound.expressions[j]))
-				} else {
-					lowers = append(lowers, expressions.NewGreaterThan(expression.Expression, opts.lowerBound.expressions[j]))
-				}
+	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.lowerBounds))] {
+		exprBounds := opts.lowerBounds[j]
+
+		for _, exprBound := range exprBounds {
+			if exprBound.inclusive {
+				lowers = append(lowers, expressions.NewGreaterThanEquals(expression.Expression, exprBound.expression))
+			} else {
+				lowers = append(lowers, expressions.NewGreaterThan(expression.Expression, exprBound.expression))
 			}
 		}
 	}
 
 	var uppers []expressions.Expression
-	if opts.upperBound != nil {
-		for j, expression := range i.expressions[:min(len(i.expressions), len(opts.upperBound.expressions))] {
-			if opts.upperBound.expressions[j] != nil {
-				if opts.upperBound.inclusive {
-					uppers = append(uppers, expressions.NewLessThanEquals(expression.Expression, opts.upperBound.expressions[j]))
-				} else {
-					uppers = append(uppers, expressions.NewLessThan(expression.Expression, opts.upperBound.expressions[j]))
-				}
+	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.upperBounds))] {
+		exprBounds := opts.upperBounds[j]
+
+		for _, exprBound := range exprBounds {
+			if exprBound.inclusive {
+				uppers = append(uppers, expressions.NewLessThanEquals(expression.Expression, exprBound.expression))
+			} else {
+				uppers = append(uppers, expressions.NewLessThan(expression.Expression, exprBound.expression))
 			}
 		}
 	}
@@ -160,27 +160,26 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 	stack := []*btreeNode{}
 	current := i.root
 
-	checkBound := func(nodeValues []interface{}, bound *scanBound, expected shared.OrderType) bool {
-		if bound == nil {
-			return true
-		}
+	checkBounds := func(nodeValues []interface{}, bounds [][]scanBound, expected shared.OrderType) bool {
+		for j, bounds := range bounds[:min(len(bounds), len(nodeValues))] {
+			for _, bound := range bounds {
+				value, err := ctx.Evaluate(bound.expression, shared.Row{})
+				if err != nil {
+					return false
+				}
 
-		var boundValues []interface{}
-		for _, expression := range bound.expressions {
-			value, err := ctx.Evaluate(expression, shared.Row{})
-			if err != nil {
-				return false
+				orderType := shared.CompareValues(nodeValues[j], value)
+				if !(orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)) {
+					return false
+				}
 			}
-
-			boundValues = append(boundValues, value)
 		}
 
-		orderType := shared.CompareValueSlices(nodeValues, boundValues)
-		return orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)
+		return true
 	}
 
-	withinLowerBound := func(values []interface{}) bool { return checkBound(values, opts.lowerBound, shared.OrderTypeAfter) }
-	withinUpperBound := func(values []interface{}) bool { return checkBound(values, opts.upperBound, shared.OrderTypeBefore) }
+	withinLowerBound := func(values []interface{}) bool { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
+	withinUpperBound := func(values []interface{}) bool { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
 
 	return tidScannerFunc(func() (int, error) {
 		for current != nil || len(stack) > 0 {

@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/shared"
 )
 
 type accessStrategy interface {
@@ -20,14 +19,14 @@ func selectAccessStrategy(
 	filter expressions.Expression,
 	order OrderExpression,
 ) accessStrategy {
+	// TODO - partial indexes
+
 	if filter != nil {
 		// TODO - use btree for filters as well
 
 		for _, index := range table.indexes {
 			if ix, ok := index.(Index[hashIndexScanOptions]); ok {
 				if hi, ok := ix.(*hashIndex); ok {
-					// TODO - partial indexes
-
 					if values, ok := extractEquality(filter, hi.expressions); ok {
 						return NewIndexAccessStrategy(table, hi, hashIndexScanOptions{
 							expressions: values,
@@ -43,7 +42,6 @@ func selectAccessStrategy(
 		for _, index := range table.indexes {
 			if ix, ok := index.(Index[btreeIndexScanOptions]); ok {
 				if bt, ok := ix.(*btreeIndex); ok {
-					// TODO - partial indexes
 					indexExpressions := bt.expressions
 					orderExpressions := order.Expressions()
 
@@ -52,11 +50,11 @@ func selectAccessStrategy(
 						continue outer
 					}
 
-					lowerBound, upperBound := extractBounds(filter, bt.expressions)
+					lowerBounds, upperBounds := extractBounds(filter, bt.expressions)
 
 					return NewIndexAccessStrategy(table, bt, btreeIndexScanOptions{
-						lowerBound: lowerBound,
-						upperBound: upperBound,
+						lowerBounds: lowerBounds,
+						upperBounds: upperBounds,
 					})
 				}
 			}
@@ -84,46 +82,67 @@ func extractEquality(filter expressions.Expression, indexedExprs []expressions.E
 	}
 
 	return nil, false
-
 }
 
-func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithDirection) (lowerBound, upperBound *scanBound) {
+func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithDirection) (lowerBounds, upperBounds [][]scanBound) {
 	if filter == nil {
 		return nil, nil
 	}
 
-	target := indexedExprs[0].Expression
+	conjunctions := filter.Conjunctions()
 
-	// TODO - decompose multiple comparison (e.g., a < b and c < d where (a, c) is indexed)
-	if comparisonType, left, right := expressions.IsComparison(filter); comparisonType != expressions.ComparisonTypeUnknown {
-		bindsAllFields := func(fields []shared.Field, expr expressions.Expression) bool {
-			for _, field := range expr.Fields() {
-				if _, err := shared.FindMatchingFieldIndex(field, fields); err != nil {
-					return false
+	for _, target := range indexedExprs {
+		var (
+			exprLowerBounds []scanBound
+			exprUpperBounds []scanBound
+		)
+
+		for _, conjunction := range conjunctions {
+			if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType != expressions.ComparisonTypeUnknown {
+				if reflect.DeepEqual(right, target.Expression) {
+					left, right = right, left
+					comparisonType = comparisonType.Flip()
+				}
+
+				if reflect.DeepEqual(left, target.Expression) {
+					switch comparisonType {
+					case expressions.ComparisonTypeEquals:
+						exprLowerBounds = append(exprLowerBounds, scanBound{expression: right, inclusive: true})
+						exprUpperBounds = append(exprUpperBounds, scanBound{expression: right, inclusive: true})
+					case expressions.ComparisonTypeLessThan:
+						exprUpperBounds = append(exprUpperBounds, scanBound{expression: right, inclusive: false})
+					case expressions.ComparisonTypeLessThanEquals:
+						exprUpperBounds = append(exprUpperBounds, scanBound{expression: right, inclusive: true})
+					case expressions.ComparisonTypeGreaterThan:
+						exprLowerBounds = append(exprLowerBounds, scanBound{expression: right, inclusive: false})
+					case expressions.ComparisonTypeGreaterThanEquals:
+						exprLowerBounds = append(exprLowerBounds, scanBound{expression: right, inclusive: true})
+					}
 				}
 			}
-
-			return true
 		}
 
-		if bindsAllFields(target.Fields(), left) {
-			switch comparisonType {
-			case expressions.ComparisonTypeEquals:
-				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
-				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
-			case expressions.ComparisonTypeLessThan:
-				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: false}
-			case expressions.ComparisonTypeLessThanEquals:
-				upperBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
-			case expressions.ComparisonTypeGreaterThan:
-				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: false}
-			case expressions.ComparisonTypeGreaterThanEquals:
-				lowerBound = &scanBound{expressions: []expressions.Expression{right}, inclusive: true}
-			}
-
-			return lowerBound, upperBound
-		}
+		lowerBounds = append(lowerBounds, exprLowerBounds)
+		upperBounds = append(upperBounds, exprUpperBounds)
 	}
 
-	return nil, nil
+	prunedLowerBounds := lowerBounds[:0]
+	for _, bound := range lowerBounds {
+		if len(bound) == 0 {
+			break
+		}
+
+		prunedLowerBounds = append(prunedLowerBounds, bound)
+	}
+
+	prunedUpperBounds := upperBounds[:0]
+	for _, bound := range upperBounds {
+		if len(bound) == 0 {
+			break
+		}
+
+		prunedUpperBounds = append(prunedUpperBounds, bound)
+	}
+
+	return prunedLowerBounds, prunedUpperBounds
 }

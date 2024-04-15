@@ -68,7 +68,7 @@ func (n *accessNode) AddOrder(order OrderExpression) {
 
 func (n *accessNode) Filter() expressions.Expression {
 	if filter := n.strategy.Filter(); filter != nil {
-		return filter
+		return unionFilters(n.filter, filter)
 	}
 
 	return n.filter

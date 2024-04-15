@@ -84,6 +84,14 @@ func (e conditionalExpression) String() string {
 
 func (e conditionalExpression) Equal(other Expression) bool {
 	if o, ok := other.(conditionalExpression); ok {
+		// TODO
+		//
+		// Trees of AND/OR are equivalent on asymmetry, not only when the tree
+		// shapes are identical. We need to do some sort of node path normalization
+		// here so that expressions like the following are seen as the same:
+		//
+		// a && (b && c) == (a && b) && c.
+
 		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
 	}
 

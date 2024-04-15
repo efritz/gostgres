@@ -30,24 +30,29 @@ func (e binaryExpression) String() string {
 
 func (e binaryExpression) Equal(other Expression) bool {
 	if o, ok := other.(binaryExpression); ok {
-		// TODO - check for equivalence as well by possibly supplying a
-		// symmetric operation and checking for lhs and rhs swapped:
-		// e.operatorText == o.symmetricOperatorText && e.left.Equal(o.right) && e.right.Equal(o.left)
-		//
-		// This may not work for OR, though, as there is a tree equivalence
-		// as well that we don't normalize. (a or b) or c != a or (b or c)
-		// as the lhs and rhs are not equal. This may necessitate that we
-		// somehow normalize all operators prior to comparison. This is also
-		// an issue for addition and multiplication.
-		//
-		// A normalization path would mean that we only choose one set of operators
-		// from an equivalency (rewrite > in terms of <), and we must also be able
-		// to sort expressions in a deterministic way for operators that are associative.
-
-		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
+		return compareBinary(e, o)
 	}
 
 	return false
+}
+
+func compareBinary(a, b binaryExpression) bool {
+	if op, _, _ := IsArithmetic(a); op != ArithmeticTypeUnknown {
+		// Special case: if arithmetic operator is asymmetric, allow operands to be flipped
+		if op.IsSymmetric() && a.operatorText == b.operatorText && a.left.Equal(b.right) && a.right.Equal(b.left) {
+			return true
+		}
+	}
+
+	if op, _, _ := IsComparison(a); op != ComparisonTypeUnknown {
+		// Special case: if comparison operators are inverted, allow operands to be flipped
+		if b.operatorText == op.Flip().String() && a.left.Equal(b.right) && a.right.Equal(b.left) {
+			return true
+		}
+	}
+
+	// General case: equivalent operators and ordered operands are equal
+	return a.operatorText == b.operatorText && a.left.Equal(b.left) && a.right.Equal(b.right)
 }
 
 func (e binaryExpression) Fields() []shared.Field {

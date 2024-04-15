@@ -99,12 +99,12 @@ func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithD
 
 		for _, conjunction := range conjunctions {
 			if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType != expressions.ComparisonTypeUnknown {
-				if reflect.DeepEqual(right, target.Expression) {
+				if right.Equal(target.Expression) {
 					left, right = right, left
 					comparisonType = comparisonType.Flip()
 				}
 
-				if reflect.DeepEqual(left, target.Expression) {
+				if left.Equal(target.Expression) {
 					switch comparisonType {
 					case expressions.ComparisonTypeEquals:
 						exprLowerBounds = append(exprLowerBounds, scanBound{expression: right, inclusive: true})

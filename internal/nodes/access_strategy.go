@@ -27,9 +27,9 @@ func selectAccessStrategy(
 		for _, index := range table.indexes {
 			if ix, ok := index.(Index[hashIndexScanOptions]); ok {
 				if hi, ok := ix.(*hashIndex); ok {
-					if values, ok := extractEquality(filter, hi.expressions); ok {
+					if expr, ok := extractEquality(filter, hi.expression); ok {
 						return NewIndexAccessStrategy(table, hi, hashIndexScanOptions{
-							expressions: values,
+							expression: expr,
 						})
 					}
 				}
@@ -64,20 +64,18 @@ func selectAccessStrategy(
 	return NewTableAccessStrategy(table)
 }
 
-func extractEquality(filter expressions.Expression, indexedExprs []expressions.Expression) (_ []expressions.Expression, ok bool) {
-	// TODO - support multi-column
-	if filter == nil || len(indexedExprs) > 1 {
+func extractEquality(filter expressions.Expression, indexedExpr expressions.Expression) (_ expressions.Expression, ok bool) {
+	if filter == nil {
 		return nil, false
 	}
 
-	for _, indexedExpr := range indexedExprs {
-		if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
-			// TODO - need a more stable way to compare expression equality
-			if reflect.DeepEqual(left, indexedExpr) {
-				return []expressions.Expression{right}, true
-			} else if reflect.DeepEqual(right, indexedExpr) {
-				return []expressions.Expression{left}, true
-			}
+	if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
+		if left.Equal(indexedExpr) {
+			return right, true
+		}
+
+		if right.Equal(indexedExpr) {
+			return left, true
 		}
 	}
 

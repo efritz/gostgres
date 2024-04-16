@@ -22,9 +22,9 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 	})); err != nil {
 		return nil, err
 	}
-	if err := employeesTable.AddIndex(nodes.NewHashIndex("employees_first_name", employeesTable, []expressions.Expression{
+	if err := employeesTable.AddIndex(nodes.NewHashIndex("employees_first_name", employeesTable,
 		expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText, false)),
-	})); err != nil {
+	)); err != nil {
 		return nil, err
 	}
 
@@ -32,9 +32,9 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := departmentsTable.AddIndex(nodes.NewHashIndex("departments_department_id", departmentsTable, []expressions.Expression{
+	if err := departmentsTable.AddIndex(nodes.NewHashIndex("departments_department_id", departmentsTable,
 		expressions.NewNamed(shared.NewField("departments", "department_id", shared.TypeKindNumeric, false)),
-	})); err != nil {
+	)); err != nil {
 		return nil, err
 	}
 

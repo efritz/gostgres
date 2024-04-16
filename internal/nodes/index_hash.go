@@ -9,29 +9,29 @@ import (
 )
 
 type hashIndex struct {
-	name        string
-	table       *Table
-	expressions []expressions.Expression
-	entries     map[int64][]hashItem
+	name       string
+	table      *Table
+	expression expressions.Expression
+	entries    map[uint64][]hashItem
 }
 
 type hashItem struct {
-	tid    int
-	values []interface{}
+	tid   int
+	value interface{}
 }
 
 type hashIndexScanOptions struct {
-	expressions []expressions.Expression
+	expression expressions.Expression
 }
 
 var _ Index[hashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name string, table *Table, expressions []expressions.Expression) *hashIndex {
+func NewHashIndex(name string, table *Table, expression expressions.Expression) *hashIndex {
 	return &hashIndex{
-		name:        name,
-		table:       table,
-		expressions: expressions,
-		entries:     map[int64][]hashItem{},
+		name:       name,
+		table:      table,
+		expression: expression,
+		entries:    map[uint64][]hashItem{},
 	}
 }
 
@@ -44,15 +44,11 @@ func (i *hashIndex) Filter() expressions.Expression {
 }
 
 func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expression) {
-	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.expressions))] {
-		if cond := expressions.NewEquals(expression, opts.expressions[j]); expr == nil {
-			expr = cond
-		} else {
-			expr = expressions.NewAnd(expr, cond)
-		}
+	if i.expression == nil {
+		return nil
 	}
 
-	return expr
+	return expressions.NewEquals(i.expression, opts.expression)
 }
 
 func (i *hashIndex) Ordering() OrderExpression {
@@ -60,23 +56,23 @@ func (i *hashIndex) Ordering() OrderExpression {
 }
 
 func (i *hashIndex) Insert(row shared.Row) error {
-	tid, values, err := i.extractTIDAndValuesFromRow(row)
+	tid, value, err := i.extractTIDAndValueFromRow(row)
 	if err != nil {
 		return err
 	}
 
-	hash := i.hash(values)
-	i.entries[hash] = append(i.entries[hash], hashItem{tid, values})
+	hash := hash(value)
+	i.entries[hash] = append(i.entries[hash], hashItem{tid, value})
 	return nil
 }
 
 func (i *hashIndex) Delete(row shared.Row) error {
-	tid, values, err := i.extractTIDAndValuesFromRow(row)
+	tid, value, err := i.extractTIDAndValueFromRow(row)
 	if err != nil {
 		return err
 	}
 
-	hash := i.hash(values)
+	hash := hash(value)
 	items := i.entries[hash]
 
 	for j, item := range items {
@@ -91,17 +87,12 @@ func (i *hashIndex) Delete(row shared.Row) error {
 }
 
 func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
-	var indexValues []interface{}
-	for _, expression := range opts.expressions {
-		value, err := ctx.Evaluate(expression, shared.Row{})
-		if err != nil {
-			return nil, err
-		}
-
-		indexValues = append(indexValues, value)
+	value, err := ctx.Evaluate(i.expression, shared.Row{})
+	if err != nil {
+		return nil, err
 	}
 
-	items := i.entries[i.hash(indexValues)]
+	items := i.entries[hash(value)]
 
 	j := 0
 
@@ -116,30 +107,22 @@ func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScan
 	}), nil
 }
 
-func (i *hashIndex) extractTIDAndValuesFromRow(row shared.Row) (int, []interface{}, error) {
+func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, interface{}, error) {
 	tid, ok := extractTID(row)
 	if !ok {
 		return 0, nil, fmt.Errorf("no tid in row")
 	}
 
-	values := []interface{}{}
-	for _, expression := range i.expressions {
-		value, err := expression.ValueFrom(row)
-		if err != nil {
-			return 0, nil, err
-		}
-
-		values = append(values, value)
+	value, err := i.expression.ValueFrom(row)
+	if err != nil {
+		return 0, nil, err
 	}
 
-	return tid, values, nil
+	return tid, value, nil
 }
 
-func (i *hashIndex) hash(values []interface{}) int64 {
+func hash(value interface{}) uint64 {
 	h := fnv.New64()
-	for _, value := range values {
-		_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
-	}
-
-	return int64(h.Sum64())
+	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
+	return h.Sum64()
 }

@@ -22,9 +22,18 @@ type btreeNode struct {
 }
 
 type btreeIndexScanOptions struct {
-	lowerBounds [][]scanBound
-	upperBounds [][]scanBound
+	scanDirection ScanDirection
+	lowerBounds   [][]scanBound
+	upperBounds   [][]scanBound
 }
+
+type ScanDirection int
+
+const (
+	ScanDirectionUnknown ScanDirection = iota
+	ScanDirectionForward
+	ScanDirectionBackward
+)
 
 type scanBound struct {
 	expression expressions.Expression
@@ -90,7 +99,19 @@ func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expressio
 	return expr
 }
 
-func (i *btreeIndex) Ordering() OrderExpression {
+func (i *btreeIndex) Ordering(opts btreeIndexScanOptions) OrderExpression {
+	if opts.scanDirection == ScanDirectionBackward {
+		var reversed []ExpressionWithDirection
+		for _, expression := range i.expressions {
+			reversed = append(reversed, ExpressionWithDirection{
+				Expression: expression.Expression,
+				Reverse:    !expression.Reverse,
+			})
+		}
+
+		return &orderExpression{expressions: reversed}
+	}
+
 	return &orderExpression{expressions: i.expressions}
 }
 
@@ -186,8 +207,10 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 			for current != nil {
 				stack = append(stack, current)
 
-				if withinLowerBound(current.values) {
+				if opts.scanDirection != ScanDirectionBackward && withinLowerBound(current.values) {
 					current = current.left
+				} else if opts.scanDirection == ScanDirectionBackward == withinUpperBound(current.values) {
+					current = current.right
 				} else {
 					current = nil
 				}
@@ -201,14 +224,16 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 			node := stack[idx]
 			stack = stack[:idx]
 
-			if withinUpperBound(node.values) {
+			if opts.scanDirection == ScanDirectionForward && withinUpperBound(node.values) {
 				current = node.right
-
-				if withinLowerBound(node.values) {
-					return node.tid, nil
-				}
+			} else if opts.scanDirection == ScanDirectionBackward && withinLowerBound(node.values) {
+				current = node.left
 			} else {
 				current = nil
+			}
+
+			if withinLowerBound(node.values) && withinUpperBound(node.values) {
+				return node.tid, nil
 			}
 		}
 

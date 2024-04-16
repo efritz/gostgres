@@ -51,7 +51,7 @@ func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expre
 	return expressions.NewEquals(i.expression, opts.expression)
 }
 
-func (i *hashIndex) Ordering() OrderExpression {
+func (i *hashIndex) Ordering(opts hashIndexScanOptions) OrderExpression {
 	return nil
 }
 

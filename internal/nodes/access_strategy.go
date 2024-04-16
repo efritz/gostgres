@@ -2,7 +2,6 @@ package nodes
 
 import (
 	"io"
-	"reflect"
 
 	"github.com/efritz/gostgres/internal/expressions"
 )
@@ -45,16 +44,17 @@ func selectAccessStrategy(
 					indexExpressions := bt.expressions
 					orderExpressions := order.Expressions()
 
-					// TODO - check backwards scan
-					if len(indexExpressions) < len(orderExpressions) || !reflect.DeepEqual(indexExpressions[:len(orderExpressions)], orderExpressions) {
+					scanDirection, ok := scanDirection(orderExpressions, indexExpressions)
+					if !ok {
 						continue outer
 					}
 
 					lowerBounds, upperBounds := extractBounds(filter, bt.expressions)
 
 					return NewIndexAccessStrategy(table, bt, btreeIndexScanOptions{
-						lowerBounds: lowerBounds,
-						upperBounds: upperBounds,
+						scanDirection: scanDirection,
+						lowerBounds:   lowerBounds,
+						upperBounds:   upperBounds,
 					})
 				}
 			}
@@ -62,6 +62,33 @@ func selectAccessStrategy(
 	}
 
 	return NewTableAccessStrategy(table)
+}
+
+func scanDirection(orderExpressions, indexDirections []ExpressionWithDirection) (ScanDirection, bool) {
+	if len(orderExpressions) > len(indexDirections) {
+		return ScanDirectionUnknown, false
+	}
+
+	var forward bool
+	for i, orderExpr := range orderExpressions {
+		if !orderExpr.Expression.Equal(indexDirections[i].Expression) {
+			return ScanDirectionUnknown, false
+		}
+
+		matchesDirection := orderExpr.Reverse == indexDirections[i].Reverse
+
+		if i == 0 {
+			forward = matchesDirection
+		} else if forward != matchesDirection {
+			return ScanDirectionUnknown, false
+		}
+	}
+
+	if !forward {
+		return ScanDirectionBackward, true
+	}
+
+	return ScanDirectionForward, true
 }
 
 func extractEquality(filter expressions.Expression, indexedExpr expressions.Expression) (_ expressions.Expression, ok bool) {

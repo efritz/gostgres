@@ -59,36 +59,18 @@ func (i *btreeIndex) Filter() expressions.Expression {
 }
 
 func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {
-	var lowers []expressions.Expression
-	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.lowerBounds))] {
-		exprBounds := opts.lowerBounds[j]
+	var allExpressions []expressions.Expression
 
-		for _, exprBound := range exprBounds {
-			if exprBound.inclusive {
-				lowers = append(lowers, expressions.NewGreaterThanEquals(expression.Expression, exprBound.expression))
-			} else {
-				lowers = append(lowers, expressions.NewGreaterThan(expression.Expression, exprBound.expression))
-			}
-		}
+	for j := range i.expressions {
+		lowers, uppers, equals := i.conditionsForIndex(opts, j)
+
+		allExpressions = append(allExpressions, lowers...)
+		allExpressions = append(allExpressions, uppers...)
+		allExpressions = append(allExpressions, equals...)
 	}
-
-	var uppers []expressions.Expression
-	for j, expression := range i.expressions[:min(len(i.expressions), len(opts.upperBounds))] {
-		exprBounds := opts.upperBounds[j]
-
-		for _, exprBound := range exprBounds {
-			if exprBound.inclusive {
-				uppers = append(uppers, expressions.NewLessThanEquals(expression.Expression, exprBound.expression))
-			} else {
-				uppers = append(uppers, expressions.NewLessThan(expression.Expression, exprBound.expression))
-			}
-		}
-	}
-
-	// TODO - merge expressions like L <= b <= U where L = U to L = b
 
 	var expr expressions.Expression
-	for _, expression := range append(lowers, uppers...) {
+	for _, expression := range allExpressions {
 		if expr == nil {
 			expr = expression
 		} else {
@@ -97,6 +79,64 @@ func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expressio
 	}
 
 	return expr
+}
+
+func (i *btreeIndex) conditionsForIndex(opts btreeIndexScanOptions, index int) (lowers, uppers, equals []expressions.Expression) {
+	var lowerBounds []scanBound
+	if index < len(opts.lowerBounds) {
+		lowerBounds = opts.lowerBounds[index]
+	}
+
+	var upperBounds []scanBound
+	if index < len(opts.upperBounds) {
+		upperBounds = opts.upperBounds[index]
+	}
+
+	skipLowers := map[int]struct{}{}
+	skipUppers := map[int]struct{}{}
+	expression := i.expressions[index].Expression
+
+	for j, lowerBound := range lowerBounds {
+		if !lowerBound.inclusive {
+			continue
+		}
+
+		for k, upperBound := range upperBounds {
+			if upperBound.inclusive && lowerBound.expression.Equal(upperBound.expression) {
+				skipLowers[j] = struct{}{}
+				skipUppers[k] = struct{}{}
+
+				// TODO - should apply this more generally in conjunction folding
+				equals = append(equals, expressions.NewEquals(expression, lowerBound.expression))
+			}
+		}
+	}
+
+	for _, lowerBound := range lowerBounds {
+		if _, ok := skipLowers[index]; ok {
+			continue
+		}
+
+		if lowerBound.inclusive {
+			lowers = append(lowers, expressions.NewGreaterThanEquals(expression, lowerBound.expression))
+		} else {
+			lowers = append(lowers, expressions.NewGreaterThan(expression, lowerBound.expression))
+		}
+	}
+
+	for _, upperBound := range upperBounds {
+		if _, ok := skipUppers[index]; ok {
+			continue
+		}
+
+		if upperBound.inclusive {
+			uppers = append(uppers, expressions.NewLessThanEquals(expression, upperBound.expression))
+		} else {
+			uppers = append(uppers, expressions.NewLessThan(expression, upperBound.expression))
+		}
+	}
+
+	return lowers, uppers, equals
 }
 
 func (i *btreeIndex) Ordering(opts btreeIndexScanOptions) OrderExpression {

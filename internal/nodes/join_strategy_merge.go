@@ -16,7 +16,8 @@ func (s *mergeJoinStrategy) Name() string {
 }
 
 func (s *mergeJoinStrategy) Ordering() OrderExpression {
-	return nil // TODO - ordered on the left + right fields?
+	// TODO - can add right fields as well?
+	return s.n.left.Ordering()
 }
 
 func (s *mergeJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {

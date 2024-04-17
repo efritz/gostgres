@@ -16,7 +16,7 @@ func (s *hashJoinStrategy) Name() string {
 }
 
 func (s *hashJoinStrategy) Ordering() OrderExpression {
-	return nil // TODO - ordered on the left field?
+	return s.n.left.Ordering()
 }
 
 func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {

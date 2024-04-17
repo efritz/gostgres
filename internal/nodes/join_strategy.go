@@ -42,8 +42,10 @@ func selectJoinStrategy(
 		}
 	}
 
-	strategy := &nestedLoopJoinStrategy{n: n}
-	n.right.AddFilter(n.filter)
-	n.right.Optimize()
-	return strategy
+	if n.filter != nil {
+		n.right.AddFilter(n.filter)
+		n.right.Optimize()
+	}
+
+	return &nestedLoopJoinStrategy{n: n}
 }

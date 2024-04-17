@@ -37,9 +37,6 @@ func (n *accessNode) Serialize(w io.Writer, indentationLevel int) {
 	if n.filter != nil {
 		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), n.filter))
 	}
-	if n.order != nil {
-		io.WriteString(w, fmt.Sprintf("%sorder: %s\n", indent(indentationLevel+1), n.order))
-	}
 }
 
 func (n *accessNode) Optimize() {
@@ -53,9 +50,7 @@ func (n *accessNode) Optimize() {
 
 	n.strategy = selectAccessStrategy(n.table, n.filter, n.order)
 	n.filter = filterDifference(n.filter, n.strategy.Filter())
-	if subsumesOrder(n.order, n.strategy.Ordering()) {
-		n.order = nil
-	}
+	n.order = nil
 }
 
 func (n *accessNode) AddFilter(filter expressions.Expression) {
@@ -75,11 +70,7 @@ func (n *accessNode) Filter() expressions.Expression {
 }
 
 func (n *accessNode) Ordering() OrderExpression {
-	if order := n.strategy.Ordering(); order != nil {
-		return order
-	}
-
-	return n.order
+	return n.strategy.Ordering()
 }
 
 func (n *accessNode) SupportsMarkRestore() bool {
@@ -94,13 +85,6 @@ func (n *accessNode) Scanner(ctx ScanContext) (Scanner, error) {
 
 	if n.filter != nil {
 		scanner, err = NewFilterScanner(ctx, scanner, n.filter)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if n.order != nil {
-		scanner, err = NewOrderScanner(ctx, scanner, n.Fields(), n.order)
 		if err != nil {
 			return nil, err
 		}

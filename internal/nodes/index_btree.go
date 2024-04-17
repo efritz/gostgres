@@ -50,12 +50,13 @@ func NewBTreeIndex(name string, table *Table, expressions []ExpressionWithDirect
 	}
 }
 
-func (i *btreeIndex) Name() string {
-	return i.name
-}
+func (i *btreeIndex) Description(opts btreeIndexScanOptions) string {
+	direction := ""
+	if opts.scanDirection == ScanDirectionBackward {
+		direction = "backward "
+	}
 
-func (i *btreeIndex) Filter() expressions.Expression {
-	return nil
+	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.table.name, i.name)
 }
 
 func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {

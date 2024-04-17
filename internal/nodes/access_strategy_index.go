@@ -25,8 +25,7 @@ func NewIndexAccessStrategy[O ScanOptions](table *Table, index Index[O], opts O)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Serialize(w io.Writer, indentationLevel int) {
-	// TODO - mark backwards index scan
-	io.WriteString(w, fmt.Sprintf("%sindex scan of %s via %s\n", indent(indentationLevel), s.table.name, s.index.Name()))
+	io.WriteString(w, fmt.Sprintf("%s%s\n", indent(indentationLevel), s.index.Description(s.opts)))
 
 	if filter := s.Filter(); filter != nil {
 		io.WriteString(w, fmt.Sprintf("%sindex cond: %s\n", indent(indentationLevel+1), filter))

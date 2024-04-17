@@ -6,8 +6,6 @@ import (
 )
 
 type BaseIndex interface {
-	Name() string
-	Filter() expressions.Expression
 	Insert(row shared.Row) error
 	Delete(row shared.Row) error
 }
@@ -20,6 +18,7 @@ type IndexScanner[O ScanOptions] interface {
 
 type Index[O ScanOptions] interface {
 	BaseIndex
+	Description(opts O) string
 	Condition(opts O) expressions.Expression
 	Ordering(opts O) OrderExpression
 	IndexScanner[O]

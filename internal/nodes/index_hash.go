@@ -87,7 +87,7 @@ func (i *hashIndex) Delete(row shared.Row) error {
 }
 
 func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
-	value, err := ctx.Evaluate(i.expression, shared.Row{})
+	value, err := ctx.Evaluate(opts.expression, shared.Row{})
 	if err != nil {
 		return nil, err
 	}

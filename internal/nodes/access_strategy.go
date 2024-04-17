@@ -18,61 +18,109 @@ func selectAccessStrategy(
 	filter expressions.Expression,
 	order OrderExpression,
 ) accessStrategy {
-	// TODO - partial indexes
+	var candidates []accessStrategy
+	for _, index := range table.indexes {
+		if hashIndex, ok := index.(*hashIndex); ok {
+			if ias, ok := canSelectHashIndex(table, hashIndex, filter); ok {
+				candidates = append(candidates, ias)
+			}
+		}
 
-	if filter != nil {
-		// TODO - use btree for filters as well
-
-		for _, index := range table.indexes {
-			if ix, ok := index.(Index[hashIndexScanOptions]); ok {
-				if hi, ok := ix.(*hashIndex); ok {
-					if expr, ok := extractEquality(filter, hi.expression); ok {
-						return NewIndexAccessStrategy(table, hi, hashIndexScanOptions{
-							expression: expr,
-						})
-					}
-				}
+		if btreeIndex, ok := index.(*btreeIndex); ok {
+			if ias, ok := canSelectBtreeIndex(table, btreeIndex, filter, order); ok {
+				candidates = append(candidates, ias)
 			}
 		}
 	}
 
-	if order != nil {
-	outer:
-		for _, index := range table.indexes {
-			if ix, ok := index.(Index[btreeIndexScanOptions]); ok {
-				if bt, ok := ix.(*btreeIndex); ok {
-					indexExpressions := bt.expressions
-					orderExpressions := order.Expressions()
+	maxScore := 0
+	bestStrategy := NewTableAccessStrategy(table)
 
-					scanDirection, ok := scanDirection(orderExpressions, indexExpressions)
-					if !ok {
-						continue outer
-					}
+	for _, index := range candidates {
+		indexCost := 0
+		if subsumesOrder(order, index.Ordering()) {
+			indexCost += 100
+		}
 
-					lowerBounds, upperBounds := extractBounds(filter, bt.expressions)
-
-					return NewIndexAccessStrategy(table, bt, btreeIndexScanOptions{
-						scanDirection: scanDirection,
-						lowerBounds:   lowerBounds,
-						upperBounds:   upperBounds,
-					})
-				}
+		if filter != nil {
+			oldLen := len(filter.Conjunctions())
+			newLen := 0
+			if remainingFilter := filterDifference(filter, index.Filter()); remainingFilter != nil {
+				newLen = len(remainingFilter.Conjunctions())
 			}
+
+			indexCost += (oldLen - newLen) * 10
+		}
+
+		if indexCost > maxScore {
+			bestStrategy = index
+			maxScore = indexCost
 		}
 	}
 
-	return NewTableAccessStrategy(table)
+	return bestStrategy
 }
 
-func scanDirection(orderExpressions, indexDirections []ExpressionWithDirection) (ScanDirection, bool) {
+func canSelectHashIndex(
+	table *Table,
+	index *hashIndex,
+	filter expressions.Expression,
+) (accessStrategy, bool) {
+	// TODO - partial indexes
+
+	if filter == nil {
+		return nil, false
+	}
+
+	if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
+		if left.Equal(index.expression) {
+			return NewIndexAccessStrategy(table, index, hashIndexScanOptions{expression: right}), true
+		}
+
+		if right.Equal(index.expression) {
+			return NewIndexAccessStrategy(table, index, hashIndexScanOptions{expression: left}), true
+		}
+	}
+
+	return nil, false
+}
+
+func canSelectBtreeIndex(
+	table *Table,
+	index *btreeIndex,
+	filter expressions.Expression,
+	order OrderExpression,
+) (accessStrategy, bool) {
+	// TODO - partial indexes
+
+	scanDirection := scanDirection(order, index.expressions)
+	if scanDirection == ScanDirectionUnknown {
+		scanDirection = ScanDirectionForward
+	}
+
+	lowerBounds, upperBounds := extractBounds(filter, index.expressions)
+
+	return NewIndexAccessStrategy(table, index, btreeIndexScanOptions{
+		scanDirection: scanDirection,
+		lowerBounds:   lowerBounds,
+		upperBounds:   upperBounds,
+	}), true
+}
+
+func scanDirection(order OrderExpression, indexDirections []ExpressionWithDirection) ScanDirection {
+	if order == nil {
+		return ScanDirectionUnknown
+	}
+	orderExpressions := order.Expressions()
+
 	if len(orderExpressions) > len(indexDirections) {
-		return ScanDirectionUnknown, false
+		return ScanDirectionUnknown
 	}
 
 	var forward bool
 	for i, orderExpr := range orderExpressions {
 		if !orderExpr.Expression.Equal(indexDirections[i].Expression) {
-			return ScanDirectionUnknown, false
+			return ScanDirectionUnknown
 		}
 
 		matchesDirection := orderExpr.Reverse == indexDirections[i].Reverse
@@ -80,33 +128,15 @@ func scanDirection(orderExpressions, indexDirections []ExpressionWithDirection) 
 		if i == 0 {
 			forward = matchesDirection
 		} else if forward != matchesDirection {
-			return ScanDirectionUnknown, false
+			return ScanDirectionUnknown
 		}
 	}
 
 	if !forward {
-		return ScanDirectionBackward, true
+		return ScanDirectionBackward
 	}
 
-	return ScanDirectionForward, true
-}
-
-func extractEquality(filter expressions.Expression, indexedExpr expressions.Expression) (_ expressions.Expression, ok bool) {
-	if filter == nil {
-		return nil, false
-	}
-
-	if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
-		if left.Equal(indexedExpr) {
-			return right, true
-		}
-
-		if right.Equal(indexedExpr) {
-			return left, true
-		}
-	}
-
-	return nil, false
+	return ScanDirectionForward
 }
 
 func extractBounds(filter expressions.Expression, indexedExprs []ExpressionWithDirection) (lowerBounds, upperBounds [][]scanBound) {

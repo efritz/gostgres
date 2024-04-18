@@ -5,7 +5,121 @@ import (
 
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestEvaluateNot(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		expr     Expression
+		expected interface{}
+	}{
+		{
+			name:     "true",
+			expr:     NewConstant(true),
+			expected: false,
+		},
+		{
+			name:     "false",
+			expr:     NewConstant(false),
+			expected: true,
+		},
+		{
+			name:     "nil",
+			expr:     NewConstant(nil),
+			expected: nil,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			e := NewNot(testCase.expr)
+			val, err := e.ValueFrom(shared.Row{})
+			require.NoError(t, err)
+			assert.Equal(t, testCase.expected, val)
+		})
+	}
+}
+
+func TestEvaluateAnd(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		left     Expression
+		right    Expression
+		expected interface{}
+	}{
+		{
+			name:     "true",
+			left:     NewConstant(true),
+			right:    NewConstant(true),
+			expected: true,
+		},
+		{
+			name:     "false",
+			left:     NewConstant(true),
+			right:    NewConstant(false),
+			expected: false,
+		},
+		{
+			name:     "nil",
+			left:     NewConstant(nil),
+			right:    NewConstant(true),
+			expected: nil,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			e := NewAnd(testCase.left, testCase.right)
+			val, err := e.ValueFrom(shared.Row{})
+			require.NoError(t, err)
+			assert.Equal(t, testCase.expected, val)
+		})
+	}
+}
+
+func TestEvaluateOr(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		left     Expression
+		right    Expression
+		expected interface{}
+	}{
+		{
+			name:     "true",
+			left:     NewConstant(true),
+			right:    NewConstant(false),
+			expected: true,
+		},
+		{
+			name:     "false",
+			left:     NewConstant(false),
+			right:    NewConstant(false),
+			expected: false,
+		},
+		{
+			name:     "semi-nil (true)",
+			left:     NewConstant(nil),
+			right:    NewConstant(true),
+			expected: true,
+		},
+		{
+			name:     "semi-nil (false)",
+			left:     NewConstant(nil),
+			right:    NewConstant(false),
+			expected: nil,
+		},
+		{
+			name:     "nil",
+			left:     NewConstant(nil),
+			right:    NewConstant(nil),
+			expected: nil,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			e := NewOr(testCase.left, testCase.right)
+			val, err := e.ValueFrom(shared.Row{})
+			require.NoError(t, err)
+			assert.Equal(t, testCase.expected, val)
+		})
+	}
+}
 
 func TestConditionalEqual(t *testing.T) {
 	a := NewNamed(shared.NewField("t", "a", shared.TypeKindText, false))

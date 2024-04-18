@@ -84,18 +84,36 @@ func (e conditionalExpression) String() string {
 
 func (e conditionalExpression) Equal(other Expression) bool {
 	if o, ok := other.(conditionalExpression); ok {
-		// TODO
-		//
-		// Trees of AND/OR are equivalent on asymmetry, not only when the tree
-		// shapes are identical. We need to do some sort of node path normalization
-		// here so that expressions like the following are seen as the same:
-		//
-		// a && (b && c) == (a && b) && c.
+		if e.conjunctions && o.conjunctions {
+			return compareExpressionBags(e.Conjunctions(), o.Conjunctions())
+		}
 
-		return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
+		if !e.conjunctions && !o.conjunctions {
+			return compareExpressionBags(e.disjunctions(), o.disjunctions())
+		}
 	}
 
 	return false
+}
+
+func compareExpressionBags(as, bs []Expression) bool {
+outer:
+	for _, a := range as {
+		for i, b := range bs {
+			if a.Equal(b) {
+				// Remove element i from bs
+				n := len(bs) - 1
+				bs[i] = bs[n]
+				bs = bs[:n]
+
+				continue outer
+			}
+		}
+
+		return false
+	}
+
+	return len(bs) == 0
 }
 
 func (e conditionalExpression) Fields() []shared.Field {
@@ -120,6 +138,26 @@ func (e conditionalExpression) Conjunctions() []Expression {
 	}
 
 	return append(e.left.Conjunctions(), e.right.Conjunctions()...)
+}
+
+func (e conditionalExpression) disjunctions() (disjunctions []Expression) {
+	if e.conjunctions {
+		return []Expression{e}
+	}
+
+	if l, ok := e.left.(conditionalExpression); ok {
+		disjunctions = append(disjunctions, l.disjunctions()...)
+	} else {
+		disjunctions = append(disjunctions, e.left)
+	}
+
+	if r, ok := e.right.(conditionalExpression); ok {
+		disjunctions = append(disjunctions, r.disjunctions()...)
+	} else {
+		disjunctions = append(disjunctions, e.right)
+	}
+
+	return disjunctions
 }
 
 func (e conditionalExpression) ValueFrom(row shared.Row) (interface{}, error) {

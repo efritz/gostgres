@@ -28,6 +28,14 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 		return nil, err
 	}
 
+	lastName := expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText, false))
+	manager := expressions.NewNamed(shared.NewField("employees", "manager_id", shared.TypeKindNumeric, false))
+	index := nodes.NewHashIndex("employees_last_name_manager_id", employeesTable, lastName)
+	cond := expressions.NewLessThanEquals(manager, expressions.NewConstant(4))
+	if err := employeesTable.AddIndex(nodes.NewPartialIndex(index, cond)); err != nil {
+		return nil, err
+	}
+
 	departmentsTable, err := createDepartmentsTable(root)
 	if err != nil {
 		return nil, err

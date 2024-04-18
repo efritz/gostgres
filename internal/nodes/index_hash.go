@@ -35,6 +35,14 @@ func NewHashIndex(name string, table *Table, expression expressions.Expression) 
 	}
 }
 
+func (i *hashIndex) Unwrap() BaseIndex {
+	return i
+}
+
+func (i *hashIndex) Filter() expressions.Expression {
+	return nil
+}
+
 func (i *hashIndex) Description(opts hashIndexScanOptions) string {
 	return fmt.Sprintf("hash index scan of %s via %s", i.table.name, i.name)
 }

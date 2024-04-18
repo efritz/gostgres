@@ -33,7 +33,17 @@ func (s *indexAccessStrategy[ScanOptions]) Serialize(w io.Writer, indentationLev
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Filter() expressions.Expression {
-	return s.index.Condition(s.opts)
+	filter := s.index.Filter()
+	condition := s.index.Condition(s.opts)
+
+	if filter == nil {
+		return condition
+	}
+	if condition == nil {
+		return filter
+	}
+
+	return unionFilters(append(filter.Conjunctions(), condition.Conjunctions()...)...)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Ordering() OrderExpression {

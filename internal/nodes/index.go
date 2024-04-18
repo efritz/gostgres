@@ -6,6 +6,8 @@ import (
 )
 
 type BaseIndex interface {
+	Unwrap() BaseIndex
+	Filter() expressions.Expression
 	Insert(row shared.Row) error
 	Delete(row shared.Row) error
 }

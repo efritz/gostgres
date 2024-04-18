@@ -20,16 +20,8 @@ func selectAccessStrategy(
 ) accessStrategy {
 	var candidates []accessStrategy
 	for _, index := range table.indexes {
-		if hashIndex, ok := index.(*hashIndex); ok {
-			if ias, ok := canSelectHashIndex(table, hashIndex, filter); ok {
-				candidates = append(candidates, ias)
-			}
-		}
-
-		if btreeIndex, ok := index.(*btreeIndex); ok {
-			if ias, ok := canSelectBtreeIndex(table, btreeIndex, filter, order); ok {
-				candidates = append(candidates, ias)
-			}
+		if ias, ok := canSelectIndex(table, index, filter, order); ok {
+			candidates = append(candidates, ias)
 		}
 	}
 
@@ -61,46 +53,110 @@ func selectAccessStrategy(
 	return bestStrategy
 }
 
+func canSelectIndex(
+	table *Table,
+	index BaseIndex,
+	filter expressions.Expression,
+	order OrderExpression,
+) (accessStrategy, bool) {
+	if indexFilter := index.Filter(); indexFilter != nil {
+		if filter == nil {
+			return nil, false
+		}
+
+		// TODO - need to do a more tight "subsumes" check
+		for _, v := range indexFilter.Conjunctions() {
+			if diff := filterDifference(v, filter); diff != nil && len(diff.Conjunctions()) >= len(filter.Conjunctions()) {
+				return nil, false
+			}
+		}
+	}
+
+	if ias, ok := canSelectHashIndex(table, index, filter); ok {
+		return ias, true
+	}
+
+	if ias, ok := canSelectBtreeIndex(table, index, filter, order); ok {
+		return ias, true
+	}
+
+	return nil, false
+}
+
+type HashExpressioner interface {
+	HashExpression() expressions.Expression
+}
+
+func (i *hashIndex) HashExpression() expressions.Expression {
+	return i.expression
+}
+
 func canSelectHashIndex(
 	table *Table,
-	index *hashIndex,
+	index BaseIndex,
 	filter expressions.Expression,
 ) (accessStrategy, bool) {
-	// TODO - partial indexes
-
 	if filter == nil {
 		return nil, false
 	}
 
-	if comparisonType, left, right := expressions.IsComparison(filter); comparisonType == expressions.ComparisonTypeEquals {
-		if left.Equal(index.expression) {
-			return NewIndexAccessStrategy(table, index, hashIndexScanOptions{expression: right}), true
-		}
+	hashIndex, ok := index.(Index[hashIndexScanOptions])
+	if !ok {
+		return nil, false
+	}
+	hashExpressioner, ok := hashIndex.Unwrap().(HashExpressioner)
+	if !ok {
+		return nil, false
+	}
+	hashExpression := hashExpressioner.HashExpression()
 
-		if right.Equal(index.expression) {
-			return NewIndexAccessStrategy(table, index, hashIndexScanOptions{expression: left}), true
+	for _, conjunction := range filter.Conjunctions() {
+		if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType == expressions.ComparisonTypeEquals {
+			if left.Equal(hashExpression) {
+				return NewIndexAccessStrategy(table, hashIndex, hashIndexScanOptions{expression: right}), true
+			}
+
+			if right.Equal(hashExpression) {
+				return NewIndexAccessStrategy(table, hashIndex, hashIndexScanOptions{expression: left}), true
+			}
 		}
 	}
 
 	return nil, false
 }
 
+type BTreeExpressioner interface {
+	Expressions() []ExpressionWithDirection
+}
+
+func (i *btreeIndex) Expressions() []ExpressionWithDirection {
+	return i.expressions
+}
+
 func canSelectBtreeIndex(
 	table *Table,
-	index *btreeIndex,
+	index BaseIndex,
 	filter expressions.Expression,
 	order OrderExpression,
 ) (accessStrategy, bool) {
-	// TODO - partial indexes
+	btreeIndex, ok := index.(Index[btreeIndexScanOptions])
+	if !ok {
+		return nil, false
+	}
+	btreeExpressioner, ok := btreeIndex.Unwrap().(BTreeExpressioner)
+	if !ok {
+		return nil, false
+	}
+	btreeExpressions := btreeExpressioner.Expressions()
 
-	scanDirection := scanDirection(order, index.expressions)
+	scanDirection := scanDirection(order, btreeExpressions)
 	if scanDirection == ScanDirectionUnknown {
 		scanDirection = ScanDirectionForward
 	}
 
-	lowerBounds, upperBounds := extractBounds(filter, index.expressions)
+	lowerBounds, upperBounds := extractBounds(filter, btreeExpressions)
 
-	return NewIndexAccessStrategy(table, index, btreeIndexScanOptions{
+	return NewIndexAccessStrategy(table, btreeIndex, btreeIndexScanOptions{
 		scanDirection: scanDirection,
 		lowerBounds:   lowerBounds,
 		upperBounds:   upperBounds,

@@ -20,12 +20,13 @@ func TestSimpleSelfJoinQueries(t *testing.T) {
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
-    join using hash
+    join using nested loop
         alias as e
             table scan of employees
     with
         alias as m
             table scan of employees
+                filter: employees.employee_id = e.manager_id
     on m.employee_id = e.manager_id
 
 Results:
@@ -61,12 +62,13 @@ Results:
 Plan:
 
 select (employee_id, last_name, m.employee_id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name)
-    join using hash
+    join using nested loop
         alias as e
             table scan of employees
     with
         alias as m
             table scan of employees
+                filter: employees.employee_id = e.manager_id
     on m.employee_id = e.manager_id
 
 Results:
@@ -97,13 +99,13 @@ Results:
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
-    join using hash
+    join using nested loop
         alias as e
             table scan of employees
     with
         alias as m
             table scan of employees
-                filter: not employees.department_id = 3
+                filter: not employees.department_id = 3 and employees.employee_id = e.manager_id
     on m.employee_id = e.manager_id
 
 Results:
@@ -133,12 +135,13 @@ Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     order by m.last_name, e.last_name
-        join using hash
+        join using nested loop
             alias as e
-                index scan of employees via employees_last_name_first_name_employee_id
+                btree index scan of employees via employees_last_name_first_name_employee_id
         with
             alias as m
-                index scan of employees via employees_last_name_first_name_employee_id
+                table scan of employees
+                    filter: employees.employee_id = e.manager_id
         on m.employee_id = e.manager_id
 
 Results:
@@ -172,12 +175,13 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
     limit 2
         offset 3
-            join using hash
+            join using nested loop
                 alias as e
                     table scan of employees
             with
                 alias as m
                     table scan of employees
+                        filter: employees.employee_id = e.manager_id
             on m.employee_id = e.manager_id
 
 Results:

@@ -20,12 +20,13 @@ func TestSimpleJoinQueries(t *testing.T) {
 Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
-    join using hash
+    join using nested loop
         alias as l
             table scan of locations
     with
         alias as r
             table scan of regions
+                filter: regions.region_id = l.region_id
     on r.region_id = l.region_id
 
 Results:
@@ -53,12 +54,13 @@ Results:
 Plan:
 
 select (location_name as lname, r.region_name as rname)
-    join using hash
+    join using nested loop
         alias as l
             table scan of locations
     with
         alias as r
             table scan of regions
+                filter: regions.region_id = l.region_id
     on r.region_id = l.region_id
 
 Results:
@@ -83,13 +85,13 @@ Results:
 Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
-    join using hash
+    join using nested loop
         alias as l
             table scan of locations
     with
         alias as r
             table scan of regions
-                filter: not region_name = NA
+                filter: not region_name = NA and regions.region_id = l.region_id
     on r.region_id = l.region_id
 
 Results:
@@ -113,14 +115,13 @@ Plan:
 
 select (location_id, location_name, region_id, region_id, region_name)
     order by region_name, location_name desc
-        join using hash
+        join using nested loop
             alias as l
                 table scan of locations
-                    order: location_name desc
         with
             alias as r
                 table scan of regions
-                    order: region_name
+                    filter: regions.region_id = l.region_id
         on r.region_id = l.region_id
 
 Results:

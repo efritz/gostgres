@@ -152,12 +152,10 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
             select (employee_id, first_name, last_name, email, manager_id, department_id)
                 table scan of employees
                     filter: department_id = 1
-                    order: employees.email
         with
             select (employee_id, first_name, last_name, email, manager_id, department_id)
                 table scan of employees
                     filter: department_id = 2
-                    order: employees.email
 
 Results:
 

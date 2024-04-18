@@ -30,17 +30,15 @@ select (location_id, location_name, region_id)
         combination
             select (location_id, location_name, region_id)
                 table scan of locations
-                    order: locations.region_id, locations.location_id
         with
             select (location_id, location_name, region_id)
-                join using hash
+                join using nested loop
                     alias as l
                         table scan of locations
-                            order: locations.region_id, locations.location_id
                 with
                     alias as r
                         table scan of regions
-                            filter: regions.region_name = NA
+                            filter: regions.region_name = NA and regions.region_id = l.region_id
                 on r.region_id = l.region_id
 
 Results:
@@ -82,7 +80,6 @@ select (id, name)
                 alias as e
                     table scan of employees
                         filter: department_id = 1
-                        order: employee_id
         with
             select (employee_id, last_name)
                 table scan of employees
@@ -123,12 +120,10 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         table scan of employees
                             filter: department_id = 1 and employees.employee_id < 5
-                            order: employees.employee_id
                 with
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         table scan of employees
                             filter: manager_id = 1 and employees.employee_id < 5
-                            order: employees.employee_id
 
 Results:
 
@@ -161,12 +156,10 @@ select (employee_id, first_name, last_name, email, manager_id, department_id)
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         table scan of employees
                             filter: department_id = 1
-                            order: employees.employee_id
                 with
                     select (employee_id, first_name, last_name, email, manager_id, department_id)
                         table scan of employees
                             filter: manager_id = 1
-                            order: employees.employee_id
 
 Results:
 

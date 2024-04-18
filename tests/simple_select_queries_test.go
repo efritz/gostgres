@@ -103,8 +103,8 @@ Results:
 Plan:
 
 select (employee_id, first_name, last_name, email, manager_id, department_id)
-    table scan of employees
-        order: manager_id, email desc
+    order by manager_id, email desc
+        table scan of employees
 
 Results:
 
@@ -137,8 +137,8 @@ Plan:
 select (employee_id, first_name, last_name, email, manager_id, department_id)
     limit 2
         offset 3
-            table scan of employees
-                order: email
+            order by email
+                table scan of employees
 
 Results:
 

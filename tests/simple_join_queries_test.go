@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/hexops/autogold"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -172,7 +171,7 @@ Results:
 		t.Run(testCase.want.Name(), func(t *testing.T) {
 			got, err := testQuery(testCase.query)
 			require.NoError(t, err)
-			assert.Equal(t, testCase.want, got)
+			testCase.want.Equal(t, got)
 		})
 	}
 }

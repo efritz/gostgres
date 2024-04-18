@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/hexops/autogold"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleUnionQueries(t *testing.T) {
@@ -211,10 +213,8 @@ Results:
 	for _, testCase := range testCases {
 		t.Run(testCase.want.Name(), func(t *testing.T) {
 			got, err := testQuery(testCase.query)
-			if err != nil {
-				t.Fatalf("unexpected error running query: %s", err)
-			}
-			testCase.want.Equal(t, got)
+			require.NoError(t, err)
+			assert.Equal(t, testCase.want, got)
 		})
 	}
 }

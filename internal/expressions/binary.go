@@ -29,30 +29,27 @@ func (e binaryExpression) String() string {
 }
 
 func (e binaryExpression) Equal(other Expression) bool {
-	if o, ok := other.(binaryExpression); ok {
-		return compareBinary(e, o)
+	o, ok := other.(binaryExpression)
+	if !ok {
+		return false
 	}
 
-	return false
-}
-
-func compareBinary(a, b binaryExpression) bool {
-	if op, _, _ := IsArithmetic(a); op != ArithmeticTypeUnknown {
+	if op, _, _ := IsArithmetic(e); op != ArithmeticTypeUnknown {
 		// Special case: if arithmetic operator is asymmetric, allow operands to be flipped
-		if op.IsSymmetric() && a.operatorText == b.operatorText && a.left.Equal(b.right) && a.right.Equal(b.left) {
+		if op.IsSymmetric() && e.operatorText == o.operatorText && e.left.Equal(o.right) && e.right.Equal(o.left) {
 			return true
 		}
 	}
 
-	if op, _, _ := IsComparison(a); op != ComparisonTypeUnknown {
+	if op, _, _ := IsComparison(e); op != ComparisonTypeUnknown {
 		// Special case: if comparison operators are inverted, allow operands to be flipped
-		if b.operatorText == op.Flip().String() && a.left.Equal(b.right) && a.right.Equal(b.left) {
+		if o.operatorText == op.Flip().String() && e.left.Equal(o.right) && e.right.Equal(o.left) {
 			return true
 		}
 	}
 
 	// General case: equivalent operators and ordered operands are equal
-	return a.operatorText == b.operatorText && a.left.Equal(b.left) && a.right.Equal(b.right)
+	return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
 }
 
 func (e binaryExpression) Fields() []shared.Field {

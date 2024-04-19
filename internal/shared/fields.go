@@ -43,3 +43,21 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 
 	return 0, fmt.Errorf("unknown field %s", needle.Name)
 }
+
+func refineFieldTypes(fields []Field, values []interface{}) ([]Field, error) {
+	if len(fields) != len(values) {
+		return nil, fmt.Errorf("unexpected number of columns")
+	}
+
+	refined := make([]Field, 0, len(fields))
+	for i, field := range fields {
+		refinedType := refineType(field.TypeKind, values[i])
+		if refinedType == TypeKindInvalid {
+			return nil, fmt.Errorf("type error (%v is not %s)", values[i], field.TypeKind)
+		}
+
+		refined = append(refined, NewField(field.RelationName, field.Name, refinedType, field.Internal))
+	}
+
+	return refined, nil
+}

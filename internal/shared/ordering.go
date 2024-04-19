@@ -10,10 +10,6 @@ const (
 )
 
 func CompareValueSlices(left, right []interface{}) OrderType {
-	// if len(left) != len(right) {
-	// 	return OrderTypeIncomparable
-	// }
-
 	for i, lVal := range left[:min(len(left), len(right))] {
 		if cmp := CompareValues(lVal, right[i]); cmp != OrderTypeEqual {
 			return cmp

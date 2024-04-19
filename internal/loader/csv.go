@@ -42,8 +42,8 @@ func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription
 	return table, nil
 }
 
-func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) ([][]interface{}, error) {
-	convertedValues := make([][]interface{}, 0, len(rawValues))
+func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) ([][]any, error) {
+	convertedValues := make([][]any, 0, len(rawValues))
 	for _, rawValues := range rawValues {
 		if len(rawValues) != len(fieldDescriptions) {
 			return nil, fmt.Errorf("expected %d values, got %d", len(fieldDescriptions), len(rawValues))
@@ -60,8 +60,8 @@ func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) 
 	return convertedValues, nil
 }
 
-func convertValues(rawValues []string, fieldDescriptions []FieldDescription) ([]interface{}, error) {
-	values := make([]interface{}, 0, len(rawValues))
+func convertValues(rawValues []string, fieldDescriptions []FieldDescription) ([]any, error) {
+	values := make([]any, 0, len(rawValues))
 	for i, rawValue := range rawValues {
 		value, err := convertValue(rawValue, fieldDescriptions[i].TypeKind)
 		if err != nil {
@@ -74,7 +74,7 @@ func convertValues(rawValues []string, fieldDescriptions []FieldDescription) ([]
 	return values, nil
 }
 
-func convertValue(rawValue string, typeKind shared.TypeKind) (interface{}, error) {
+func convertValue(rawValue string, typeKind shared.TypeKind) (any, error) {
 	switch typeKind {
 	case shared.TypeKindText:
 		return rawValue, nil

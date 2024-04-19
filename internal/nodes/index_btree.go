@@ -16,7 +16,7 @@ type btreeIndex struct {
 
 type btreeNode struct {
 	tid    int
-	values []interface{}
+	values []any
 	left   *btreeNode // TODO - make a proper BTree (not BST)
 	right  *btreeNode
 }
@@ -174,7 +174,7 @@ func (i *btreeIndex) Insert(row shared.Row) error {
 	return nil
 }
 
-func (n *btreeNode) insert(values []interface{}, tid int) *btreeNode {
+func (n *btreeNode) insert(values []any, tid int) *btreeNode {
 	if n == nil {
 		return &btreeNode{tid: tid, values: values}
 	}
@@ -199,7 +199,7 @@ func (i *btreeIndex) Delete(row shared.Row) error {
 	return nil
 }
 
-func (n *btreeNode) delete(values []interface{}, tid int) *btreeNode {
+func (n *btreeNode) delete(values []any, tid int) *btreeNode {
 	if n == nil {
 		return nil
 	}
@@ -230,7 +230,7 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 	stack := []*btreeNode{}
 	current := i.root
 
-	checkBounds := func(nodeValues []interface{}, bounds [][]scanBound, expected shared.OrderType) bool {
+	checkBounds := func(nodeValues []any, bounds [][]scanBound, expected shared.OrderType) bool {
 		for j, bounds := range bounds[:min(len(bounds), len(nodeValues))] {
 			for _, bound := range bounds {
 				value, err := ctx.Evaluate(bound.expression, shared.Row{})
@@ -248,8 +248,8 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 		return true
 	}
 
-	withinLowerBound := func(values []interface{}) bool { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
-	withinUpperBound := func(values []interface{}) bool { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
+	withinLowerBound := func(values []any) bool { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
+	withinUpperBound := func(values []any) bool { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
 
 	return tidScannerFunc(func() (int, error) {
 		for current != nil || len(stack) > 0 {
@@ -290,13 +290,13 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 	}), nil
 }
 
-func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int, []interface{}, error) {
+func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int, []any, error) {
 	tid, ok := extractTID(row)
 	if !ok {
 		return 0, nil, fmt.Errorf("no tid in row")
 	}
 
-	values := []interface{}{}
+	values := []any{}
 	for _, expression := range i.expressions {
 		value, err := expression.Expression.ValueFrom(row)
 		if err != nil {

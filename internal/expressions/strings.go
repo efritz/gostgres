@@ -3,7 +3,7 @@ package expressions
 import "github.com/efritz/gostgres/internal/shared"
 
 func NewConcat(left, right Expression) Expression {
-	return newBinaryExpression(left, right, "||", func(left, right Expression, row shared.Row) (interface{}, error) {
+	return newBinaryExpression(left, right, "||", func(left, right Expression, row shared.Row) (any, error) {
 		lVal, err := shared.EnsureString(left.ValueFrom(row))
 		if err != nil {
 			return nil, err

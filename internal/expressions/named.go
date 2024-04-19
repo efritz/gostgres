@@ -62,7 +62,7 @@ func (e namedExpression) Alias(field shared.Field, expression Expression) Expres
 	return e
 }
 
-func (e namedExpression) ValueFrom(row shared.Row) (interface{}, error) {
+func (e namedExpression) ValueFrom(row shared.Row) (any, error) {
 	index, err := shared.FindMatchingFieldIndex(e.field, row.Fields)
 	if err != nil {
 		return nil, err

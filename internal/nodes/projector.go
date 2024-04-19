@@ -51,7 +51,7 @@ func (p *projector) optimize() {
 }
 
 func (p *projector) projectRow(ctx ScanContext, row shared.Row) (shared.Row, error) {
-	values := make([]interface{}, 0, len(p.aliases))
+	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := ctx.Evaluate(field.expression, row)
 		if err != nil {

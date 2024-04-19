@@ -7,12 +7,12 @@ import (
 )
 
 type constantExpression struct {
-	value interface{}
+	value any
 }
 
 var _ Expression = &constantExpression{}
 
-func NewConstant(value interface{}) Expression {
+func NewConstant(value any) Expression {
 	return constantExpression{
 		value: value,
 	}
@@ -50,6 +50,6 @@ func (e constantExpression) Alias(field shared.Field, expression Expression) Exp
 	return e
 }
 
-func (e constantExpression) ValueFrom(row shared.Row) (interface{}, error) {
+func (e constantExpression) ValueFrom(row shared.Row) (any, error) {
 	return e.value, nil
 }

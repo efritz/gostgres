@@ -64,7 +64,7 @@ func (ct ComparisonType) Flip() ComparisonType {
 	return ComparisonTypeUnknown
 }
 
-func (ct ComparisonType) MatchesOrderType(lVal, rVal interface{}) (bool, error) {
+func (ct ComparisonType) MatchesOrderType(lVal, rVal any) (bool, error) {
 	ot := shared.CompareValues(lVal, rVal)
 
 	switch ct {

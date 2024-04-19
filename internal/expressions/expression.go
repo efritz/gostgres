@@ -11,5 +11,5 @@ type Expression interface {
 	Fold() Expression
 	Alias(field shared.Field, expression Expression) Expression
 	Conjunctions() []Expression
-	ValueFrom(row shared.Row) (interface{}, error)
+	ValueFrom(row shared.Row) (any, error)
 }

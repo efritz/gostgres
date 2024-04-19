@@ -28,7 +28,7 @@ type ScanContext struct {
 	OuterRow shared.Row
 }
 
-func (ctx ScanContext) Evaluate(expr expressions.Expression, row shared.Row) (interface{}, error) {
+func (ctx ScanContext) Evaluate(expr expressions.Expression, row shared.Row) (any, error) {
 	return expr.ValueFrom(shared.CombineRows(row, ctx.OuterRow))
 }
 

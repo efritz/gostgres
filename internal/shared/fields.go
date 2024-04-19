@@ -44,7 +44,7 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 	return 0, fmt.Errorf("unknown field %s", needle.Name)
 }
 
-func refineFieldTypes(fields []Field, values []interface{}) ([]Field, error) {
+func refineFieldTypes(fields []Field, values []any) ([]Field, error) {
 	if len(fields) != len(values) {
 		return nil, fmt.Errorf("unexpected number of columns")
 	}

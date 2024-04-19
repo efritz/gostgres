@@ -143,7 +143,8 @@ func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
 }
 
 // combinationTarget := simpleSelect
-//                    | `(` selectOrValues `)`
+//
+//	| `(` selectOrValues `)`
 func (p *parser) parseCombinationTarget() (nodes.Node, error) {
 	expectParen := false
 	var parseFunc func() (nodes.Node, error)
@@ -182,7 +183,8 @@ func (p *parser) parseCombinationTarget() (nodes.Node, error) {
 }
 
 // selectExpressions := `*`
-//                    | selectExpression [, ...]
+//
+//	| selectExpression [, ...]
 func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
 		return []nodes.ProjectionExpression{nodes.NewWildcardProjectionExpression()}, nil
@@ -205,7 +207,8 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.Projection
 }
 
 // selectExpression := ident `.` `*`
-//                   | expression alias
+//
+//	| expression alias
 func (p *parser) parseSelectExpression() (nodes.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
@@ -417,7 +420,8 @@ func (p *parser) parseJoin(node nodes.Node) (nodes.Node, error) {
 }
 
 // baseTableExpression := tableReference tableAlias
-//                      | `(` ( selectOrValues | tableExpression ) `)` tableAlias
+//
+//	| `(` ( selectOrValues | tableExpression ) `)` tableAlias
 func (p *parser) parseBaseTableExpression() (nodes.Node, error) {
 	expectParen := false
 	requireAlias := false
@@ -581,7 +585,8 @@ func (p *parser) parseOffset() (int, bool, error) {
 }
 
 // selectOrValues := `SELECT` select
-//                 | values
+//
+//	| values
 func (p *parser) parseSelectOrValues() (nodes.Node, error) {
 	token := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
@@ -603,14 +608,14 @@ func (p *parser) parseValues() (nodes.Node, error) {
 
 // valuesList := ( parenthesizedExpressionList [, ...] )
 func (p *parser) parseValuesList() (nodes.Node, error) {
-	var allRows [][]interface{}
+	var allRows [][]any
 	for {
 		expressions, err := p.parseParenthesizedExpressionList()
 		if err != nil {
 			return nil, err
 		}
 
-		values := make([]interface{}, 0, len(expressions))
+		values := make([]any, 0, len(expressions))
 		for _, expression := range expressions {
 			value, err := expression.ValueFrom(shared.Row{})
 			if err != nil {

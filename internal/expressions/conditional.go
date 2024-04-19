@@ -7,7 +7,7 @@ import (
 )
 
 func NewNot(expression Expression) Expression {
-	return newUnaryExpression(expression, "not", func(expression Expression, row shared.Row) (interface{}, error) {
+	return newUnaryExpression(expression, "not", func(expression Expression, row shared.Row) (any, error) {
 		val, err := shared.EnsureNullableBool(expression.ValueFrom(row))
 		if err != nil {
 			return nil, err
@@ -20,7 +20,7 @@ func NewNot(expression Expression) Expression {
 }
 
 func NewAnd(left, right Expression) Expression {
-	return newConditionalExpression(left, right, "and", func(a, b *bool) (interface{}, error) {
+	return newConditionalExpression(left, right, "and", func(a, b *bool) (any, error) {
 		if (a != nil && !*a) || (b != nil && !*b) {
 			return false, nil
 		}
@@ -38,7 +38,7 @@ func NewAnd(left, right Expression) Expression {
 }
 
 func NewOr(left, right Expression) Expression {
-	return newConditionalExpression(left, right, "or", func(a, b *bool) (interface{}, error) {
+	return newConditionalExpression(left, right, "or", func(a, b *bool) (any, error) {
 		if (a != nil && *a) || (b != nil && *b) {
 			return true, nil
 		}
@@ -65,7 +65,7 @@ type conditionalExpression struct {
 }
 
 type foldFunc func(left, right Expression) Expression
-type conditionalValueFromFunc func(a, b *bool) (interface{}, error)
+type conditionalValueFromFunc func(a, b *bool) (any, error)
 
 func newConditionalExpression(left, right Expression, operatorText string, valueFrom conditionalValueFromFunc, foldFunc foldFunc, conjunctions bool) Expression {
 	return conditionalExpression{
@@ -160,7 +160,7 @@ func (e conditionalExpression) disjunctions() (disjunctions []Expression) {
 	return disjunctions
 }
 
-func (e conditionalExpression) ValueFrom(row shared.Row) (interface{}, error) {
+func (e conditionalExpression) ValueFrom(row shared.Row) (any, error) {
 	lVal, err := shared.EnsureNullableBool(e.left.ValueFrom(row))
 	if err != nil {
 		return nil, err

@@ -9,8 +9,8 @@ import (
 func TestCompareValues(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
-		left     interface{}
-		right    interface{}
+		left     any
+		right    any
 		expected OrderType
 	}{
 		{
@@ -65,68 +65,68 @@ func TestCompareValues(t *testing.T) {
 func TestCompareValueSlices(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
-		left     []interface{}
-		right    []interface{}
+		left     []any
+		right    []any
 		expected OrderType
 	}{
 		{
 			name:     "single column =",
-			left:     []interface{}{200},
-			right:    []interface{}{200},
+			left:     []any{200},
+			right:    []any{200},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "single column <",
-			left:     []interface{}{100},
-			right:    []interface{}{200},
+			left:     []any{100},
+			right:    []any{200},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "single column >",
-			left:     []interface{}{200},
-			right:    []interface{}{100},
+			left:     []any{200},
+			right:    []any{100},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, columns =",
-			left:     []interface{}{"foo", 200},
-			right:    []interface{}{"foo", 200},
+			left:     []any{"foo", 200},
+			right:    []any{"foo", 200},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "multi-column, first column <",
-			left:     []interface{}{"bar", 100},
-			right:    []interface{}{"foo", 200},
+			left:     []any{"bar", 100},
+			right:    []any{"foo", 200},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "multi-column, first column >",
-			left:     []interface{}{"foo", 200},
-			right:    []interface{}{"bar", 100},
+			left:     []any{"foo", 200},
+			right:    []any{"bar", 100},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, second column <",
-			left:     []interface{}{"foo", 100},
-			right:    []interface{}{"foo", 200},
+			left:     []any{"foo", 100},
+			right:    []any{"foo", 200},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "multi-column, second column >",
-			left:     []interface{}{"foo", 200},
-			right:    []interface{}{"foo", 100},
+			left:     []any{"foo", 200},
+			right:    []any{"foo", 100},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, left larger",
-			left:     []interface{}{"foo", 200, "bar"},
-			right:    []interface{}{"foo", 200},
+			left:     []any{"foo", 200, "bar"},
+			right:    []any{"foo", 200},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "multi-column, right larger",
-			left:     []interface{}{"foo", 200},
-			right:    []interface{}{"foo", 200, "bar"},
+			left:     []any{"foo", 200},
+			right:    []any{"foo", 200, "bar"},
 			expected: OrderTypeEqual,
 		},
 	} {

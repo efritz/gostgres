@@ -87,7 +87,7 @@ func (n *updateNode) Scanner(ctx ScanContext) (Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		values := make([]interface{}, len(row.Values))
+		values := make([]any, len(row.Values))
 		copy(values, row.Values)
 
 		for _, set := range n.setExpressions {

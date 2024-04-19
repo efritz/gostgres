@@ -12,7 +12,7 @@ type unaryExpression struct {
 	valueFrom    unaryValueFromFunc
 }
 
-type unaryValueFromFunc func(expression Expression, row shared.Row) (interface{}, error)
+type unaryValueFromFunc func(expression Expression, row shared.Row) (any, error)
 
 func newUnaryExpression(expression Expression, operatorText string, valueFrom unaryValueFromFunc) Expression {
 	return unaryExpression{
@@ -54,6 +54,6 @@ func (e unaryExpression) Alias(field shared.Field, expression Expression) Expres
 	return newUnaryExpression(e.expression.Alias(field, expression), e.operatorText, e.valueFrom)
 }
 
-func (e unaryExpression) ValueFrom(row shared.Row) (interface{}, error) {
+func (e unaryExpression) ValueFrom(row shared.Row) (any, error) {
 	return e.valueFrom(e.expression, row)
 }

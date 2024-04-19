@@ -27,7 +27,7 @@ func (k TypeKind) String() string {
 	return "any"
 }
 
-func EnsureInt(val interface{}, err error) (int, error) {
+func EnsureInt(val any, err error) (int, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -39,7 +39,7 @@ func EnsureInt(val interface{}, err error) (int, error) {
 	return typedVal, nil
 }
 
-func EnsureBool(val interface{}, err error) (bool, error) {
+func EnsureBool(val any, err error) (bool, error) {
 	if err != nil {
 		return false, err
 	}
@@ -51,7 +51,7 @@ func EnsureBool(val interface{}, err error) (bool, error) {
 	return typedVal, nil
 }
 
-func EnsureNullableBool(val interface{}, err error) (*bool, error) {
+func EnsureNullableBool(val any, err error) (*bool, error) {
 	if err != nil || val == nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func EnsureNullableBool(val interface{}, err error) (*bool, error) {
 	return &typedVal, nil
 }
 
-func EnsureString(val interface{}, err error) (string, error) {
+func EnsureString(val any, err error) (string, error) {
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +75,7 @@ func EnsureString(val interface{}, err error) (string, error) {
 	return typedVal, nil
 }
 
-func refineType(expectedType TypeKind, value interface{}) TypeKind {
+func refineType(expectedType TypeKind, value any) TypeKind {
 	if _, ok := value.(string); ok {
 		if expectedType == TypeKindAny || expectedType == TypeKindText {
 			return TypeKindText

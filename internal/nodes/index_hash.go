@@ -17,7 +17,7 @@ type hashIndex struct {
 
 type hashItem struct {
 	tid   int
-	value interface{}
+	value any
 }
 
 type hashIndexScanOptions struct {
@@ -111,7 +111,7 @@ func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScan
 	}), nil
 }
 
-func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, interface{}, error) {
+func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, any, error) {
 	tid, ok := extractTID(row)
 	if !ok {
 		return 0, nil, fmt.Errorf("no tid in row")
@@ -125,7 +125,7 @@ func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, interface{},
 	return tid, value, nil
 }
 
-func hash(value interface{}) uint64 {
+func hash(value any) uint64 {
 	h := fnv.New64()
 	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
 	return h.Sum64()

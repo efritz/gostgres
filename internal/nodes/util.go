@@ -13,8 +13,8 @@ func copyFields(fields []shared.Field) []shared.Field {
 	return c
 }
 
-func copyValues(values []interface{}) []interface{} {
-	c := make([]interface{}, len(values))
+func copyValues(values []any) []any {
+	c := make([]any, len(values))
 	copy(c, values)
 	return c
 }

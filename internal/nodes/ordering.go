@@ -106,13 +106,13 @@ func findIndexIterationOrder(ctx ScanContext, order OrderExpression, rows shared
 
 type indexValue struct {
 	index  int
-	values []interface{}
+	values []any
 }
 
 func makeIndexValues(ctx ScanContext, expressions []ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
-		values := make([]interface{}, 0, len(expressions))
+		values := make([]any, 0, len(expressions))
 		for _, expression := range expressions {
 			value, err := ctx.Evaluate(expression.Expression, rows.Row(i))
 			if err != nil {

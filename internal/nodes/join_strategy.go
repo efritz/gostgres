@@ -87,7 +87,7 @@ type equalityPair struct {
 var leftOfPair = func(pair equalityPair) expressions.Expression { return pair.left }
 var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.right }
 
-func evaluatePair(ctx ScanContext, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []interface{}, _ error) {
+func evaluatePair(ctx ScanContext, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := ctx.Evaluate(expression(pair), row)
 		if err != nil {

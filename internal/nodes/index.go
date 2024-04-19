@@ -12,7 +12,7 @@ type BaseIndex interface {
 	Delete(row shared.Row) error
 }
 
-type ScanOptions interface{}
+type ScanOptions any
 
 type IndexScanner[O ScanOptions] interface {
 	Scanner(ctx ScanContext, opts O) (tidScanner, error)

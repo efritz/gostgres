@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func hashValues(values []interface{}) string {
+func hashValues(values []any) string {
 	strValues := make([]string, 0, len(values))
 	for _, value := range values {
 		strValues = append(strValues, fmt.Sprintf("%v", value))

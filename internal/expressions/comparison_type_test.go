@@ -10,8 +10,8 @@ import (
 
 func TestMatchesOrderType(t *testing.T) {
 	type pair struct {
-		lVal interface{}
-		rVal interface{}
+		lVal any
+		rVal any
 	}
 	for _, testCase := range []struct {
 		comparisonType ComparisonType

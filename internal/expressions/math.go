@@ -40,8 +40,8 @@ func NewUnaryMinus(expression Expression) Expression {
 	return NewSubtraction(NewConstant(0), expression)
 }
 
-func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b int) (interface{}, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (interface{}, error) {
+func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b int) (any, error)) Expression {
+	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (any, error) {
 		lVal, err := shared.EnsureInt(left.ValueFrom(row))
 		if err != nil {
 			return nil, err
@@ -56,10 +56,10 @@ func newBinaryIntExpression(left, right Expression, operatorText string, f func(
 	})
 }
 
-func add(a, b int) (interface{}, error) { return a + b, nil }
-func sub(a, b int) (interface{}, error) { return a - b, nil }
-func mul(a, b int) (interface{}, error) { return a * b, nil }
-func div(a, b int) (interface{}, error) {
+func add(a, b int) (any, error) { return a + b, nil }
+func sub(a, b int) (any, error) { return a - b, nil }
+func mul(a, b int) (any, error) { return a * b, nil }
+func div(a, b int) (any, error) {
 	if b == 0 {
 		return nil, fmt.Errorf("division by zero")
 	}

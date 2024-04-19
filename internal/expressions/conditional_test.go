@@ -12,7 +12,7 @@ func TestEvaluateNot(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
 		expr     Expression
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "true",
@@ -44,7 +44,7 @@ func TestEvaluateAnd(t *testing.T) {
 		name     string
 		left     Expression
 		right    Expression
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "true",
@@ -79,7 +79,7 @@ func TestEvaluateOr(t *testing.T) {
 		name     string
 		left     Expression
 		right    Expression
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "true",

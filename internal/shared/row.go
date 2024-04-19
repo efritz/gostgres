@@ -2,10 +2,10 @@ package shared
 
 type Row struct {
 	Fields []Field
-	Values []interface{}
+	Values []any
 }
 
-func NewRow(fields []Field, values []interface{}) (_ Row, err error) {
+func NewRow(fields []Field, values []any) (_ Row, err error) {
 	fields, err = refineFieldTypes(fields, values)
 	if err != nil {
 		return Row{}, err
@@ -20,7 +20,7 @@ func CombineRows(rows ...Row) Row {
 		fields = append(fields, row.Fields...)
 	}
 
-	var values []interface{}
+	var values []any
 	for _, row := range rows {
 		values = append(values, row.Values...)
 	}

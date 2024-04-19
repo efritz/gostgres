@@ -102,8 +102,8 @@ func (n *insertNode) Scanner(ctx ScanContext) (Scanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []interface{} {
-	values := make([]interface{}, 0, len(row.Values))
+func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []any {
+	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal {
 			values = append(values, value)
@@ -117,13 +117,13 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 	return reorderValues(n.columnNames, values, fields)
 }
 
-func reorderValues(columnNames []string, values []interface{}, fields []shared.Field) []interface{} {
-	valueMap := make(map[string]interface{}, len(columnNames))
+func reorderValues(columnNames []string, values []any, fields []shared.Field) []any {
+	valueMap := make(map[string]any, len(columnNames))
 	for i, name := range columnNames {
 		valueMap[name] = values[i]
 	}
 
-	reordered := make([]interface{}, 0, len(fields))
+	reordered := make([]any, 0, len(fields))
 	for _, field := range fields {
 		reordered = append(reordered, valueMap[field.Name])
 	}

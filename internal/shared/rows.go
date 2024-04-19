@@ -2,14 +2,14 @@ package shared
 
 type Rows struct {
 	Fields []Field
-	Values [][]interface{}
+	Values [][]any
 }
 
 func NewRows(fields []Field) (Rows, error) {
 	return NewRowsWithValues(fields, nil)
 }
 
-func NewRowsWithValues(fields []Field, values [][]interface{}) (_ Rows, err error) {
+func NewRowsWithValues(fields []Field, values [][]any) (_ Rows, err error) {
 	for _, values := range values {
 		fields, err = refineFieldTypes(fields, values)
 		if err != nil {
@@ -20,7 +20,7 @@ func NewRowsWithValues(fields []Field, values [][]interface{}) (_ Rows, err erro
 	return Rows{Fields: fields, Values: values}, nil
 }
 
-func (rows Rows) AddValues(values []interface{}) (Rows, error) {
+func (rows Rows) AddValues(values []any) (Rows, error) {
 	return NewRowsWithValues(rows.Fields, append(rows.Values, values))
 }
 

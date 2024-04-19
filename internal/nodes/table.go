@@ -44,7 +44,7 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	tid++
 	id := tid
 
-	newRow, err := shared.NewRow(t.fields, append([]interface{}{id}, row.Values...))
+	newRow, err := shared.NewRow(t.fields, append([]any{id}, row.Values...))
 	if err != nil {
 		return shared.Row{}, err
 	}

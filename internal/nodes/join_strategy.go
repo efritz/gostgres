@@ -2,18 +2,19 @@ package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type joinStrategy interface {
 	Name() string
-	Ordering() OrderExpression
-	Scanner(ctx ScanContext) (Scanner, error)
+	Ordering() expressions.OrderExpression
+	Scanner(ctx scan.ScanContext) (scan.Scanner, error)
 }
 
 const (
-	EnableHashJoins  = true
-	EnableMergeJoins = true
+	EnableHashJoins  = false
+	EnableMergeJoins = false
 )
 
 func selectJoinStrategy(n *joinNode) joinStrategy {
@@ -23,14 +24,14 @@ func selectJoinStrategy(n *joinNode) joinStrategy {
 			// if n.right.SupportsMarkRestore()
 
 			// HACK!
-			var lefts, rights []ExpressionWithDirection
+			var lefts, rights []expressions.ExpressionWithDirection
 			for _, p := range pairs {
-				lefts = append(lefts, ExpressionWithDirection{Expression: p.left})
-				rights = append(rights, ExpressionWithDirection{Expression: p.right})
+				lefts = append(lefts, expressions.ExpressionWithDirection{Expression: p.left})
+				rights = append(rights, expressions.ExpressionWithDirection{Expression: p.right})
 			}
-			n.left = NewOrder(n.left, NewOrderExpression(lefts))
+			n.left = NewOrder(n.left, expressions.NewOrderExpression(lefts))
 			n.left.Optimize()
-			n.right = NewOrder(n.right, NewOrderExpression(rights))
+			n.right = NewOrder(n.right, expressions.NewOrderExpression(rights))
 			n.right.Optimize()
 
 			return &mergeJoinStrategy{
@@ -87,7 +88,7 @@ type equalityPair struct {
 var leftOfPair = func(pair equalityPair) expressions.Expression { return pair.left }
 var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.right }
 
-func evaluatePair(ctx ScanContext, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx scan.ScanContext, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := ctx.Evaluate(expression(pair), row)
 		if err != nil {

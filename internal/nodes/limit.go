@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -35,7 +36,7 @@ func (n *limitNode) AddFilter(filter expressions.Expression) {
 	// filter boundary: do not recurse
 }
 
-func (n *limitNode) AddOrder(order OrderExpression) {
+func (n *limitNode) AddOrder(order expressions.OrderExpression) {
 	// filter boundary: do not recurse
 }
 
@@ -43,7 +44,7 @@ func (n *limitNode) Filter() expressions.Expression {
 	return n.Node.Filter()
 }
 
-func (n *limitNode) Ordering() OrderExpression {
+func (n *limitNode) Ordering() expressions.OrderExpression {
 	return n.Node.Ordering()
 }
 
@@ -51,7 +52,7 @@ func (n *limitNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *limitNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *limitNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -59,9 +60,9 @@ func (n *limitNode) Scanner(ctx ScanContext) (Scanner, error) {
 
 	remaining := n.limit
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		if remaining <= 0 {
-			return shared.Row{}, ErrNoRows
+			return shared.Row{}, scan.ErrNoRows
 		}
 
 		remaining--

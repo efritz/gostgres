@@ -5,18 +5,20 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type indexAccessStrategy[O ScanOptions] struct {
-	table *Table
-	index Index[O]
+type indexAccessStrategy[O indexes.ScanOptions] struct {
+	table indexes.TableIndexer
+	index indexes.Index[O]
 	opts  O
 }
 
-var _ accessStrategy = &indexAccessStrategy[ScanOptions]{}
+var _ accessStrategy = &indexAccessStrategy[indexes.ScanOptions]{}
 
-func NewIndexAccessStrategy[O ScanOptions](table *Table, index Index[O], opts O) accessStrategy {
+func NewIndexAccessStrategy[O indexes.ScanOptions](table indexes.TableIndexer, index indexes.Index[O], opts O) accessStrategy {
 	return &indexAccessStrategy[O]{
 		table: table,
 		index: index,
@@ -46,23 +48,27 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() expressions.Expression {
 	return unionFilters(append(filter.Conjunctions(), condition.Conjunctions()...)...)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Ordering() OrderExpression {
+func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpression {
 	return s.index.Ordering(s.opts)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx ScanContext) (Scanner, error) {
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		tid, err := tidScanner.Scan()
 		if err != nil {
 			return shared.Row{}, err
 		}
 
-		row := s.table.rows[tid]
+		row, ok := s.table.RowByTID(tid)
+		if !ok {
+			return shared.Row{}, fmt.Errorf("row not found for tid %d", tid)
+		}
+
 		return row, nil
 	}), nil
 }

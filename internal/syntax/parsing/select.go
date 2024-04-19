@@ -515,7 +515,7 @@ func (p *parser) parseWhere() (expressions.Expression, bool, error) {
 }
 
 // orderby := [`ORDER` `BY` ( expression [( `ASC` | `DESC` )] [, ...] )]
-func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
+func (p *parser) parseOrderBy() (expressions.OrderExpression, bool, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeOrder)) {
 		return nil, false, nil
 	}
@@ -527,7 +527,7 @@ func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
 	// TODO - support `USING` operator
 	// TODO - support [`NULLS` ( `FIRST` | `LAST` )]
 
-	var expressions []nodes.ExpressionWithDirection
+	var orderExpressions []expressions.ExpressionWithDirection
 	for {
 		orderExpression, err := p.parseExpression(0)
 		if err != nil {
@@ -541,7 +541,7 @@ func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
 			}
 		}
 
-		expressions = append(expressions, nodes.ExpressionWithDirection{
+		orderExpressions = append(orderExpressions, expressions.ExpressionWithDirection{
 			Expression: orderExpression,
 			Reverse:    reverse,
 		})
@@ -551,7 +551,7 @@ func (p *parser) parseOrderBy() (nodes.OrderExpression, bool, error) {
 		}
 	}
 
-	return nodes.NewOrderExpression(expressions), true, nil
+	return expressions.NewOrderExpression(orderExpressions), true, nil
 }
 
 // limit := [`LIMIT` expression]

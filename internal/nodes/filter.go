@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -46,7 +47,7 @@ func (n *filterNode) AddFilter(filter expressions.Expression) {
 	n.filter = unionFilters(n.filter, filter)
 }
 
-func (n *filterNode) AddOrder(order OrderExpression) {
+func (n *filterNode) AddOrder(order expressions.OrderExpression) {
 	n.Node.AddOrder(order)
 }
 
@@ -54,7 +55,7 @@ func (n *filterNode) Filter() expressions.Expression {
 	return unionFilters(n.filter, n.Node.Filter())
 }
 
-func (n *filterNode) Ordering() OrderExpression {
+func (n *filterNode) Ordering() expressions.OrderExpression {
 	return n.Node.Ordering()
 }
 
@@ -62,7 +63,7 @@ func (n *filterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *filterNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *filterNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -71,12 +72,12 @@ func (n *filterNode) Scanner(ctx ScanContext) (Scanner, error) {
 	return NewFilterScanner(ctx, scanner, n.filter)
 }
 
-func NewFilterScanner(ctx ScanContext, scanner Scanner, filter expressions.Expression) (Scanner, error) {
+func NewFilterScanner(ctx scan.ScanContext, scanner scan.Scanner, filter expressions.Expression) (scan.Scanner, error) {
 	if filter == nil {
 		return scanner, nil
 	}
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		for {
 			row, err := scanner.Scan()
 			if err != nil {

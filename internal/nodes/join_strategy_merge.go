@@ -1,6 +1,8 @@
 package nodes
 
 import (
+	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -13,12 +15,12 @@ func (s *mergeJoinStrategy) Name() string {
 	return "merge"
 }
 
-func (s *mergeJoinStrategy) Ordering() OrderExpression {
+func (s *mergeJoinStrategy) Ordering() expressions.OrderExpression {
 	// TODO - can add right fields as well?
 	return s.n.left.Ordering()
 }
 
-func (s *mergeJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+func (s *mergeJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -29,7 +31,7 @@ func (s *mergeJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 		return nil, err
 	}
 
-	markRestorer, ok := rightScanner.(MarkRestorer)
+	markRestorer, ok := rightScanner.(scan.MarkRestorer)
 	if !ok {
 		panic("right scanner is not a MarkRestorer")
 	}
@@ -44,11 +46,11 @@ func (s *mergeJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 }
 
 type mergeJoinScanner struct {
-	ctx          ScanContext
+	ctx          scan.ScanContext
 	strategy     *mergeJoinStrategy
-	leftScanner  Scanner
-	rightScanner Scanner
-	markRestorer MarkRestorer
+	leftScanner  scan.Scanner
+	rightScanner scan.Scanner
+	markRestorer scan.MarkRestorer
 
 	// state
 	leftRow  *shared.Row
@@ -72,7 +74,7 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 			// iteration of the scan, as well as immediately after we have found
 			// a matching pair of rows and need to find the next one.
 			if err := s.advanceRight(); err != nil {
-				if err != ErrNoRows {
+				if err != scan.ErrNoRows {
 					return shared.Row{}, err
 				}
 
@@ -167,7 +169,7 @@ func (s *mergeJoinScanner) advanceRight() error {
 	return scanIntoTarget(s.rightScanner, &s.rightRow)
 }
 
-func scanIntoTarget(scanner Scanner, target **shared.Row) error {
+func scanIntoTarget(scanner scan.Scanner, target **shared.Row) error {
 	row, err := scanner.Scan()
 	if err != nil {
 		*target = nil

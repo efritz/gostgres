@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -53,14 +54,14 @@ func (n *deleteNode) Optimize() {
 func (n *deleteNode) AddFilter(filter expressions.Expression) {
 }
 
-func (n *deleteNode) AddOrder(order OrderExpression) {
+func (n *deleteNode) AddOrder(order expressions.OrderExpression) {
 }
 
 func (n *deleteNode) Filter() expressions.Expression {
 	return nil
 }
 
-func (n *deleteNode) Ordering() OrderExpression {
+func (n *deleteNode) Ordering() expressions.OrderExpression {
 	return nil
 }
 
@@ -68,13 +69,13 @@ func (n *deleteNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *deleteNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *deleteNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		row, err := scanner.Scan()
 		if err != nil {
 			return shared.Row{}, err
@@ -85,7 +86,7 @@ func (n *deleteNode) Scanner(ctx ScanContext) (Scanner, error) {
 			return shared.Row{}, err
 		}
 		if !ok {
-			return shared.Row{}, ErrNoRows
+			return shared.Row{}, scan.ErrNoRows
 		}
 
 		return n.projector.projectRow(ctx, deletedRow)

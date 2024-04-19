@@ -1,6 +1,8 @@
 package nodes
 
 import (
+	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -12,7 +14,7 @@ func (s *nestedLoopJoinStrategy) Name() string {
 	return "nested loop"
 }
 
-func (s *nestedLoopJoinStrategy) Ordering() OrderExpression {
+func (s *nestedLoopJoinStrategy) Ordering() expressions.OrderExpression {
 	leftOrdering := s.n.left.Ordering()
 	if leftOrdering == nil {
 		return nil
@@ -23,10 +25,10 @@ func (s *nestedLoopJoinStrategy) Ordering() OrderExpression {
 		return leftOrdering
 	}
 
-	return NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
+	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -34,10 +36,10 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 
 	var (
 		leftRow      *shared.Row
-		rightScanner Scanner
+		rightScanner scan.Scanner
 	)
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		for {
 			if leftRow == nil {
 				row, err := leftScanner.Scan()
@@ -46,7 +48,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 				}
 				leftRow = &row
 
-				scanner, err := s.n.right.Scanner(ScanContext{
+				scanner, err := s.n.right.Scanner(scan.ScanContext{
 					OuterRow: row,
 				})
 				if err != nil {
@@ -57,7 +59,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 
 			rightRow, err := rightScanner.Scan()
 			if err != nil {
-				if err == ErrNoRows {
+				if err == scan.ErrNoRows {
 					leftRow = nil
 					rightScanner = nil
 					continue

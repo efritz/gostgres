@@ -5,13 +5,14 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type accessNode struct {
 	table    *Table
 	filter   expressions.Expression
-	order    OrderExpression
+	order    expressions.OrderExpression
 	strategy accessStrategy
 }
 
@@ -57,7 +58,7 @@ func (n *accessNode) AddFilter(filter expressions.Expression) {
 	n.filter = unionFilters(n.filter, filter)
 }
 
-func (n *accessNode) AddOrder(order OrderExpression) {
+func (n *accessNode) AddOrder(order expressions.OrderExpression) {
 	n.order = order
 }
 
@@ -69,7 +70,7 @@ func (n *accessNode) Filter() expressions.Expression {
 	return n.filter
 }
 
-func (n *accessNode) Ordering() OrderExpression {
+func (n *accessNode) Ordering() expressions.OrderExpression {
 	return n.strategy.Ordering()
 }
 
@@ -77,7 +78,7 @@ func (n *accessNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *accessNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *accessNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.strategy.Scanner(ctx)
 	if err != nil {
 		return nil, err

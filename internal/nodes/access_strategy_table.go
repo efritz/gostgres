@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -27,11 +28,11 @@ func (s *tableAccessStrategy) Filter() expressions.Expression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Ordering() OrderExpression {
+func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	tids := make([]int, 0, len(s.table.rows))
 	for tid := range s.table.rows {
 		tids = append(tids, tid)
@@ -51,13 +52,13 @@ func (s *tableAccessStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 
 	i := 0
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		for i < rows.Size() {
 			row := rows.Row(i)
 			i++
 			return row, nil
 		}
 
-		return shared.Row{}, ErrNoRows
+		return shared.Row{}, scan.ErrNoRows
 	}), nil
 }

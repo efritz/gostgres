@@ -1,18 +1,27 @@
-package nodes
+package indexes
 
 import (
 	"fmt"
 	"hash/fnv"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type hashIndex struct {
 	name       string
-	table      *Table
+	tableName  string
 	expression expressions.Expression
 	entries    map[uint64][]hashItem
+}
+
+type HashExpressioner interface {
+	HashExpression() expressions.Expression
+}
+
+func (i *hashIndex) HashExpression() expressions.Expression {
+	return i.expression
 }
 
 type hashItem struct {
@@ -26,10 +35,10 @@ type hashIndexScanOptions struct {
 
 var _ Index[hashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name string, table *Table, expression expressions.Expression) *hashIndex {
+func NewHashIndex(name, tableName string, expression expressions.Expression) *hashIndex {
 	return &hashIndex{
 		name:       name,
-		table:      table,
+		tableName:  tableName,
 		expression: expression,
 		entries:    map[uint64][]hashItem{},
 	}
@@ -44,7 +53,7 @@ func (i *hashIndex) Filter() expressions.Expression {
 }
 
 func (i *hashIndex) Description(opts hashIndexScanOptions) string {
-	return fmt.Sprintf("hash index scan of %s via %s", i.table.name, i.name)
+	return fmt.Sprintf("hash index scan of %s via %s", i.tableName, i.name)
 }
 
 func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expression) {
@@ -55,7 +64,7 @@ func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expre
 	return expressions.NewEquals(i.expression, opts.expression)
 }
 
-func (i *hashIndex) Ordering(opts hashIndexScanOptions) OrderExpression {
+func (i *hashIndex) Ordering(opts hashIndexScanOptions) expressions.OrderExpression {
 	return nil
 }
 
@@ -90,7 +99,7 @@ func (i *hashIndex) Delete(row shared.Row) error {
 	return nil
 }
 
-func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
+func (i *hashIndex) Scanner(ctx scan.ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
 	value, err := ctx.Evaluate(opts.expression, shared.Row{})
 	if err != nil {
 		return nil, err
@@ -107,7 +116,7 @@ func (i *hashIndex) Scanner(ctx ScanContext, opts hashIndexScanOptions) (tidScan
 			return tid, nil
 		}
 
-		return 0, ErrNoRows
+		return 0, scan.ErrNoRows
 	}), nil
 }
 

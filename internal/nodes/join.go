@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -74,7 +75,7 @@ func (n *joinNode) AddFilter(filter expressions.Expression) {
 	n.filter = unionFilters(n.filter, filter)
 }
 
-func (n *joinNode) AddOrder(order OrderExpression) {
+func (n *joinNode) AddOrder(order expressions.OrderExpression) {
 	lowerOrder(order, n.left, n.right)
 }
 
@@ -82,7 +83,7 @@ func (n *joinNode) Filter() expressions.Expression {
 	return unionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
-func (n *joinNode) Ordering() OrderExpression {
+func (n *joinNode) Ordering() expressions.OrderExpression {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before ordering can be determined")
 	}
@@ -94,7 +95,7 @@ func (n *joinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *joinNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *joinNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}

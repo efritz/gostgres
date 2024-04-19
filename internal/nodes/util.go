@@ -129,13 +129,13 @@ func lowerFilter(filter expressions.Expression, nodes ...Node) {
 	}
 }
 
-func lowerOrder(order OrderExpression, nodes ...Node) {
-	expressions := order.Expressions()
+func lowerOrder(order expressions.OrderExpression, nodes ...Node) {
+	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {
-		filteredExpressions := make([]ExpressionWithDirection, 0, len(expressions))
+		filteredExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
 	exprLoop:
-		for _, expression := range expressions {
+		for _, expression := range orderExpressions {
 			for _, field := range expression.Expression.Fields() {
 				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
 					continue exprLoop
@@ -146,21 +146,21 @@ func lowerOrder(order OrderExpression, nodes ...Node) {
 		}
 
 		if len(filteredExpressions) != 0 {
-			node.AddOrder(NewOrderExpression(filteredExpressions))
+			node.AddOrder(expressions.NewOrderExpression(filteredExpressions))
 		}
 	}
 }
 
-func mapOrderExpressions(order OrderExpression, f func(expressions.Expression) expressions.Expression) OrderExpression {
-	expressions := order.Expressions()
-	aliasedExpressions := make([]ExpressionWithDirection, 0, len(expressions))
+func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
+	orderExpressions := order.Expressions()
+	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
 
-	for _, expression := range expressions {
-		aliasedExpressions = append(aliasedExpressions, ExpressionWithDirection{
+	for _, expression := range orderExpressions {
+		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
 			Expression: f(expression.Expression),
 			Reverse:    expression.Reverse,
 		})
 	}
 
-	return NewOrderExpression(aliasedExpressions)
+	return expressions.NewOrderExpression(aliasedExpressions)
 }

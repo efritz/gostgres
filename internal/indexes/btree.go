@@ -1,17 +1,26 @@
-package nodes
+package indexes
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type btreeIndex struct {
 	name        string
-	table       *Table
-	expressions []ExpressionWithDirection
+	tableName   string
+	expressions []expressions.ExpressionWithDirection
 	root        *btreeNode
+}
+
+type BTreeExpressioner interface {
+	Expressions() []expressions.ExpressionWithDirection
+}
+
+func (i *btreeIndex) Expressions() []expressions.ExpressionWithDirection {
+	return i.expressions
 }
 
 type btreeNode struct {
@@ -27,14 +36,6 @@ type btreeIndexScanOptions struct {
 	upperBounds   [][]scanBound
 }
 
-type ScanDirection int
-
-const (
-	ScanDirectionUnknown ScanDirection = iota
-	ScanDirectionForward
-	ScanDirectionBackward
-)
-
 type scanBound struct {
 	expression expressions.Expression
 	inclusive  bool
@@ -42,10 +43,10 @@ type scanBound struct {
 
 var _ Index[btreeIndexScanOptions] = &btreeIndex{}
 
-func NewBTreeIndex(name string, table *Table, expressions []ExpressionWithDirection) *btreeIndex {
+func NewBTreeIndex(name, tableName string, expressions []expressions.ExpressionWithDirection) *btreeIndex {
 	return &btreeIndex{
 		name:        name,
-		table:       table,
+		tableName:   tableName,
 		expressions: expressions,
 	}
 }
@@ -64,7 +65,7 @@ func (i *btreeIndex) Description(opts btreeIndexScanOptions) string {
 		direction = "backward "
 	}
 
-	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.table.name, i.name)
+	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.tableName, i.name)
 }
 
 func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {
@@ -148,20 +149,20 @@ func (i *btreeIndex) conditionsForIndex(opts btreeIndexScanOptions, index int) (
 	return lowers, uppers, equals
 }
 
-func (i *btreeIndex) Ordering(opts btreeIndexScanOptions) OrderExpression {
+func (i *btreeIndex) Ordering(opts btreeIndexScanOptions) expressions.OrderExpression {
 	if opts.scanDirection == ScanDirectionBackward {
-		var reversed []ExpressionWithDirection
+		var reversed []expressions.ExpressionWithDirection
 		for _, expression := range i.expressions {
-			reversed = append(reversed, ExpressionWithDirection{
+			reversed = append(reversed, expressions.ExpressionWithDirection{
 				Expression: expression.Expression,
 				Reverse:    !expression.Reverse,
 			})
 		}
 
-		return &orderExpression{expressions: reversed}
+		return expressions.NewOrderExpression(reversed)
 	}
 
-	return &orderExpression{expressions: i.expressions}
+	return expressions.NewOrderExpression(i.expressions)
 }
 
 func (i *btreeIndex) Insert(row shared.Row) error {
@@ -226,7 +227,7 @@ func (n *btreeNode) delete(values []any, tid int) *btreeNode {
 	return n
 }
 
-func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx scan.ScanContext, opts btreeIndexScanOptions) (tidScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 
@@ -286,7 +287,7 @@ func (i *btreeIndex) Scanner(ctx ScanContext, opts btreeIndexScanOptions) (tidSc
 			}
 		}
 
-		return 0, ErrNoRows
+		return 0, scan.ErrNoRows
 	}), nil
 }
 

@@ -1,6 +1,11 @@
 package nodes
 
 import (
+	"fmt"
+	"hash/fnv"
+
+	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -13,18 +18,18 @@ func (s *hashJoinStrategy) Name() string {
 	return "hash"
 }
 
-func (s *hashJoinStrategy) Ordering() OrderExpression {
+func (s *hashJoinStrategy) Ordering() expressions.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
+func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	rightScanner, err := s.n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	h := map[uint64][]shared.Row{}
-	if err := VisitRows(rightScanner, func(row shared.Row) (bool, error) {
+	if err := scan.VisitRows(rightScanner, func(row shared.Row) (bool, error) {
 		keys, err := evaluatePair(ctx, s.pairs, rightOfPair, row)
 		if err != nil {
 			return false, err
@@ -45,7 +50,7 @@ func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 	var leftRow shared.Row
 	var rightRows []shared.Row
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		for {
 			for len(rightRows) > 0 {
 				rightRow := rightRows[0]
@@ -79,4 +84,11 @@ func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 			rightRows = h[hash(lKeys)]
 		}
 	}), nil
+}
+
+// TODO - deduplicate
+func hash(value any) uint64 {
+	h := fnv.New64()
+	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
+	return h.Sum64()
 }

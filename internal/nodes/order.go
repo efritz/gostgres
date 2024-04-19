@@ -5,17 +5,18 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type orderNode struct {
 	Node
-	order OrderExpression
+	order expressions.OrderExpression
 }
 
 var _ Node = &orderNode{}
 
-func NewOrder(node Node, order OrderExpression) Node {
+func NewOrder(node Node, order expressions.OrderExpression) Node {
 	return &orderNode{
 		Node:  node,
 		order: order,
@@ -45,7 +46,7 @@ func (n *orderNode) Optimize() {
 	}
 }
 
-func subsumesOrder(a, b OrderExpression) bool {
+func subsumesOrder(a, b expressions.OrderExpression) bool {
 	if a == nil || b == nil {
 		return false
 	}
@@ -73,7 +74,7 @@ func (n *orderNode) AddFilter(filter expressions.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *orderNode) AddOrder(order OrderExpression) {
+func (n *orderNode) AddOrder(order expressions.OrderExpression) {
 	// We are nested in a parent sort and un-separated by an ordering boundary
 	// (such as limit or offset). We'll ignore our old sort criteria and adopt
 	// our parent since the ordering of rows at this point in the query should
@@ -81,7 +82,7 @@ func (n *orderNode) AddOrder(order OrderExpression) {
 	n.order = order
 }
 
-func (n *orderNode) Ordering() OrderExpression {
+func (n *orderNode) Ordering() expressions.OrderExpression {
 	if n.order == nil {
 		return n.Node.Ordering()
 	}
@@ -93,7 +94,7 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *orderNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -114,13 +115,13 @@ type orderScanner struct {
 	mark    int
 }
 
-func NewOrderScanner(ctx ScanContext, scanner Scanner, fields []shared.Field, order OrderExpression) (Scanner, error) {
+func NewOrderScanner(ctx scan.ScanContext, scanner scan.Scanner, fields []shared.Field, order expressions.OrderExpression) (scan.Scanner, error) {
 	rows, err := shared.NewRows(fields)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err = ScanIntoRows(scanner, rows)
+	rows, err = scan.ScanIntoRows(scanner, rows)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +145,7 @@ func (s *orderScanner) Scan() (shared.Row, error) {
 		return row, nil
 	}
 
-	return shared.Row{}, ErrNoRows
+	return shared.Row{}, scan.ErrNoRows
 }
 
 func (s *orderScanner) Mark() {

@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -64,7 +65,7 @@ func (n *unionNode) AddFilter(filter expressions.Expression) {
 	lowerFilter(filter, n.left, n.right)
 }
 
-func (n *unionNode) AddOrder(order OrderExpression) {
+func (n *unionNode) AddOrder(order expressions.OrderExpression) {
 	lowerOrder(order, n.left, n.right)
 }
 
@@ -72,7 +73,7 @@ func (n *unionNode) Filter() expressions.Expression {
 	return filterIntersection(n.left.Filter(), n.right.Filter())
 }
 
-func (n *unionNode) Ordering() OrderExpression {
+func (n *unionNode) Ordering() expressions.OrderExpression {
 	return nil
 }
 
@@ -80,7 +81,7 @@ func (n *unionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *unionNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *unionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := hashValues(row.Values)
@@ -97,13 +98,13 @@ func (n *unionNode) Scanner(ctx ScanContext) (Scanner, error) {
 		return nil, err
 	}
 
-	var rightScanner Scanner
+	var rightScanner scan.Scanner
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		for leftScanner != nil {
 			row, err := leftScanner.Scan()
 			if err != nil {
-				if err == ErrNoRows {
+				if err == scan.ErrNoRows {
 					leftScanner = nil
 					continue
 				}

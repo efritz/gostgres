@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -54,14 +55,14 @@ func (n *insertNode) Optimize() {
 func (n *insertNode) AddFilter(filter expressions.Expression) {
 }
 
-func (n *insertNode) AddOrder(order OrderExpression) {
+func (n *insertNode) AddOrder(order expressions.OrderExpression) {
 }
 
 func (n *insertNode) Filter() expressions.Expression {
 	return nil
 }
 
-func (n *insertNode) Ordering() OrderExpression {
+func (n *insertNode) Ordering() expressions.OrderExpression {
 	return nil
 }
 
@@ -69,13 +70,13 @@ func (n *insertNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *insertNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *insertNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 		row, err := scanner.Scan()
 		if err != nil {
 			return shared.Row{}, err

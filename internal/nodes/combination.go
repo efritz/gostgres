@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -81,7 +82,7 @@ func (n *combinationNode) AddFilter(filter expressions.Expression) {
 	lowerFilter(filter, n.left, n.right)
 }
 
-func (n *combinationNode) AddOrder(order OrderExpression) {
+func (n *combinationNode) AddOrder(order expressions.OrderExpression) {
 	lowerOrder(order, n.left, n.right)
 }
 
@@ -89,7 +90,7 @@ func (n *combinationNode) Filter() expressions.Expression {
 	return n.left.Filter()
 }
 
-func (n *combinationNode) Ordering() OrderExpression {
+func (n *combinationNode) Ordering() expressions.OrderExpression {
 	return nil
 }
 
@@ -97,7 +98,7 @@ func (n *combinationNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *combinationNode) Scanner(ctx ScanContext) (Scanner, error) {
+func (n *combinationNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -108,16 +109,16 @@ func (n *combinationNode) Scanner(ctx ScanContext) (Scanner, error) {
 	}
 
 	hash := map[string][]sourcedRow{}
-	if err := VisitRows(leftScanner, hashVisitor(hash, 0)); err != nil {
+	if err := scan.VisitRows(leftScanner, hashVisitor(hash, 0)); err != nil {
 		return nil, err
 	}
-	if err := VisitRows(rightScanner, hashVisitor(hash, 1)); err != nil {
+	if err := scan.VisitRows(rightScanner, hashVisitor(hash, 1)); err != nil {
 		return nil, err
 	}
 
 	var selection []sourcedRow
 
-	return ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (shared.Row, error) {
 	outer:
 		for {
 			if len(selection) > 0 {
@@ -142,11 +143,11 @@ func (n *combinationNode) Scanner(ctx ScanContext) (Scanner, error) {
 			break
 		}
 
-		return shared.Row{}, ErrNoRows
+		return shared.Row{}, scan.ErrNoRows
 	}), nil
 }
 
-func hashVisitor(hash map[string][]sourcedRow, index int) VisitorFunc {
+func hashVisitor(hash map[string][]sourcedRow, index int) scan.VisitorFunc {
 	return func(row shared.Row) (bool, error) {
 		key := hashValues(row.Values)
 

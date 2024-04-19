@@ -3,68 +3,14 @@ package nodes
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type OrderExpression interface {
-	Fold() OrderExpression
-	Expressions() []ExpressionWithDirection
-}
-
-type orderExpression struct {
-	expressions []ExpressionWithDirection
-}
-
-func NewOrderExpression(expressions []ExpressionWithDirection) OrderExpression {
-	return orderExpression{
-		expressions: expressions,
-	}
-}
-
-func (e orderExpression) String() string {
-	parts := make([]string, 0, len(e.expressions))
-	for _, expression := range e.expressions {
-		part := fmt.Sprintf("%s", expression.Expression)
-		if expression.Reverse {
-			part += " desc"
-		}
-
-		parts = append(parts, part)
-	}
-
-	return strings.Join(parts, ", ")
-}
-
-func (e orderExpression) Fold() OrderExpression {
-	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
-	for _, expression := range e.expressions {
-		expressions = append(expressions, expression.Fold())
-	}
-
-	return orderExpression{expressions: expressions}
-}
-
-func (e orderExpression) Expressions() []ExpressionWithDirection {
-	return e.expressions
-}
-
-type ExpressionWithDirection struct {
-	Expression expressions.Expression
-	Reverse    bool
-}
-
-func (e ExpressionWithDirection) Fold() ExpressionWithDirection {
-	return ExpressionWithDirection{
-		Expression: e.Expression.Fold(),
-		Reverse:    e.Reverse,
-	}
-}
-
-func findIndexIterationOrder(ctx ScanContext, order OrderExpression, rows shared.Rows) ([]int, error) {
-	var expressions []ExpressionWithDirection
+func findIndexIterationOrder(ctx scan.ScanContext, order expressions.OrderExpression, rows shared.Rows) ([]int, error) {
+	var expressions []expressions.ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
 	}
@@ -109,7 +55,7 @@ type indexValue struct {
 	values []any
 }
 
-func makeIndexValues(ctx ScanContext, expressions []ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx scan.ScanContext, expressions []expressions.ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]any, 0, len(expressions))

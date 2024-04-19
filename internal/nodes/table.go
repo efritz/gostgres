@@ -3,6 +3,7 @@ package nodes
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -10,7 +11,12 @@ type Table struct {
 	name    string
 	fields  []shared.Field
 	rows    map[int]shared.Row
-	indexes []BaseIndex
+	indexes []indexes.BaseIndex
+}
+
+func (t *Table) RowByTID(tid int) (shared.Row, bool) {
+	row, ok := t.rows[tid]
+	return row, ok
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -23,11 +29,15 @@ func NewTable(name string, fields []shared.Field) *Table {
 	}
 }
 
+func (t *Table) Name() string {
+	return t.name
+}
+
 func (t *Table) Fields() []shared.Field {
 	return copyFields(t.fields)
 }
 
-func (t *Table) AddIndex(index BaseIndex) error {
+func (t *Table) AddIndex(index indexes.BaseIndex) error {
 	for _, row := range t.rows {
 		if err := index.Insert(row); err != nil {
 			return err

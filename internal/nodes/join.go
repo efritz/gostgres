@@ -60,21 +60,6 @@ func (n *joinNode) Optimize() {
 	n.strategy = selectJoinStrategy(n)
 }
 
-// TODO - decompose multiple equality (e.g., a = b and c = d)
-func (n *joinNode) decomposeFilter() (_ expressions.ComparisonType, left, right expressions.Expression) {
-	if comparisonType, left, right := expressions.IsComparison(n.filter); comparisonType != expressions.ComparisonTypeUnknown {
-		if bindsAllFields(n.left, left) && bindsAllFields(n.right, right) {
-			return comparisonType, left, right
-		}
-
-		if bindsAllFields(n.left, right) && bindsAllFields(n.right, left) {
-			return comparisonType.Flip(), right, left
-		}
-	}
-
-	return expressions.ComparisonTypeUnknown, nil, nil
-}
-
 func bindsAllFields(n Node, expr expressions.Expression) bool {
 	for _, field := range expr.Fields() {
 		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {

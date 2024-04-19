@@ -1,14 +1,12 @@
 package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type hashJoinStrategy struct {
 	n     *joinNode
-	left  expressions.Expression
-	right expressions.Expression
+	pairs []equalityPair
 }
 
 func (s *hashJoinStrategy) Name() string {
@@ -25,14 +23,15 @@ func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 		return nil, err
 	}
 
-	h := map[interface{}]shared.Row{}
+	h := map[uint64][]shared.Row{}
 	if err := VisitRows(rightScanner, func(row shared.Row) (bool, error) {
-		key, err := ctx.Evaluate(s.right, row)
+		keys, err := evaluatePair(ctx, s.pairs, rightOfPair, row)
 		if err != nil {
 			return false, err
 		}
 
-		h[key] = row
+		key := hash(keys)
+		h[key] = append(h[key], row)
 		return true, nil
 	}); err != nil {
 		return nil, err
@@ -43,24 +42,41 @@ func (s *hashJoinStrategy) Scanner(ctx ScanContext) (Scanner, error) {
 		return nil, err
 	}
 
+	var leftRow shared.Row
+	var rightRows []shared.Row
+
 	return ScannerFunc(func() (shared.Row, error) {
 		for {
-			leftRow, err := leftScanner.Scan()
+			for len(rightRows) > 0 {
+				rightRow := rightRows[0]
+				rightRows = rightRows[1:]
+
+				lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
+				if err != nil {
+					return shared.Row{}, err
+				}
+
+				rKeys, err := evaluatePair(ctx, s.pairs, rightOfPair, rightRow)
+				if err != nil {
+					return shared.Row{}, err
+				}
+
+				if shared.CompareValueSlices(lKeys, rKeys) == shared.OrderTypeEqual {
+					return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+				}
+			}
+
+			leftRow, err = leftScanner.Scan()
 			if err != nil {
 				return shared.Row{}, err
 			}
 
-			key, err := ctx.Evaluate(s.left, leftRow)
+			lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
 			if err != nil {
 				return shared.Row{}, err
 			}
 
-			rightRow, ok := h[key]
-			if !ok {
-				continue
-			}
-
-			return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+			rightRows = h[hash(lKeys)]
 		}
 	}), nil
 }

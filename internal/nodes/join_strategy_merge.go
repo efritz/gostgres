@@ -1,14 +1,12 @@
 package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type mergeJoinStrategy struct {
 	n     *joinNode
-	left  expressions.Expression
-	right expressions.Expression
+	pairs []equalityPair
 }
 
 func (s *mergeJoinStrategy) Name() string {
@@ -181,15 +179,15 @@ func scanIntoTarget(scanner Scanner, target **shared.Row) error {
 }
 
 func (s *mergeJoinScanner) compareRows(leftRow, rightRow shared.Row) (shared.OrderType, error) {
-	leftKey, err := s.ctx.Evaluate(s.strategy.left, leftRow)
+	lValues, err := evaluatePair(s.ctx, s.strategy.pairs, leftOfPair, leftRow)
 	if err != nil {
-		return 0, err
+		return shared.OrderTypeIncomparable, err
 	}
 
-	rightKey, err := s.ctx.Evaluate(s.strategy.right, rightRow)
+	rValues, err := evaluatePair(s.ctx, s.strategy.pairs, rightOfPair, rightRow)
 	if err != nil {
-		return 0, err
+		return shared.OrderTypeIncomparable, err
 	}
 
-	return shared.CompareValues(leftKey, rightKey), nil
+	return shared.CompareValueSlices(lValues, rValues), nil
 }

@@ -12,81 +12,79 @@ import (
 )
 
 func CreateStandardTestTables(root string) (map[string]*table.Table, error) {
-	employeesTable, err := createEmployeesTable(root)
-	if err != nil {
-		return nil, err
+	loaders := map[string]func(string) (*table.Table, error){
+		"employees":   createEmployeesTable,
+		"departments": createDepartmentsTable,
+		"locations":   createLocationsTable,
+		"regions":     createRegionsTable,
+		"k1":          createK1Table,
+		"k2":          createK2Table,
 	}
 
-	departmentsTable, err := createDepartmentsTable(root)
-	if err != nil {
-		return nil, err
+	tables := make(map[string]*table.Table)
+	for name, loader := range loaders {
+		table, err := loader(root)
+		if err != nil {
+			return nil, err
+		}
+
+		tables[name] = table
 	}
 
-	locationsTable, err := createLocationsTable(root)
-	if err != nil {
-		return nil, err
-	}
-
-	regionsTable, err := createRegionsTable(root)
-	if err != nil {
-		return nil, err
-	}
-
-	k1, err := createK1Table(root)
-	if err != nil {
-		return nil, err
-	}
-
-	k2, err := createK2Table(root)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]*table.Table{
-		"employees":   employeesTable,
-		"departments": departmentsTable,
-		"locations":   locationsTable,
-		"regions":     regionsTable,
-		"k1":          k1,
-		"k2":          k2,
-	}, nil
+	return tables, nil
 }
 
 func createEmployeesTable(root string) (*table.Table, error) {
-	table, err := loader.NewTableFromCSV("employees", csvFilepath(root, "employees"), []loader.FieldDescription{
-		{Name: "employee_id", TypeKind: shared.TypeKindNumeric},
-		{Name: "first_name", TypeKind: shared.TypeKindText},
-		{Name: "last_name", TypeKind: shared.TypeKindText},
-		{Name: "email", TypeKind: shared.TypeKindText},
-		{Name: "manager_id", TypeKind: shared.TypeKindNumeric},
-		{Name: "department_id", TypeKind: shared.TypeKindNumeric},
+	employeeID := shared.NewField("employees", "employee_id", shared.TypeKindNumeric)
+	firstName := shared.NewField("employees", "first_name", shared.TypeKindText)
+	last_name := shared.NewField("employees", "last_name", shared.TypeKindText)
+	email := shared.NewField("employees", "email", shared.TypeKindText)
+	managerID := shared.NewField("employees", "manager_id", shared.TypeKindNumeric)
+	departmentID := shared.NewField("employees", "department_id", shared.TypeKindNumeric)
+
+	table, err := loader.NewTableFromCSV("employees", csvFilepath(root, "employees"), []shared.Field{
+		employeeID,
+		firstName,
+		last_name,
+		email,
+		managerID,
+		departmentID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// btree index on (last_name, first_name, employee_id)
-	if err := table.AddIndex(indexes.NewBTreeIndex("employees_last_name_first_name_employee_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText))},
-		{Expression: expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText))},
-		{Expression: expressions.NewNamed(shared.NewField("employees", "employee_id", shared.TypeKindNumeric))},
-	})); err != nil {
+	if err := table.AddIndex(indexes.NewBTreeIndex(
+		"employees_last_name_first_name_employee_id",
+		table.Name(),
+		[]expressions.ExpressionWithDirection{
+			{Expression: expressions.NewNamed(last_name)},
+			{Expression: expressions.NewNamed(firstName)},
+			{Expression: expressions.NewNamed(employeeID)},
+		},
+	)); err != nil {
 		return nil, err
 	}
 
 	// hash index on first name
-	if err := table.AddIndex(indexes.NewHashIndex("employees_first_name", table.Name(),
-		expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText)),
+	if err := table.AddIndex(indexes.NewHashIndex(
+		"employees_first_name",
+		table.Name(),
+		expressions.NewNamed(firstName),
 	)); err != nil {
 		return nil, err
 	}
 
 	// hash index last_name, partial where manager_id <= 4
-	lastName := expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText))
-	manager := expressions.NewNamed(shared.NewField("employees", "manager_id", shared.TypeKindNumeric))
-	index := indexes.NewHashIndex("employees_last_name_manager_id", table.Name(), lastName)
-	cond := expressions.NewLessThanEquals(manager, expressions.NewConstant(4))
-	if err := table.AddIndex(indexes.NewPartialIndex(index, cond)); err != nil {
+	if err := table.AddIndex(indexes.NewPartialIndex(
+		indexes.NewHashIndex(
+			"employees_last_name_manager_id",
+			table.Name(),
+			expressions.NewNamed(last_name),
+		),
+		expressions.NewLessThanEquals(expressions.NewNamed(managerID), expressions.NewConstant(4)),
+	)); err != nil {
 		return nil, err
 	}
 
@@ -94,18 +92,24 @@ func createEmployeesTable(root string) (*table.Table, error) {
 }
 
 func createDepartmentsTable(root string) (*table.Table, error) {
-	table, err := loader.NewTableFromCSV("departments", csvFilepath(root, "departments"), []loader.FieldDescription{
-		{Name: "department_id", TypeKind: shared.TypeKindNumeric},
-		{Name: "department_name", TypeKind: shared.TypeKindText},
-		{Name: "location_id", TypeKind: shared.TypeKindNumeric},
+	departmentID := shared.NewField("departments", "department_id", shared.TypeKindNumeric)
+	departmentName := shared.NewField("departments", "department_name", shared.TypeKindText)
+	locationID := shared.NewField("departments", "location_id", shared.TypeKindNumeric)
+
+	table, err := loader.NewTableFromCSV("departments", csvFilepath(root, "departments"), []shared.Field{
+		departmentID,
+		departmentName,
+		locationID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// hash index on department_id
-	if err := table.AddIndex(indexes.NewHashIndex("departments_department_id", table.Name(),
-		expressions.NewNamed(shared.NewField("departments", "department_id", shared.TypeKindNumeric)),
+	if err := table.AddIndex(indexes.NewHashIndex(
+		"departments_department_id",
+		table.Name(),
+		expressions.NewNamed(departmentID),
 	)); err != nil {
 		return nil, err
 	}
@@ -114,34 +118,48 @@ func createDepartmentsTable(root string) (*table.Table, error) {
 }
 
 func createLocationsTable(root string) (*table.Table, error) {
-	return loader.NewTableFromCSV("locations", csvFilepath(root, "locations"), []loader.FieldDescription{
-		{Name: "location_id", TypeKind: shared.TypeKindNumeric},
-		{Name: "location_name", TypeKind: shared.TypeKindText},
-		{Name: "region_id", TypeKind: shared.TypeKindNumeric},
+	locationID := shared.NewField("locations", "location_id", shared.TypeKindNumeric)
+	locationName := shared.NewField("locations", "location_name", shared.TypeKindText)
+	regionID := shared.NewField("locations", "region_id", shared.TypeKindNumeric)
+
+	return loader.NewTableFromCSV("locations", csvFilepath(root, "locations"), []shared.Field{
+		locationID,
+		locationName,
+		regionID,
 	})
 }
 
 func createRegionsTable(root string) (*table.Table, error) {
-	return loader.NewTableFromCSV("regions", csvFilepath(root, "regions"), []loader.FieldDescription{
-		{Name: "region_id", TypeKind: shared.TypeKindNumeric},
-		{Name: "region_name", TypeKind: shared.TypeKindText},
+	regionID := shared.NewField("regions", "region_id", shared.TypeKindNumeric)
+	regionName := shared.NewField("regions", "region_name", shared.TypeKindText)
+
+	return loader.NewTableFromCSV("regions", csvFilepath(root, "regions"), []shared.Field{
+		regionID,
+		regionName,
 	})
 }
 
 func createK1Table(root string) (*table.Table, error) {
-	table, err := loader.NewTableFromCSV("k1", csvFilepath(root, "k1"), []loader.FieldDescription{
-		{Name: "name", TypeKind: shared.TypeKindText},
-		{Name: "id", TypeKind: shared.TypeKindNumeric},
+	name := shared.NewField("k1", "name", shared.TypeKindText)
+	id := shared.NewField("k1", "id", shared.TypeKindNumeric)
+
+	table, err := loader.NewTableFromCSV("k1", csvFilepath(root, "k1"), []shared.Field{
+		name,
+		id,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// btree index on (name, id)
-	if err := table.AddIndex(indexes.NewBTreeIndex("k1_name_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("k1", "name", shared.TypeKindText))},
-		{Expression: expressions.NewNamed(shared.NewField("k1", "id", shared.TypeKindNumeric))},
-	})); err != nil {
+	if err := table.AddIndex(indexes.NewBTreeIndex(
+		"k1_name_id",
+		table.Name(),
+		[]expressions.ExpressionWithDirection{
+			{Expression: expressions.NewNamed(name)},
+			{Expression: expressions.NewNamed(id)},
+		},
+	)); err != nil {
 		return nil, err
 	}
 
@@ -149,19 +167,26 @@ func createK1Table(root string) (*table.Table, error) {
 }
 
 func createK2Table(root string) (*table.Table, error) {
-	table, err := loader.NewTableFromCSV("k2", csvFilepath(root, "k2"), []loader.FieldDescription{
-		{Name: "name", TypeKind: shared.TypeKindText},
-		{Name: "id", TypeKind: shared.TypeKindNumeric},
+	name := shared.NewField("k2", "name", shared.TypeKindText)
+	id := shared.NewField("k2", "id", shared.TypeKindNumeric)
+
+	table, err := loader.NewTableFromCSV("k2", csvFilepath(root, "k2"), []shared.Field{
+		name,
+		id,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// btree index on (name, id)
-	if err := table.AddIndex(indexes.NewBTreeIndex("k2_name_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("k2", "name", shared.TypeKindText))},
-		{Expression: expressions.NewNamed(shared.NewField("k2", "id", shared.TypeKindNumeric))},
-	})); err != nil {
+	if err := table.AddIndex(indexes.NewBTreeIndex(
+		"k2_name_id",
+		table.Name(),
+		[]expressions.ExpressionWithDirection{
+			{Expression: expressions.NewNamed(name)},
+			{Expression: expressions.NewNamed(id)},
+		},
+	)); err != nil {
 		return nil, err
 	}
 

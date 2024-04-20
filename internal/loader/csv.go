@@ -10,7 +10,7 @@ import (
 	"github.com/efritz/gostgres/internal/table"
 )
 
-func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription) (*table.Table, error) {
+func NewTableFromCSV(name, filepath string, fields []shared.Field) (*table.Table, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -21,12 +21,17 @@ func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription
 		return nil, err
 	}
 
-	convertedValues, err := convertRecords(rawValues, fieldDescriptions)
+	convertedValues, err := convertRecords(rawValues, fields)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := shared.NewRowsWithValues(convertFields(name, fieldDescriptions), convertedValues)
+	var tableFields []shared.Field
+	for _, field := range fields {
+		tableFields = append(tableFields, field.WithRelationName(name))
+	}
+
+	rows, err := shared.NewRowsWithValues(tableFields, convertedValues)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +47,14 @@ func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription
 	return table, nil
 }
 
-func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) ([][]any, error) {
+func convertRecords(rawValues [][]string, fields []shared.Field) ([][]any, error) {
 	convertedValues := make([][]any, 0, len(rawValues))
 	for _, rawValues := range rawValues {
-		if len(rawValues) != len(fieldDescriptions) {
-			return nil, fmt.Errorf("expected %d values, got %d", len(fieldDescriptions), len(rawValues))
+		if len(rawValues) != len(fields) {
+			return nil, fmt.Errorf("expected %d values, got %d", len(fields), len(rawValues))
 		}
 
-		values, err := convertValues(rawValues, fieldDescriptions)
+		values, err := convertValues(rawValues, fields)
 		if err != nil {
 			return nil, err
 		}
@@ -60,10 +65,10 @@ func convertRecords(rawValues [][]string, fieldDescriptions []FieldDescription) 
 	return convertedValues, nil
 }
 
-func convertValues(rawValues []string, fieldDescriptions []FieldDescription) ([]any, error) {
+func convertValues(rawValues []string, fields []shared.Field) ([]any, error) {
 	values := make([]any, 0, len(rawValues))
 	for i, rawValue := range rawValues {
-		value, err := convertValue(rawValue, fieldDescriptions[i].TypeKind)
+		value, err := convertValue(rawValue, fields[i].TypeKind())
 		if err != nil {
 			return nil, err
 		}
@@ -87,14 +92,4 @@ func convertValue(rawValue string, typeKind shared.TypeKind) (any, error) {
 	}
 
 	return nil, fmt.Errorf("unconvertible type %s", typeKind)
-}
-
-func convertFields(name string, fieldDescriptions []FieldDescription) []shared.Field {
-	fields := make([]shared.Field, 0, len(fieldDescriptions))
-	for _, fieldDescription := range fieldDescriptions {
-		fields = append(fields, shared.NewField(name, fieldDescription.Name, fieldDescription.TypeKind))
-	}
-
-	return fields
-
 }

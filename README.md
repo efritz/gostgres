@@ -1,6 +1,6 @@
 # Gostgres
 
-Postgres in Go over a short vacation.
+Postgres in Go as a learning exercise.
 
 ## Try me out
 
@@ -36,12 +36,6 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
 
 ## TODO
 
-- Tech debt
-    - Separate node building/optimization from execution
-    - Combine limit and offset nodes
-    - Combine alias and projection nodes (if possible)
-    - Document internals
-
 - Short-term
     - Support CTEs
     - Support builtin functions
@@ -68,3 +62,9 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Transactions
     - Triggers
     - WAL
+
+- Tech debt
+    - Non-hack planning for merge joins
+    - Implement Mark+Restore on indexes directly
+    - Break `Node` iface into optional components
+    - Combine alias and projection nodes (if possible)

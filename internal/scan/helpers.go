@@ -1,6 +1,8 @@
 package scan
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/shared"
+)
 
 func ScanIntoRows(scanner Scanner, rows shared.Rows) (shared.Rows, error) {
 	if err := VisitRows(scanner, func(row shared.Row) (bool, error) {

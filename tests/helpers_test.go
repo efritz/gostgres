@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -23,7 +22,17 @@ func testQuery(query string) (string, error) {
 	}
 	node.Optimize()
 
-	rows, err := ScanRows(node, scan.ScanContext{})
+	scanner, err := node.Scanner(scan.ScanContext{})
+	if err != nil {
+		return "", err
+	}
+
+	rows, err := shared.NewRows(node.Fields())
+	if err != nil {
+		return "", err
+	}
+
+	rows, err = scan.ScanIntoRows(scanner, rows)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query: %s", err)
 	}
@@ -33,19 +42,4 @@ func testQuery(query string) (string, error) {
 		serialization.SerializePlanString(node),
 		serialization.SerializeRowsString(rows),
 	), nil
-}
-
-// TODO - deduplicate
-func ScanRows(node queries.Node, ctx scan.ScanContext) (shared.Rows, error) {
-	scanner, err := node.Scanner(ctx)
-	if err != nil {
-		return shared.Rows{}, err
-	}
-
-	rows, err := shared.NewRows(node.Fields())
-	if err != nil {
-		return shared.Rows{}, err
-	}
-
-	return scan.ScanIntoRows(scanner, rows)
 }

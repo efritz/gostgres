@@ -2,7 +2,7 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/access"
 	"github.com/efritz/gostgres/internal/queries/alias"
 	"github.com/efritz/gostgres/internal/queries/filter"
@@ -13,7 +13,7 @@ import (
 )
 
 // delete := `FROM` table using where returning
-func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
+func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 		return nil, err
 	}
 	if len(usingExpressions) > 0 {
-		node = joinNodes(append([]nodes.Node{node}, usingExpressions...))
+		node = joinNodes(append([]queries.Node{node}, usingExpressions...))
 	}
 
 	whereExpression, hasWhere, err := p.parseWhere()
@@ -65,7 +65,7 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 }
 
 // using := `USING` tableExpressions
-func (p *parser) parseUsing() ([]nodes.Node, error) {
+func (p *parser) parseUsing() ([]queries.Node, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

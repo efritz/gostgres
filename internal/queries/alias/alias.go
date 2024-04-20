@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type aliasNode struct {
-	nodes.Node
+	queries.Node
 	name   string
 	fields []shared.Field
 }
 
-var _ nodes.Node = &aliasNode{}
+var _ queries.Node = &aliasNode{}
 
-func NewAlias(node nodes.Node, name string) nodes.Node {
+func NewAlias(node queries.Node, name string) queries.Node {
 	return &aliasNode{
 		Node:   node,
 		name:   name,

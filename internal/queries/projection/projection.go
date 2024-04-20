@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type projectionNode struct {
-	nodes.Node
+	queries.Node
 	projector *Projector
 }
 
-var _ nodes.Node = &projectionNode{}
+var _ queries.Node = &projectionNode{}
 
-func NewProjection(node nodes.Node, expressions []ProjectionExpression) (nodes.Node, error) {
+func NewProjection(node queries.Node, expressions []ProjectionExpression) (queries.Node, error) {
 	projector, err := NewProjector(node.Name(), node.Fields(), expressions)
 	if err != nil {
 		return nil, err

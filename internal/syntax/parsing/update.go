@@ -2,7 +2,7 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/access"
 	"github.com/efritz/gostgres/internal/queries/alias"
 	"github.com/efritz/gostgres/internal/queries/filter"
@@ -13,7 +13,7 @@ import (
 )
 
 // update := table `SET` setExpressions [`FROM` tableExpressions] where returning
-func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
+func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 	table, name, aliasName, err := p.parseTable()
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		node = joinNodes(append([]nodes.Node{node}, fromExpressions...))
+		node = joinNodes(append([]queries.Node{node}, fromExpressions...))
 	}
 
 	whereExpression, hasWhere, err := p.parseWhere()

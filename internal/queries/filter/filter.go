@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type filterNode struct {
-	nodes.Node
+	queries.Node
 	filter expressions.Expression
 }
 
-var _ nodes.Node = &filterNode{}
+var _ queries.Node = &filterNode{}
 
-func NewFilter(node nodes.Node, filter expressions.Expression) nodes.Node {
+func NewFilter(node queries.Node, filter expressions.Expression) queries.Node {
 	return &filterNode{
 		Node:   node,
 		filter: filter,

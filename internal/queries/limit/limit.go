@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type limitNode struct {
-	nodes.Node
+	queries.Node
 	limit int
 }
 
-var _ nodes.Node = &limitNode{}
+var _ queries.Node = &limitNode{}
 
-func NewLimit(node nodes.Node, limit int) nodes.Node {
+func NewLimit(node queries.Node, limit int) queries.Node {
 	return &limitNode{
 		Node:  node,
 		limit: limit,

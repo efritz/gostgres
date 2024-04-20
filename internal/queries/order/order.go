@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type orderNode struct {
-	nodes.Node
+	queries.Node
 	order expressions.OrderExpression
 }
 
-var _ nodes.Node = &orderNode{}
+var _ queries.Node = &orderNode{}
 
-func NewOrder(node nodes.Node, order expressions.OrderExpression) nodes.Node {
+func NewOrder(node queries.Node, order expressions.OrderExpression) queries.Node {
 	return &orderNode{
 		Node:  node,
 		order: order,

@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -13,15 +13,15 @@ import (
 )
 
 type insertNode struct {
-	nodes.Node
+	queries.Node
 	table       *table.Table
 	columnNames []string
 	projector   *projection.Projector
 }
 
-var _ nodes.Node = &insertNode{}
+var _ queries.Node = &insertNode{}
 
-func NewInsert(node nodes.Node, table *table.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (nodes.Node, error) {
+func NewInsert(node queries.Node, table *table.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (queries.Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(name, table.Fields(), alias)

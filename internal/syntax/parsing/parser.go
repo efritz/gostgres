@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/joins"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 	"github.com/efritz/gostgres/internal/table"
@@ -20,7 +20,7 @@ type parser struct {
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
-type statementParserFunc func(token tokens.Token) (nodes.Node, error)
+type statementParserFunc func(token tokens.Token) (queries.Node, error)
 type prefixParserFunc func(token tokens.Token) (expressions.Expression, error)
 type infixParserFunc func(left expressions.Expression, token tokens.Token) (expressions.Expression, error)
 type unaryExpressionParserFunc func(expression expressions.Expression) expressions.Expression
@@ -92,7 +92,7 @@ func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *pars
 //	| `INSERT` insert
 //	| `UPDATE` update
 //	| `DELETE` delete
-func (p *parser) parseStatement() (nodes.Node, error) {
+func (p *parser) parseStatement() (queries.Node, error) {
 	token := p.current()
 	for tokenType, parser := range p.statementParsers {
 		if p.advanceIf(isType(tokenType)) {
@@ -161,7 +161,7 @@ func negate(parserFunc infixParserFunc) infixParserFunc {
 	}
 }
 
-func joinNodes(expressions []nodes.Node) nodes.Node {
+func joinNodes(expressions []queries.Node) queries.Node {
 	if len(expressions) == 0 {
 		return nil
 	}

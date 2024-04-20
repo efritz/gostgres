@@ -1,13 +1,13 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // insert := `INTO` table columnNames selectOrValues returning
-func (p *parser) parseInsert(token tokens.Token) (nodes.Node, error) {
+func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
 	}

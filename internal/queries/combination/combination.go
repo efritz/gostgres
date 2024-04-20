@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type combinationNode struct {
-	left             nodes.Node
-	right            nodes.Node
+	left             queries.Node
+	right            queries.Node
 	fields           []shared.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
 
-var _ nodes.Node = &combinationNode{}
+var _ queries.Node = &combinationNode{}
 
 type sourcedRow struct {
 	index int
@@ -28,15 +28,15 @@ type sourcedRow struct {
 
 type groupedRowFilterFunc func(rows []sourcedRow) bool
 
-func NewIntersect(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
+func NewIntersect(left queries.Node, right queries.Node, distinct bool) (queries.Node, error) {
 	return newCombination(left, right, intersectFilter, distinct)
 }
 
-func NewExcept(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
+func NewExcept(left queries.Node, right queries.Node, distinct bool) (queries.Node, error) {
 	return newCombination(left, right, exceptFilter, distinct)
 }
 
-func newCombination(left nodes.Node, right nodes.Node, groupedRowFilter groupedRowFilterFunc, distinct bool) (nodes.Node, error) {
+func newCombination(left queries.Node, right queries.Node, groupedRowFilter groupedRowFilterFunc, distinct bool) (queries.Node, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -193,7 +193,7 @@ func copyFields(fields []shared.Field) []shared.Field {
 	return c
 }
 
-func lowerFilter(filter expressions.Expression, nodes ...nodes.Node) {
+func lowerFilter(filter expressions.Expression, nodes ...queries.Node) {
 	for _, expression := range filter.Conjunctions() {
 		missing := make([]bool, len(nodes))
 		for _, field := range expression.Fields() {
@@ -212,7 +212,7 @@ func lowerFilter(filter expressions.Expression, nodes ...nodes.Node) {
 	}
 }
 
-func lowerOrder(order expressions.OrderExpression, nodes ...nodes.Node) {
+func lowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {

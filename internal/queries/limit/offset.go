@@ -5,19 +5,19 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type offsetNode struct {
-	nodes.Node
+	queries.Node
 	offset int
 }
 
-var _ nodes.Node = &offsetNode{}
+var _ queries.Node = &offsetNode{}
 
-func NewOffset(node nodes.Node, offset int) nodes.Node {
+func NewOffset(node queries.Node, offset int) queries.Node {
 	return &offsetNode{
 		Node:   node,
 		offset: offset,

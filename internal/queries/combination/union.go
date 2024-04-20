@@ -5,21 +5,21 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type unionNode struct {
-	left     nodes.Node
-	right    nodes.Node
+	left     queries.Node
+	right    queries.Node
 	fields   []shared.Field
 	distinct bool
 }
 
-var _ nodes.Node = &unionNode{}
+var _ queries.Node = &unionNode{}
 
-func NewUnion(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
+func NewUnion(left queries.Node, right queries.Node, distinct bool) (queries.Node, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 

@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -19,9 +19,9 @@ type accessNode struct {
 	strategy accessStrategy
 }
 
-var _ nodes.Node = &accessNode{}
+var _ queries.Node = &accessNode{}
 
-func NewData(table *table.Table) nodes.Node {
+func NewData(table *table.Table) queries.Node {
 	return &accessNode{
 		table: table,
 	}

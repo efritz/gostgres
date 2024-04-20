@@ -6,22 +6,22 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type joinNode struct {
-	left     nodes.Node
-	right    nodes.Node
+	left     queries.Node
+	right    queries.Node
 	filter   expressions.Expression
 	fields   []shared.Field
 	strategy joinStrategy
 }
 
-var _ nodes.Node = &joinNode{}
+var _ queries.Node = &joinNode{}
 
-func NewJoin(left nodes.Node, right nodes.Node, condition expressions.Expression) nodes.Node {
+func NewJoin(left queries.Node, right queries.Node, condition expressions.Expression) queries.Node {
 	return &joinNode{
 		left:     left,
 		right:    right,
@@ -63,7 +63,7 @@ func (n *joinNode) Optimize() {
 	n.strategy = selectJoinStrategy(n)
 }
 
-func bindsAllFields(n nodes.Node, expr expressions.Expression) bool {
+func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
 	for _, field := range expr.Fields() {
 		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false
@@ -180,7 +180,7 @@ func unionFilters(filters ...expressions.Expression) expressions.Expression {
 	return filter
 }
 
-func lowerOrder(order expressions.OrderExpression, nodes ...nodes.Node) {
+func lowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {
@@ -202,7 +202,7 @@ func lowerOrder(order expressions.OrderExpression, nodes ...nodes.Node) {
 	}
 }
 
-func lowerFilter(filter expressions.Expression, nodes ...nodes.Node) {
+func lowerFilter(filter expressions.Expression, nodes ...queries.Node) {
 	for _, expression := range filter.Conjunctions() {
 		missing := make([]bool, len(nodes))
 		for _, field := range expression.Fields() {

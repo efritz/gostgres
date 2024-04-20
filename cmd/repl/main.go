@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/chzyer/readline"
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -110,7 +110,7 @@ func eatExplain(line string) (string, bool) {
 }
 
 // TODO - deduplicate
-func ScanRows(node nodes.Node, ctx scan.ScanContext) (shared.Rows, error) {
+func ScanRows(node queries.Node, ctx scan.ScanContext) (shared.Rows, error) {
 	scanner, err := node.Scanner(ctx)
 	if err != nil {
 		return shared.Rows{}, err

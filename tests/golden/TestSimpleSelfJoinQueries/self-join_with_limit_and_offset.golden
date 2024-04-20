@@ -1,0 +1,29 @@
+`
+Query:
+
+SELECT * FROM employees e
+JOIN employees m ON m.employee_id = e.manager_id
+LIMIT 2 OFFSET 3
+
+Plan:
+
+select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
+    limit 2
+        offset 3
+            join using nested loop
+                alias as e
+                    table scan of employees
+            with
+                alias as m
+                    table scan of employees
+                        filter: employees.employee_id = e.manager_id
+            on m.employee_id = e.manager_id
+
+Results:
+
+ employee_id | first_name | last_name |           email           | manager_id | department_id | employee_id | first_name | last_name |           email           | manager_id | department_id
+-------------+------------+-----------+---------------------------+------------+---------------+-------------+------------+-----------+---------------------------+------------+---------------
+           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1 |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
+           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1 |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
+(2 rows)
+`

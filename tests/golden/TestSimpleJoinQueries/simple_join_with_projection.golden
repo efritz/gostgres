@@ -1,0 +1,31 @@
+`
+Query:
+
+SELECT location_name AS lname, r.region_name AS rname
+FROM locations l
+JOIN regions r ON r.region_id = l.region_id
+
+Plan:
+
+select (location_name as lname, r.region_name as rname)
+    join using nested loop
+        alias as l
+            table scan of locations
+    with
+        alias as r
+            table scan of regions
+                filter: regions.region_id = l.region_id
+    on r.region_id = l.region_id
+
+Results:
+
+     lname     | rname
+---------------+-------
+ San Francisco |    NA
+       Toronto |    NA
+      New York |    NA
+     Barcelona |  EMEA
+     Cape Town |  EMEA
+     Guangzhou |  EMEA
+(6 rows)
+`

@@ -1,0 +1,40 @@
+`
+Query:
+
+SELECT *
+FROM (
+SELECT *
+FROM employees
+WHERE department_id = 1
+INTERSECT (
+	SELECT *
+	FROM employees
+	WHERE manager_id = 1
+)
+) s
+WHERE employee_id < 5
+ORDER BY employee_id
+
+Plan:
+
+select (employee_id, first_name, last_name, email, manager_id, department_id)
+    order by employee_id
+        alias as s
+            select (employee_id, first_name, last_name, email, manager_id, department_id)
+                combination
+                    select (employee_id, first_name, last_name, email, manager_id, department_id)
+                        table scan of employees
+                            filter: department_id = 1 and employees.employee_id < 5
+                with
+                    select (employee_id, first_name, last_name, email, manager_id, department_id)
+                        table scan of employees
+                            filter: manager_id = 1 and employees.employee_id < 5
+
+Results:
+
+ employee_id | first_name | last_name |           email           | manager_id | department_id
+-------------+------------+-----------+---------------------------+------------+---------------
+           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
+           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1
+(2 rows)
+`

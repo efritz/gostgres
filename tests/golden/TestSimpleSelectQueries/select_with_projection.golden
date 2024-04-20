@@ -1,0 +1,29 @@
+`
+Query:
+
+SELECT first_name AS fname, e.last_name AS lname, email
+FROM employees e
+
+Plan:
+
+select (first_name as fname, e.last_name as lname, email)
+    alias as e
+        table scan of employees
+
+Results:
+
+   fname   |   lname  |              email
+-----------+----------+--------------------------------
+  Annalisa |     Head |      annalisa.head@company.com
+   Clayton | Mahaffey |   clayton.mahaffey@company.com
+    Manuel | Pattison |    manuel.pattison@company.com
+     Maria |   Warren |       maria.warren@company.com
+    Robert |   Medina |      robert.medina@company.com
+   Timothy |  Cornish |    timothy.cornish@company.com
+     Linda |   Dollar |       linda.dollar@company.com
+ Frederick | McLendon | frederick.mclendon@company.com
+     Jimmy | Barnette |     jimmy.barnette@company.com
+      Emma |   Howard |        emma.howard@company.com
+   Deborah |  Glasser |    deborah.glasser@company.com
+(11 rows)
+`

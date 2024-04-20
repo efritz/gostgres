@@ -2,15 +2,36 @@ package tests
 
 import (
 	"fmt"
+	"strings"
+	"testing"
 
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
+	"github.com/hexops/autogold/v2"
+	"github.com/stretchr/testify/require"
 )
 
-func testQuery(query string) (string, error) {
+type TestCase struct {
+	name  string
+	query string
+}
+
+func runTests(t *testing.T, testCases []TestCase) {
+	t.Helper()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := runTestQuery(testCase.query)
+			require.NoError(t, err)
+			autogold.ExpectFile(t, got, autogold.Dir("golden"))
+		})
+	}
+}
+
+func runTestQuery(query string) (string, error) {
 	tables, err := CreateStandardTestTables("")
 	if err != nil {
 		return "", err
@@ -36,7 +57,8 @@ func testQuery(query string) (string, error) {
 	}
 
 	return fmt.Sprintf(
-		"\nPlan:\n\n%v\nResults:\n\n%v",
+		"\nQuery:\n\n%v\n\nPlan:\n\n%v\nResults:\n\n%v",
+		strings.TrimSpace(query),
 		serialization.SerializePlanString(node),
 		serialization.SerializeRowsString(rows),
 	), nil

@@ -1,0 +1,24 @@
+`
+Query:
+
+SELECT *
+FROM employees
+ORDER BY email
+LIMIT 2 OFFSET 3
+
+Plan:
+
+select (employee_id, first_name, last_name, email, manager_id, department_id)
+    limit 2
+        offset 3
+            order by email
+                table scan of employees
+
+Results:
+
+ employee_id | first_name | last_name |              email             | manager_id | department_id
+-------------+------------+-----------+--------------------------------+------------+---------------
+          10 |       Emma |    Howard |        emma.howard@company.com |          9 |             3
+           8 |  Frederick |  McLendon | frederick.mclendon@company.com |          4 |             2
+(2 rows)
+`

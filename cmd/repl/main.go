@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/chzyer/readline"
-	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -90,7 +89,15 @@ func handleQuery(tables map[string]*table.Table, line string) (err error) {
 		return nil
 	}
 
-	rows, err := ScanRows(node, scan.ScanContext{})
+	scanner, err := node.Scanner(scan.ScanContext{})
+	if err != nil {
+		return err
+	}
+	rows, err := shared.NewRows(node.Fields())
+	if err != nil {
+		return err
+	}
+	rows, err = scan.ScanIntoRows(scanner, rows)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %s", err)
 	}
@@ -107,19 +114,4 @@ func eatExplain(line string) (string, bool) {
 	}
 
 	return line[len(explainPrefix):], true
-}
-
-// TODO - deduplicate
-func ScanRows(node queries.Node, ctx scan.ScanContext) (shared.Rows, error) {
-	scanner, err := node.Scanner(ctx)
-	if err != nil {
-		return shared.Rows{}, err
-	}
-
-	rows, err := shared.NewRows(node.Fields())
-	if err != nil {
-		return shared.Rows{}, err
-	}
-
-	return scan.ScanIntoRows(scanner, rows)
 }

@@ -26,12 +26,10 @@ func testQuery(query string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	rows, err := shared.NewRows(node.Fields())
 	if err != nil {
 		return "", err
 	}
-
 	rows, err = scan.ScanIntoRows(scanner, rows)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query: %s", err)

@@ -3,10 +3,10 @@ package access
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -22,7 +22,7 @@ func NewTableAccessStrategy(table *table.Table) accessStrategy {
 }
 
 func (s *tableAccessStrategy) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%stable scan of %s\n", indent(indentationLevel), s.table.Name()))
+	io.WriteString(w, fmt.Sprintf("%stable scan of %s\n", serialization.Indent(indentationLevel), s.table.Name()))
 }
 
 func (s *tableAccessStrategy) Filter() expressions.Expression {
@@ -63,9 +63,4 @@ func (s *tableAccessStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error
 
 		return shared.Row{}, scan.ErrNoRows
 	}), nil
-}
-
-// TODO - deduplicate
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
 }

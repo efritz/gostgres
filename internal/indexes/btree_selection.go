@@ -2,89 +2,31 @@ package indexes
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/shared"
 )
 
-type TableIndexer interface {
-	Row(tid int) (shared.Row, bool)
+type btreeExpressioner interface {
+	Expressions() []expressions.ExpressionWithDirection
 }
 
-func CanSelectHashIndex(
-	table TableIndexer,
-	index BaseIndex,
-	filter expressions.Expression,
-) (_ Index[hashIndexScanOptions], opts hashIndexScanOptions, _ bool) {
-	// TODO - deduplicate
-	if indexFilter := index.Filter(); indexFilter != nil {
-		if filter == nil {
-			return nil, opts, false
-		}
-
-		// TODO - need to do a more tight "subsumes" check
-		for _, v := range indexFilter.Conjunctions() {
-			if diff := filterDifference(v, filter); diff != nil && len(diff.Conjunctions()) >= len(filter.Conjunctions()) {
-				return nil, opts, false
-			}
-		}
-	}
-
-	//
-	//
-
-	if filter == nil {
-		return nil, opts, false
-	}
-
-	hashIndex, ok := index.(Index[hashIndexScanOptions])
-	if !ok {
-		return nil, opts, false
-	}
-	hashExpressioner, ok := hashIndex.Unwrap().(HashExpressioner)
-	if !ok {
-		return nil, opts, false
-	}
-	hashExpression := hashExpressioner.HashExpression()
-
-	for _, conjunction := range filter.Conjunctions() {
-		if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType == expressions.ComparisonTypeEquals {
-			if left.Equal(hashExpression) {
-				return hashIndex, hashIndexScanOptions{expression: right}, true
-			}
-
-			if right.Equal(hashExpression) {
-				return hashIndex, hashIndexScanOptions{expression: left}, true
-			}
-		}
-	}
-
-	return nil, opts, false
+func (i *btreeIndex) Expressions() []expressions.ExpressionWithDirection {
+	return i.expressions
 }
 
 func CanSelectBtreeIndex(
 	table TableIndexer,
 	index BaseIndex,
-	filter expressions.Expression,
+	filterExpression expressions.Expression,
 	order expressions.OrderExpression,
 ) (_ Index[btreeIndexScanOptions], opts btreeIndexScanOptions, _ bool) {
-	// TODO - deduplicate
-	if indexFilter := index.Filter(); indexFilter != nil {
-		if filter == nil {
-			return nil, opts, false
-		}
-
-		// TODO - need to do a more tight "subsumes" check
-		for _, v := range indexFilter.Conjunctions() {
-			if diff := filterDifference(v, filter); diff != nil && len(diff.Conjunctions()) >= len(filter.Conjunctions()) {
-				return nil, opts, false
-			}
-		}
+	if !matchesPartial(index, filterExpression) {
+		return nil, opts, false
 	}
 
 	btreeIndex, ok := index.(Index[btreeIndexScanOptions])
 	if !ok {
 		return nil, opts, false
 	}
-	btreeExpressioner, ok := btreeIndex.Unwrap().(BTreeExpressioner)
+	btreeExpressioner, ok := btreeIndex.Unwrap().(btreeExpressioner)
 	if !ok {
 		return nil, opts, false
 	}
@@ -95,7 +37,7 @@ func CanSelectBtreeIndex(
 		scanDirection = ScanDirectionForward
 	}
 
-	lowerBounds, upperBounds := extractBounds(filter, btreeExpressions)
+	lowerBounds, upperBounds := extractBounds(filterExpression, btreeExpressions)
 
 	opts = btreeIndexScanOptions{
 		scanDirection: scanDirection,
@@ -198,69 +140,4 @@ func extractBounds(filter expressions.Expression, indexedExprs []expressions.Exp
 	}
 
 	return prunedLowerBounds, prunedUpperBounds
-}
-
-// TODO - deduplicate
-
-func filterDifference(filter, childFilter expressions.Expression) expressions.Expression {
-	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
-		for i, f1 := range conjunctions {
-			for _, f2 := range childConjunctions {
-				if f1.Equal(f2) {
-					conjunctions[i] = nil
-					break
-				}
-			}
-		}
-	})
-}
-
-func combineFilters(filter, childFilter expressions.Expression, filterConjunctions func(conjunctions, childConjunctions []expressions.Expression)) expressions.Expression {
-	if filter == nil {
-		return nil
-	}
-	if childFilter == nil {
-		return filter
-	}
-
-	conjunctions := filter.Conjunctions()
-	filterConjunctions(conjunctions, childFilter.Conjunctions())
-	return unionFilters(conjunctions...)
-}
-
-func unionFilters(filters ...expressions.Expression) expressions.Expression {
-	var conjunctions []expressions.Expression
-	for _, expression := range filters {
-		if expression == nil {
-			continue
-		}
-
-		conjunctions = append(conjunctions, expression.Conjunctions()...)
-	}
-	if len(conjunctions) == 0 {
-		return nil
-	}
-
-	for i, c1 := range conjunctions {
-		for j, c2 := range conjunctions {
-			if c1 == nil || c2 == nil || j <= i {
-				continue
-			}
-
-			if c1.Equal(c2) {
-				conjunctions[j] = nil
-			}
-		}
-	}
-
-	filter := conjunctions[0]
-	for _, conjunction := range conjunctions[1:] {
-		if conjunction == nil {
-			continue
-		}
-
-		filter = expressions.NewAnd(filter, conjunction)
-	}
-
-	return filter
 }

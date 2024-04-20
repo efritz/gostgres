@@ -3,11 +3,13 @@ package access
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -21,7 +23,7 @@ type accessNode struct {
 
 var _ queries.Node = &accessNode{}
 
-func NewData(table *table.Table) queries.Node {
+func NewAccess(table *table.Table) queries.Node {
 	return &accessNode{
 		table: table,
 	}
@@ -32,14 +34,19 @@ func (n *accessNode) Name() string {
 }
 
 func (n *accessNode) Fields() []shared.Field {
-	return updateRelationName(n.table.Fields(), n.table.Name())
+	fields := slices.Clone(n.table.Fields())
+	for i := range fields {
+		fields[i].RelationName = n.table.Name()
+	}
+
+	return fields
 }
 
 func (n *accessNode) Serialize(w io.Writer, indentationLevel int) {
 	n.strategy.Serialize(w, indentationLevel)
 
 	if n.filter != nil {
-		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", indent(indentationLevel+1), n.filter))
+		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", serialization.Indent(indentationLevel+1), n.filter))
 	}
 }
 
@@ -53,12 +60,12 @@ func (n *accessNode) Optimize() {
 	}
 
 	n.strategy = selectAccessStrategy(n.table, n.filter, n.order)
-	n.filter = filterDifference(n.filter, n.strategy.Filter())
+	n.filter = filter.FilterDifference(n.filter, n.strategy.Filter())
 	n.order = nil
 }
 
-func (n *accessNode) AddFilter(filter expressions.Expression) {
-	n.filter = unionFilters(n.filter, filter)
+func (n *accessNode) AddFilter(filterExpression expressions.Expression) {
+	n.filter = filter.UnionFilters(n.filter, filterExpression)
 }
 
 func (n *accessNode) AddOrder(order expressions.OrderExpression) {
@@ -66,8 +73,8 @@ func (n *accessNode) AddOrder(order expressions.OrderExpression) {
 }
 
 func (n *accessNode) Filter() expressions.Expression {
-	if filter := n.strategy.Filter(); filter != nil {
-		return unionFilters(n.filter, filter)
+	if filterExpression := n.strategy.Filter(); filterExpression != nil {
+		return filter.UnionFilters(n.filter, filterExpression)
 	}
 
 	return n.filter
@@ -95,21 +102,4 @@ func (n *accessNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	}
 
 	return scanner, nil
-}
-
-// TODO - deduplicate
-
-func updateRelationName(fields []shared.Field, relationName string) []shared.Field {
-	fields = copyFields(fields)
-	for i := range fields {
-		fields[i].RelationName = relationName
-	}
-
-	return fields
-}
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
 }

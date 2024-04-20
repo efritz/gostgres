@@ -3,11 +3,12 @@ package projection
 import (
 	"fmt"
 	"io"
-	"strings"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -31,11 +32,11 @@ func NewProjection(node queries.Node, expressions []ProjectionExpression) (queri
 }
 
 func (n *projectionNode) Fields() []shared.Field {
-	return copyFields(n.projector.projectedFields)
+	return slices.Clone(n.projector.projectedFields)
 }
 
 func (n *projectionNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sselect (%s)\n", indent(indentationLevel), n.projector))
+	io.WriteString(w, fmt.Sprintf("%sselect (%s)\n", serialization.Indent(indentationLevel), n.projector))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 
@@ -49,7 +50,7 @@ func (n *projectionNode) AddFilter(filter expressions.Expression) {
 }
 
 func (n *projectionNode) AddOrder(order expressions.OrderExpression) {
-	n.Node.AddOrder(mapOrderExpressions(order, func(expression expressions.Expression) expressions.Expression {
+	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
 		return n.projector.projectExpression(expression)
 	}))
 }
@@ -69,7 +70,7 @@ func (n *projectionNode) Ordering() expressions.OrderExpression {
 		return nil
 	}
 
-	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
+	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
 		return n.projector.deprojectExtension(expression)
 	})
 }
@@ -92,30 +93,4 @@ func (n *projectionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 		return n.projector.ProjectRow(ctx, row)
 	}), nil
-}
-
-// TODO - deduplicate
-
-func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
-	orderExpressions := order.Expressions()
-	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
-
-	for _, expression := range orderExpressions {
-		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
-			Expression: f(expression.Expression),
-			Reverse:    expression.Reverse,
-		})
-	}
-
-	return expressions.NewOrderExpression(aliasedExpressions)
-}
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
-}
-
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
 }

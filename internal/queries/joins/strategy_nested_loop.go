@@ -1,6 +1,8 @@
 package joins
 
 import (
+	"slices"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -68,7 +70,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, er
 				return shared.Row{}, err
 			}
 
-			row, err := shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+			row, err := shared.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
 			if err != nil {
 				return shared.Row{}, err
 			}

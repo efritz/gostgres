@@ -2,10 +2,8 @@ package indexes
 
 import (
 	"fmt"
-	"hash/fnv"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -14,14 +12,6 @@ type hashIndex struct {
 	tableName  string
 	expression expressions.Expression
 	entries    map[uint64][]hashItem
-}
-
-type HashExpressioner interface {
-	HashExpression() expressions.Expression
-}
-
-func (i *hashIndex) HashExpression() expressions.Expression {
-	return i.expression
 }
 
 type hashItem struct {
@@ -74,7 +64,7 @@ func (i *hashIndex) Insert(row shared.Row) error {
 		return err
 	}
 
-	hash := hash(value)
+	hash := shared.Hash(value)
 	i.entries[hash] = append(i.entries[hash], hashItem{tid, value})
 	return nil
 }
@@ -85,7 +75,7 @@ func (i *hashIndex) Delete(row shared.Row) error {
 		return err
 	}
 
-	hash := hash(value)
+	hash := shared.Hash(value)
 	items := i.entries[hash]
 
 	for j, item := range items {
@@ -97,45 +87,4 @@ func (i *hashIndex) Delete(row shared.Row) error {
 	}
 
 	return nil
-}
-
-func (i *hashIndex) Scanner(ctx scan.ScanContext, opts hashIndexScanOptions) (tidScanner, error) {
-	value, err := ctx.Evaluate(opts.expression, shared.Row{})
-	if err != nil {
-		return nil, err
-	}
-
-	items := i.entries[hash(value)]
-
-	j := 0
-
-	return tidScannerFunc(func() (int, error) {
-		if j < len(items) {
-			tid := items[j].tid
-			j++
-			return tid, nil
-		}
-
-		return 0, scan.ErrNoRows
-	}), nil
-}
-
-func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, any, error) {
-	tid, ok := extractTID(row)
-	if !ok {
-		return 0, nil, fmt.Errorf("no tid in row")
-	}
-
-	value, err := i.expression.ValueFrom(row)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return tid, value, nil
-}
-
-func hash(value any) uint64 {
-	h := fnv.New64()
-	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
-	return h.Sum64()
 }

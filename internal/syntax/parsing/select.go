@@ -506,7 +506,7 @@ func (p *parser) parseTableReference() (queries.Node, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	return access.NewData(table), nil
+	return access.NewAccess(table), nil
 }
 
 // where := [`WHERE` expression]
@@ -667,7 +667,7 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 		}
 	}
 
-	return access.NewData(table), nil
+	return access.NewAccess(table), nil
 }
 
 // parenthesizedExpressionList := `(` ( expression [, ... ] ) `)`

@@ -27,3 +27,7 @@ type Index[O ScanOptions] interface {
 	Condition(opts O) expressions.Expression
 	Ordering(opts O) expressions.OrderExpression
 }
+
+type TableIndexer interface {
+	Row(tid int) (shared.Row, bool)
+}

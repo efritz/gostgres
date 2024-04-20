@@ -3,12 +3,13 @@ package mutation
 import (
 	"fmt"
 	"io"
-	"strings"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -49,11 +50,11 @@ func NewUpdate(node queries.Node, table *table.Table, setExpressions []SetExpres
 }
 
 func (n *updateNode) Fields() []shared.Field {
-	return copyFields(n.projector.Fields())
+	return slices.Clone(n.projector.Fields())
 }
 
 func (n *updateNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%supdate returning (%s)\n", indent(indentationLevel), n.projector))
+	io.WriteString(w, fmt.Sprintf("%supdate returning (%s)\n", serialization.Indent(indentationLevel), n.projector))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 
@@ -92,8 +93,7 @@ func (n *updateNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		values := make([]any, len(row.Values))
-		copy(values, row.Values)
+		values := slices.Clone(row.Values)
 
 		for _, set := range n.setExpressions {
 			value, err := ctx.Evaluate(set.Expression, row)
@@ -140,16 +140,4 @@ func (n *updateNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 		return n.projector.ProjectRow(ctx, updatedRow)
 	}), nil
-}
-
-// TODO - deduplicate
-
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
-}
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
 }

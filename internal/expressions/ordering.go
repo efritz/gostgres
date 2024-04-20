@@ -7,6 +7,7 @@ import (
 
 type OrderExpression interface {
 	Fold() OrderExpression
+	Map(f func(e Expression) Expression) OrderExpression
 	Expressions() []ExpressionWithDirection
 }
 
@@ -50,6 +51,18 @@ func (e orderExpression) Fold() OrderExpression {
 	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
 		expressions = append(expressions, expression.Fold())
+	}
+
+	return orderExpression{expressions: expressions}
+}
+
+func (e orderExpression) Map(f func(Expression) Expression) OrderExpression {
+	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
+	for _, expression := range e.expressions {
+		expressions = append(expressions, ExpressionWithDirection{
+			Expression: f(expression.Expression),
+			Reverse:    expression.Reverse,
+		})
 	}
 
 	return orderExpression{expressions: expressions}

@@ -3,11 +3,14 @@ package combination
 import (
 	"fmt"
 	"io"
-	"strings"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/queries/filter"
+	"github.com/efritz/gostgres/internal/queries/order"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -64,11 +67,11 @@ func (n *combinationNode) Name() string {
 }
 
 func (n *combinationNode) Fields() []shared.Field {
-	return copyFields(n.fields)
+	return slices.Clone(n.fields)
 }
 
 func (n *combinationNode) Serialize(w io.Writer, indentationLevel int) {
-	indentation := indent(indentationLevel)
+	indentation := serialization.Indent(indentationLevel)
 	io.WriteString(w, fmt.Sprintf("%scombination\n", indentation))
 	n.left.Serialize(w, indentationLevel+1)
 	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
@@ -80,12 +83,12 @@ func (n *combinationNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *combinationNode) AddFilter(filter expressions.Expression) {
-	lowerFilter(filter, n.left, n.right)
+func (n *combinationNode) AddFilter(filterExpression expressions.Expression) {
+	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
-func (n *combinationNode) AddOrder(order expressions.OrderExpression) {
-	lowerOrder(order, n.left, n.right)
+func (n *combinationNode) AddOrder(orderExpression expressions.OrderExpression) {
+	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
 func (n *combinationNode) Filter() expressions.Expression {
@@ -151,7 +154,7 @@ func (n *combinationNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 func hashVisitor(hash map[string][]sourcedRow, index int) scan.VisitorFunc {
 	return func(row shared.Row) (bool, error) {
-		key := hashValues(row.Values)
+		key := shared.HashSlice(row.Values)
 
 		hash[key] = append(hash[key], sourcedRow{
 			index: index,
@@ -183,66 +186,4 @@ func exceptFilter(rows []sourcedRow) bool {
 	}
 
 	return true
-}
-
-// TODO - deduplicate
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
-}
-
-func lowerFilter(filter expressions.Expression, nodes ...queries.Node) {
-	for _, expression := range filter.Conjunctions() {
-		missing := make([]bool, len(nodes))
-		for _, field := range expression.Fields() {
-			for i, node := range nodes {
-				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
-					missing[i] = true
-				}
-			}
-		}
-
-		for i, missing := range missing {
-			if !missing {
-				nodes[i].AddFilter(expression)
-			}
-		}
-	}
-}
-
-func lowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
-	orderExpressions := order.Expressions()
-
-	for _, node := range nodes {
-		filteredExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
-	exprLoop:
-		for _, expression := range orderExpressions {
-			for _, field := range expression.Expression.Fields() {
-				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
-					continue exprLoop
-				}
-			}
-
-			filteredExpressions = append(filteredExpressions, expression)
-		}
-
-		if len(filteredExpressions) != 0 {
-			node.AddOrder(expressions.NewOrderExpression(filteredExpressions))
-		}
-	}
-}
-
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
-}
-
-func hashValues(values []any) string {
-	strValues := make([]string, 0, len(values))
-	for _, value := range values {
-		strValues = append(strValues, fmt.Sprintf("%v", value))
-	}
-
-	return strings.Join(strValues, ":")
 }

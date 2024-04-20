@@ -1,6 +1,8 @@
 package joins
 
 import (
+	"slices"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -107,7 +109,7 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 			if ot, err := s.compareRows(*s.leftRow, *s.rightRow); err != nil {
 				return shared.Row{}, err
 			} else if ot == shared.OrderTypeEqual {
-				row, err := shared.NewRow(s.strategy.n.Fields(), append(copyValues(s.leftRow.Values), s.rightRow.Values...))
+				row, err := shared.NewRow(s.strategy.n.Fields(), append(slices.Clone(s.leftRow.Values), s.rightRow.Values...))
 				if err != nil {
 					return shared.Row{}, err
 				}

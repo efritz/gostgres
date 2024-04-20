@@ -3,11 +3,12 @@ package alias
 import (
 	"fmt"
 	"io"
-	"strings"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -20,10 +21,15 @@ type aliasNode struct {
 var _ queries.Node = &aliasNode{}
 
 func NewAlias(node queries.Node, name string) queries.Node {
+	fields := slices.Clone(node.Fields())
+	for i := range fields {
+		fields[i].RelationName = name
+	}
+
 	return &aliasNode{
 		Node:   node,
 		name:   name,
-		fields: updateRelationName(node.Fields(), name),
+		fields: fields,
 	}
 }
 
@@ -32,11 +38,11 @@ func (n *aliasNode) Name() string {
 }
 
 func (n *aliasNode) Fields() []shared.Field {
-	return copyFields(n.fields)
+	return slices.Clone(n.fields)
 }
 
 func (n *aliasNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%salias as %s\n", indent(indentationLevel), n.name))
+	io.WriteString(w, fmt.Sprintf("%salias as %s\n", serialization.Indent(indentationLevel), n.name))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 
@@ -53,7 +59,7 @@ func (n *aliasNode) AddFilter(filter expressions.Expression) {
 }
 
 func (n *aliasNode) AddOrder(order expressions.OrderExpression) {
-	n.Node.AddOrder(mapOrderExpressions(order, func(expression expressions.Expression) expressions.Expression {
+	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
 		for _, field := range n.fields {
 			expression = expression.Alias(field, namedFromField(field, n.Node.Name()))
 		}
@@ -81,7 +87,7 @@ func (n *aliasNode) Ordering() expressions.OrderExpression {
 		return nil
 	}
 
-	return mapOrderExpressions(ordering, func(expression expressions.Expression) expressions.Expression {
+	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
 		for _, field := range expression.Fields() {
 			expression = expression.Alias(field, namedFromField(field, n.name))
 		}
@@ -112,39 +118,4 @@ func (n *aliasNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 func namedFromField(field shared.Field, relationName string) expressions.Expression {
 	return expressions.NewNamed(shared.NewField(relationName, field.Name, field.TypeKind, field.Internal))
-}
-
-// TODO - deduplicate
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
-}
-
-func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
-	orderExpressions := order.Expressions()
-	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
-
-	for _, expression := range orderExpressions {
-		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
-			Expression: f(expression.Expression),
-			Reverse:    expression.Reverse,
-		})
-	}
-
-	return expressions.NewOrderExpression(aliasedExpressions)
-}
-
-func updateRelationName(fields []shared.Field, relationName string) []shared.Field {
-	fields = copyFields(fields)
-	for i := range fields {
-		fields[i].RelationName = relationName
-	}
-
-	return fields
-}
-
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
 }

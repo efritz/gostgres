@@ -3,11 +3,13 @@ package mutation
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -42,11 +44,11 @@ func NewInsert(node queries.Node, table *table.Table, name, alias string, column
 }
 
 func (n *insertNode) Fields() []shared.Field {
-	return copyFields(n.projector.Fields())
+	return slices.Clone(n.projector.Fields())
 }
 
 func (n *insertNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sinsert returning (%s)\n", indent(indentationLevel), n.projector))
+	io.WriteString(w, fmt.Sprintf("%sinsert returning (%s)\n", serialization.Indent(indentationLevel), n.projector))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 
@@ -118,12 +120,8 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 		return values
 	}
 
-	return reorderValues(n.columnNames, values, fields)
-}
-
-func reorderValues(columnNames []string, values []any, fields []shared.Field) []any {
-	valueMap := make(map[string]any, len(columnNames))
-	for i, name := range columnNames {
+	valueMap := make(map[string]any, len(n.columnNames))
+	for i, name := range n.columnNames {
 		valueMap[name] = values[i]
 	}
 

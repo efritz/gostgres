@@ -6,7 +6,9 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -27,25 +29,25 @@ func NewIndexAccessStrategy[O indexes.ScanOptions](table indexes.TableIndexer, i
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%s%s\n", indent(indentationLevel), s.index.Description(s.opts)))
+	io.WriteString(w, fmt.Sprintf("%s%s\n", serialization.Indent(indentationLevel), s.index.Description(s.opts)))
 
 	if filter := s.Filter(); filter != nil {
-		io.WriteString(w, fmt.Sprintf("%sindex cond: %s\n", indent(indentationLevel+1), filter))
+		io.WriteString(w, fmt.Sprintf("%sindex cond: %s\n", serialization.Indent(indentationLevel+1), filter))
 	}
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Filter() expressions.Expression {
-	filter := s.index.Filter()
+	filterExpression := s.index.Filter()
 	condition := s.index.Condition(s.opts)
 
-	if filter == nil {
+	if filterExpression == nil {
 		return condition
 	}
 	if condition == nil {
-		return filter
+		return filterExpression
 	}
 
-	return unionFilters(append(filter.Conjunctions(), condition.Conjunctions()...)...)
+	return filter.UnionFilters(append(filterExpression.Conjunctions(), condition.Conjunctions()...)...)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpression {

@@ -3,11 +3,13 @@ package mutation
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -41,11 +43,11 @@ func NewDelete(node queries.Node, table *table.Table, alias string, expressions 
 }
 
 func (n *deleteNode) Fields() []shared.Field {
-	return copyFields(n.projector.Fields())
+	return slices.Clone(n.projector.Fields())
 }
 
 func (n *deleteNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sdelete returning (%s)\n", indent(indentationLevel), n.projector))
+	io.WriteString(w, fmt.Sprintf("%sdelete returning (%s)\n", serialization.Indent(indentationLevel), n.projector))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 

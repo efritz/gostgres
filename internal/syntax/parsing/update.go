@@ -18,7 +18,7 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	node := access.NewData(table)
+	node := access.NewAccess(table)
 	if aliasName != "" {
 		node = alias.NewAlias(node, aliasName)
 	}
@@ -57,10 +57,10 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 	if aliasName != "" {
 		relationName = aliasName
 	}
-	tidField := shared.NewField(relationName, "tid", shared.TypeKindNumeric, false)
+	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeKindNumeric, false)
 
 	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
-		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
+		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), shared.TIDName),
 		projection.NewTableWildcardProjectionExpression(relationName),
 	})
 	if err != nil {

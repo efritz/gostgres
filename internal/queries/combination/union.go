@@ -3,10 +3,14 @@ package combination
 import (
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/queries/filter"
+	"github.com/efritz/gostgres/internal/queries/order"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -46,11 +50,11 @@ func (n *unionNode) Name() string {
 }
 
 func (n *unionNode) Fields() []shared.Field {
-	return copyFields(n.fields)
+	return slices.Clone(n.fields)
 }
 
 func (n *unionNode) Serialize(w io.Writer, indentationLevel int) {
-	indentation := indent(indentationLevel)
+	indentation := serialization.Indent(indentationLevel)
 	io.WriteString(w, fmt.Sprintf("%sunion\n", indentation))
 	n.left.Serialize(w, indentationLevel+1)
 	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
@@ -62,16 +66,16 @@ func (n *unionNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *unionNode) AddFilter(filter expressions.Expression) {
-	lowerFilter(filter, n.left, n.right)
+func (n *unionNode) AddFilter(filterExpression expressions.Expression) {
+	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
-func (n *unionNode) AddOrder(order expressions.OrderExpression) {
-	lowerOrder(order, n.left, n.right)
+func (n *unionNode) AddOrder(orderExpression expressions.OrderExpression) {
+	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
 func (n *unionNode) Filter() expressions.Expression {
-	return filterIntersection(n.left.Filter(), n.right.Filter())
+	return filter.FilterIntersection(n.left.Filter(), n.right.Filter())
 }
 
 func (n *unionNode) Ordering() expressions.OrderExpression {
@@ -85,7 +89,7 @@ func (n *unionNode) SupportsMarkRestore() bool {
 func (n *unionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
-		key := hashValues(row.Values)
+		key := shared.HashSlice(row.Values)
 		if _, ok := hash[key]; ok {
 			return !n.distinct
 		}
@@ -136,71 +140,4 @@ func (n *unionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			}
 		}
 	}), nil
-}
-
-// TODO - deduplicate
-
-func filterIntersection(filter, childFilter expressions.Expression) expressions.Expression {
-	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
-	outer:
-		for i, f1 := range conjunctions {
-			for _, f2 := range childConjunctions {
-				if f1.Equal(f2) {
-					continue outer
-				}
-			}
-
-			conjunctions[i] = nil
-		}
-	})
-}
-
-func combineFilters(filter, childFilter expressions.Expression, filterConjunctions func(conjunctions, childConjunctions []expressions.Expression)) expressions.Expression {
-	if filter == nil {
-		return nil
-	}
-	if childFilter == nil {
-		return filter
-	}
-
-	conjunctions := filter.Conjunctions()
-	filterConjunctions(conjunctions, childFilter.Conjunctions())
-	return unionFilters(conjunctions...)
-}
-
-func unionFilters(filters ...expressions.Expression) expressions.Expression {
-	var conjunctions []expressions.Expression
-	for _, expression := range filters {
-		if expression == nil {
-			continue
-		}
-
-		conjunctions = append(conjunctions, expression.Conjunctions()...)
-	}
-	if len(conjunctions) == 0 {
-		return nil
-	}
-
-	for i, c1 := range conjunctions {
-		for j, c2 := range conjunctions {
-			if c1 == nil || c2 == nil || j <= i {
-				continue
-			}
-
-			if c1.Equal(c2) {
-				conjunctions[j] = nil
-			}
-		}
-	}
-
-	filter := conjunctions[0]
-	for _, conjunction := range conjunctions[1:] {
-		if conjunction == nil {
-			continue
-		}
-
-		filter = expressions.NewAnd(filter, conjunction)
-	}
-
-	return filter
 }

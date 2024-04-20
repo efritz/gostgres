@@ -16,7 +16,3 @@ type ScannerFunc func() (shared.Row, error)
 func (f ScannerFunc) Scan() (shared.Row, error) {
 	return f()
 }
-
-var EmptyScanner = ScannerFunc(func() (shared.Row, error) {
-	return shared.Row{}, ErrNoRows
-})

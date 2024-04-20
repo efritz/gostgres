@@ -7,6 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -30,7 +31,7 @@ func (n *offsetNode) Serialize(w io.Writer, indentationLevel int) {
 		return
 	}
 
-	io.WriteString(w, fmt.Sprintf("%soffset %d\n", indent(indentationLevel), n.offset))
+	io.WriteString(w, fmt.Sprintf("%soffset %d\n", serialization.Indent(indentationLevel), n.offset))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 

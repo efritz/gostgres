@@ -1,8 +1,7 @@
 package joins
 
 import (
-	"fmt"
-	"hash/fnv"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
@@ -35,7 +34,7 @@ func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return false, err
 		}
 
-		key := hash(keys)
+		key := shared.Hash(keys)
 		h[key] = append(h[key], row)
 		return true, nil
 	}); err != nil {
@@ -67,7 +66,7 @@ func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 				}
 
 				if shared.CompareValueSlices(lKeys, rKeys) == shared.OrderTypeEqual {
-					return shared.NewRow(s.n.Fields(), append(copyValues(leftRow.Values), rightRow.Values...))
+					return shared.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
 				}
 			}
 
@@ -81,21 +80,7 @@ func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 				return shared.Row{}, err
 			}
 
-			rightRows = h[hash(lKeys)]
+			rightRows = h[shared.Hash(lKeys)]
 		}
 	}), nil
-}
-
-// TODO - deduplicate
-
-func hash(value any) uint64 {
-	h := fnv.New64()
-	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
-	return h.Sum64()
-}
-
-func copyValues(values []any) []any {
-	c := make([]any, len(values))
-	copy(c, values)
-	return c
 }

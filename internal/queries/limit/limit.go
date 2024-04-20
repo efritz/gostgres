@@ -3,11 +3,11 @@ package limit
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -26,7 +26,7 @@ func NewLimit(node queries.Node, limit int) queries.Node {
 }
 
 func (n *limitNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%slimit %d\n", indent(indentationLevel), n.limit))
+	io.WriteString(w, fmt.Sprintf("%slimit %d\n", serialization.Indent(indentationLevel), n.limit))
 	n.Node.Serialize(w, indentationLevel+1)
 }
 
@@ -70,10 +70,4 @@ func (n *limitNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 		remaining--
 		return scanner.Scan()
 	}), nil
-}
-
-// TODO - deduplicate
-
-func indent(level int) string {
-	return strings.Repeat(" ", level*4)
 }

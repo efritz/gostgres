@@ -1,11 +1,11 @@
 package table
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/shared"
+	"golang.org/x/exp/slices"
 )
 
 type Table struct {
@@ -16,7 +16,7 @@ type Table struct {
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
-	tidField := shared.NewField(name, "tid", shared.TypeKindNumeric, true)
+	tidField := shared.NewField(name, shared.TIDName, shared.TypeKindNumeric, true)
 
 	return &Table{
 		name:   name,
@@ -34,7 +34,7 @@ func (t *Table) Indexes() []indexes.BaseIndex {
 }
 
 func (t *Table) Fields() []shared.Field {
-	return copyFields(t.fields)
+	return slices.Clone(t.fields)
 }
 
 func (t *Table) Size() int {
@@ -89,9 +89,9 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 }
 
 func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
-	tid, ok := extractTID(row)
-	if !ok {
-		return shared.Row{}, false, fmt.Errorf("no tid in row")
+	tid, err := row.TID()
+	if err != nil {
+		return shared.Row{}, false, err
 	}
 
 	fullRow, ok := t.rows[tid]
@@ -107,21 +107,4 @@ func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
 
 	delete(t.rows, tid)
 	return fullRow, true, nil
-}
-
-func extractTID(row shared.Row) (int, bool) {
-	if len(row.Fields) == 0 || row.Fields[0].Name != "tid" {
-		return 0, false
-	}
-
-	tid, ok := row.Values[0].(int)
-	return tid, ok
-}
-
-// TODO - deduplicate
-
-func copyFields(fields []shared.Field) []shared.Field {
-	c := make([]shared.Field, len(fields))
-	copy(c, fields)
-	return c
 }

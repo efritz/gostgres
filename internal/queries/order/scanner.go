@@ -9,6 +9,58 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
+type orderScanner struct {
+	rows    shared.Rows
+	indexes []int
+	next    int
+	mark    int
+}
+
+func NewOrderScanner(ctx scan.ScanContext, scanner scan.Scanner, fields []shared.Field, order expressions.OrderExpression) (scan.Scanner, error) {
+	rows, err := shared.NewRows(fields)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err = scan.ScanIntoRows(scanner, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	indexes, err := findIndexIterationOrder(ctx, order, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return &orderScanner{
+		rows:    rows,
+		indexes: indexes,
+		mark:    -1,
+	}, nil
+}
+
+func (s *orderScanner) Scan() (shared.Row, error) {
+	if s.next < len(s.indexes) {
+		row := s.rows.Row(s.indexes[s.next])
+		s.next++
+		return row, nil
+	}
+
+	return shared.Row{}, scan.ErrNoRows
+}
+
+func (s *orderScanner) Mark() {
+	s.mark = s.next - 1
+}
+
+func (s *orderScanner) Restore() {
+	if s.mark == -1 {
+		panic("no mark to restore")
+	}
+
+	s.next = s.mark
+}
+
 func findIndexIterationOrder(ctx scan.ScanContext, order expressions.OrderExpression, rows shared.Rows) ([]int, error) {
 	var expressions []expressions.ExpressionWithDirection
 	if order != nil {

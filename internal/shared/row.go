@@ -1,5 +1,7 @@
 package shared
 
+import "fmt"
+
 type Row struct {
 	Fields []Field
 	Values []any
@@ -12,6 +14,21 @@ func NewRow(fields []Field, values []any) (_ Row, err error) {
 	}
 
 	return Row{Fields: fields, Values: values}, nil
+}
+
+const TIDName = "tid"
+
+func (r Row) TID() (int, error) {
+	if len(r.Fields) == 0 || r.Fields[0].Name != TIDName {
+		return 0, nil
+	}
+
+	tid, ok := r.Values[0].(int)
+	if !ok {
+		return 0, fmt.Errorf("no tid in row")
+	}
+
+	return tid, nil
 }
 
 func CombineRows(rows ...Row) Row {

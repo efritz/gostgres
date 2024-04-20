@@ -6,6 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
@@ -87,7 +88,7 @@ func (n *accessNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	}
 
 	if n.filter != nil {
-		scanner, err = nodes.NewFilterScanner(ctx, scanner, n.filter)
+		scanner, err = filter.NewFilterScanner(ctx, scanner, n.filter)
 		if err != nil {
 			return nil, err
 		}

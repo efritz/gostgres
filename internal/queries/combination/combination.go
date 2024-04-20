@@ -1,23 +1,25 @@
-package nodes
+package combination
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type combinationNode struct {
-	left             Node
-	right            Node
+	left             nodes.Node
+	right            nodes.Node
 	fields           []shared.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
 
-var _ Node = &combinationNode{}
+var _ nodes.Node = &combinationNode{}
 
 type sourcedRow struct {
 	index int
@@ -26,15 +28,15 @@ type sourcedRow struct {
 
 type groupedRowFilterFunc func(rows []sourcedRow) bool
 
-func NewIntersect(left Node, right Node, distinct bool) (Node, error) {
+func NewIntersect(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
 	return newCombination(left, right, intersectFilter, distinct)
 }
 
-func NewExcept(left Node, right Node, distinct bool) (Node, error) {
+func NewExcept(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
 	return newCombination(left, right, exceptFilter, distinct)
 }
 
-func newCombination(left Node, right Node, groupedRowFilter groupedRowFilterFunc, distinct bool) (Node, error) {
+func newCombination(left nodes.Node, right nodes.Node, groupedRowFilter groupedRowFilterFunc, distinct bool) (nodes.Node, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -181,4 +183,66 @@ func exceptFilter(rows []sourcedRow) bool {
 	}
 
 	return true
+}
+
+// TODO - deduplicate
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
+}
+
+func lowerFilter(filter expressions.Expression, nodes ...nodes.Node) {
+	for _, expression := range filter.Conjunctions() {
+		missing := make([]bool, len(nodes))
+		for _, field := range expression.Fields() {
+			for i, node := range nodes {
+				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
+					missing[i] = true
+				}
+			}
+		}
+
+		for i, missing := range missing {
+			if !missing {
+				nodes[i].AddFilter(expression)
+			}
+		}
+	}
+}
+
+func lowerOrder(order expressions.OrderExpression, nodes ...nodes.Node) {
+	orderExpressions := order.Expressions()
+
+	for _, node := range nodes {
+		filteredExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
+	exprLoop:
+		for _, expression := range orderExpressions {
+			for _, field := range expression.Expression.Fields() {
+				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
+					continue exprLoop
+				}
+			}
+
+			filteredExpressions = append(filteredExpressions, expression)
+		}
+
+		if len(filteredExpressions) != 0 {
+			node.AddOrder(expressions.NewOrderExpression(filteredExpressions))
+		}
+	}
+}
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
+}
+
+func hashValues(values []any) string {
+	strValues := make([]string, 0, len(values))
+	for _, value := range values {
+		strValues = append(strValues, fmt.Sprintf("%v", value))
+	}
+
+	return strings.Join(strValues, ":")
 }

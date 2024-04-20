@@ -1,32 +1,34 @@
-package nodes
+package mutation
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type insertNode struct {
-	Node
+	nodes.Node
 	table       *table.Table
 	columnNames []string
-	projector   *projector
+	projector   *projection.Projector
 }
 
-var _ Node = &insertNode{}
+var _ nodes.Node = &insertNode{}
 
-func NewInsert(node Node, table *table.Table, name, alias string, columnNames []string, expressions []ProjectionExpression) (Node, error) {
+func NewInsert(node nodes.Node, table *table.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (nodes.Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(name, table.Fields(), alias)
 		}
 	}
 
-	projector, err := newProjector(node.Name(), table.Fields(), expressions)
+	projector, err := projection.NewProjector(node.Name(), table.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +42,7 @@ func NewInsert(node Node, table *table.Table, name, alias string, columnNames []
 }
 
 func (n *insertNode) Fields() []shared.Field {
-	return copyFields(n.projector.projectedFields)
+	return copyFields(n.projector.Fields())
 }
 
 func (n *insertNode) Serialize(w io.Writer, indentationLevel int) {
@@ -49,7 +51,7 @@ func (n *insertNode) Serialize(w io.Writer, indentationLevel int) {
 }
 
 func (n *insertNode) Optimize() {
-	n.projector.optimize()
+	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -100,7 +102,7 @@ func (n *insertNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		return n.projector.projectRow(ctx, insertedRow)
+		return n.projector.ProjectRow(ctx, insertedRow)
 	}), nil
 }
 

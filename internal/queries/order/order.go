@@ -1,22 +1,24 @@
-package nodes
+package order
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type orderNode struct {
-	Node
+	nodes.Node
 	order expressions.OrderExpression
 }
 
-var _ Node = &orderNode{}
+var _ nodes.Node = &orderNode{}
 
-func NewOrder(node Node, order expressions.OrderExpression) Node {
+func NewOrder(node nodes.Node, order expressions.OrderExpression) nodes.Node {
 	return &orderNode{
 		Node:  node,
 		order: order,
@@ -158,4 +160,10 @@ func (s *orderScanner) Restore() {
 	}
 
 	s.next = s.mark
+}
+
+// TODO - deduplicate
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

@@ -1,24 +1,25 @@
-package nodes
+package combination
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type unionNode struct {
-	left     Node
-	right    Node
+	left     nodes.Node
+	right    nodes.Node
 	fields   []shared.Field
 	distinct bool
 }
 
-var _ Node = &unionNode{}
+var _ nodes.Node = &unionNode{}
 
-func NewUnion(left Node, right Node, distinct bool) (Node, error) {
+func NewUnion(left nodes.Node, right nodes.Node, distinct bool) (nodes.Node, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -135,4 +136,71 @@ func (n *unionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			}
 		}
 	}), nil
+}
+
+// TODO - deduplicate
+
+func filterIntersection(filter, childFilter expressions.Expression) expressions.Expression {
+	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []expressions.Expression) {
+	outer:
+		for i, f1 := range conjunctions {
+			for _, f2 := range childConjunctions {
+				if f1.Equal(f2) {
+					continue outer
+				}
+			}
+
+			conjunctions[i] = nil
+		}
+	})
+}
+
+func combineFilters(filter, childFilter expressions.Expression, filterConjunctions func(conjunctions, childConjunctions []expressions.Expression)) expressions.Expression {
+	if filter == nil {
+		return nil
+	}
+	if childFilter == nil {
+		return filter
+	}
+
+	conjunctions := filter.Conjunctions()
+	filterConjunctions(conjunctions, childFilter.Conjunctions())
+	return unionFilters(conjunctions...)
+}
+
+func unionFilters(filters ...expressions.Expression) expressions.Expression {
+	var conjunctions []expressions.Expression
+	for _, expression := range filters {
+		if expression == nil {
+			continue
+		}
+
+		conjunctions = append(conjunctions, expression.Conjunctions()...)
+	}
+	if len(conjunctions) == 0 {
+		return nil
+	}
+
+	for i, c1 := range conjunctions {
+		for j, c2 := range conjunctions {
+			if c1 == nil || c2 == nil || j <= i {
+				continue
+			}
+
+			if c1.Equal(c2) {
+				conjunctions[j] = nil
+			}
+		}
+	}
+
+	filter := conjunctions[0]
+	for _, conjunction := range conjunctions[1:] {
+		if conjunction == nil {
+			continue
+		}
+
+		filter = expressions.NewAnd(filter, conjunction)
+	}
+
+	return filter
 }

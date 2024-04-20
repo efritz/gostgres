@@ -1,22 +1,24 @@
-package nodes
+package limit
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type limitNode struct {
-	Node
+	nodes.Node
 	limit int
 }
 
-var _ Node = &limitNode{}
+var _ nodes.Node = &limitNode{}
 
-func NewLimit(node Node, limit int) Node {
+func NewLimit(node nodes.Node, limit int) nodes.Node {
 	return &limitNode{
 		Node:  node,
 		limit: limit,
@@ -68,4 +70,10 @@ func (n *limitNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 		remaining--
 		return scanner.Scan()
 	}), nil
+}
+
+// TODO - deduplicate
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

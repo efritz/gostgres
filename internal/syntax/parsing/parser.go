@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/joins"
 	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/joins"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 	"github.com/efritz/gostgres/internal/table"
 )

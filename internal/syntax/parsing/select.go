@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/efritz/gostgres/internal/access"
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/joins"
 	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/access"
+	"github.com/efritz/gostgres/internal/queries/alias"
+	"github.com/efritz/gostgres/internal/queries/combination"
+	"github.com/efritz/gostgres/internal/queries/filter"
+	"github.com/efritz/gostgres/internal/queries/joins"
+	"github.com/efritz/gostgres/internal/queries/limit"
+	"github.com/efritz/gostgres/internal/queries/order"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 	"github.com/efritz/gostgres/internal/table"
@@ -38,16 +44,16 @@ func (p *parser) parseSelect(token tokens.Token) (nodes.Node, error) {
 
 	node := selectNode.node
 	if hasOrder {
-		node = nodes.NewOrder(node, orderExpression)
+		node = order.NewOrder(node, orderExpression)
 	}
 	if hasOffset {
-		node = nodes.NewOffset(node, offsetValue)
+		node = limit.NewOffset(node, offsetValue)
 	}
 	if hasLimit {
-		node = nodes.NewLimit(node, limitValue)
+		node = limit.NewLimit(node, limitValue)
 	}
 
-	node, err = nodes.NewProjection(node, selectNode.selectExpressions)
+	node, err = projection.NewProjection(node, selectNode.selectExpressions)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +63,7 @@ func (p *parser) parseSelect(token tokens.Token) (nodes.Node, error) {
 
 type selectNode struct {
 	node              nodes.Node
-	selectExpressions []nodes.ProjectionExpression
+	selectExpressions []projection.ProjectionExpression
 }
 
 // simpleSelect := selectExpressions from where combinedQuery
@@ -81,7 +87,7 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 		return selectNode{}, err
 	}
 	if hasWhere {
-		node = nodes.NewFilter(node, whereExpression)
+		node = filter.NewFilter(node, whereExpression)
 	}
 
 	// TODO - support [ `GROUP` `BY` expression [, ...] ]
@@ -95,7 +101,7 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 		}, nil
 	}
 
-	node, err = nodes.NewProjection(node, selectExpressions)
+	node, err = projection.NewProjection(node, selectExpressions)
 	if err != nil {
 		return selectNode{}, err
 	}
@@ -106,7 +112,7 @@ func (p *parser) parseSimpleSelect(token tokens.Token) (selectNode, error) {
 
 	return selectNode{
 		node:              node,
-		selectExpressions: []nodes.ProjectionExpression{nodes.NewWildcardProjectionExpression()},
+		selectExpressions: []projection.ProjectionExpression{projection.NewWildcardProjectionExpression()},
 	}, nil
 }
 
@@ -115,11 +121,11 @@ func (p *parser) parseCombinedQuery(node nodes.Node) (nodes.Node, error) {
 	for {
 		var factory func(left, right nodes.Node, distinct bool) (nodes.Node, error)
 		if p.advanceIf(isType(tokens.TokenTypeUnion)) {
-			factory = nodes.NewUnion
+			factory = combination.NewUnion
 		} else if p.advanceIf(isType(tokens.TokenTypeIntersect)) {
-			factory = nodes.NewIntersect
+			factory = combination.NewIntersect
 		} else if p.advanceIf(isType(tokens.TokenTypeExcept)) {
-			factory = nodes.NewExcept
+			factory = combination.NewExcept
 		} else {
 			break
 		}
@@ -167,7 +173,7 @@ func (p *parser) parseCombinationTarget() (nodes.Node, error) {
 				return nil, err
 			}
 
-			return nodes.NewProjection(selectNode.node, selectNode.selectExpressions)
+			return projection.NewProjection(selectNode.node, selectNode.selectExpressions)
 		}
 	}
 
@@ -188,9 +194,9 @@ func (p *parser) parseCombinationTarget() (nodes.Node, error) {
 // selectExpressions := `*`
 //
 //	| selectExpression [, ...]
-func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.ProjectionExpression, _ error) {
+func (p *parser) parseSelectExpressions() (aliasedExpressions []projection.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
-		return []nodes.ProjectionExpression{nodes.NewWildcardProjectionExpression()}, nil
+		return []projection.ProjectionExpression{projection.NewWildcardProjectionExpression()}, nil
 	}
 
 	for {
@@ -212,10 +218,10 @@ func (p *parser) parseSelectExpressions() (aliasedExpressions []nodes.Projection
 // selectExpression := ident `.` `*`
 //
 //	| expression alias
-func (p *parser) parseSelectExpression() (nodes.ProjectionExpression, error) {
+func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
-		return nodes.NewTableWildcardProjectionExpression(nameToken.Text), nil
+		return projection.NewTableWildcardProjectionExpression(nameToken.Text), nil
 	}
 
 	expression, err := p.parseExpression(0)
@@ -237,7 +243,7 @@ func (p *parser) parseSelectExpression() (nodes.ProjectionExpression, error) {
 		alias = "?column?"
 	}
 
-	return nodes.NewAliasProjectionExpression(expression, alias), nil
+	return projection.NewAliasProjectionExpression(expression, alias), nil
 }
 
 // tableAlias := alias columnNames
@@ -331,7 +337,7 @@ func (p *parser) parseTable() (*table.Table, string, string, error) {
 }
 
 // returning := [`RETURNING` selectExpressions]
-func (p *parser) parseReturning(name string) (returningExpressions []nodes.ProjectionExpression, err error) {
+func (p *parser) parseReturning(name string) (returningExpressions []projection.ProjectionExpression, err error) {
 	if !p.advanceIf(isType(tokens.TokenTypeReturning)) {
 		return nil, nil
 	}
@@ -344,7 +350,7 @@ func (p *parser) parseReturning(name string) (returningExpressions []nodes.Proje
 		return returningExpressions, nil
 	}
 
-	return []nodes.ProjectionExpression{nodes.NewTableWildcardProjectionExpression(name)}, nil
+	return []projection.ProjectionExpression{projection.NewTableWildcardProjectionExpression(name)}, nil
 }
 
 // from := `FROM` tableExpressions
@@ -452,12 +458,12 @@ func (p *parser) parseBaseTableExpression() (nodes.Node, error) {
 		}
 	}
 
-	alias, columnNames, hasAlias, err := p.parseTableAlias()
+	aliasName, columnNames, hasAlias, err := p.parseTableAlias()
 	if err != nil {
 		return nil, err
 	}
 	if hasAlias {
-		node = nodes.NewAlias(node, alias)
+		node = alias.NewAlias(node, aliasName)
 
 		if len(columnNames) > 0 {
 			var fields []shared.Field
@@ -471,12 +477,12 @@ func (p *parser) parseBaseTableExpression() (nodes.Node, error) {
 				return nil, fmt.Errorf("wrong number of fields in alias")
 			}
 
-			projectionExpressions := make([]nodes.ProjectionExpression, 0, len(fields))
+			projectionExpressions := make([]projection.ProjectionExpression, 0, len(fields))
 			for i, field := range fields {
-				projectionExpressions = append(projectionExpressions, nodes.NewAliasProjectionExpression(expressions.NewNamed(field), columnNames[i]))
+				projectionExpressions = append(projectionExpressions, projection.NewAliasProjectionExpression(expressions.NewNamed(field), columnNames[i]))
 			}
 
-			node, err = nodes.NewProjection(node, projectionExpressions)
+			node, err = projection.NewProjection(node, projectionExpressions)
 			if err != nil {
 				return nil, err
 			}

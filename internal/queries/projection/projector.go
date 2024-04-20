@@ -1,4 +1,4 @@
-package nodes
+package projection
 
 import (
 	"fmt"
@@ -9,26 +9,30 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-type projector struct {
+type Projector struct {
 	aliases         []aliasProjection
 	fields          []shared.Field
 	projectedFields []shared.Field
 }
 
-func newProjector(name string, fields []shared.Field, expressions []ProjectionExpression) (*projector, error) {
+func NewProjector(name string, fields []shared.Field, expressions []ProjectionExpression) (*Projector, error) {
 	aliases, err := expandProjection(fields, expressions)
 	if err != nil {
 		return nil, err
 	}
 
-	return &projector{
+	return &Projector{
 		aliases:         aliases,
 		fields:          fields,
 		projectedFields: fieldsFromProjection(name, aliases),
 	}, nil
 }
 
-func (p *projector) String() string {
+func (p *Projector) Fields() []shared.Field {
+	return p.projectedFields
+}
+
+func (p *Projector) String() string {
 	type named interface {
 		Name() string
 	}
@@ -45,13 +49,13 @@ func (p *projector) String() string {
 	return strings.Join(fields, ", ")
 }
 
-func (p *projector) optimize() {
+func (p *Projector) Optimize() {
 	for i := range p.aliases {
 		p.aliases[i].expression = p.aliases[i].expression.Fold()
 	}
 }
 
-func (p *projector) projectRow(ctx scan.ScanContext, row shared.Row) (shared.Row, error) {
+func (p *Projector) ProjectRow(ctx scan.ScanContext, row shared.Row) (shared.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := ctx.Evaluate(field.expression, row)
@@ -65,7 +69,7 @@ func (p *projector) projectRow(ctx scan.ScanContext, row shared.Row) (shared.Row
 	return shared.NewRow(p.projectedFields, values)
 }
 
-func (p *projector) projectExpression(expression expressions.Expression) expressions.Expression {
+func (p *Projector) projectExpression(expression expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
 		expression = expression.Alias(shared.NewField("", alias.alias, shared.TypeKindAny, false), alias.expression)
 	}
@@ -73,7 +77,7 @@ func (p *projector) projectExpression(expression expressions.Expression) express
 	return expression
 }
 
-func (p *projector) deprojectExtension(expression expressions.Expression) expressions.Expression {
+func (p *Projector) deprojectExtension(expression expressions.Expression) expressions.Expression {
 	for i, alias := range p.aliases {
 		if field, ok := alias.expression.Named(); ok {
 			expression = expression.Alias(field, expressions.NewNamed(p.projectedFields[i]))

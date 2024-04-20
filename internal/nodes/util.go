@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -151,16 +152,11 @@ func lowerOrder(order expressions.OrderExpression, nodes ...Node) {
 	}
 }
 
-func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
-	orderExpressions := order.Expressions()
-	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
-
-	for _, expression := range orderExpressions {
-		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
-			Expression: f(expression.Expression),
-			Reverse:    expression.Reverse,
-		})
+func hashValues(values []any) string {
+	strValues := make([]string, 0, len(values))
+	for _, value := range values {
+		strValues = append(strValues, fmt.Sprintf("%v", value))
 	}
 
-	return expressions.NewOrderExpression(aliasedExpressions)
+	return strings.Join(strValues, ":")
 }

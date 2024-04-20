@@ -1,32 +1,34 @@
-package nodes
+package mutation
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type deleteNode struct {
-	Node
+	nodes.Node
 	table       *table.Table
 	columnNames []string
-	projector   *projector
+	projector   *projection.Projector
 }
 
-var _ Node = &deleteNode{}
+var _ nodes.Node = &deleteNode{}
 
-func NewDelete(node Node, table *table.Table, alias string, expressions []ProjectionExpression) (Node, error) {
+func NewDelete(node nodes.Node, table *table.Table, alias string, expressions []projection.ProjectionExpression) (nodes.Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(table.Name(), table.Fields(), alias)
 		}
 	}
 
-	projector, err := newProjector(node.Name(), table.Fields(), expressions)
+	projector, err := projection.NewProjector(node.Name(), table.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func NewDelete(node Node, table *table.Table, alias string, expressions []Projec
 }
 
 func (n *deleteNode) Fields() []shared.Field {
-	return copyFields(n.projector.projectedFields)
+	return copyFields(n.projector.Fields())
 }
 
 func (n *deleteNode) Serialize(w io.Writer, indentationLevel int) {
@@ -48,7 +50,7 @@ func (n *deleteNode) Serialize(w io.Writer, indentationLevel int) {
 }
 
 func (n *deleteNode) Optimize() {
-	n.projector.optimize()
+	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -90,6 +92,6 @@ func (n *deleteNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return shared.Row{}, scan.ErrNoRows
 		}
 
-		return n.projector.projectRow(ctx, deletedRow)
+		return n.projector.ProjectRow(ctx, deletedRow)
 	}), nil
 }

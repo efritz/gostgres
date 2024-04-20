@@ -1,38 +1,41 @@
-package nodes
+package mutation
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type updateNode struct {
-	Node
+	nodes.Node
 	table          *table.Table
 	setExpressions []SetExpression
 	columnNames    []string
-	projector      *projector
+	projector      *projection.Projector
 }
 
-var _ Node = &updateNode{}
+var _ nodes.Node = &updateNode{}
 
 type SetExpression struct {
 	Name       string
 	Expression expressions.Expression
 }
 
-func NewUpdate(node Node, table *table.Table, setExpressions []SetExpression, alias string, expressions []ProjectionExpression) (Node, error) {
+func NewUpdate(node nodes.Node, table *table.Table, setExpressions []SetExpression, alias string, expressions []projection.ProjectionExpression) (nodes.Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(table.Name(), table.Fields(), alias)
 		}
 	}
 
-	projector, err := newProjector(node.Name(), table.Fields(), expressions)
+	projector, err := projection.NewProjector(node.Name(), table.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +49,7 @@ func NewUpdate(node Node, table *table.Table, setExpressions []SetExpression, al
 }
 
 func (n *updateNode) Fields() []shared.Field {
-	return copyFields(n.projector.projectedFields)
+	return copyFields(n.projector.Fields())
 }
 
 func (n *updateNode) Serialize(w io.Writer, indentationLevel int) {
@@ -55,7 +58,7 @@ func (n *updateNode) Serialize(w io.Writer, indentationLevel int) {
 }
 
 func (n *updateNode) Optimize() {
-	n.projector.optimize()
+	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -135,6 +138,18 @@ func (n *updateNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		return n.projector.projectRow(ctx, updatedRow)
+		return n.projector.ProjectRow(ctx, updatedRow)
 	}), nil
+}
+
+// TODO - deduplicate
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
+}
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
 }

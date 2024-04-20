@@ -1,23 +1,25 @@
-package nodes
+package alias
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type aliasNode struct {
-	Node
+	nodes.Node
 	name   string
 	fields []shared.Field
 }
 
-var _ Node = &aliasNode{}
+var _ nodes.Node = &aliasNode{}
 
-func NewAlias(node Node, name string) Node {
+func NewAlias(node nodes.Node, name string) nodes.Node {
 	return &aliasNode{
 		Node:   node,
 		name:   name,
@@ -110,4 +112,39 @@ func (n *aliasNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 func namedFromField(field shared.Field, relationName string) expressions.Expression {
 	return expressions.NewNamed(shared.NewField(relationName, field.Name, field.TypeKind, field.Internal))
+}
+
+// TODO - deduplicate
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
+}
+
+func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
+	orderExpressions := order.Expressions()
+	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
+
+	for _, expression := range orderExpressions {
+		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
+			Expression: f(expression.Expression),
+			Reverse:    expression.Reverse,
+		})
+	}
+
+	return expressions.NewOrderExpression(aliasedExpressions)
+}
+
+func updateRelationName(fields []shared.Field, relationName string) []shared.Field {
+	fields = copyFields(fields)
+	for i := range fields {
+		fields[i].RelationName = relationName
+	}
+
+	return fields
+}
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

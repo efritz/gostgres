@@ -1,22 +1,23 @@
-package nodes
+package limit
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type offsetNode struct {
-	Node
+	nodes.Node
 	offset int
 }
 
-var _ Node = &offsetNode{}
+var _ nodes.Node = &offsetNode{}
 
-func NewOffset(node Node, offset int) Node {
+func NewOffset(node nodes.Node, offset int) nodes.Node {
 	return &offsetNode{
 		Node:   node,
 		offset: offset,

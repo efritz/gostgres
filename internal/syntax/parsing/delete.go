@@ -1,9 +1,13 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/access"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/access"
+	"github.com/efritz/gostgres/internal/queries/alias"
+	"github.com/efritz/gostgres/internal/queries/filter"
+	"github.com/efritz/gostgres/internal/queries/mutation"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
@@ -14,13 +18,13 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 		return nil, err
 	}
 
-	table, name, alias, err := p.parseTable()
+	table, name, aliasName, err := p.parseTable()
 	if err != nil {
 		return nil, err
 	}
 	node := access.NewData(table)
-	if alias != "" {
-		node = nodes.NewAlias(node, alias)
+	if aliasName != "" {
+		node = alias.NewAlias(node, aliasName)
 	}
 
 	usingExpressions, err := p.parseUsing()
@@ -36,7 +40,7 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 		return nil, err
 	}
 	if hasWhere {
-		node = nodes.NewFilter(node, whereExpression)
+		node = filter.NewFilter(node, whereExpression)
 	}
 
 	returningExpressions, err := p.parseReturning(name)
@@ -45,19 +49,19 @@ func (p *parser) parseDelete(token tokens.Token) (nodes.Node, error) {
 	}
 
 	relationName := name
-	if alias != "" {
-		relationName = alias
+	if aliasName != "" {
+		relationName = aliasName
 	}
 	tidField := shared.NewField(relationName, "tid", shared.TypeKindNumeric, false)
 
-	node, err = nodes.NewProjection(node, []nodes.ProjectionExpression{
-		nodes.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
+	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
+		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return nodes.NewDelete(node, table, alias, returningExpressions)
+	return mutation.NewDelete(node, table, aliasName, returningExpressions)
 }
 
 // using := `USING` tableExpressions

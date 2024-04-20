@@ -1,22 +1,26 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/access"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/queries/access"
+	"github.com/efritz/gostgres/internal/queries/alias"
+	"github.com/efritz/gostgres/internal/queries/filter"
+	"github.com/efritz/gostgres/internal/queries/mutation"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // update := table `SET` setExpressions [`FROM` tableExpressions] where returning
 func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
-	table, name, alias, err := p.parseTable()
+	table, name, aliasName, err := p.parseTable()
 	if err != nil {
 		return nil, err
 	}
 	node := access.NewData(table)
-	if alias != "" {
-		node = nodes.NewAlias(node, alias)
+	if aliasName != "" {
+		node = alias.NewAlias(node, aliasName)
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeSet)); err != nil {
@@ -41,7 +45,7 @@ func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 		return nil, err
 	}
 	if hasWhere {
-		node = nodes.NewFilter(node, whereExpression)
+		node = filter.NewFilter(node, whereExpression)
 	}
 
 	returningExpressions, err := p.parseReturning(name)
@@ -50,26 +54,26 @@ func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 	}
 
 	relationName := name
-	if alias != "" {
-		relationName = alias
+	if aliasName != "" {
+		relationName = aliasName
 	}
 	tidField := shared.NewField(relationName, "tid", shared.TypeKindNumeric, false)
 
-	node, err = nodes.NewProjection(node, []nodes.ProjectionExpression{
-		nodes.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
-		nodes.NewTableWildcardProjectionExpression(relationName),
+	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
+		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
+		projection.NewTableWildcardProjectionExpression(relationName),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	node = nodes.NewAlias(node, name)
-	return nodes.NewUpdate(node, table, setExpressions, alias, returningExpressions)
+	node = alias.NewAlias(node, name)
+	return mutation.NewUpdate(node, table, setExpressions, aliasName, returningExpressions)
 }
 
 // setExpressions := ( setExpression [, ...] )
-func (p *parser) parseSetExpressions() ([]nodes.SetExpression, error) {
-	var setExpressions []nodes.SetExpression
+func (p *parser) parseSetExpressions() ([]mutation.SetExpression, error) {
+	var setExpressions []mutation.SetExpression
 	for {
 		setExpression, err := p.parseSetExpression()
 		if err != nil {
@@ -90,30 +94,30 @@ func (p *parser) parseSetExpressions() ([]nodes.SetExpression, error) {
 // TODO - support `(` ( ident [, ...] ) `)` = ( `(` sub-select `)` | [ `ROW` ] `(` ( expression | `DEFAULT` [, ...]) `)` )
 
 // setExpression := ident `=` expression
-func (p *parser) parseSetExpression() (nodes.SetExpression, error) {
+func (p *parser) parseSetExpression() (mutation.SetExpression, error) {
 	var name string
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		panic("Multi-column sets unimplemented")
 	} else {
 		nameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 		if err != nil {
-			return nodes.SetExpression{}, err
+			return mutation.SetExpression{}, err
 		}
 
 		name = nameToken.Text
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeEquals)); err != nil {
-		return nodes.SetExpression{}, err
+		return mutation.SetExpression{}, err
 	}
 
 	// TODO - or subselect, or values
 	expr, err := p.parseExpression(0)
 	if err != nil {
-		return nodes.SetExpression{}, err
+		return mutation.SetExpression{}, err
 	}
 
-	return nodes.SetExpression{
+	return mutation.SetExpression{
 		Name:       name,
 		Expression: expr,
 	}, nil

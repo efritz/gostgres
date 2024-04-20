@@ -1,23 +1,25 @@
-package nodes
+package projection
 
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type projectionNode struct {
-	Node
-	projector *projector
+	nodes.Node
+	projector *Projector
 }
 
-var _ Node = &projectionNode{}
+var _ nodes.Node = &projectionNode{}
 
-func NewProjection(node Node, expressions []ProjectionExpression) (Node, error) {
-	projector, err := newProjector(node.Name(), node.Fields(), expressions)
+func NewProjection(node nodes.Node, expressions []ProjectionExpression) (nodes.Node, error) {
+	projector, err := NewProjector(node.Name(), node.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +40,7 @@ func (n *projectionNode) Serialize(w io.Writer, indentationLevel int) {
 }
 
 func (n *projectionNode) Optimize() {
-	n.projector.optimize()
+	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -88,6 +90,32 @@ func (n *projectionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		return n.projector.projectRow(ctx, row)
+		return n.projector.ProjectRow(ctx, row)
 	}), nil
+}
+
+// TODO - deduplicate
+
+func mapOrderExpressions(order expressions.OrderExpression, f func(expressions.Expression) expressions.Expression) expressions.OrderExpression {
+	orderExpressions := order.Expressions()
+	aliasedExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
+
+	for _, expression := range orderExpressions {
+		aliasedExpressions = append(aliasedExpressions, expressions.ExpressionWithDirection{
+			Expression: f(expression.Expression),
+			Reverse:    expression.Reverse,
+		})
+	}
+
+	return expressions.NewOrderExpression(aliasedExpressions)
+}
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
+}
+
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

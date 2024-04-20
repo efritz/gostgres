@@ -46,19 +46,25 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Support row comparisons (IN/NOT IN/ANY/SOME/ALL)
 
 - Medium-term
-    - Support default values
-    - Support check constraints
-    - Support inserts on conflict
-    - Fetch optimization
-    - Outer joins
+    - Primary keys
+    - Foreign keys
+    - Nullability
+    - Enums
+    - Constraints
+    - Views
+    - Materialized views
+    - Default values
+    - ON CONFLICT
+    - Non-inner joins
 
 - Long-term
-    - Write to disk
     - Recursive CTEs
     - Window queries
+    - Write to disk
     - DDL
     - Networking
     - Multiple clients
+    - Functions
     - Transactions
     - Triggers
     - WAL

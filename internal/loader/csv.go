@@ -6,11 +6,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
-func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription) (*nodes.Table, error) {
+func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription) (*table.Table, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func NewTableFromCSV(name, filepath string, fieldDescriptions []FieldDescription
 		return nil, err
 	}
 
-	table := nodes.NewTable(name, rows.Fields)
+	table := table.NewTable(name, rows.Fields)
 
 	for i := 0; i < rows.Size(); i++ {
 		if _, err := table.Insert(rows.Row(i)); err != nil {

@@ -3,8 +3,9 @@ package tests
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/nodes"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
+	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
@@ -21,7 +22,15 @@ func testQuery(query string) (string, error) {
 	}
 	node.Optimize()
 
-	rows, err := nodes.ScanRows(node, nodes.ScanContext{})
+	scanner, err := node.Scanner(scan.ScanContext{})
+	if err != nil {
+		return "", err
+	}
+	rows, err := shared.NewRows(node.Fields())
+	if err != nil {
+		return "", err
+	}
+	rows, err = scan.ScanIntoRows(scanner, rows)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute query: %s", err)
 	}

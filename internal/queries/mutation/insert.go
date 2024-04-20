@@ -89,7 +89,7 @@ func (n *insertNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 		fields := make([]shared.Field, 0, len(n.table.Fields()))
 		for _, field := range n.table.Fields() {
-			if !field.Internal {
+			if !field.Internal() {
 				fields = append(fields, field)
 			}
 		}
@@ -111,7 +111,7 @@ func (n *insertNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []any {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
-		if !row.Fields[i].Internal {
+		if !row.Fields[i].Internal() {
 			values = append(values, value)
 		}
 	}
@@ -127,7 +127,7 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 
 	reordered := make([]any, 0, len(fields))
 	for _, field := range fields {
-		reordered = append(reordered, valueMap[field.Name])
+		reordered = append(reordered, valueMap[field.Name()])
 	}
 
 	return reordered

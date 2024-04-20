@@ -67,23 +67,23 @@ func createEmployeesTable(root string) (*table.Table, error) {
 
 	// btree index on (last_name, first_name, employee_id)
 	if err := table.AddIndex(indexes.NewBTreeIndex("employees_last_name_first_name_employee_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText, false))},
-		{Expression: expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText, false))},
-		{Expression: expressions.NewNamed(shared.NewField("employees", "employee_id", shared.TypeKindNumeric, false))},
+		{Expression: expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText))},
+		{Expression: expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText))},
+		{Expression: expressions.NewNamed(shared.NewField("employees", "employee_id", shared.TypeKindNumeric))},
 	})); err != nil {
 		return nil, err
 	}
 
 	// hash index on first name
 	if err := table.AddIndex(indexes.NewHashIndex("employees_first_name", table.Name(),
-		expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText, false)),
+		expressions.NewNamed(shared.NewField("employees", "first_name", shared.TypeKindText)),
 	)); err != nil {
 		return nil, err
 	}
 
 	// hash index last_name, partial where manager_id <= 4
-	lastName := expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText, false))
-	manager := expressions.NewNamed(shared.NewField("employees", "manager_id", shared.TypeKindNumeric, false))
+	lastName := expressions.NewNamed(shared.NewField("employees", "last_name", shared.TypeKindText))
+	manager := expressions.NewNamed(shared.NewField("employees", "manager_id", shared.TypeKindNumeric))
 	index := indexes.NewHashIndex("employees_last_name_manager_id", table.Name(), lastName)
 	cond := expressions.NewLessThanEquals(manager, expressions.NewConstant(4))
 	if err := table.AddIndex(indexes.NewPartialIndex(index, cond)); err != nil {
@@ -105,7 +105,7 @@ func createDepartmentsTable(root string) (*table.Table, error) {
 
 	// hash index on department_id
 	if err := table.AddIndex(indexes.NewHashIndex("departments_department_id", table.Name(),
-		expressions.NewNamed(shared.NewField("departments", "department_id", shared.TypeKindNumeric, false)),
+		expressions.NewNamed(shared.NewField("departments", "department_id", shared.TypeKindNumeric)),
 	)); err != nil {
 		return nil, err
 	}
@@ -139,8 +139,8 @@ func createK1Table(root string) (*table.Table, error) {
 
 	// btree index on (name, id)
 	if err := table.AddIndex(indexes.NewBTreeIndex("k1_name_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("k1", "name", shared.TypeKindText, false))},
-		{Expression: expressions.NewNamed(shared.NewField("k1", "id", shared.TypeKindNumeric, false))},
+		{Expression: expressions.NewNamed(shared.NewField("k1", "name", shared.TypeKindText))},
+		{Expression: expressions.NewNamed(shared.NewField("k1", "id", shared.TypeKindNumeric))},
 	})); err != nil {
 		return nil, err
 	}
@@ -159,8 +159,8 @@ func createK2Table(root string) (*table.Table, error) {
 
 	// btree index on (name, id)
 	if err := table.AddIndex(indexes.NewBTreeIndex("k2_name_id", table.Name(), []expressions.ExpressionWithDirection{
-		{Expression: expressions.NewNamed(shared.NewField("k2", "name", shared.TypeKindText, false))},
-		{Expression: expressions.NewNamed(shared.NewField("k2", "id", shared.TypeKindNumeric, false))},
+		{Expression: expressions.NewNamed(shared.NewField("k2", "name", shared.TypeKindText))},
+		{Expression: expressions.NewNamed(shared.NewField("k2", "id", shared.TypeKindNumeric))},
 	})); err != nil {
 		return nil, err
 	}

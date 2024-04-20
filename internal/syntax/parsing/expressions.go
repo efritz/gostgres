@@ -50,10 +50,11 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 }
 
 // namedExpression := ident
-//                  | ident `.` ident
+//
+//	| ident `.` ident
 func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expression, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeDot)) {
-		return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeKindAny, false)), nil
+		return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeKindAny)), nil
 	}
 
 	qualifiedNameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
@@ -61,7 +62,7 @@ func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expressio
 		return nil, err
 	}
 
-	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeKindAny, false)), nil
+	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeKindAny)), nil
 }
 
 // numericLiteralExpression := number

@@ -16,11 +16,16 @@ type Table struct {
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
-	tidField := shared.NewField(name, shared.TIDName, shared.TypeKindNumeric, true)
+	tableFields := []shared.Field{
+		shared.NewInternalField(name, shared.TIDName, shared.TypeKindNumeric),
+	}
+	for _, field := range fields {
+		tableFields = append(tableFields, field.WithRelationName(name))
+	}
 
 	return &Table{
 		name:   name,
-		fields: append([]shared.Field{tidField}, fields...),
+		fields: tableFields,
 		rows:   map[int]shared.Row{},
 	}
 }

@@ -36,7 +36,7 @@ func (n *accessNode) Name() string {
 func (n *accessNode) Fields() []shared.Field {
 	fields := slices.Clone(n.table.Fields())
 	for i := range fields {
-		fields[i].RelationName = n.table.Name()
+		fields[i] = fields[i].WithRelationName(n.table.Name())
 	}
 
 	return fields

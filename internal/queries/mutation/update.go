@@ -103,8 +103,8 @@ func (n *updateNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 
 			found := false
 			for i, field := range row.Fields {
-				if field.Name == set.Name {
-					if field.Internal {
+				if field.Name() == set.Name {
+					if field.Internal() {
 						return shared.Row{}, fmt.Errorf("cannot update internal field %s", set.Name)
 					}
 

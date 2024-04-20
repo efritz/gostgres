@@ -92,7 +92,7 @@ func convertValue(rawValue string, typeKind shared.TypeKind) (any, error) {
 func convertFields(name string, fieldDescriptions []FieldDescription) []shared.Field {
 	fields := make([]shared.Field, 0, len(fieldDescriptions))
 	for _, fieldDescription := range fieldDescriptions {
-		fields = append(fields, shared.NewField(name, fieldDescription.Name, fieldDescription.TypeKind, false))
+		fields = append(fields, shared.NewField(name, fieldDescription.Name, fieldDescription.TypeKind))
 	}
 
 	return fields

@@ -19,7 +19,7 @@ func NewRow(fields []Field, values []any) (_ Row, err error) {
 const TIDName = "tid"
 
 func (r Row) TID() (int, error) {
-	if len(r.Fields) == 0 || r.Fields[0].Name != TIDName {
+	if len(r.Fields) == 0 || r.Fields[0].Name() != TIDName {
 		return 0, nil
 	}
 

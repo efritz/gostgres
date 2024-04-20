@@ -1,8 +1,6 @@
 package expressions
 
 import (
-	"fmt"
-
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -19,23 +17,19 @@ func NewNamed(field shared.Field) Expression {
 }
 
 func (e namedExpression) String() string {
-	if e.field.RelationName != "" {
-		return fmt.Sprintf("%s.%s", e.field.RelationName, e.field.Name)
-	}
-
-	return e.field.Name
+	return e.field.String()
 }
 
 func (e namedExpression) Equal(other Expression) bool {
 	if o, ok := other.(namedExpression); ok {
-		return e.field.Name == o.field.Name && (e.field.RelationName == o.field.RelationName || e.field.RelationName == "" || o.field.RelationName == "")
+		return e.field.Name() == o.field.Name() && (e.field.RelationName() == o.field.RelationName() || e.field.RelationName() == "" || o.field.RelationName() == "")
 	}
 
 	return false
 }
 
 func (e namedExpression) Name() string {
-	return e.field.Name
+	return e.field.Name()
 }
 
 func (e namedExpression) Fields() []shared.Field {
@@ -55,7 +49,7 @@ func (e namedExpression) Conjunctions() []Expression {
 }
 
 func (e namedExpression) Alias(field shared.Field, expression Expression) Expression {
-	if e.field.Name == field.Name && (e.field.RelationName == field.RelationName || field.RelationName == "") {
+	if e.field.Name() == field.Name() && (e.field.RelationName() == field.RelationName() || field.RelationName() == "") {
 		return expression
 	}
 

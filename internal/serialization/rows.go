@@ -28,7 +28,7 @@ func SerializeRows(w io.Writer, rows shared.Rows) {
 
 	columnWidths := make([]int, len(rows.Fields))
 	for i, field := range rows.Fields {
-		columnWidths[i] = len(field.Name)
+		columnWidths[i] = len(field.Name())
 
 		for _, values := range allValues {
 			if columnWidths[i] < len(values[i]) {
@@ -43,9 +43,9 @@ func SerializeRows(w io.Writer, rows shared.Rows) {
 			fmt.Fprintf(w, " | ")
 		}
 
-		name := field.Name
-		if len(field.Name) < columnWidths[i] {
-			name += strings.Repeat(" ", (columnWidths[i]-len(field.Name))/2)
+		name := field.Name()
+		if len(name) < columnWidths[i] {
+			name += strings.Repeat(" ", (columnWidths[i]-len(name))/2)
 		}
 		fmt.Fprintf(w, fmt.Sprintf("%% %ds", columnWidths[i]), name)
 	}

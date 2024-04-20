@@ -71,7 +71,7 @@ func (p *Projector) ProjectRow(ctx scan.ScanContext, row shared.Row) (shared.Row
 
 func (p *Projector) projectExpression(expression expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		expression = expression.Alias(shared.NewField("", alias.alias, shared.TypeKindAny, false), alias.expression)
+		expression = expression.Alias(shared.NewField("", alias.alias, shared.TypeKindAny), alias.expression)
 	}
 
 	return expression
@@ -105,7 +105,7 @@ func expandProjection(fields []shared.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []aliasProjection) []shared.Field {
 	fields := make([]shared.Field, 0, len(aliases))
 	for _, field := range aliases {
-		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeKindAny, false))
+		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeKindAny))
 	}
 
 	return fields
@@ -135,7 +135,7 @@ func (p aliasProjection) String() string {
 func (p aliasProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
-		expression = expression.Alias(shared.NewField(alias, field.Name, field.TypeKind, field.Internal), expressions.NewNamed(field))
+		expression = expression.Alias(field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
 	return aliasProjection{
@@ -175,13 +175,13 @@ func (p tableWildcardProjection) Dealias(name string, fields []shared.Field, ali
 func (p tableWildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	matched := false
 	for _, field := range fields {
-		if field.Internal || field.RelationName != p.relationName {
+		if field.Internal() || field.RelationName() != p.relationName {
 			continue
 		}
 
 		matched = true
 		projections = append(projections, aliasProjection{
-			alias:      field.Name,
+			alias:      field.Name(),
 			expression: expressions.NewNamed(field),
 		})
 	}
@@ -209,12 +209,12 @@ func (p wildcardProjection) Dealias(name string, fields []shared.Field, alias st
 
 func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasProjection, _ error) {
 	for _, field := range fields {
-		if field.Internal {
+		if field.Internal() {
 			continue
 		}
 
 		projections = append(projections, aliasProjection{
-			alias:      field.Name,
+			alias:      field.Name(),
 			expression: expressions.NewNamed(field),
 		})
 	}

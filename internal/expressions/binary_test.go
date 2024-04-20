@@ -8,8 +8,8 @@ import (
 )
 
 func TestBinaryEqual(t *testing.T) {
-	a := NewNamed(shared.NewField("t", "a", shared.TypeKindText, false))
-	b := NewNamed(shared.NewField("t", "b", shared.TypeKindText, false))
+	a := NewNamed(shared.NewField("t", "a", shared.TypeKindText))
+	b := NewNamed(shared.NewField("t", "b", shared.TypeKindText))
 
 	for _, testCase := range []struct {
 		name     string

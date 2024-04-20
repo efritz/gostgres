@@ -468,7 +468,7 @@ func (p *parser) parseBaseTableExpression() (queries.Node, error) {
 		if len(columnNames) > 0 {
 			var fields []shared.Field
 			for _, f := range node.Fields() {
-				if !f.Internal {
+				if !f.Internal() {
 					fields = append(fields, f)
 				}
 			}
@@ -643,7 +643,7 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 
 	fields := make([]shared.Field, 0, len(allRows[0]))
 	for i := range allRows[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeKindAny, false))
+		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeKindAny))
 	}
 
 	rows, err := shared.NewRows(fields)

@@ -23,7 +23,7 @@ var _ queries.Node = &aliasNode{}
 func NewAlias(node queries.Node, name string) queries.Node {
 	fields := slices.Clone(node.Fields())
 	for i := range fields {
-		fields[i].RelationName = name
+		fields[i] = fields[i].WithRelationName(name)
 	}
 
 	return &aliasNode{
@@ -117,5 +117,5 @@ func (n *aliasNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 }
 
 func namedFromField(field shared.Field, relationName string) expressions.Expression {
-	return expressions.NewNamed(shared.NewField(relationName, field.Name, field.TypeKind, field.Internal))
+	return expressions.NewNamed(field.WithRelationName(relationName))
 }

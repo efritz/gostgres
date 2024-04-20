@@ -1,4 +1,4 @@
-package nodes
+package joins
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"

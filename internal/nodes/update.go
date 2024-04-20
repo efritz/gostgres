@@ -7,11 +7,12 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type updateNode struct {
 	Node
-	table          *Table
+	table          *table.Table
 	setExpressions []SetExpression
 	columnNames    []string
 	projector      *projector
@@ -24,10 +25,10 @@ type SetExpression struct {
 	Expression expressions.Expression
 }
 
-func NewUpdate(node Node, table *Table, setExpressions []SetExpression, alias string, expressions []ProjectionExpression) (Node, error) {
+func NewUpdate(node Node, table *table.Table, setExpressions []SetExpression, alias string, expressions []ProjectionExpression) (Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(table.name, table.Fields(), alias)
+			expressions[i] = pe.Dealias(table.Name(), table.Fields(), alias)
 		}
 	}
 

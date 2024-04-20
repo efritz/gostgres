@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/joins"
 	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type parser struct {
 	tokens           []tokens.Token
 	cursor           int
-	tables           map[string]*nodes.Table
+	tables           map[string]*table.Table
 	statementParsers map[tokens.TokenType]statementParserFunc
 	prefixParsers    map[tokens.TokenType]prefixParserFunc
 	infixParsers     map[tokens.TokenType]infixParserFunc
@@ -25,7 +27,7 @@ type unaryExpressionParserFunc func(expression expressions.Expression) expressio
 type binaryExpressionParserFunc func(left, right expressions.Expression) expressions.Expression
 type ternaryExpressionParserFunc func(left, middle, right expressions.Expression) expressions.Expression
 
-func newParser(tokenStream []tokens.Token, tables map[string]*nodes.Table) *parser {
+func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *parser {
 	parser := &parser{
 		tokens: tokenStream,
 		tables: tables,
@@ -86,9 +88,10 @@ func newParser(tokenStream []tokens.Token, tables map[string]*nodes.Table) *pars
 }
 
 // statement := `SELECT` select
-//            | `INSERT` insert
-//            | `UPDATE` update
-//            | `DELETE` delete
+//
+//	| `INSERT` insert
+//	| `UPDATE` update
+//	| `DELETE` delete
 func (p *parser) parseStatement() (nodes.Node, error) {
 	token := p.current()
 	for tokenType, parser := range p.statementParsers {
@@ -165,7 +168,7 @@ func joinNodes(expressions []nodes.Node) nodes.Node {
 
 	left := expressions[0]
 	for _, right := range expressions[1:] {
-		left = nodes.NewJoin(left, right, nil)
+		left = joins.NewJoin(left, right, nil)
 	}
 
 	return left

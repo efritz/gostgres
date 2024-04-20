@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/access"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
@@ -13,7 +14,7 @@ func (p *parser) parseUpdate(token tokens.Token) (nodes.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	node := nodes.NewData(table)
+	node := access.NewData(table)
 	if alias != "" {
 		node = nodes.NewAlias(node, alias)
 	}

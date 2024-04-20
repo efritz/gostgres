@@ -7,11 +7,11 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/loader"
-	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
-func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
+func CreateStandardTestTables(root string) (map[string]*table.Table, error) {
 	employeesTable, err := createEmployeesTable(root)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 		return nil, err
 	}
 
-	return map[string]*nodes.Table{
+	return map[string]*table.Table{
 		"employees":   employeesTable,
 		"departments": departmentsTable,
 		"locations":   locationsTable,
@@ -52,7 +52,7 @@ func CreateStandardTestTables(root string) (map[string]*nodes.Table, error) {
 	}, nil
 }
 
-func createEmployeesTable(root string) (*nodes.Table, error) {
+func createEmployeesTable(root string) (*table.Table, error) {
 	table, err := loader.NewTableFromCSV("employees", csvFilepath(root, "employees"), []loader.FieldDescription{
 		{Name: "employee_id", TypeKind: shared.TypeKindNumeric},
 		{Name: "first_name", TypeKind: shared.TypeKindText},
@@ -93,7 +93,7 @@ func createEmployeesTable(root string) (*nodes.Table, error) {
 	return table, nil
 }
 
-func createDepartmentsTable(root string) (*nodes.Table, error) {
+func createDepartmentsTable(root string) (*table.Table, error) {
 	table, err := loader.NewTableFromCSV("departments", csvFilepath(root, "departments"), []loader.FieldDescription{
 		{Name: "department_id", TypeKind: shared.TypeKindNumeric},
 		{Name: "department_name", TypeKind: shared.TypeKindText},
@@ -113,7 +113,7 @@ func createDepartmentsTable(root string) (*nodes.Table, error) {
 	return table, nil
 }
 
-func createLocationsTable(root string) (*nodes.Table, error) {
+func createLocationsTable(root string) (*table.Table, error) {
 	return loader.NewTableFromCSV("locations", csvFilepath(root, "locations"), []loader.FieldDescription{
 		{Name: "location_id", TypeKind: shared.TypeKindNumeric},
 		{Name: "location_name", TypeKind: shared.TypeKindText},
@@ -121,14 +121,14 @@ func createLocationsTable(root string) (*nodes.Table, error) {
 	})
 }
 
-func createRegionsTable(root string) (*nodes.Table, error) {
+func createRegionsTable(root string) (*table.Table, error) {
 	return loader.NewTableFromCSV("regions", csvFilepath(root, "regions"), []loader.FieldDescription{
 		{Name: "region_id", TypeKind: shared.TypeKindNumeric},
 		{Name: "region_name", TypeKind: shared.TypeKindText},
 	})
 }
 
-func createK1Table(root string) (*nodes.Table, error) {
+func createK1Table(root string) (*table.Table, error) {
 	table, err := loader.NewTableFromCSV("k1", csvFilepath(root, "k1"), []loader.FieldDescription{
 		{Name: "name", TypeKind: shared.TypeKindText},
 		{Name: "id", TypeKind: shared.TypeKindNumeric},
@@ -148,7 +148,7 @@ func createK1Table(root string) (*nodes.Table, error) {
 	return table, nil
 }
 
-func createK2Table(root string) (*nodes.Table, error) {
+func createK2Table(root string) (*table.Table, error) {
 	table, err := loader.NewTableFromCSV("k2", csvFilepath(root, "k2"), []loader.FieldDescription{
 		{Name: "name", TypeKind: shared.TypeKindText},
 		{Name: "id", TypeKind: shared.TypeKindNumeric},

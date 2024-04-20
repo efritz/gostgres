@@ -6,7 +6,7 @@ import (
 )
 
 type TableIndexer interface {
-	RowByTID(tid int) (shared.Row, bool)
+	Row(tid int) (shared.Row, bool)
 }
 
 func CanSelectHashIndex(

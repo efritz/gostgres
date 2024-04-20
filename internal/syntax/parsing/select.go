@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/efritz/gostgres/internal/access"
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/joins"
 	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 // select := simpleSelect orderby limit offset
@@ -308,7 +311,7 @@ func (p *parser) parseAliasPrefix() (string, bool, error) {
 }
 
 // table := ident alias
-func (p *parser) parseTable() (*nodes.Table, string, string, error) {
+func (p *parser) parseTable() (*table.Table, string, string, error) {
 	nameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, "", "", err
@@ -416,7 +419,7 @@ func (p *parser) parseJoin(node nodes.Node) (nodes.Node, error) {
 		condition = rawCondition
 	}
 
-	return nodes.NewJoin(node, right, condition), nil
+	return joins.NewJoin(node, right, condition), nil
 }
 
 // baseTableExpression := tableReference tableAlias
@@ -497,7 +500,7 @@ func (p *parser) parseTableReference() (nodes.Node, error) {
 		return nil, fmt.Errorf("unknown table %s", nameToken.Text)
 	}
 
-	return nodes.NewData(table), nil
+	return access.NewData(table), nil
 }
 
 // where := [`WHERE` expression]
@@ -650,7 +653,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 		}
 	}
 
-	table := nodes.NewTable("", rows.Fields)
+	table := table.NewTable("", rows.Fields)
 
 	for i := 0; i < rows.Size(); i++ {
 		if _, err := table.Insert(rows.Row(i)); err != nil {
@@ -658,7 +661,7 @@ func (p *parser) parseValuesList() (nodes.Node, error) {
 		}
 	}
 
-	return nodes.NewData(table), nil
+	return access.NewData(table), nil
 }
 
 // parenthesizedExpressionList := `(` ( expression [, ... ] ) `)`

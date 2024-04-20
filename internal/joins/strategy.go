@@ -1,7 +1,8 @@
-package nodes
+package joins
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -29,9 +30,9 @@ func selectJoinStrategy(n *joinNode) joinStrategy {
 				lefts = append(lefts, expressions.ExpressionWithDirection{Expression: p.left})
 				rights = append(rights, expressions.ExpressionWithDirection{Expression: p.right})
 			}
-			n.left = NewOrder(n.left, expressions.NewOrderExpression(lefts))
+			n.left = nodes.NewOrder(n.left, expressions.NewOrderExpression(lefts))
 			n.left.Optimize()
-			n.right = NewOrder(n.right, expressions.NewOrderExpression(rights))
+			n.right = nodes.NewOrder(n.right, expressions.NewOrderExpression(rights))
 			n.right.Optimize()
 
 			return &mergeJoinStrategy{

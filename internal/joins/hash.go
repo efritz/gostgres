@@ -1,4 +1,4 @@
-package nodes
+package joins
 
 import (
 	"fmt"
@@ -87,8 +87,15 @@ func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 }
 
 // TODO - deduplicate
+
 func hash(value any) uint64 {
 	h := fnv.New64()
 	_, _ = h.Write([]byte(fmt.Sprintf("%v", value)))
 	return h.Sum64()
+}
+
+func copyValues(values []any) []any {
+	c := make([]any, len(values))
+	copy(c, values)
+	return c
 }

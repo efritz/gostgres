@@ -1,35 +1,37 @@
-package nodes
+package access
 
 import (
 	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/nodes"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type accessNode struct {
-	table    *Table
+	table    *table.Table
 	filter   expressions.Expression
 	order    expressions.OrderExpression
 	strategy accessStrategy
 }
 
-var _ Node = &accessNode{}
+var _ nodes.Node = &accessNode{}
 
-func NewData(table *Table) Node {
+func NewData(table *table.Table) nodes.Node {
 	return &accessNode{
 		table: table,
 	}
 }
 
 func (n *accessNode) Name() string {
-	return n.table.name
+	return n.table.Name()
 }
 
 func (n *accessNode) Fields() []shared.Field {
-	return updateRelationName(n.table.Fields(), n.table.name)
+	return updateRelationName(n.table.Fields(), n.table.Name())
 }
 
 func (n *accessNode) Serialize(w io.Writer, indentationLevel int) {
@@ -85,11 +87,28 @@ func (n *accessNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
 	}
 
 	if n.filter != nil {
-		scanner, err = NewFilterScanner(ctx, scanner, n.filter)
+		scanner, err = nodes.NewFilterScanner(ctx, scanner, n.filter)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return scanner, nil
+}
+
+// TODO - deduplicate
+
+func updateRelationName(fields []shared.Field, relationName string) []shared.Field {
+	fields = copyFields(fields)
+	for i := range fields {
+		fields[i].RelationName = relationName
+	}
+
+	return fields
+}
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
 }

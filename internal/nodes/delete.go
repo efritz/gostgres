@@ -7,21 +7,22 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type deleteNode struct {
 	Node
-	table       *Table
+	table       *table.Table
 	columnNames []string
 	projector   *projector
 }
 
 var _ Node = &deleteNode{}
 
-func NewDelete(node Node, table *Table, alias string, expressions []ProjectionExpression) (Node, error) {
+func NewDelete(node Node, table *table.Table, alias string, expressions []ProjectionExpression) (Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(table.name, table.Fields(), alias)
+			expressions[i] = pe.Dealias(table.Name(), table.Fields(), alias)
 		}
 	}
 

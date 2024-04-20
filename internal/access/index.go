@@ -1,4 +1,4 @@
-package nodes
+package access
 
 import (
 	"fmt"
@@ -64,7 +64,7 @@ func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx scan.ScanContext) (scan.S
 			return shared.Row{}, err
 		}
 
-		row, ok := s.table.RowByTID(tid)
+		row, ok := s.table.Row(tid)
 		if !ok {
 			return shared.Row{}, fmt.Errorf("row not found for tid %d", tid)
 		}

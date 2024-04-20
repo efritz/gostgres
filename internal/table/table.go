@@ -1,7 +1,8 @@
-package nodes
+package table
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/shared"
@@ -12,11 +13,6 @@ type Table struct {
 	fields  []shared.Field
 	rows    map[int]shared.Row
 	indexes []indexes.BaseIndex
-}
-
-func (t *Table) RowByTID(tid int) (shared.Row, bool) {
-	row, ok := t.rows[tid]
-	return row, ok
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -33,8 +29,31 @@ func (t *Table) Name() string {
 	return t.name
 }
 
+func (t *Table) Indexes() []indexes.BaseIndex {
+	return t.indexes
+}
+
 func (t *Table) Fields() []shared.Field {
 	return copyFields(t.fields)
+}
+
+func (t *Table) Size() int {
+	return len(t.rows)
+}
+
+func (t *Table) TIDs() []int {
+	tids := make([]int, 0, len(t.rows))
+	for tid := range t.rows {
+		tids = append(tids, tid)
+	}
+	sort.Ints(tids)
+
+	return tids
+}
+
+func (t *Table) Row(tid int) (shared.Row, bool) {
+	row, ok := t.rows[tid]
+	return row, ok
 }
 
 func (t *Table) AddIndex(index indexes.BaseIndex) error {
@@ -97,4 +116,12 @@ func extractTID(row shared.Row) (int, bool) {
 
 	tid, ok := row.Values[0].(int)
 	return tid, ok
+}
+
+// TODO - deduplicate
+
+func copyFields(fields []shared.Field) []shared.Field {
+	c := make([]shared.Field, len(fields))
+	copy(c, fields)
+	return c
 }

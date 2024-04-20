@@ -7,18 +7,19 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type insertNode struct {
 	Node
-	table       *Table
+	table       *table.Table
 	columnNames []string
 	projector   *projector
 }
 
 var _ Node = &insertNode{}
 
-func NewInsert(node Node, table *Table, name, alias string, columnNames []string, expressions []ProjectionExpression) (Node, error) {
+func NewInsert(node Node, table *table.Table, name, alias string, columnNames []string, expressions []ProjectionExpression) (Node, error) {
 	if alias != "" {
 		for i, pe := range expressions {
 			expressions[i] = pe.Dealias(name, table.Fields(), alias)

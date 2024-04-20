@@ -1,27 +1,28 @@
-package nodes
+package access
 
 import (
 	"fmt"
 	"io"
-	"sort"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type tableAccessStrategy struct {
-	table *Table
+	table *table.Table
 }
 
 var _ accessStrategy = &tableAccessStrategy{}
 
-func NewTableAccessStrategy(table *Table) accessStrategy {
+func NewTableAccessStrategy(table *table.Table) accessStrategy {
 	return &tableAccessStrategy{table: table}
 }
 
 func (s *tableAccessStrategy) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%stable scan of %s\n", indent(indentationLevel), s.table.name))
+	io.WriteString(w, fmt.Sprintf("%stable scan of %s\n", indent(indentationLevel), s.table.Name()))
 }
 
 func (s *tableAccessStrategy) Filter() expressions.Expression {
@@ -33,18 +34,19 @@ func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
 }
 
 func (s *tableAccessStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
-	tids := make([]int, 0, len(s.table.rows))
-	for tid := range s.table.rows {
-		tids = append(tids, tid)
-	}
-	sort.Ints(tids)
+	tids := s.table.TIDs()
 
 	rows, err := shared.NewRows(s.table.Fields())
 	if err != nil {
 		return nil, err
 	}
 	for _, tid := range tids {
-		rows, err = rows.AddValues(s.table.rows[tid].Values)
+		row, ok := s.table.Row(tid)
+		if !ok {
+			return nil, fmt.Errorf("missing row %d", tid)
+		}
+
+		rows, err = rows.AddValues(row.Values)
 		if err != nil {
 			return nil, err
 		}
@@ -61,4 +63,9 @@ func (s *tableAccessStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error
 
 		return shared.Row{}, scan.ErrNoRows
 	}), nil
+}
+
+// TODO - deduplicate
+func indent(level int) string {
+	return strings.Repeat(" ", level*4)
 }

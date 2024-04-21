@@ -13,7 +13,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
-	"github.com/efritz/gostgres/tests"
+	"github.com/efritz/gostgres/internal/tablespace"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func mainErr() error {
 	}
 	defer l.Close()
 
-	tables, err := tests.CreateStandardTestTables("tests/")
+	tables, err := tablespace.CreateSampleTables("tests/")
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ loop:
 	return nil
 }
 
-func handleQuery(tables *tests.Tablespace, line string) (err error) {
+func handleQuery(tables *tablespace.Tablespace, line string) (err error) {
 	start := time.Now()
 	defer func() {
 		if err == nil {

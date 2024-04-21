@@ -1,4 +1,4 @@
-package loader
+package tablespace
 
 import (
 	"encoding/csv"
@@ -10,7 +10,7 @@ import (
 	"github.com/efritz/gostgres/internal/table"
 )
 
-func PopulateTableFromCSV(table *table.Table, filepath string) error {
+func populateTableFromCSV(table *table.Table, filepath string) error {
 	var tableFields []shared.Field
 	for _, field := range table.Fields() {
 		if field.Internal() {

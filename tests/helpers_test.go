@@ -10,6 +10,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
+	"github.com/efritz/gostgres/internal/tablespace"
 	"github.com/hexops/autogold/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func runTests(t *testing.T, testCases []TestCase) {
 }
 
 func runTestQuery(query string) (string, error) {
-	tables, err := CreateStandardTestTables("")
+	tables, err := tablespace.CreateSampleTables("")
 	if err != nil {
 		return "", err
 	}

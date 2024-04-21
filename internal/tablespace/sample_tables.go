@@ -1,44 +1,15 @@
-package tests
+package tablespace
 
 import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/efritz/gostgres/internal/loader"
 	"github.com/efritz/gostgres/internal/scan"
-	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
-	"github.com/efritz/gostgres/internal/table"
 )
 
-type Tablespace struct {
-	tables map[string]*table.Table
-}
-
-func NewTablespace() *Tablespace {
-	return &Tablespace{
-		tables: map[string]*table.Table{},
-	}
-}
-
-func (t *Tablespace) GetTable(name string) (*table.Table, bool) {
-	table, ok := t.tables[name]
-	return table, ok
-}
-
-func (t *Tablespace) CreateTable(name string, fields []shared.Field) error {
-	_, err := t.CreateAndGetTable(name, fields)
-	return err
-}
-
-func (t *Tablespace) CreateAndGetTable(name string, fields []shared.Field) (*table.Table, error) {
-	table := table.NewTable(name, fields)
-	t.tables[name] = table
-	return table, nil
-}
-
-func CreateStandardTestTables(root string) (*Tablespace, error) {
+func CreateSampleTables(root string) (*Tablespace, error) {
 	statements := []string{
 		`
 			CREATE TABLE employees (
@@ -93,7 +64,7 @@ func CreateStandardTestTables(root string) (*Tablespace, error) {
 		if !ok {
 			return nil, fmt.Errorf("table %q not found", name)
 		}
-		if err := loader.PopulateTableFromCSV(table, csvFilepath(root, name)); err != nil {
+		if err := populateTableFromCSV(table, csvFilepath(root, name)); err != nil {
 			return nil, err
 		}
 	}

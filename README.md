@@ -57,10 +57,10 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Non-inner joins
 
 - Long-term
+    - Complete DDL
     - Recursive CTEs
     - Window queries
     - Write to disk
-    - DDL
     - Networking
     - Multiple clients
     - Functions

@@ -6,11 +6,11 @@ import (
 )
 
 type ScanContext struct {
-	Tables   TableCreator
+	Tables   Tablespace
 	OuterRow shared.Row
 }
 
-type TableCreator interface {
+type Tablespace interface {
 	CreateTable(name string, fields []shared.Field) error
 }
 

@@ -28,6 +28,7 @@ const (
 	TokenTypeFalse
 	TokenTypeFrom
 	TokenTypeILike
+	TokenTypeIndex
 	TokenTypeInsert
 	TokenTypeIntersect
 	TokenTypeInto

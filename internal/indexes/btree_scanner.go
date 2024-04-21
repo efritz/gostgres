@@ -5,7 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func (i *btreeIndex) Scanner(ctx scan.ScanContext, opts btreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx scan.ScanContext, opts BtreeIndexScanOptions) (tidScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 

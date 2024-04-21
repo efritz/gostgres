@@ -51,6 +51,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, er
 				leftRow = &row
 
 				scanner, err := s.n.right.Scanner(scan.ScanContext{
+					Tables:   ctx.Tables,
 					OuterRow: row,
 				})
 				if err != nil {

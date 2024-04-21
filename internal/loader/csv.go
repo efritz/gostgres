@@ -10,41 +10,43 @@ import (
 	"github.com/efritz/gostgres/internal/table"
 )
 
-func NewTableFromCSV(name, filepath string, fields []shared.Field) (*table.Table, error) {
+func PopulateTableFromCSV(table *table.Table, filepath string) error {
+	var tableFields []shared.Field
+	for _, field := range table.Fields() {
+		if field.Internal() {
+			continue
+		}
+
+		tableFields = append(tableFields, field.WithRelationName(table.Name()))
+	}
+
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	rawValues, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	convertedValues, err := convertRecords(rawValues, fields)
+	convertedValues, err := convertRecords(rawValues, tableFields)
 	if err != nil {
-		return nil, err
-	}
-
-	var tableFields []shared.Field
-	for _, field := range fields {
-		tableFields = append(tableFields, field.WithRelationName(name))
+		return err
 	}
 
 	rows, err := shared.NewRowsWithValues(tableFields, convertedValues)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	table := table.NewTable(name, rows.Fields)
 
 	for i := 0; i < rows.Size(); i++ {
 		if _, err := table.Insert(rows.Row(i)); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return table, nil
+	return nil
 }
 
 func convertRecords(rawValues [][]string, fields []shared.Field) ([][]any, error) {

@@ -13,7 +13,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
-	"github.com/efritz/gostgres/internal/table"
 	"github.com/efritz/gostgres/tests"
 )
 
@@ -67,7 +66,7 @@ loop:
 	return nil
 }
 
-func handleQuery(tables map[string]*table.Table, line string) (err error) {
+func handleQuery(tables *tests.Tablespace, line string) (err error) {
 	start := time.Now()
 	defer func() {
 		if err == nil {
@@ -89,7 +88,9 @@ func handleQuery(tables map[string]*table.Table, line string) (err error) {
 		return nil
 	}
 
-	scanner, err := node.Scanner(scan.ScanContext{})
+	scanner, err := node.Scanner(scan.ScanContext{
+		Tables: tables,
+	})
 	if err != nil {
 		return err
 	}

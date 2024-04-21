@@ -6,7 +6,12 @@ import (
 )
 
 type ScanContext struct {
+	Tables   TableCreator
 	OuterRow shared.Row
+}
+
+type TableCreator interface {
+	CreateTable(name string, fields []shared.Field) error
 }
 
 func (ctx ScanContext) Evaluate(expr expressions.Expression, row shared.Row) (any, error) {

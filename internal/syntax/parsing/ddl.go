@@ -63,11 +63,11 @@ func (p *parser) parseColumn() (shared.Field, error) {
 	var typ shared.Type
 	switch strings.ToLower(dataType.Text) {
 	case "text":
-		typ = shared.TypeText
+		typ = shared.TypeNullableText
 	case "integer":
-		typ = shared.TypeNumeric
+		typ = shared.TypeNullableNumeric
 	case "boolean":
-		typ = shared.TypeBool
+		typ = shared.TypeNullableBool
 	default:
 		return shared.Field{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}

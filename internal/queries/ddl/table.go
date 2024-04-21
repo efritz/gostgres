@@ -1,7 +1,6 @@
 package ddl
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -58,9 +57,9 @@ func (n *createTable) SupportsMarkRestore() bool {
 }
 
 func (n *createTable) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
-	// TODO - create table
-
-	fmt.Printf("> %s: %#v\n", n.name, n.fields)
+	if err := ctx.Tables.CreateTable(n.name, n.fields); err != nil {
+		return nil, err
+	}
 
 	return scan.ScannerFunc(func() (shared.Row, error) {
 		return shared.Row{}, scan.ErrNoRows

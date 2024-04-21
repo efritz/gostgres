@@ -13,10 +13,14 @@ import (
 type parser struct {
 	tokens           []tokens.Token
 	cursor           int
-	tables           map[string]*table.Table
+	tables           TableGetter
 	statementParsers map[tokens.TokenType]statementParserFunc
 	prefixParsers    map[tokens.TokenType]prefixParserFunc
 	infixParsers     map[tokens.TokenType]infixParserFunc
+}
+
+type TableGetter interface {
+	GetTable(name string) (*table.Table, bool)
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
@@ -27,7 +31,7 @@ type unaryExpressionParserFunc func(expression expressions.Expression) expressio
 type binaryExpressionParserFunc func(left, right expressions.Expression) expressions.Expression
 type ternaryExpressionParserFunc func(left, middle, right expressions.Expression) expressions.Expression
 
-func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *parser {
+func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 	parser := &parser{
 		tokens: tokenStream,
 		tables: tables,
@@ -37,6 +41,7 @@ func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *pars
 		tokens.TokenTypeInsert: parser.parseInsert,
 		tokens.TokenTypeUpdate: parser.parseUpdate,
 		tokens.TokenTypeDelete: parser.parseDelete,
+		tokens.TokenTypeCreate: parser.parseCreate,
 	}
 	parser.prefixParsers = map[tokens.TokenType]prefixParserFunc{
 		tokens.TokenTypeIdent:     parser.parseNamedExpression,
@@ -92,6 +97,7 @@ func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *pars
 //	| `INSERT` insert
 //	| `UPDATE` update
 //	| `DELETE` delete
+//	| `CREATE` create
 func (p *parser) parseStatement() (queries.Node, error) {
 	token := p.current()
 	for tokenType, parser := range p.statementParsers {

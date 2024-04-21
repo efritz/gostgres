@@ -43,7 +43,9 @@ func runTestQuery(query string) (string, error) {
 	}
 	node.Optimize()
 
-	scanner, err := node.Scanner(scan.ScanContext{})
+	scanner, err := node.Scanner(scan.ScanContext{
+		Tables: tables,
+	})
 	if err != nil {
 		return "", err
 	}

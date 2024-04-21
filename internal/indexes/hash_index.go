@@ -19,11 +19,11 @@ type hashItem struct {
 	value any
 }
 
-type hashIndexScanOptions struct {
+type HashIndexScanOptions struct {
 	expression expressions.Expression
 }
 
-var _ Index[hashIndexScanOptions] = &hashIndex{}
+var _ Index[HashIndexScanOptions] = &hashIndex{}
 
 func NewHashIndex(name, tableName string, expression expressions.Expression) *hashIndex {
 	return &hashIndex{
@@ -42,11 +42,11 @@ func (i *hashIndex) Filter() expressions.Expression {
 	return nil
 }
 
-func (i *hashIndex) Description(opts hashIndexScanOptions) string {
+func (i *hashIndex) Description(opts HashIndexScanOptions) string {
 	return fmt.Sprintf("hash index scan of %s via %s", i.tableName, i.name)
 }
 
-func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expression) {
+func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr expressions.Expression) {
 	if i.expression == nil {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (i *hashIndex) Condition(opts hashIndexScanOptions) (expr expressions.Expre
 	return expressions.NewEquals(i.expression, opts.expression)
 }
 
-func (i *hashIndex) Ordering(opts hashIndexScanOptions) expressions.OrderExpression {
+func (i *hashIndex) Ordering(opts HashIndexScanOptions) expressions.OrderExpression {
 	return nil
 }
 

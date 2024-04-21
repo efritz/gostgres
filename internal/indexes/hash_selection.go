@@ -16,7 +16,7 @@ func CanSelectHashIndex(
 	table TableIndexer,
 	index BaseIndex,
 	filterExpression expressions.Expression,
-) (_ Index[hashIndexScanOptions], opts hashIndexScanOptions, _ bool) {
+) (_ Index[HashIndexScanOptions], opts HashIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {
 		return nil, opts, false
 	}
@@ -25,7 +25,7 @@ func CanSelectHashIndex(
 		return nil, opts, false
 	}
 
-	hashIndex, ok := index.(Index[hashIndexScanOptions])
+	hashIndex, ok := index.(Index[HashIndexScanOptions])
 	if !ok {
 		return nil, opts, false
 	}
@@ -38,11 +38,11 @@ func CanSelectHashIndex(
 	for _, conjunction := range filterExpression.Conjunctions() {
 		if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType == expressions.ComparisonTypeEquals {
 			if left.Equal(hashExpression) {
-				return hashIndex, hashIndexScanOptions{expression: right}, true
+				return hashIndex, HashIndexScanOptions{expression: right}, true
 			}
 
 			if right.Equal(hashExpression) {
-				return hashIndex, hashIndexScanOptions{expression: left}, true
+				return hashIndex, HashIndexScanOptions{expression: left}, true
 			}
 		}
 	}

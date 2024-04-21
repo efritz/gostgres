@@ -55,6 +55,10 @@ func (typ Type) Equals(other Type) bool {
 	return typ.Kind == other.Kind && typ.Nullable == other.Nullable
 }
 
+func (typ Type) NonNullable() Type {
+	return Type{Kind: typ.Kind, Nullable: false}
+}
+
 func (typ Type) Refine(value any) (Type, bool) {
 	if value == nil {
 		return typ, typ.Nullable

@@ -21,7 +21,7 @@ type btreeNode struct {
 	right  *btreeNode
 }
 
-type btreeIndexScanOptions struct {
+type BtreeIndexScanOptions struct {
 	scanDirection ScanDirection
 	lowerBounds   [][]scanBound
 	upperBounds   [][]scanBound
@@ -32,7 +32,7 @@ type scanBound struct {
 	inclusive  bool
 }
 
-var _ Index[btreeIndexScanOptions] = &btreeIndex{}
+var _ Index[BtreeIndexScanOptions] = &btreeIndex{}
 
 func NewBTreeIndex(name, tableName string, expressions []expressions.ExpressionWithDirection) *btreeIndex {
 	return &btreeIndex{
@@ -50,7 +50,7 @@ func (i *btreeIndex) Filter() expressions.Expression {
 	return nil
 }
 
-func (i *btreeIndex) Description(opts btreeIndexScanOptions) string {
+func (i *btreeIndex) Description(opts BtreeIndexScanOptions) string {
 	direction := ""
 	if opts.scanDirection == ScanDirectionBackward {
 		direction = "backward "
@@ -59,7 +59,7 @@ func (i *btreeIndex) Description(opts btreeIndexScanOptions) string {
 	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.tableName, i.name)
 }
 
-func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expression {
+func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) expressions.Expression {
 	var allExpressions []expressions.Expression
 
 	for j := range i.expressions {
@@ -82,7 +82,7 @@ func (i *btreeIndex) Condition(opts btreeIndexScanOptions) expressions.Expressio
 	return expr
 }
 
-func (i *btreeIndex) conditionsForIndex(opts btreeIndexScanOptions, index int) (lowers, uppers, equals []expressions.Expression) {
+func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (lowers, uppers, equals []expressions.Expression) {
 	var lowerBounds []scanBound
 	if index < len(opts.lowerBounds) {
 		lowerBounds = opts.lowerBounds[index]
@@ -140,7 +140,7 @@ func (i *btreeIndex) conditionsForIndex(opts btreeIndexScanOptions, index int) (
 	return lowers, uppers, equals
 }
 
-func (i *btreeIndex) Ordering(opts btreeIndexScanOptions) expressions.OrderExpression {
+func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) expressions.OrderExpression {
 	if opts.scanDirection == ScanDirectionBackward {
 		var reversed []expressions.ExpressionWithDirection
 		for _, expression := range i.expressions {

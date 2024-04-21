@@ -17,12 +17,12 @@ func CanSelectBtreeIndex(
 	index BaseIndex,
 	filterExpression expressions.Expression,
 	order expressions.OrderExpression,
-) (_ Index[btreeIndexScanOptions], opts btreeIndexScanOptions, _ bool) {
+) (_ Index[BtreeIndexScanOptions], opts BtreeIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {
 		return nil, opts, false
 	}
 
-	btreeIndex, ok := index.(Index[btreeIndexScanOptions])
+	btreeIndex, ok := index.(Index[BtreeIndexScanOptions])
 	if !ok {
 		return nil, opts, false
 	}
@@ -39,7 +39,7 @@ func CanSelectBtreeIndex(
 
 	lowerBounds, upperBounds := extractBounds(filterExpression, btreeExpressions)
 
-	opts = btreeIndexScanOptions{
+	opts = BtreeIndexScanOptions{
 		scanDirection: scanDirection,
 		lowerBounds:   lowerBounds,
 		upperBounds:   upperBounds,

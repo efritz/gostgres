@@ -31,7 +31,7 @@ func NewUnion(left queries.Node, right queries.Node, distinct bool) (queries.Nod
 		return nil, fmt.Errorf("unexpected union columns")
 	}
 	for i, leftField := range leftFields {
-		if leftField.TypeKind() != rightFields[i].TypeKind() {
+		if !leftField.Type().Equals(rightFields[i].Type()) {
 			// TODO - refine type if possible
 			return nil, fmt.Errorf("unexpected union types")
 		}

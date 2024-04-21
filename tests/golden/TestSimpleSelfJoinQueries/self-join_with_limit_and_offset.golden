@@ -7,7 +7,7 @@ LIMIT 2 OFFSET 3
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, employee_id, first_name, last_name, email, manager_id, department_id)
+select (employee_id, first_name, last_name, email, manager_id, department_id, bonus, employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     limit 2
         offset 3
             join using nested loop
@@ -21,9 +21,9 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, em
 
 Results:
 
- employee_id | first_name | last_name |           email           | manager_id | department_id | employee_id | first_name | last_name |           email           | manager_id | department_id
--------------+------------+-----------+---------------------------+------------+---------------+-------------+------------+-----------+---------------------------+------------+---------------
-           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1 |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
-           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1 |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
+ employee_id | first_name | last_name |           email           | manager_id | department_id | bonus | employee_id | first_name | last_name |           email           | manager_id | department_id | bonus
+-------------+------------+-----------+---------------------------+------------+---------------+-------+-------------+------------+-----------+---------------------------+------------+---------------+-------
+           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1 | <nil> |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1 | 20000
+           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1 | <nil> |           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1 | 20000
 (2 rows)
 `

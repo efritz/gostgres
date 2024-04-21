@@ -48,7 +48,6 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
 - Medium-term
     - Primary keys
     - Foreign keys
-    - Nullability
     - Enums
     - Constraints
     - Views

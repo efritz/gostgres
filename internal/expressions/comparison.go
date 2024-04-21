@@ -58,6 +58,10 @@ func newComparison(left, right Expression, comparisonType ComparisonType) Expres
 			return nil, err
 		}
 
+		if lVal == nil || rVal == nil {
+			return nil, nil
+		}
+
 		return comparisonType.MatchesOrderType(lVal, rVal)
 	})
 }

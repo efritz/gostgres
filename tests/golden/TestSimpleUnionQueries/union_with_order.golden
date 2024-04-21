@@ -13,28 +13,28 @@ ORDER BY email
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id)
+select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     order by email
         union
-            select (employee_id, first_name, last_name, email, manager_id, department_id)
+            select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                 table scan of employees
                     filter: department_id = 1
         with
-            select (employee_id, first_name, last_name, email, manager_id, department_id)
+            select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                 table scan of employees
                     filter: department_id = 2
 
 Results:
 
- employee_id | first_name | last_name |              email             | manager_id | department_id
--------------+------------+-----------+--------------------------------+------------+---------------
-           1 |   Annalisa |      Head |      annalisa.head@company.com |          1 |             1
-           2 |    Clayton |  Mahaffey |   clayton.mahaffey@company.com |          4 |             2
-          11 |    Deborah |   Glasser |    deborah.glasser@company.com |          9 |             1
-           8 |  Frederick |  McLendon | frederick.mclendon@company.com |          4 |             2
-           7 |      Linda |    Dollar |       linda.dollar@company.com |          1 |             1
-           4 |      Maria |    Warren |       maria.warren@company.com |          1 |             1
-           5 |     Robert |    Medina |      robert.medina@company.com |          1 |             1
-           6 |    Timothy |   Cornish |    timothy.cornish@company.com |          4 |             2
+ employee_id | first_name | last_name |              email             | manager_id | department_id | bonus
+-------------+------------+-----------+--------------------------------+------------+---------------+-------
+           1 |   Annalisa |      Head |      annalisa.head@company.com |          1 |             1 | 20000
+           2 |    Clayton |  Mahaffey |   clayton.mahaffey@company.com |          4 |             2 | <nil>
+          11 |    Deborah |   Glasser |    deborah.glasser@company.com |          9 |             1 | <nil>
+           8 |  Frederick |  McLendon | frederick.mclendon@company.com |          4 |             2 | <nil>
+           7 |      Linda |    Dollar |       linda.dollar@company.com |          1 |             1 | <nil>
+           4 |      Maria |    Warren |       maria.warren@company.com |          1 |             1 | <nil>
+           5 |     Robert |    Medina |      robert.medina@company.com |          1 |             1 | <nil>
+           6 |    Timothy |   Cornish |    timothy.cornish@company.com |          4 |             2 |  5000
 (8 rows)
 `

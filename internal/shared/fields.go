@@ -5,30 +5,30 @@ import "fmt"
 type Field struct {
 	relationName string
 	name         string
-	typeKind     TypeKind
+	typ          Type
 	internal     bool
 }
 
-func NewField(relationName, name string, typeKind TypeKind) Field {
-	return newField(relationName, name, typeKind, false)
+func NewField(relationName, name string, typ Type) Field {
+	return newField(relationName, name, typ, false)
 }
 
-func NewInternalField(relationName, name string, typeKind TypeKind) Field {
-	return newField(relationName, name, typeKind, true)
+func NewInternalField(relationName, name string, typ Type) Field {
+	return newField(relationName, name, typ, true)
 }
 
-func newField(relationName, name string, typeKind TypeKind, internal bool) Field {
+func newField(relationName, name string, typ Type, internal bool) Field {
 	return Field{
 		relationName: relationName,
 		name:         name,
-		typeKind:     typeKind,
+		typ:          typ,
 		internal:     internal,
 	}
 }
 
 func (f Field) RelationName() string { return f.relationName }
 func (f Field) Name() string         { return f.name }
-func (f Field) TypeKind() TypeKind   { return f.typeKind }
+func (f Field) Type() Type           { return f.typ }
 func (f Field) Internal() bool       { return f.internal }
 
 func (f Field) String() string {
@@ -40,11 +40,11 @@ func (f Field) String() string {
 }
 
 func (f Field) WithRelationName(relationName string) Field {
-	return newField(relationName, f.name, f.typeKind, f.internal)
+	return newField(relationName, f.name, f.typ, f.internal)
 }
 
-func (f Field) WithTypeKind(typeKind TypeKind) Field {
-	return newField(f.relationName, f.name, typeKind, f.internal)
+func (f Field) WithType(typ Type) Field {
+	return newField(f.relationName, f.name, typ, f.internal)
 }
 
 func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
@@ -80,12 +80,13 @@ func refineFieldTypes(fields []Field, values []any) ([]Field, error) {
 
 	refined := make([]Field, 0, len(fields))
 	for i, field := range fields {
-		refinedType := refineType(field.typeKind, values[i])
-		if refinedType == TypeKindInvalid {
-			return nil, fmt.Errorf("type error (%v is not %s)", values[i], field.TypeKind())
+		refinedType, ok := field.typ.Refine(values[i])
+		if !ok {
+			fmt.Printf("> %#v\n", field)
+			return nil, fmt.Errorf("type error (%v is not %s)", values[i], field.Type())
 		}
 
-		refined = append(refined, field.WithTypeKind(refinedType))
+		refined = append(refined, field.WithType(refinedType))
 	}
 
 	return refined, nil

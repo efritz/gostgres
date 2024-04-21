@@ -15,25 +15,25 @@ WHERE s.manager_id = 1
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id)
+select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     alias as s
-        select (employee_id, first_name, last_name, email, manager_id, department_id)
+        select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
             union
-                select (employee_id, first_name, last_name, email, manager_id, department_id)
+                select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                     table scan of employees
                         filter: department_id = 1 and employees.manager_id = 1
             with
-                select (employee_id, first_name, last_name, email, manager_id, department_id)
+                select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                     table scan of employees
                         filter: department_id = 2 and employees.manager_id = 1
 
 Results:
 
- employee_id | first_name | last_name |           email           | manager_id | department_id
--------------+------------+-----------+---------------------------+------------+---------------
-           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1
-           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1
-           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1
-           7 |      Linda |    Dollar |  linda.dollar@company.com |          1 |             1
+ employee_id | first_name | last_name |           email           | manager_id | department_id | bonus
+-------------+------------+-----------+---------------------------+------------+---------------+-------
+           1 |   Annalisa |      Head | annalisa.head@company.com |          1 |             1 | 20000
+           4 |      Maria |    Warren |  maria.warren@company.com |          1 |             1 | <nil>
+           5 |     Robert |    Medina | robert.medina@company.com |          1 |             1 | <nil>
+           7 |      Linda |    Dollar |  linda.dollar@company.com |          1 |             1 | <nil>
 (4 rows)
 `

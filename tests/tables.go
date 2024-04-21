@@ -35,12 +35,13 @@ func CreateStandardTestTables(root string) (map[string]*table.Table, error) {
 }
 
 func createEmployeesTable(root string) (*table.Table, error) {
-	employeeID := shared.NewField("employees", "employee_id", shared.TypeKindNumeric)
-	firstName := shared.NewField("employees", "first_name", shared.TypeKindText)
-	last_name := shared.NewField("employees", "last_name", shared.TypeKindText)
-	email := shared.NewField("employees", "email", shared.TypeKindText)
-	managerID := shared.NewField("employees", "manager_id", shared.TypeKindNumeric)
-	departmentID := shared.NewField("employees", "department_id", shared.TypeKindNumeric)
+	employeeID := shared.NewField("employees", "employee_id", shared.TypeNumeric)
+	firstName := shared.NewField("employees", "first_name", shared.TypeText)
+	last_name := shared.NewField("employees", "last_name", shared.TypeText)
+	email := shared.NewField("employees", "email", shared.TypeText)
+	managerID := shared.NewField("employees", "manager_id", shared.TypeNumeric)
+	departmentID := shared.NewField("employees", "department_id", shared.TypeNumeric)
+	bonus := shared.NewField("employees", "bonus", shared.TypeNullableNumeric)
 
 	table, err := loader.NewTableFromCSV("employees", csvFilepath(root, "employees"), []shared.Field{
 		employeeID,
@@ -49,6 +50,7 @@ func createEmployeesTable(root string) (*table.Table, error) {
 		email,
 		managerID,
 		departmentID,
+		bonus,
 	})
 	if err != nil {
 		return nil, err
@@ -92,9 +94,9 @@ func createEmployeesTable(root string) (*table.Table, error) {
 }
 
 func createDepartmentsTable(root string) (*table.Table, error) {
-	departmentID := shared.NewField("departments", "department_id", shared.TypeKindNumeric)
-	departmentName := shared.NewField("departments", "department_name", shared.TypeKindText)
-	locationID := shared.NewField("departments", "location_id", shared.TypeKindNumeric)
+	departmentID := shared.NewField("departments", "department_id", shared.TypeNumeric)
+	departmentName := shared.NewField("departments", "department_name", shared.TypeText)
+	locationID := shared.NewField("departments", "location_id", shared.TypeNumeric)
 
 	table, err := loader.NewTableFromCSV("departments", csvFilepath(root, "departments"), []shared.Field{
 		departmentID,
@@ -118,9 +120,9 @@ func createDepartmentsTable(root string) (*table.Table, error) {
 }
 
 func createLocationsTable(root string) (*table.Table, error) {
-	locationID := shared.NewField("locations", "location_id", shared.TypeKindNumeric)
-	locationName := shared.NewField("locations", "location_name", shared.TypeKindText)
-	regionID := shared.NewField("locations", "region_id", shared.TypeKindNumeric)
+	locationID := shared.NewField("locations", "location_id", shared.TypeNumeric)
+	locationName := shared.NewField("locations", "location_name", shared.TypeText)
+	regionID := shared.NewField("locations", "region_id", shared.TypeNumeric)
 
 	return loader.NewTableFromCSV("locations", csvFilepath(root, "locations"), []shared.Field{
 		locationID,
@@ -130,8 +132,8 @@ func createLocationsTable(root string) (*table.Table, error) {
 }
 
 func createRegionsTable(root string) (*table.Table, error) {
-	regionID := shared.NewField("regions", "region_id", shared.TypeKindNumeric)
-	regionName := shared.NewField("regions", "region_name", shared.TypeKindText)
+	regionID := shared.NewField("regions", "region_id", shared.TypeNumeric)
+	regionName := shared.NewField("regions", "region_name", shared.TypeText)
 
 	return loader.NewTableFromCSV("regions", csvFilepath(root, "regions"), []shared.Field{
 		regionID,
@@ -140,8 +142,8 @@ func createRegionsTable(root string) (*table.Table, error) {
 }
 
 func createK1Table(root string) (*table.Table, error) {
-	name := shared.NewField("k1", "name", shared.TypeKindText)
-	id := shared.NewField("k1", "id", shared.TypeKindNumeric)
+	name := shared.NewField("k1", "name", shared.TypeText)
+	id := shared.NewField("k1", "id", shared.TypeNumeric)
 
 	table, err := loader.NewTableFromCSV("k1", csvFilepath(root, "k1"), []shared.Field{
 		name,
@@ -167,8 +169,8 @@ func createK1Table(root string) (*table.Table, error) {
 }
 
 func createK2Table(root string) (*table.Table, error) {
-	name := shared.NewField("k2", "name", shared.TypeKindText)
-	id := shared.NewField("k2", "id", shared.TypeKindNumeric)
+	name := shared.NewField("k2", "name", shared.TypeText)
+	id := shared.NewField("k2", "id", shared.TypeNumeric)
 
 	table, err := loader.NewTableFromCSV("k2", csvFilepath(root, "k2"), []shared.Field{
 		name,

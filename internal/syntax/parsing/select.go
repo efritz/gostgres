@@ -643,7 +643,7 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 
 	fields := make([]shared.Field, 0, len(allRows[0]))
 	for i := range allRows[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeKindAny))
+		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeNullableAny))
 	}
 
 	rows, err := shared.NewRows(fields)

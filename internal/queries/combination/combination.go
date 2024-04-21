@@ -47,7 +47,7 @@ func newCombination(left queries.Node, right queries.Node, groupedRowFilter grou
 		return nil, fmt.Errorf("unexpected combination columns")
 	}
 	for i, leftField := range leftFields {
-		if leftField.TypeKind() != rightFields[i].TypeKind() {
+		if !leftField.Type().Equals(rightFields[i].Type()) {
 			// TODO - refine type if possible
 			return nil, fmt.Errorf("unexpected combination types")
 		}

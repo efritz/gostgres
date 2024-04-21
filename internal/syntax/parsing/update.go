@@ -57,7 +57,7 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 	if aliasName != "" {
 		relationName = aliasName
 	}
-	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeKindNumeric)
+	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeNumeric)
 
 	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
 		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), shared.TIDName),

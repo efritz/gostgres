@@ -27,6 +27,59 @@ func (k TypeKind) String() string {
 	return "any"
 }
 
+type Type struct {
+	Kind     TypeKind
+	Nullable bool
+}
+
+var (
+	TypeText            = Type{Kind: TypeKindText, Nullable: false}
+	TypeNullableText    = Type{Kind: TypeKindText, Nullable: true}
+	TypeNumeric         = Type{Kind: TypeKindNumeric, Nullable: false}
+	TypeNullableNumeric = Type{Kind: TypeKindNumeric, Nullable: true}
+	TypeBool            = Type{Kind: TypeKindBool, Nullable: false}
+	TypeNullableBool    = Type{Kind: TypeKindBool, Nullable: true}
+	TypeAny             = Type{Kind: TypeKindAny, Nullable: false}
+	TypeNullableAny     = Type{Kind: TypeKindAny, Nullable: true}
+)
+
+func (typ Type) String() string {
+	if typ.Nullable {
+		return fmt.Sprintf("%s?", typ.Kind)
+	}
+
+	return typ.Kind.String()
+}
+
+func (typ Type) Equals(other Type) bool {
+	return typ.Kind == other.Kind && typ.Nullable == other.Nullable
+}
+
+func (typ Type) Refine(value any) (Type, bool) {
+	if value == nil {
+		return typ, typ.Nullable
+	}
+
+	switch value.(type) {
+	case string:
+		return typ.refineToKind(TypeKindText)
+	case int:
+		return typ.refineToKind(TypeKindNumeric)
+	case bool:
+		return typ.refineToKind(TypeKindBool)
+	}
+
+	return Type{}, false
+}
+
+func (typ Type) refineToKind(kind TypeKind) (Type, bool) {
+	if typ.Kind == TypeKindAny || typ.Kind == kind {
+		return Type{Kind: kind, Nullable: typ.Nullable}, true
+	}
+
+	return Type{}, false
+}
+
 func ValueAs[T any](untypedValue any, err error) (*T, error) {
 	if err != nil || untypedValue == nil {
 		return nil, err
@@ -38,24 +91,4 @@ func ValueAs[T any](untypedValue any, err error) (*T, error) {
 	}
 
 	return &typedValue, nil
-}
-
-func refineType(expectedType TypeKind, value any) TypeKind {
-	if _, ok := value.(string); ok {
-		if expectedType == TypeKindAny || expectedType == TypeKindText {
-			return TypeKindText
-		}
-	}
-	if _, ok := value.(int); ok {
-		if expectedType == TypeKindAny || expectedType == TypeKindNumeric {
-			return TypeKindNumeric
-		}
-	}
-	if _, ok := value.(bool); ok {
-		if expectedType == TypeKindAny || expectedType == TypeKindBool {
-			return TypeKindBool
-		}
-	}
-
-	return TypeKindInvalid
 }

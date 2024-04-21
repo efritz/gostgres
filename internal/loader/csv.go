@@ -68,7 +68,7 @@ func convertRecords(rawValues [][]string, fields []shared.Field) ([][]any, error
 func convertValues(rawValues []string, fields []shared.Field) ([]any, error) {
 	values := make([]any, 0, len(rawValues))
 	for i, rawValue := range rawValues {
-		value, err := convertValue(rawValue, fields[i].TypeKind())
+		value, err := convertValue(rawValue, fields[i].Type())
 		if err != nil {
 			return nil, err
 		}
@@ -79,8 +79,16 @@ func convertValues(rawValues []string, fields []shared.Field) ([]any, error) {
 	return values, nil
 }
 
-func convertValue(rawValue string, typeKind shared.TypeKind) (any, error) {
-	switch typeKind {
+func convertValue(rawValue string, typ shared.Type) (any, error) {
+	if rawValue == "NULL" {
+		if !typ.Nullable {
+			return nil, fmt.Errorf("expected non-nullable value, got NULL")
+		}
+
+		return nil, nil
+	}
+
+	switch typ.Kind {
 	case shared.TypeKindText:
 		return rawValue, nil
 
@@ -91,5 +99,5 @@ func convertValue(rawValue string, typeKind shared.TypeKind) (any, error) {
 		return rawValue == "true", nil
 	}
 
-	return nil, fmt.Errorf("unconvertible type %s", typeKind)
+	return nil, fmt.Errorf("unconvertible type %s", typ.Kind)
 }

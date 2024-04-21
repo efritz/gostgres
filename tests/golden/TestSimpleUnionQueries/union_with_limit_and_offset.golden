@@ -13,23 +13,23 @@ LIMIT 2 OFFSET 3
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id)
+select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     limit 2
         offset 3
             union
-                select (employee_id, first_name, last_name, email, manager_id, department_id)
+                select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                     table scan of employees
                         filter: department_id = 1
             with
-                select (employee_id, first_name, last_name, email, manager_id, department_id)
+                select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                     table scan of employees
                         filter: department_id = 2
 
 Results:
 
- employee_id | first_name | last_name |            email            | manager_id | department_id
--------------+------------+-----------+-----------------------------+------------+---------------
-           7 |      Linda |    Dollar |    linda.dollar@company.com |          1 |             1
-          11 |    Deborah |   Glasser | deborah.glasser@company.com |          9 |             1
+ employee_id | first_name | last_name |            email            | manager_id | department_id | bonus
+-------------+------------+-----------+-----------------------------+------------+---------------+-------
+           7 |      Linda |    Dollar |    linda.dollar@company.com |          1 |             1 | <nil>
+          11 |    Deborah |   Glasser | deborah.glasser@company.com |          9 |             1 | <nil>
 (2 rows)
 `

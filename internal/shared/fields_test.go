@@ -10,11 +10,11 @@ import (
 func TestFindMatchingFieldIndex(t *testing.T) {
 	t.Run("matching qualified field", func(t *testing.T) {
 		index, err := FindMatchingFieldIndex(
-			NewField("t", "b", TypeKindText),
+			NewField("t", "b", TypeText),
 			[]Field{
-				NewField("t", "a", TypeKindText),
-				NewField("t", "b", TypeKindText),
-				NewField("t", "c", TypeKindText),
+				NewField("t", "a", TypeText),
+				NewField("t", "b", TypeText),
+				NewField("t", "c", TypeText),
 			},
 		)
 		require.NoError(t, err)
@@ -23,11 +23,11 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("matching unqualified field", func(t *testing.T) {
 		index, err := FindMatchingFieldIndex(
-			NewField("", "b", TypeKindText),
+			NewField("", "b", TypeText),
 			[]Field{
-				NewField("t", "a", TypeKindText),
-				NewField("t", "b", TypeKindText),
-				NewField("t", "c", TypeKindText),
+				NewField("t", "a", TypeText),
+				NewField("t", "b", TypeText),
+				NewField("t", "c", TypeText),
 			},
 		)
 		require.NoError(t, err)
@@ -36,12 +36,12 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("ambiguous field", func(t *testing.T) {
 		_, err := FindMatchingFieldIndex(
-			NewField("", "b", TypeKindText),
+			NewField("", "b", TypeText),
 			[]Field{
-				NewField("t1", "a", TypeKindText),
-				NewField("t1", "b", TypeKindText),
-				NewField("t2", "b", TypeKindText),
-				NewField("t2", "c", TypeKindText),
+				NewField("t1", "a", TypeText),
+				NewField("t1", "b", TypeText),
+				NewField("t2", "b", TypeText),
+				NewField("t2", "c", TypeText),
 			},
 		)
 		require.ErrorContains(t, err, "ambiguous field b")
@@ -49,11 +49,11 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("unknown field", func(t *testing.T) {
 		_, err := FindMatchingFieldIndex(
-			NewField("t", "d", TypeKindText),
+			NewField("t", "d", TypeText),
 			[]Field{
-				NewField("t", "a", TypeKindText),
-				NewField("t", "b", TypeKindText),
-				NewField("t", "c", TypeKindText),
+				NewField("t", "a", TypeText),
+				NewField("t", "b", TypeText),
+				NewField("t", "c", TypeText),
 			},
 		)
 		require.ErrorContains(t, err, "unknown field d")

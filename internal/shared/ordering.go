@@ -4,6 +4,7 @@ type OrderType int
 
 const (
 	OrderTypeIncomparable OrderType = iota
+	OrderTypeNulls
 	OrderTypeBefore
 	OrderTypeEqual
 	OrderTypeAfter
@@ -20,6 +21,16 @@ func CompareValueSlices(left, right []any) OrderType {
 }
 
 func CompareValues(left, right any) OrderType {
+	if left == nil && right == nil {
+		return OrderTypeNulls
+	}
+	if left == nil && right != nil {
+		return OrderTypeAfter
+	}
+	if left != nil && right == nil {
+		return OrderTypeBefore
+	}
+
 	if lVal, ok := left.(int); ok {
 		if rVal, ok := right.(int); ok {
 			if lVal == rVal {

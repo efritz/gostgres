@@ -37,6 +37,7 @@ func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *pars
 		tokens.TokenTypeInsert: parser.parseInsert,
 		tokens.TokenTypeUpdate: parser.parseUpdate,
 		tokens.TokenTypeDelete: parser.parseDelete,
+		tokens.TokenTypeCreate: parser.parseCreate,
 	}
 	parser.prefixParsers = map[tokens.TokenType]prefixParserFunc{
 		tokens.TokenTypeIdent:     parser.parseNamedExpression,
@@ -92,6 +93,7 @@ func newParser(tokenStream []tokens.Token, tables map[string]*table.Table) *pars
 //	| `INSERT` insert
 //	| `UPDATE` update
 //	| `DELETE` delete
+//	| `CREATE` create
 func (p *parser) parseStatement() (queries.Node, error) {
 	token := p.current()
 	for tokenType, parser := range p.statementParsers {

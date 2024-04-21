@@ -20,6 +20,7 @@ const (
 	TokenTypeAscending
 	TokenTypeBetween
 	TokenTypeBy
+	TokenTypeCreate
 	TokenTypeDelete
 	TokenTypeDescending
 	TokenTypeDistinct
@@ -32,6 +33,7 @@ const (
 	TokenTypeInto
 	TokenTypeIs
 	TokenTypeJoin
+	TokenTypeKwUnknown
 	TokenTypeLike
 	TokenTypeLimit
 	TokenTypeNot
@@ -44,9 +46,9 @@ const (
 	TokenTypeSelect
 	TokenTypeSet
 	TokenTypeSymmetric
+	TokenTypeTable
 	TokenTypeTrue
 	TokenTypeUnion
-	TokenTypeKwUnknown
 	TokenTypeUpdate
 	TokenTypeUsing
 	TokenTypeValues
@@ -92,8 +94,9 @@ const (
 	TokenTypeIsUnknown
 	TokenTypeNotBetween
 	TokenTypeNotBetweenSymmetric
-	TokenTypeNotLike
 	TokenTypeNotILike
+	TokenTypeNotLike
+	TokenTypeNotNull
 
 	TokenTypeUnknown
 )

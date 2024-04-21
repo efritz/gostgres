@@ -8,26 +8,27 @@ import (
 )
 
 type tokenSequenceReplacement struct {
-	pattern     []tokens.TokenType
 	replacement tokens.TokenType
+	pattern     []tokens.TokenType
 }
 
 var tokenSequenceReplacements = []tokenSequenceReplacement{
-	{[]tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeLike}, tokens.TokenTypeNotLike},
-	{[]tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeILike}, tokens.TokenTypeNotILike},
-	{[]tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween}, tokens.TokenTypeNotBetween},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeTrue}, tokens.TokenTypeIsTrue},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeTrue}, tokens.TokenTypeIsNotTrue},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeFalse}, tokens.TokenTypeIsFalse},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeFalse}, tokens.TokenTypeIsNotFalse},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNull}, tokens.TokenTypeIsNull},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeNull}, tokens.TokenTypeIsNotNull},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeKwUnknown}, tokens.TokenTypeIsUnknown},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeKwUnknown}, tokens.TokenTypeIsNotUnknown},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}, tokens.TokenTypeIsDistinctFrom},
-	{[]tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}, tokens.TokenTypeIsNotDistinctFrom},
-	{[]tokens.TokenType{tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}, tokens.TokenTypeBetweenSymmetric},
-	{[]tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}, tokens.TokenTypeNotBetweenSymmetric},
+	{tokens.TokenTypeBetweenSymmetric, []tokens.TokenType{tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}},
+	{tokens.TokenTypeIsDistinctFrom, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}},
+	{tokens.TokenTypeIsFalse, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeFalse}},
+	{tokens.TokenTypeIsNotDistinctFrom, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}},
+	{tokens.TokenTypeIsNotFalse, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeFalse}},
+	{tokens.TokenTypeIsNotNull, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeNull}},
+	{tokens.TokenTypeIsNotTrue, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeTrue}},
+	{tokens.TokenTypeIsNotUnknown, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeKwUnknown}},
+	{tokens.TokenTypeIsNull, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNull}},
+	{tokens.TokenTypeIsTrue, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeTrue}},
+	{tokens.TokenTypeIsUnknown, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeKwUnknown}},
+	{tokens.TokenTypeNotBetween, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween}},
+	{tokens.TokenTypeNotBetweenSymmetric, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}},
+	{tokens.TokenTypeNotILike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeILike}},
+	{tokens.TokenTypeNotLike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeLike}},
+	{tokens.TokenTypeNotNull, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeNull}},
 }
 
 func init() {

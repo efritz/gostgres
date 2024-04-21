@@ -42,17 +42,21 @@ func NewUnaryMinus(expression Expression) Expression {
 
 func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b int) (any, error)) Expression {
 	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (any, error) {
-		lVal, err := shared.EnsureInt(left.ValueFrom(row))
+		lVal, err := shared.ValueAs[int](left.ValueFrom(row))
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := shared.EnsureInt(right.ValueFrom(row))
+		rVal, err := shared.ValueAs[int](right.ValueFrom(row))
 		if err != nil {
 			return nil, err
 		}
 
-		return f(lVal, rVal)
+		if lVal == nil || rVal == nil {
+			return nil, nil
+		}
+
+		return f(*lVal, *rVal)
 	})
 }
 

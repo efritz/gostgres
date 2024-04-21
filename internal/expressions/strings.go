@@ -4,17 +4,21 @@ import "github.com/efritz/gostgres/internal/shared"
 
 func NewConcat(left, right Expression) Expression {
 	return newBinaryExpression(left, right, "||", func(left, right Expression, row shared.Row) (any, error) {
-		lVal, err := shared.EnsureString(left.ValueFrom(row))
+		lVal, err := shared.ValueAs[string](left.ValueFrom(row))
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := shared.EnsureString(right.ValueFrom(row))
+		rVal, err := shared.ValueAs[string](right.ValueFrom(row))
 		if err != nil {
 			return nil, err
 		}
 
-		return lVal + rVal, nil
+		if lVal == nil || rVal == nil {
+			return nil, nil
+		}
+
+		return *lVal + *rVal, nil
 	})
 }
 

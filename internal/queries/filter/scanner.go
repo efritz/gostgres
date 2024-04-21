@@ -18,9 +18,9 @@ func NewFilterScanner(ctx scan.ScanContext, scanner scan.Scanner, filter express
 				return shared.Row{}, err
 			}
 
-			if ok, err := shared.EnsureBool(ctx.Evaluate(filter, row)); err != nil {
+			if ok, err := shared.ValueAs[bool](ctx.Evaluate(filter, row)); err != nil {
 				return shared.Row{}, err
-			} else if !ok {
+			} else if ok == nil || !*ok {
 				continue
 			}
 

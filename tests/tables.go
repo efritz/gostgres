@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/loader"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/syntax/lexing"
+	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/efritz/gostgres/internal/table"
 )
 
@@ -38,218 +39,66 @@ func (t *Tablespace) CreateAndGetTable(name string, fields []shared.Field) (*tab
 }
 
 func CreateStandardTestTables(root string) (*Tablespace, error) {
-	loaders := []func(*Tablespace, string) error{
-		createEmployeesTable,
-		createDepartmentsTable,
-		createLocationsTable,
-		createRegionsTable,
-		createK1Table,
-		createK2Table,
+	statements := []string{
+		`
+			CREATE TABLE employees (
+				employee_id integer NOT NULL,
+				first_name text NOT NULL,
+				last_name text NOT NULL,
+				email text NOT NULL,
+				manager_id integer NOT NULL,
+				department_id integer NOT NULL,
+				bonus integer
+			)
+		`,
+		`CREATE INDEX employees_last_name_first_name_employee_id ON employees(last_name, first_name, employee_id)`,
+		`CREATE INDEX employees_first_name ON employees USING hash(first_name)`,
+		`CREATE INDEX employees_last_name_manager_id ON employees USING hash(last_name) WHERE manager_id <= 4`,
+
+		`CREATE TABLE departments (department_id integer NOT NULL, department_name text NOT NULL, location_id integer NOT NULL)`,
+		`CREATE INDEX departments_department_id ON departments USING hash(department_id)`,
+
+		`CREATE TABLE locations (location_id integer NOT NULL, location_name text NOT NULL, region_id integer NOT NULL)`,
+		`CREATE TABLE regions (region_id integer NOT NULL, region_name text NOT NULL)`,
+
+		`CREATE TABLE k1 (name text NOT NULL, id integer NOT NULL)`,
+		`CREATE INDEX k1_name_id ON k1 USING btree(name, id)`,
+
+		`CREATE TABLE k2 (name text NOT NULL, id integer NOT NULL)`,
+		`CREATE INDEX k2_name_id ON k2 USING btree(name, id)`,
 	}
 
 	tables := NewTablespace()
-	for _, loader := range loaders {
-		if err := loader(tables, root); err != nil {
+
+	for _, statement := range statements {
+		node, err := parsing.Parse(lexing.Lex(statement), tables)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse node: %s", err)
+		}
+		if _, err := node.Scanner(scan.ScanContext{Tables: tables}); err != nil {
+			return nil, err
+		}
+	}
+
+	tableNames := []string{
+		"employees",
+		"departments",
+		"locations",
+		"regions",
+		"k1",
+		"k2",
+	}
+	for _, name := range tableNames {
+		table, ok := tables.GetTable(name)
+		if !ok {
+			return nil, fmt.Errorf("table %q not found", name)
+		}
+		if err := loader.PopulateTableFromCSV(table, csvFilepath(root, name)); err != nil {
 			return nil, err
 		}
 	}
 
 	return tables, nil
-}
-
-func createEmployeesTable(tables *Tablespace, root string) error {
-	employeeID := shared.NewField("employees", "employee_id", shared.TypeNumeric)
-	firstName := shared.NewField("employees", "first_name", shared.TypeText)
-	last_name := shared.NewField("employees", "last_name", shared.TypeText)
-	email := shared.NewField("employees", "email", shared.TypeText)
-	managerID := shared.NewField("employees", "manager_id", shared.TypeNumeric)
-	departmentID := shared.NewField("employees", "department_id", shared.TypeNumeric)
-	bonus := shared.NewField("employees", "bonus", shared.TypeNullableNumeric)
-	fields := []shared.Field{
-		employeeID,
-		firstName,
-		last_name,
-		email,
-		managerID,
-		departmentID,
-		bonus,
-	}
-
-	table, err := tables.CreateAndGetTable("employees", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "employees")); err != nil {
-		return err
-	}
-
-	// btree index on (last_name, first_name, employee_id)
-	if err := table.AddIndex(indexes.NewBTreeIndex(
-		"employees_last_name_first_name_employee_id",
-		table.Name(),
-		[]expressions.ExpressionWithDirection{
-			{Expression: expressions.NewNamed(last_name)},
-			{Expression: expressions.NewNamed(firstName)},
-			{Expression: expressions.NewNamed(employeeID)},
-		},
-	)); err != nil {
-		return err
-	}
-
-	// hash index on first name
-	if err := table.AddIndex(indexes.NewHashIndex(
-		"employees_first_name",
-		table.Name(),
-		expressions.NewNamed(firstName),
-	)); err != nil {
-		return err
-	}
-
-	// hash index last_name, partial where manager_id <= 4
-	if err := table.AddIndex(indexes.NewPartialIndex(
-		indexes.NewHashIndex(
-			"employees_last_name_manager_id",
-			table.Name(),
-			expressions.NewNamed(last_name),
-		),
-		expressions.NewLessThanEquals(expressions.NewNamed(managerID), expressions.NewConstant(4)),
-	)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createDepartmentsTable(tables *Tablespace, root string) error {
-	departmentID := shared.NewField("departments", "department_id", shared.TypeNumeric)
-	departmentName := shared.NewField("departments", "department_name", shared.TypeText)
-	locationID := shared.NewField("departments", "location_id", shared.TypeNumeric)
-	fields := []shared.Field{
-		departmentID,
-		departmentName,
-		locationID,
-	}
-
-	table, err := tables.CreateAndGetTable("departments", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "departments")); err != nil {
-		return err
-	}
-
-	// hash index on department_id
-	if err := table.AddIndex(indexes.NewHashIndex(
-		"departments_department_id",
-		table.Name(),
-		expressions.NewNamed(departmentID),
-	)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createLocationsTable(tables *Tablespace, root string) error {
-	locationID := shared.NewField("locations", "location_id", shared.TypeNumeric)
-	locationName := shared.NewField("locations", "location_name", shared.TypeText)
-	regionID := shared.NewField("locations", "region_id", shared.TypeNumeric)
-	fields := []shared.Field{
-		locationID,
-		locationName,
-		regionID,
-	}
-
-	table, err := tables.CreateAndGetTable("locations", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "locations")); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createRegionsTable(tables *Tablespace, root string) error {
-	regionID := shared.NewField("regions", "region_id", shared.TypeNumeric)
-	regionName := shared.NewField("regions", "region_name", shared.TypeText)
-	fields := []shared.Field{
-		regionID,
-		regionName,
-	}
-
-	table, err := tables.CreateAndGetTable("regions", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "regions")); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createK1Table(tables *Tablespace, root string) error {
-	name := shared.NewField("k1", "name", shared.TypeText)
-	id := shared.NewField("k1", "id", shared.TypeNumeric)
-	fields := []shared.Field{
-		name,
-		id,
-	}
-
-	table, err := tables.CreateAndGetTable("k1", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "k1")); err != nil {
-		return err
-	}
-
-	// btree index on (name, id)
-	if err := table.AddIndex(indexes.NewBTreeIndex(
-		"k1_name_id",
-		table.Name(),
-		[]expressions.ExpressionWithDirection{
-			{Expression: expressions.NewNamed(name)},
-			{Expression: expressions.NewNamed(id)},
-		},
-	)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createK2Table(tables *Tablespace, root string) error {
-	name := shared.NewField("k2", "name", shared.TypeText)
-	id := shared.NewField("k2", "id", shared.TypeNumeric)
-	fields := []shared.Field{
-		name,
-		id,
-	}
-
-	table, err := tables.CreateAndGetTable("k2", fields)
-	if err != nil {
-		return err
-	}
-	if err := loader.PopulateTableFromCSV(table, csvFilepath(root, "k2")); err != nil {
-		return err
-	}
-
-	// btree index on (name, id)
-	if err := table.AddIndex(indexes.NewBTreeIndex(
-		"k2_name_id",
-		table.Name(),
-		[]expressions.ExpressionWithDirection{
-			{Expression: expressions.NewNamed(name)},
-			{Expression: expressions.NewNamed(id)},
-		},
-	)); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func csvFilepath(root, name string) string {

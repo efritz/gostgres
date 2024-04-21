@@ -74,19 +74,11 @@ func handleQuery(tables *tablespace.Tablespace, line string) (err error) {
 		}
 	}()
 
-	var explain bool
-	line, explain = eatExplain(line)
-
 	node, err := parsing.Parse(lexing.Lex(line), tables)
 	if err != nil {
 		return fmt.Errorf("failed to parse node: %s", err)
 	}
 	node.Optimize()
-
-	if explain {
-		fmt.Println(serialization.SerializePlanString(node))
-		return nil
-	}
 
 	scanner, err := node.Scanner(scan.ScanContext{
 		Tables: tables,
@@ -105,14 +97,4 @@ func handleQuery(tables *tablespace.Tablespace, line string) (err error) {
 
 	fmt.Println(serialization.SerializeRowsString(rows))
 	return nil
-}
-
-const explainPrefix = "explain "
-
-func eatExplain(line string) (string, bool) {
-	if len(line) < len(explainPrefix) || strings.ToLower(line[:len(explainPrefix)]) != explainPrefix {
-		return line, false
-	}
-
-	return line[len(explainPrefix):], true
 }

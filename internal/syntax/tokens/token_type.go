@@ -25,6 +25,7 @@ const (
 	TokenTypeDescending
 	TokenTypeDistinct
 	TokenTypeExcept
+	TokenTypeExplain
 	TokenTypeFalse
 	TokenTypeFrom
 	TokenTypeILike

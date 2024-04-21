@@ -5,18 +5,20 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/queries/explain"
 	"github.com/efritz/gostgres/internal/queries/joins"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type parser struct {
-	tokens           []tokens.Token
-	cursor           int
-	tables           TableGetter
-	statementParsers map[tokens.TokenType]statementParserFunc
-	prefixParsers    map[tokens.TokenType]prefixParserFunc
-	infixParsers     map[tokens.TokenType]infixParserFunc
+	tokens             []tokens.Token
+	cursor             int
+	tables             TableGetter
+	ddlParsers         map[tokens.TokenType]statementParserFunc
+	explainableParsers map[tokens.TokenType]statementParserFunc
+	prefixParsers      map[tokens.TokenType]prefixParserFunc
+	infixParsers       map[tokens.TokenType]infixParserFunc
 }
 
 type TableGetter interface {
@@ -36,12 +38,14 @@ func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 		tokens: tokenStream,
 		tables: tables,
 	}
-	parser.statementParsers = map[tokens.TokenType]statementParserFunc{
+	parser.ddlParsers = map[tokens.TokenType]statementParserFunc{
+		tokens.TokenTypeCreate: parser.parseCreate,
+	}
+	parser.explainableParsers = map[tokens.TokenType]statementParserFunc{
 		tokens.TokenTypeSelect: parser.parseSelect,
 		tokens.TokenTypeInsert: parser.parseInsert,
 		tokens.TokenTypeUpdate: parser.parseUpdate,
 		tokens.TokenTypeDelete: parser.parseDelete,
-		tokens.TokenTypeCreate: parser.parseCreate,
 	}
 	parser.prefixParsers = map[tokens.TokenType]prefixParserFunc{
 		tokens.TokenTypeIdent:     parser.parseNamedExpression,
@@ -92,17 +96,36 @@ func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 	return parser
 }
 
-// statement := `SELECT` select
-//
-//	| `INSERT` insert
-//	| `UPDATE` update
-//	| `DELETE` delete
-//	| `CREATE` create
+// statement := ddlStatement [`EXPLAIN`] explainableStatement
+// ddlStatement := `CREATE` create
+// explainableStatement := `SELECT` select | `INSERT` insert | `UPDATE` update | `DELETE` delete
 func (p *parser) parseStatement() (queries.Node, error) {
-	token := p.current()
-	for tokenType, parser := range p.statementParsers {
+	for tokenType, parser := range p.ddlParsers {
+		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
 			return parser(token)
+		}
+	}
+
+	isExplain := false
+	if p.advanceIf(isType(tokens.TokenTypeExplain)) {
+		isExplain = true
+	}
+
+	for tokenType, parser := range p.explainableParsers {
+		token := p.current()
+		if p.advanceIf(isType(tokenType)) {
+			node, err := parser(token)
+			if err != nil {
+				fmt.Printf("> %#v\n> %#v\n> %#v\n", token, node, err)
+				return nil, err
+			}
+
+			if isExplain {
+				node = explain.NewExplain(node)
+			}
+
+			return node, nil
 		}
 	}
 

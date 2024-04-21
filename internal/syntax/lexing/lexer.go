@@ -25,6 +25,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"desc":      tokens.TokenTypeDescending,
 	"distinct":  tokens.TokenTypeDistinct,
 	"except":    tokens.TokenTypeExcept,
+	"explain":   tokens.TokenTypeExplain,
 	"false":     tokens.TokenTypeFalse,
 	"from":      tokens.TokenTypeFrom,
 	"ilike":     tokens.TokenTypeILike,

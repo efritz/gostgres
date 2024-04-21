@@ -71,3 +71,27 @@ func (e orderExpression) Map(f func(Expression) Expression) OrderExpression {
 func (e orderExpression) Expressions() []ExpressionWithDirection {
 	return e.expressions
 }
+
+func SubsumesOrder(a, b OrderExpression) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	aExpressions := a.Expressions()
+	bExpressions := b.Expressions()
+	if len(bExpressions) < len(aExpressions) {
+		return false
+	}
+
+	for i, expression := range aExpressions {
+		if expression.Reverse != bExpressions[i].Reverse {
+			return false
+		}
+
+		if !expression.Expression.Equal(bExpressions[i].Expression) {
+			return false
+		}
+	}
+
+	return true
+}

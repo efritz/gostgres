@@ -6,7 +6,6 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
-	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -47,7 +46,7 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() expressions.Expression {
 		return filterExpression
 	}
 
-	return filter.UnionFilters(append(filterExpression.Conjunctions(), condition.Conjunctions()...)...)
+	return expressions.UnionFilters(append(filterExpression.Conjunctions(), condition.Conjunctions()...)...)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpression {

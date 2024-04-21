@@ -5,8 +5,6 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
-	"github.com/efritz/gostgres/internal/queries/filter"
-	"github.com/efritz/gostgres/internal/queries/order"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -39,14 +37,14 @@ func selectAccessStrategy(
 
 	for _, index := range candidates {
 		indexCost := 0
-		if order.SubsumesOrder(orderExpression, index.Ordering()) {
+		if expressions.SubsumesOrder(orderExpression, index.Ordering()) {
 			indexCost += 100
 		}
 
 		if filterExpression != nil {
 			oldLen := len(filterExpression.Conjunctions())
 			newLen := 0
-			if remainingFilter := filter.FilterDifference(filterExpression, index.Filter()); remainingFilter != nil {
+			if remainingFilter := expressions.FilterDifference(filterExpression, index.Filter()); remainingFilter != nil {
 				newLen = len(remainingFilter.Conjunctions())
 			}
 

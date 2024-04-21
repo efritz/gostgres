@@ -2,7 +2,6 @@ package indexes
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries/filter"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -64,7 +63,7 @@ func matchesPartial(index BaseIndex, filterExpression expressions.Expression) bo
 
 	// TODO - need to do a more tight "subsumes" check
 	for _, v := range indexFilter.Conjunctions() {
-		if diff := filter.FilterDifference(v, filterExpression); diff != nil && len(diff.Conjunctions()) >= len(filterExpression.Conjunctions()) {
+		if diff := expressions.FilterDifference(v, filterExpression); diff != nil && len(diff.Conjunctions()) >= len(filterExpression.Conjunctions()) {
 			return false
 		}
 	}

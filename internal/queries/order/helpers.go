@@ -27,27 +27,3 @@ func LowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
 		}
 	}
 }
-
-func SubsumesOrder(a, b expressions.OrderExpression) bool {
-	if a == nil || b == nil {
-		return false
-	}
-
-	aExpressions := a.Expressions()
-	bExpressions := b.Expressions()
-	if len(bExpressions) < len(aExpressions) {
-		return false
-	}
-
-	for i, expression := range aExpressions {
-		if expression.Reverse != bExpressions[i].Reverse {
-			return false
-		}
-
-		if !expression.Expression.Equal(bExpressions[i].Expression) {
-			return false
-		}
-	}
-
-	return true
-}

@@ -62,7 +62,7 @@ func (n *joinNode) Optimize() {
 
 	n.left.Optimize()
 	n.right.Optimize()
-	n.filter = filter.FilterDifference(n.filter, filter.UnionFilters(n.left.Filter(), n.right.Filter()))
+	n.filter = expressions.FilterDifference(n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
 	n.strategy = selectJoinStrategy(n)
 }
 
@@ -77,7 +77,7 @@ func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
 }
 
 func (n *joinNode) AddFilter(filterExpression expressions.Expression) {
-	n.filter = filter.UnionFilters(n.filter, filterExpression)
+	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
 func (n *joinNode) AddOrder(orderExpression expressions.OrderExpression) {
@@ -85,7 +85,7 @@ func (n *joinNode) AddOrder(orderExpression expressions.OrderExpression) {
 }
 
 func (n *joinNode) Filter() expressions.Expression {
-	return filter.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
+	return expressions.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
 func (n *joinNode) Ordering() expressions.OrderExpression {

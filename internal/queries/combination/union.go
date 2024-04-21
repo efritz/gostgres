@@ -75,7 +75,7 @@ func (n *unionNode) AddOrder(orderExpression expressions.OrderExpression) {
 }
 
 func (n *unionNode) Filter() expressions.Expression {
-	return filter.FilterIntersection(n.left.Filter(), n.right.Filter())
+	return expressions.FilterIntersection(n.left.Filter(), n.right.Filter())
 }
 
 func (n *unionNode) Ordering() expressions.OrderExpression {

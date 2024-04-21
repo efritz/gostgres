@@ -60,12 +60,12 @@ func (n *accessNode) Optimize() {
 	}
 
 	n.strategy = selectAccessStrategy(n.table, n.filter, n.order)
-	n.filter = filter.FilterDifference(n.filter, n.strategy.Filter())
+	n.filter = expressions.FilterDifference(n.filter, n.strategy.Filter())
 	n.order = nil
 }
 
 func (n *accessNode) AddFilter(filterExpression expressions.Expression) {
-	n.filter = filter.UnionFilters(n.filter, filterExpression)
+	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
 func (n *accessNode) AddOrder(order expressions.OrderExpression) {
@@ -74,7 +74,7 @@ func (n *accessNode) AddOrder(order expressions.OrderExpression) {
 
 func (n *accessNode) Filter() expressions.Expression {
 	if filterExpression := n.strategy.Filter(); filterExpression != nil {
-		return filter.UnionFilters(n.filter, filterExpression)
+		return expressions.UnionFilters(n.filter, filterExpression)
 	}
 
 	return n.filter

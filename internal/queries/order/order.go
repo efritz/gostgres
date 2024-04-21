@@ -42,7 +42,7 @@ func (n *orderNode) Optimize() {
 
 	n.Node.Optimize()
 
-	if SubsumesOrder(n.order, n.Node.Ordering()) {
+	if expressions.SubsumesOrder(n.order, n.Node.Ordering()) {
 		n.order = nil
 	}
 }

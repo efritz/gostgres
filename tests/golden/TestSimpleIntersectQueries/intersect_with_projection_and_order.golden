@@ -13,7 +13,9 @@ ORDER BY id
 
 Plan:
 
-select (id, name)
+                          query plan
+-------------------------------------------------------------
+ select (id, name)
     order by id
         combination
             select (employee_id as id, e.last_name as name)
@@ -24,6 +26,8 @@ select (id, name)
             select (employee_id, last_name)
                 table scan of employees
                     filter: manager_id = 1
+
+(1 rows)
 
 Results:
 

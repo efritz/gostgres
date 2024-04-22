@@ -17,7 +17,9 @@ ORDER BY employee_id
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                                query plan
+----------------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     order by employee_id
         alias as s
             select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
@@ -29,6 +31,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
                     select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                         table scan of employees
                             filter: manager_id = 1 and employees.employee_id < 5
+
+(1 rows)
 
 Results:
 

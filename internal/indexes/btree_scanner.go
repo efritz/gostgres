@@ -1,11 +1,12 @@
 package indexes
 
 import (
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func (i *btreeIndex) Scanner(ctx scan.ScanContext, opts BtreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (tidScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 

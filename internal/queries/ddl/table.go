@@ -1,11 +1,8 @@
 package ddl
 
 import (
-	"io"
-
-	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -14,7 +11,7 @@ type createTable struct {
 	fields []shared.Field
 }
 
-var _ queries.Node = &createTable{}
+var _ queries.Query = &createTable{}
 
 func NewCreateTable(name string, fields []shared.Field) *createTable {
 	return &createTable{
@@ -23,45 +20,19 @@ func NewCreateTable(name string, fields []shared.Field) *createTable {
 	}
 }
 
-func (n *createTable) Name() string {
-	return "CREATE TABLE"
-}
-
-func (n *createTable) Fields() []shared.Field {
-	return nil
-}
-
-func (n *createTable) Serialize(w io.Writer, indentationLevel int) {
-	// TODO - implement for DDL?
-}
-
-func (n *createTable) Optimize() {
-}
-
-func (n *createTable) AddFilter(filter expressions.Expression) {
-}
-
-func (n *createTable) AddOrder(order expressions.OrderExpression) {
-}
-
-func (n *createTable) Filter() expressions.Expression {
-	return nil
-}
-
-func (n *createTable) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *createTable) SupportsMarkRestore() bool {
-	return false
-}
-
-func (n *createTable) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
-	if err := ctx.Tables.CreateTable(n.name, n.fields); err != nil {
-		return nil, err
+func (n *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+	if err := n.execute(ctx); err != nil {
+		w.Error(err)
+		return
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
-		return shared.Row{}, scan.ErrNoRows
-	}), nil
+	w.Done()
+}
+
+func (n *createTable) execute(ctx queries.Context) error {
+	if err := ctx.Tables.CreateTable(n.name, n.fields); err != nil {
+		return err
+	}
+
+	return nil
 }

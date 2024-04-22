@@ -5,12 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/syntax/lexing"
-	"github.com/efritz/gostgres/internal/syntax/parsing"
-	"github.com/efritz/gostgres/internal/tablespace"
 	"github.com/hexops/autogold/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -32,37 +29,28 @@ func runTests(t *testing.T, testCases []TestCase) {
 	}
 }
 
-func runTestQuery(query string) (string, error) {
-	tables, err := tablespace.CreateSampleTables("")
+func runTestQuery(input string) (string, error) {
+	tables, err := sample.CreateSampleTables("")
 	if err != nil {
 		return "", err
 	}
 
-	node, err := parsing.Parse(lexing.Lex(query), tables)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse node: %s", err)
-	}
-	node.Optimize()
+	engine := engine.NewEngine(tables)
 
-	scanner, err := node.Scanner(scan.ScanContext{
-		Tables: tables,
-	})
+	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", input))
 	if err != nil {
 		return "", err
 	}
-	rows, err := shared.NewRows(node.Fields())
+
+	resultRows, err := engine.Query(input)
 	if err != nil {
 		return "", err
-	}
-	rows, err = scan.ScanIntoRows(scanner, rows)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute query: %s", err)
 	}
 
 	return fmt.Sprintf(
 		"\nQuery:\n\n%v\n\nPlan:\n\n%v\nResults:\n\n%v",
-		strings.TrimSpace(query),
-		serialization.SerializePlanString(node),
-		serialization.SerializeRowsString(rows),
+		strings.TrimSpace(input),
+		serialization.SerializeRowsString(planRows),
+		serialization.SerializeRowsString(resultRows),
 	), nil
 }

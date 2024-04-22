@@ -1,11 +1,12 @@
 package indexes
 
 import (
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func (i *hashIndex) Scanner(ctx scan.ScanContext, opts HashIndexScanOptions) (tidScanner, error) {
+func (i *hashIndex) Scanner(ctx queries.Context, opts HashIndexScanOptions) (tidScanner, error) {
 	value, err := ctx.Evaluate(opts.expression, shared.Row{})
 	if err != nil {
 		return nil, err

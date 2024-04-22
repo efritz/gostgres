@@ -79,7 +79,7 @@ func (n *projectionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *projectionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *projectionNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

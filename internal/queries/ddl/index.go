@@ -2,13 +2,11 @@ package ddl
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/scan"
-	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
 
@@ -20,7 +18,7 @@ type createIndex struct {
 	where             expressions.Expression
 }
 
-var _ queries.Node = &createIndex{}
+var _ queries.Query = &createIndex{}
 
 func NewCreateIndex(name, tableName, method string, columnExpressions []expressions.ExpressionWithDirection, where expressions.Expression) *createIndex {
 	return &createIndex{
@@ -32,80 +30,44 @@ func NewCreateIndex(name, tableName, method string, columnExpressions []expressi
 	}
 }
 
-func (n *createIndex) Name() string {
-	return "CREATE INDEX"
-}
-
-func (n *createIndex) Fields() []shared.Field {
-	return nil
-}
-
-func (n *createIndex) Serialize(w io.Writer, indentationLevel int) {
-	// TODO - implement for DDL?
-}
-
-func (n *createIndex) Optimize() {
-}
-
-func (n *createIndex) AddFilter(filter expressions.Expression) {
-}
-
-func (n *createIndex) AddOrder(order expressions.OrderExpression) {
-}
-
-func (n *createIndex) Filter() expressions.Expression {
-	return nil
-}
-
-func (n *createIndex) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *createIndex) SupportsMarkRestore() bool {
-	return false
-}
-
-// TODO - HACK
-type temp interface {
-	GetTable(name string) (*table.Table, bool)
-}
-
-func (n *createIndex) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
-	t, ok := ctx.Tables.(temp)
-	if !ok {
-		panic("OH NO")
+func (n *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+	if err := n.execute(ctx); err != nil {
+		w.Error(err)
+		return
 	}
 
-	table, ok := t.GetTable(n.tableName)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %q", n.tableName)
-	}
+	w.Done()
+}
 
-	factories := map[string]func() (indexes.BaseIndex, error){
+func (n *createIndex) execute(ctx queries.Context) error {
+	factories := map[string]func() (table.Index, error){
 		"btree": n.createBtreeIndex,
 		"hash":  n.createHashIndex,
 	}
 
 	factory, ok := factories[n.method]
 	if !ok {
-		return nil, fmt.Errorf("unknown index method %q", n.method)
+		return fmt.Errorf("unknown index method %q", n.method)
 	}
 
 	index, err := factory()
 	if err != nil {
-		return nil, err
+		return err
+	}
+
+	table, ok := ctx.Tables.GetTable(n.tableName)
+	if !ok {
+		return fmt.Errorf("unknown table %q", n.tableName)
 	}
 
 	if err := table.AddIndex(index); err != nil {
-		return nil, err
+		return err
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
-		return shared.Row{}, scan.ErrNoRows
-	}), nil
+	return nil
 }
 
-func (n *createIndex) createBtreeIndex() (indexes.BaseIndex, error) {
+func (n *createIndex) createBtreeIndex() (table.Index, error) {
 	var index indexes.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
 		n.name,
 		n.tableName,
@@ -118,7 +80,7 @@ func (n *createIndex) createBtreeIndex() (indexes.BaseIndex, error) {
 	return index, nil
 }
 
-func (n *createIndex) createHashIndex() (indexes.BaseIndex, error) {
+func (n *createIndex) createHashIndex() (table.Index, error) {
 	if len(n.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}

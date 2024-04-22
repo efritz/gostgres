@@ -7,7 +7,9 @@ ORDER BY m.last_name, e.last_name
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus, employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                                                             query plan
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus, employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     order by m.last_name, e.last_name
         join using nested loop
             alias as e
@@ -17,6 +19,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
                 table scan of employees
                     filter: employees.employee_id = e.manager_id
         on m.employee_id = e.manager_id
+
+(1 rows)
 
 Results:
 

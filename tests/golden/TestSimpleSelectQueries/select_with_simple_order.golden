@@ -7,9 +7,13 @@ ORDER BY employee_id
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                      query plan
+--------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     order by employee_id
         table scan of employees
+
+(1 rows)
 
 Results:
 

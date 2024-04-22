@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -33,7 +34,7 @@ func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	tids := s.table.TIDs()
 
 	rows, err := shared.NewRows(s.table.Fields())

@@ -3,6 +3,7 @@ package indexes
 import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type partialIndex[O ScanOptions] struct {
@@ -19,7 +20,7 @@ func NewPartialIndex[O ScanOptions](index Index[O], condition expressions.Expres
 	}
 }
 
-func (i *partialIndex[O]) Unwrap() BaseIndex {
+func (i *partialIndex[O]) Unwrap() table.Index {
 	return i.Index
 }
 
@@ -51,7 +52,7 @@ func (i *partialIndex[O]) Delete(row shared.Row) error {
 	return i.Index.Delete(row)
 }
 
-func matchesPartial(index BaseIndex, filterExpression expressions.Expression) bool {
+func matchesPartial(index table.Index, filterExpression expressions.Expression) bool {
 	indexFilter := index.Filter()
 	if indexFilter == nil {
 		return true

@@ -6,20 +6,22 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type indexAccessStrategy[O indexes.ScanOptions] struct {
-	table indexes.TableIndexer
+	table *table.Table
 	index indexes.Index[O]
 	opts  O
 }
 
 var _ accessStrategy = &indexAccessStrategy[indexes.ScanOptions]{}
 
-func NewIndexAccessStrategy[O indexes.ScanOptions](table indexes.TableIndexer, index indexes.Index[O], opts O) accessStrategy {
+func NewIndexAccessStrategy[O indexes.ScanOptions](table *table.Table, index indexes.Index[O], opts O) accessStrategy {
 	return &indexAccessStrategy[O]{
 		table: table,
 		index: index,
@@ -53,7 +55,7 @@ func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpressio
 	return s.index.Ordering(s.opts)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err

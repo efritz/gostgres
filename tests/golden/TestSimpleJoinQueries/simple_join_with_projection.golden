@@ -7,7 +7,9 @@ JOIN regions r ON r.region_id = l.region_id
 
 Plan:
 
-select (location_name as lname, r.region_name as rname)
+                        query plan
+---------------------------------------------------------
+ select (location_name as lname, r.region_name as rname)
     join using nested loop
         alias as l
             table scan of locations
@@ -16,6 +18,8 @@ select (location_name as lname, r.region_name as rname)
             table scan of regions
                 filter: regions.region_id = l.region_id
     on r.region_id = l.region_id
+
+(1 rows)
 
 Results:
 

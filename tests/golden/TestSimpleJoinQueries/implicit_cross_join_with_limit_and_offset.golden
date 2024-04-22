@@ -9,13 +9,17 @@ OFFSET 3
 
 Plan:
 
-select (location_id, location_name, region_id, region_id, region_name)
+                               query plan
+------------------------------------------------------------------------
+ select (location_id, location_name, region_id, region_id, region_name)
     limit 2
         offset 3
             join using nested loop
                 table scan of locations
             with
                 table scan of regions
+
+(1 rows)
 
 Results:
 

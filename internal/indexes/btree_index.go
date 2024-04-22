@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type btreeIndex struct {
@@ -42,7 +43,7 @@ func NewBTreeIndex(name, tableName string, expressions []expressions.ExpressionW
 	}
 }
 
-func (i *btreeIndex) Unwrap() BaseIndex {
+func (i *btreeIndex) Unwrap() table.Index {
 	return i
 }
 

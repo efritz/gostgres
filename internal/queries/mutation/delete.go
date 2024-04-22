@@ -74,7 +74,7 @@ func (n *deleteNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *deleteNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *deleteNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

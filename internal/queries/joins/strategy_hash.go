@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -21,7 +22,7 @@ func (s *hashJoinStrategy) Ordering() expressions.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *hashJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (s *hashJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	rightScanner, err := s.n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err

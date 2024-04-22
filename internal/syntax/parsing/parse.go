@@ -3,11 +3,16 @@ package parsing
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-func Parse(tokenStream []tokens.Token, tables TableGetter) (queries.Node, error) {
+type Query interface {
+	Execute(ctx queries.Context, w protocol.ResponseWriter)
+}
+
+func Parse(tokenStream []tokens.Token, tables TableGetter) (Query, error) {
 	parser := newParser(tokenStream, tables)
 	statement, err := parser.parseStatement()
 	if err != nil {

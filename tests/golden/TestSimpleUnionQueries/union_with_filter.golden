@@ -15,7 +15,9 @@ WHERE s.manager_id = 1
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                              query plan
+------------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     alias as s
         select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
             union
@@ -26,6 +28,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
                 select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                     table scan of employees
                         filter: department_id = 2 and employees.manager_id = 1
+
+(1 rows)
 
 Results:
 

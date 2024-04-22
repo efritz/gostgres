@@ -12,7 +12,9 @@ JOIN employees m ON m.employee_id = e.manager_id
 
 Plan:
 
-select (employee_id, last_name, m.employee_id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name)
+                                                             query plan
+------------------------------------------------------------------------------------------------------------------------------------
+ select (employee_id, last_name, m.employee_id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name)
     join using nested loop
         alias as e
             table scan of employees
@@ -21,6 +23,8 @@ select (employee_id, last_name, m.employee_id as manager_id, m.first_name as man
             table scan of employees
                 filter: employees.employee_id = e.manager_id
     on m.employee_id = e.manager_id
+
+(1 rows)
 
 Results:
 

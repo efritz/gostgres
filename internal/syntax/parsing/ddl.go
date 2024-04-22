@@ -14,7 +14,7 @@ import (
 // create := `TABLE` createTable
 //
 //	| `INDEX` createIndex
-func (p *parser) parseCreate(token tokens.Token) (queries.Node, error) {
+func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeTable)) {
 		return p.parseCreateTable(token)
 	}
@@ -27,7 +27,7 @@ func (p *parser) parseCreate(token tokens.Token) (queries.Node, error) {
 }
 
 // createTable := name `(` [ column [, ...] ] `)`
-func (p *parser) parseCreateTable(token tokens.Token) (queries.Node, error) {
+func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func (p *parser) parseColumn() (shared.Field, error) {
 // TODO: NULLS FIRST | LAST
 // TODO: include
 // TODO: nulls distinct
-func (p *parser) parseCreateIndex(token tokens.Token) (queries.Node, error) {
+func (p *parser) parseCreateIndex(token tokens.Token) (queries.Query, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, err

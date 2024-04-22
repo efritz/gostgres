@@ -2,6 +2,7 @@ package joins
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/order"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -10,7 +11,7 @@ import (
 type joinStrategy interface {
 	Name() string
 	Ordering() expressions.OrderExpression
-	Scanner(ctx scan.ScanContext) (scan.Scanner, error)
+	Scanner(ctx queries.Context) (scan.Scanner, error)
 }
 
 const (
@@ -24,7 +25,7 @@ func selectJoinStrategy(n *joinNode) joinStrategy {
 			// if orderable?
 			// if n.right.SupportsMarkRestore()
 
-			// HACK!
+			// TODO - HACK!
 			var lefts, rights []expressions.ExpressionWithDirection
 			for _, p := range pairs {
 				lefts = append(lefts, expressions.ExpressionWithDirection{Expression: p.left})
@@ -89,7 +90,7 @@ type equalityPair struct {
 var leftOfPair = func(pair equalityPair) expressions.Expression { return pair.left }
 var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.right }
 
-func evaluatePair(ctx scan.ScanContext, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx queries.Context, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := ctx.Evaluate(expression(pair), row)
 		if err != nil {

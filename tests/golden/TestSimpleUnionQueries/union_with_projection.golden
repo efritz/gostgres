@@ -12,7 +12,9 @@ WHERE department_id = 2
 
 Plan:
 
-select (id, name)
+                        query plan
+---------------------------------------------------------
+ select (id, name)
     union
         select (employee_id as id, e.last_name as name)
             alias as e
@@ -22,6 +24,8 @@ select (id, name)
         select (employee_id, last_name)
             table scan of employees
                 filter: department_id = 2
+
+(1 rows)
 
 Results:
 

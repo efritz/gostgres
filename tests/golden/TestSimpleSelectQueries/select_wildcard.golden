@@ -6,8 +6,12 @@ FROM employees
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                      query plan
+--------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     table scan of employees
+
+(1 rows)
 
 Results:
 

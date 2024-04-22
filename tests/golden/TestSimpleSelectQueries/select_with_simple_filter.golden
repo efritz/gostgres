@@ -7,9 +7,13 @@ WHERE department_id = 3
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                      query plan
+--------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     table scan of employees
         filter: department_id = 3
+
+(1 rows)
 
 Results:
 

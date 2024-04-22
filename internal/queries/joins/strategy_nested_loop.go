@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -30,7 +31,7 @@ func (s *nestedLoopJoinStrategy) Ordering() expressions.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -50,10 +51,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx scan.ScanContext) (scan.Scanner, er
 				}
 				leftRow = &row
 
-				scanner, err := s.n.right.Scanner(scan.ScanContext{
-					Tables:   ctx.Tables,
-					OuterRow: row,
-				})
+				scanner, err := s.n.right.Scanner(ctx.WithOuterRow(row))
 				if err != nil {
 					return shared.Row{}, nil
 				}

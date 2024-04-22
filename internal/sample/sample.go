@@ -1,15 +1,14 @@
-package tablespace
+package sample
 
 import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/efritz/gostgres/internal/scan"
-	"github.com/efritz/gostgres/internal/syntax/lexing"
-	"github.com/efritz/gostgres/internal/syntax/parsing"
+	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/table"
 )
 
-func CreateSampleTables(root string) (*Tablespace, error) {
+func CreateSampleTables(root string) (*table.Tablespace, error) {
 	statements := []string{
 		`
 			CREATE TABLE employees (
@@ -39,14 +38,11 @@ func CreateSampleTables(root string) (*Tablespace, error) {
 		`CREATE INDEX k2_name_id ON k2 USING btree(name, id)`,
 	}
 
-	tables := NewTablespace()
+	tables := table.NewTablespace()
+	engine := engine.NewEngine(tables)
 
 	for _, statement := range statements {
-		node, err := parsing.Parse(lexing.Lex(statement), tables)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse node: %s", err)
-		}
-		if _, err := node.Scanner(scan.ScanContext{Tables: tables}); err != nil {
+		if _, err := engine.Query(statement); err != nil {
 			return nil, err
 		}
 	}

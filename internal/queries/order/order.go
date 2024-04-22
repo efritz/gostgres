@@ -71,7 +71,7 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *orderNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

@@ -14,7 +14,9 @@ LIMIT 2 OFFSET 1
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                                query plan
+----------------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     limit 2
         offset 1
             order by employee_id
@@ -26,6 +28,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
                     select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                         table scan of employees
                             filter: manager_id = 1
+
+(1 rows)
 
 Results:
 

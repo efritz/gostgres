@@ -13,7 +13,9 @@ ORDER BY email
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                            query plan
+--------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     order by email
         union
             select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
@@ -23,6 +25,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
             select (employee_id, first_name, last_name, email, manager_id, department_id, bonus)
                 table scan of employees
                     filter: department_id = 2
+
+(1 rows)
 
 Results:
 

@@ -31,9 +31,7 @@ func SerializeRows(w io.Writer, rows shared.Rows) {
 		columnWidths[i] = len(field.Name())
 
 		for _, values := range allValues {
-			if columnWidths[i] < len(values[i]) {
-				columnWidths[i] = len(values[i])
-			}
+			columnWidths[i] = max(columnWidths[i], longestLine(values[i]))
 		}
 	}
 
@@ -76,4 +74,12 @@ func SerializeRows(w io.Writer, rows shared.Rows) {
 	}
 
 	fmt.Fprintf(w, "(%d rows)\n", len(allValues))
+}
+
+func longestLine(text string) (maxLine int) {
+	for _, line := range strings.Split(text, "\n") {
+		maxLine = max(maxLine, len(line))
+	}
+
+	return maxLine
 }

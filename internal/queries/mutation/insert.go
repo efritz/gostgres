@@ -75,7 +75,7 @@ func (n *insertNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *insertNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

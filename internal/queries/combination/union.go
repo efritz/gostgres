@@ -86,7 +86,7 @@ func (n *unionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *unionNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *unionNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := shared.HashSlice(row.Values)

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -55,7 +55,7 @@ func (p *Projector) Optimize() {
 	}
 }
 
-func (p *Projector) ProjectRow(ctx scan.ScanContext, row shared.Row) (shared.Row, error) {
+func (p *Projector) ProjectRow(ctx queries.Context, row shared.Row) (shared.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := ctx.Evaluate(field.expression, row)

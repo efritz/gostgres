@@ -15,7 +15,7 @@ type parser struct {
 	tokens             []tokens.Token
 	cursor             int
 	tables             TableGetter
-	ddlParsers         map[tokens.TokenType]statementParserFunc
+	ddlParsers         map[tokens.TokenType]ddlParserFunc
 	explainableParsers map[tokens.TokenType]statementParserFunc
 	prefixParsers      map[tokens.TokenType]prefixParserFunc
 	infixParsers       map[tokens.TokenType]infixParserFunc
@@ -26,6 +26,7 @@ type TableGetter interface {
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
+type ddlParserFunc func(token tokens.Token) (queries.Query, error)
 type statementParserFunc func(token tokens.Token) (queries.Node, error)
 type prefixParserFunc func(token tokens.Token) (expressions.Expression, error)
 type infixParserFunc func(left expressions.Expression, token tokens.Token) (expressions.Expression, error)
@@ -38,7 +39,7 @@ func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 		tokens: tokenStream,
 		tables: tables,
 	}
-	parser.ddlParsers = map[tokens.TokenType]statementParserFunc{
+	parser.ddlParsers = map[tokens.TokenType]ddlParserFunc{
 		tokens.TokenTypeCreate: parser.parseCreate,
 	}
 	parser.explainableParsers = map[tokens.TokenType]statementParserFunc{
@@ -99,7 +100,7 @@ func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 // statement := ddlStatement [`EXPLAIN`] explainableStatement
 // ddlStatement := `CREATE` create
 // explainableStatement := `SELECT` select | `INSERT` insert | `UPDATE` update | `DELETE` delete
-func (p *parser) parseStatement() (queries.Node, error) {
+func (p *parser) parseStatement() (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
@@ -117,7 +118,6 @@ func (p *parser) parseStatement() (queries.Node, error) {
 		if p.advanceIf(isType(tokenType)) {
 			node, err := parser(token)
 			if err != nil {
-				fmt.Printf("> %#v\n> %#v\n> %#v\n", token, node, err)
 				return nil, err
 			}
 
@@ -125,7 +125,7 @@ func (p *parser) parseStatement() (queries.Node, error) {
 				node = explain.NewExplain(node)
 			}
 
-			return node, nil
+			return queries.NewQuery(node), nil
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type hashIndex struct {
@@ -34,7 +35,7 @@ func NewHashIndex(name, tableName string, expression expressions.Expression) *ha
 	}
 }
 
-func (i *hashIndex) Unwrap() BaseIndex {
+func (i *hashIndex) Unwrap() table.Index {
 	return i
 }
 

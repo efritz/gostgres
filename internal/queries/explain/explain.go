@@ -33,7 +33,6 @@ func (n *explain) Fields() []shared.Field {
 }
 
 func (n *explain) Serialize(w io.Writer, indentationLevel int) {
-	// TODO - implement for DDL?
 }
 
 func (n *explain) Optimize() {
@@ -58,7 +57,7 @@ func (n *explain) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *explain) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *explain) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	plan := serialization.SerializePlanString(n.n)
 	emitted := false
 

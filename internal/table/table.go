@@ -3,7 +3,7 @@ package table
 import (
 	"sort"
 
-	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 	"golang.org/x/exp/slices"
 )
@@ -12,7 +12,14 @@ type Table struct {
 	name    string
 	fields  []shared.Field
 	rows    map[int]shared.Row
-	indexes []indexes.BaseIndex
+	indexes []Index
+}
+
+type Index interface {
+	Unwrap() Index
+	Filter() expressions.Expression
+	Insert(row shared.Row) error
+	Delete(row shared.Row) error
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -34,7 +41,7 @@ func (t *Table) Name() string {
 	return t.name
 }
 
-func (t *Table) Indexes() []indexes.BaseIndex {
+func (t *Table) Indexes() []Index {
 	return t.indexes
 }
 
@@ -61,7 +68,7 @@ func (t *Table) Row(tid int) (shared.Row, bool) {
 	return row, ok
 }
 
-func (t *Table) AddIndex(index indexes.BaseIndex) error {
+func (t *Table) AddIndex(index Index) error {
 	for _, row := range t.rows {
 		if err := index.Insert(row); err != nil {
 			return err

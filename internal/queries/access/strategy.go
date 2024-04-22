@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
+	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/table"
 )
@@ -13,7 +14,7 @@ type accessStrategy interface {
 	Serialize(w io.Writer, indentationLevel int)
 	Filter() expressions.Expression
 	Ordering() expressions.OrderExpression
-	Scanner(ctx scan.ScanContext) (scan.Scanner, error)
+	Scanner(ctx queries.Context) (scan.Scanner, error)
 }
 
 func selectAccessStrategy(

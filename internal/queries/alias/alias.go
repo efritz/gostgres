@@ -100,7 +100,7 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *aliasNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

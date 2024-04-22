@@ -64,7 +64,7 @@ func (n *filterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *filterNode) Scanner(ctx scan.ScanContext) (scan.Scanner, error) {
+func (n *filterNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

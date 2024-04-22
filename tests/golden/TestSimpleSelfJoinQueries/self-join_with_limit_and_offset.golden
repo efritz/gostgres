@@ -7,7 +7,9 @@ LIMIT 2 OFFSET 3
 
 Plan:
 
-select (employee_id, first_name, last_name, email, manager_id, department_id, bonus, employee_id, first_name, last_name, email, manager_id, department_id, bonus)
+                                                                             query plan
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (employee_id, first_name, last_name, email, manager_id, department_id, bonus, employee_id, first_name, last_name, email, manager_id, department_id, bonus)
     limit 2
         offset 3
             join using nested loop
@@ -18,6 +20,8 @@ select (employee_id, first_name, last_name, email, manager_id, department_id, bo
                     table scan of employees
                         filter: employees.employee_id = e.manager_id
             on m.employee_id = e.manager_id
+
+(1 rows)
 
 Results:
 

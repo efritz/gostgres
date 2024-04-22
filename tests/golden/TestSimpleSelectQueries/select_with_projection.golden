@@ -6,9 +6,13 @@ FROM employees e
 
 Plan:
 
-select (first_name as fname, e.last_name as lname, email)
+                         query plan
+-----------------------------------------------------------
+ select (first_name as fname, e.last_name as lname, email)
     alias as e
         table scan of employees
+
+(1 rows)
 
 Results:
 

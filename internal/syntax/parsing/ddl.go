@@ -94,11 +94,39 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		return shared.Field{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}
 
-	if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
-		typ = typ.NonNullable()
+	var defaultExpression expressions.Expression
+	for {
+		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
+			typ = typ.NonNullable()
+			continue
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeDefault)) {
+			expression, err := p.parseExpression(0)
+			if err != nil {
+				return shared.Field{}, err
+			}
+
+			defaultExpression = expression
+			continue
+		}
+
+		break
 	}
 
-	return shared.NewField("", name.Text, typ), nil
+	field := shared.NewField("", name.Text, typ)
+
+	if defaultExpression != nil {
+		field = field.WithDefault(func() any {
+			value, err := defaultExpression.ValueFrom(shared.Row{})
+			if err != nil {
+				panic(err.Error()) // TODO
+			}
+			return value
+		})
+	}
+
+	return field, nil
 }
 
 // createIndex := name `ON` tableName [ `USING` methodName ] `(` expression [ `ASC` | `DESC` ] [, ...] `)` [ `WHERE` predicate ]

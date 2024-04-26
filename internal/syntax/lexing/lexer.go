@@ -21,6 +21,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"between":   tokens.TokenTypeBetween,
 	"by":        tokens.TokenTypeBy,
 	"create":    tokens.TokenTypeCreate,
+	"default":   tokens.TokenTypeDefault,
 	"delete":    tokens.TokenTypeDelete,
 	"desc":      tokens.TokenTypeDescending,
 	"distinct":  tokens.TokenTypeDistinct,

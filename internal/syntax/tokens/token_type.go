@@ -21,6 +21,7 @@ const (
 	TokenTypeBetween
 	TokenTypeBy
 	TokenTypeCreate
+	TokenTypeDefault
 	TokenTypeDelete
 	TokenTypeDescending
 	TokenTypeDistinct

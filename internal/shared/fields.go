@@ -1,28 +1,32 @@
 package shared
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Field struct {
 	relationName string
 	name         string
 	typ          Type
 	internal     bool
+	defaultValue func() any
 }
 
 func NewField(relationName, name string, typ Type) Field {
-	return newField(relationName, name, typ, false)
+	return newField(relationName, name, typ, false, nil)
 }
 
 func NewInternalField(relationName, name string, typ Type) Field {
-	return newField(relationName, name, typ, true)
+	return newField(relationName, name, typ, true, nil)
 }
 
-func newField(relationName, name string, typ Type, internal bool) Field {
+func newField(relationName, name string, typ Type, internal bool, defaultValue func() any) Field {
 	return Field{
 		relationName: relationName,
 		name:         name,
 		typ:          typ,
 		internal:     internal,
+		defaultValue: defaultValue,
 	}
 }
 
@@ -30,6 +34,14 @@ func (f Field) RelationName() string { return f.relationName }
 func (f Field) Name() string         { return f.name }
 func (f Field) Type() Type           { return f.typ }
 func (f Field) Internal() bool       { return f.internal }
+
+func (f Field) Default() (any, bool) {
+	if f.defaultValue == nil {
+		return nil, false
+	}
+
+	return f.defaultValue(), true
+}
 
 func (f Field) String() string {
 	if f.relationName == "" {
@@ -40,11 +52,15 @@ func (f Field) String() string {
 }
 
 func (f Field) WithRelationName(relationName string) Field {
-	return newField(relationName, f.name, f.typ, f.internal)
+	return newField(relationName, f.name, f.typ, f.internal, f.defaultValue)
 }
 
 func (f Field) WithType(typ Type) Field {
-	return newField(f.relationName, f.name, typ, f.internal)
+	return newField(f.relationName, f.name, typ, f.internal, f.defaultValue)
+}
+
+func (f Field) WithDefault(defaultValue func() any) Field {
+	return newField(f.relationName, f.name, f.typ, f.internal, defaultValue)
 }
 
 func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {

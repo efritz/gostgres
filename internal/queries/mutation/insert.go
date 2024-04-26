@@ -137,8 +137,11 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 	reordered := make([]any, 0, len(fields))
 	for _, field := range fields {
 		value, ok := valueMap[field.Name()]
-		if !ok && !field.Type().Nullable {
-			return nil, fmt.Errorf("no value supplied for %s", field.Name())
+		if !ok {
+			value, ok = field.Default()
+			if !ok && !field.Type().Nullable {
+				return nil, fmt.Errorf("no value supplied for %s", field.Name())
+			}
 		}
 
 		reordered = append(reordered, value)

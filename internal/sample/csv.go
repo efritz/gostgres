@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
@@ -99,6 +100,9 @@ func convertValue(rawValue string, typ shared.Type) (any, error) {
 
 	case shared.TypeKindBool:
 		return rawValue == "true", nil
+
+	case shared.TypeKindTimestampTz:
+		return time.Parse("2006-01-02 15:04:05-07", rawValue)
 	}
 
 	return nil, fmt.Errorf("unconvertible type %s", typ.Kind)

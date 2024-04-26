@@ -8,7 +8,7 @@ type Row struct {
 }
 
 func NewRow(fields []Field, values []any) (_ Row, err error) {
-	fields, err = refineFieldTypes(fields, values)
+	fields, values, err = refineTypes(fields, values)
 	if err != nil {
 		return Row{}, err
 	}

@@ -72,22 +72,3 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 
 	return 0, fmt.Errorf("unknown field %s", needle.Name())
 }
-
-func refineFieldTypes(fields []Field, values []any) ([]Field, error) {
-	if len(fields) != len(values) {
-		return nil, fmt.Errorf("unexpected number of columns")
-	}
-
-	refined := make([]Field, 0, len(fields))
-	for i, field := range fields {
-		refinedType, ok := field.typ.Refine(values[i])
-		if !ok {
-			fmt.Printf("> %#v\n", field)
-			return nil, fmt.Errorf("type error (%v is not %s)", values[i], field.Type())
-		}
-
-		refined = append(refined, field.WithType(refinedType))
-	}
-
-	return refined, nil
-}

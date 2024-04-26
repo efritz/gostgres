@@ -84,6 +84,12 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		typ = shared.TypeNullableNumeric
 	case "boolean":
 		typ = shared.TypeNullableBool
+	case "timestamp":
+		if p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
+			typ = shared.TypeNullableTimestampTz
+		} else {
+			return shared.Field{}, fmt.Errorf("unknown type %q", "timestamp")
+		}
 	default:
 		return shared.Field{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}

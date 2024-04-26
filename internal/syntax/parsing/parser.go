@@ -179,6 +179,12 @@ func isType(tokenType tokens.TokenType) tokenFilterFunc {
 	}
 }
 
+func isIdent(text string) tokenFilterFunc {
+	return func(t tokens.Token) bool {
+		return t.Type == tokens.TokenTypeIdent && t.Text == text
+	}
+}
+
 func negate(parserFunc infixParserFunc) infixParserFunc {
 	return func(left expressions.Expression, token tokens.Token) (expressions.Expression, error) {
 		expression, err := parserFunc(left, token)

@@ -10,11 +10,13 @@ func NewRows(fields []Field) (Rows, error) {
 }
 
 func NewRowsWithValues(fields []Field, values [][]any) (_ Rows, err error) {
-	for _, values := range values {
-		fields, err = refineFieldTypes(fields, values)
+	for i, rowValues := range values {
+		fields, rowValues, err = refineTypes(fields, rowValues)
 		if err != nil {
 			return Rows{}, err
 		}
+
+		values[i] = rowValues
 	}
 
 	return Rows{Fields: fields, Values: values}, nil

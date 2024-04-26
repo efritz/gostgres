@@ -52,17 +52,42 @@ func (p *parser) parseExpressionSuffix(expression expressions.Expression, preced
 // namedExpression := ident
 //
 //	| ident `.` ident
+//	| ident `(` [ expression [, ...] ] `)`
 func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expression, error) {
-	if !p.advanceIf(isType(tokens.TokenTypeDot)) {
-		return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeNullableAny)), nil
+	if p.advanceIf(isType(tokens.TokenTypeDot)) {
+		qualifiedNameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+		if err != nil {
+			return nil, err
+		}
+
+		return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeNullableAny)), nil
 	}
 
-	qualifiedNameToken, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
-	if err != nil {
-		return nil, err
+	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
+		var args []expressions.Expression
+		if !p.advanceIf(isType(tokens.TokenTypeRightParen)) {
+			for {
+				arg, err := p.parseExpression(0)
+				if err != nil {
+					return nil, err
+				}
+
+				args = append(args, arg)
+
+				if !p.advanceIf(isType(tokens.TokenTypeComma)) {
+					break
+				}
+			}
+
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+				return nil, err
+			}
+		}
+
+		return expressions.NewFunction(token.Text, args), nil
 	}
 
-	return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeNullableAny)), nil
+	return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeNullableAny)), nil
 }
 
 // numericLiteralExpression := number

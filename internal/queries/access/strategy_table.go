@@ -37,31 +37,21 @@ func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
 func (s *tableAccessStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	tids := s.table.TIDs()
 
-	rows, err := shared.NewRows(s.table.Fields())
-	if err != nil {
-		return nil, err
-	}
-	for _, tid := range tids {
-		row, ok := s.table.Row(tid)
-		if !ok {
-			return nil, fmt.Errorf("missing row %d", tid)
-		}
-
-		rows, err = rows.AddValues(row.Values)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	i := 0
 
 	return scan.ScannerFunc(func() (shared.Row, error) {
-		for i < rows.Size() {
-			row := rows.Row(i)
-			i++
-			return row, nil
+		if i >= len(tids) {
+			return shared.Row{}, scan.ErrNoRows
 		}
 
-		return shared.Row{}, scan.ErrNoRows
+		tid := tids[i]
+		i++
+
+		row, ok := s.table.Row(tid)
+		if !ok {
+			return shared.Row{}, fmt.Errorf("missing row %d", tid)
+		}
+
+		return row, nil
 	}), nil
 }

@@ -94,7 +94,12 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 			}
 		}
 
-		insertedRow, err := shared.NewRow(fields, n.prepareValuesForRow(row, fields))
+		values, err := n.prepareValuesForRow(row, fields)
+		if err != nil {
+			return shared.Row{}, err
+		}
+
+		insertedRow, err := shared.NewRow(fields, values)
 		if err != nil {
 			return shared.Row{}, err
 		}
@@ -108,7 +113,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) []any {
+func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {
@@ -117,7 +122,11 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 	}
 
 	if n.columnNames == nil {
-		return values
+		return values, nil
+	}
+
+	if len(values) != len(n.columnNames) {
+		return nil, fmt.Errorf("number of columns does not match number of values")
 	}
 
 	valueMap := make(map[string]any, len(n.columnNames))
@@ -127,8 +136,13 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 
 	reordered := make([]any, 0, len(fields))
 	for _, field := range fields {
-		reordered = append(reordered, valueMap[field.Name()])
+		value, ok := valueMap[field.Name()]
+		if !ok && !field.Type().Nullable {
+			return nil, fmt.Errorf("no value supplied for %s", field.Name())
+		}
+
+		reordered = append(reordered, value)
 	}
 
-	return reordered
+	return reordered, nil
 }

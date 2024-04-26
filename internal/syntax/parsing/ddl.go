@@ -118,7 +118,8 @@ func (p *parser) parseColumn() (shared.Field, error) {
 
 	if defaultExpression != nil {
 		field = field.WithDefault(func() any {
-			value, err := defaultExpression.ValueFrom(shared.Row{})
+			// TODO - need to do this lazily, store as expressions
+			value, err := defaultExpression.ValueFrom(expressions.EmptyContext, shared.Row{})
 			if err != nil {
 				panic(err.Error()) // TODO
 			}

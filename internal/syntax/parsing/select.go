@@ -619,14 +619,15 @@ func (p *parser) parseValues() (queries.Node, error) {
 func (p *parser) parseValuesList() (queries.Node, error) {
 	var allRows [][]any
 	for {
-		expressions, err := p.parseParenthesizedExpressionList()
+		parenthesizedExpressions, err := p.parseParenthesizedExpressionList()
 		if err != nil {
 			return nil, err
 		}
 
-		values := make([]any, 0, len(expressions))
-		for _, expression := range expressions {
-			value, err := expression.ValueFrom(shared.Row{})
+		values := make([]any, 0, len(parenthesizedExpressions))
+		for _, expression := range parenthesizedExpressions {
+			// TODO - need to do this lazily, store as expressions
+			value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
 			if err != nil {
 				return nil, err
 			}

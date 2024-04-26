@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -78,7 +79,7 @@ func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int, []any, err
 
 	values := []any{}
 	for _, expression := range i.expressions {
-		value, err := expression.Expression.ValueFrom(row)
+		value, err := expression.Expression.ValueFrom(expressions.EmptyContext, row)
 		if err != nil {
 			return 0, nil, err
 		}

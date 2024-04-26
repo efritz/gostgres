@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/hexops/autogold/v2"
@@ -35,7 +37,10 @@ func runTestQuery(input string) (string, error) {
 		return "", err
 	}
 
-	engine := engine.NewEngine(tables)
+	functions := functions.NewFunctionspace()
+	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
+
+	engine := engine.NewEngine(tables, functions)
 
 	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", input))
 	if err != nil {

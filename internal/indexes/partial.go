@@ -30,7 +30,7 @@ func (i *partialIndex[O]) Filter() expressions.Expression {
 
 func (i *partialIndex[O]) Insert(row shared.Row) error {
 	if i.condition != nil {
-		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(row)); err != nil {
+		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(expressions.EmptyContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil
@@ -42,7 +42,7 @@ func (i *partialIndex[O]) Insert(row shared.Row) error {
 
 func (i *partialIndex[O]) Delete(row shared.Row) error {
 	if i.condition != nil {
-		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(row)); err != nil {
+		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(expressions.EmptyContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil

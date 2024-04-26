@@ -50,6 +50,6 @@ func (e constantExpression) Alias(field shared.Field, expression Expression) Exp
 	return e
 }
 
-func (e constantExpression) ValueFrom(row shared.Row) (any, error) {
+func (e constantExpression) ValueFrom(context Context, row shared.Row) (any, error) {
 	return e.value, nil
 }

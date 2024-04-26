@@ -3,13 +3,13 @@ package expressions
 import "github.com/efritz/gostgres/internal/shared"
 
 func NewConcat(left, right Expression) Expression {
-	return newBinaryExpression(left, right, "||", func(left, right Expression, row shared.Row) (any, error) {
-		lVal, err := shared.ValueAs[string](left.ValueFrom(row))
+	return newBinaryExpression(left, right, "||", func(context Context, left, right Expression, row shared.Row) (any, error) {
+		lVal, err := shared.ValueAs[string](left.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := shared.ValueAs[string](right.ValueFrom(row))
+		rVal, err := shared.ValueAs[string](right.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
 		}

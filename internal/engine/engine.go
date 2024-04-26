@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/shared"
@@ -12,12 +13,14 @@ import (
 )
 
 type Engine struct {
-	tables *table.Tablespace
+	tables    *table.Tablespace
+	functions *functions.Functionspace
 }
 
-func NewEngine(tables *table.Tablespace) *Engine {
+func NewEngine(tables *table.Tablespace, functions *functions.Functionspace) *Engine {
 	return &Engine{
-		tables: tables,
+		tables:    tables,
+		functions: functions,
 	}
 }
 
@@ -28,7 +31,7 @@ func (e *Engine) Query(input string) (shared.Rows, error) {
 	}
 
 	collector := protocol.NewRowCollector()
-	query.Execute(queries.NewContext(e.tables), collector)
+	query.Execute(queries.NewContext(e.tables, e.functions), collector)
 	rows, err := collector.Rows()
 	if err != nil {
 		return shared.Rows{}, fmt.Errorf("failed to execute query: %s", err)

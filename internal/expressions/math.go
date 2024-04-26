@@ -41,13 +41,13 @@ func NewUnaryMinus(expression Expression) Expression {
 }
 
 func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b int) (any, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(left, right Expression, row shared.Row) (any, error) {
-		lVal, err := shared.ValueAs[int](left.ValueFrom(row))
+	return newBinaryExpression(left, right, operatorText, func(context Context, left, right Expression, row shared.Row) (any, error) {
+		lVal, err := shared.ValueAs[int](left.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := shared.ValueAs[int](right.ValueFrom(row))
+		rVal, err := shared.ValueAs[int](right.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
 		}

@@ -7,8 +7,8 @@ import (
 )
 
 func NewNot(expression Expression) Expression {
-	return newUnaryExpression(expression, "not", func(expression Expression, row shared.Row) (any, error) {
-		val, err := shared.ValueAs[bool](expression.ValueFrom(row))
+	return newUnaryExpression(expression, "not", func(context Context, expression Expression, row shared.Row) (any, error) {
+		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
 		}
@@ -160,13 +160,13 @@ func (e conditionalExpression) disjunctions() (disjunctions []Expression) {
 	return disjunctions
 }
 
-func (e conditionalExpression) ValueFrom(row shared.Row) (any, error) {
-	lVal, err := shared.ValueAs[bool](e.left.ValueFrom(row))
+func (e conditionalExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+	lVal, err := shared.ValueAs[bool](e.left.ValueFrom(context, row))
 	if err != nil {
 		return nil, err
 	}
 
-	rVal, err := shared.ValueAs[bool](e.right.ValueFrom(row))
+	rVal, err := shared.ValueAs[bool](e.right.ValueFrom(context, row))
 	if err != nil {
 		return nil, err
 	}
@@ -174,9 +174,9 @@ func (e conditionalExpression) ValueFrom(row shared.Row) (any, error) {
 	return e.valueFrom(lVal, rVal)
 }
 
-func simplifyConditional(factory foldFunc, f func(value *bool) (Expression, bool)) func(left, right Expression) Expression {
+func simplifyConditional(factory foldFunc, f func(value *bool) (Expression, bool)) foldFunc {
 	return func(left, right Expression) Expression {
-		if value, err := shared.ValueAs[bool](left.ValueFrom(shared.Row{})); err == nil {
+		if value, err := shared.ValueAs[bool](left.ValueFrom(EmptyContext, shared.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}
@@ -184,7 +184,7 @@ func simplifyConditional(factory foldFunc, f func(value *bool) (Expression, bool
 			return right
 		}
 
-		if value, err := shared.ValueAs[bool](right.ValueFrom(shared.Row{})); err == nil {
+		if value, err := shared.ValueAs[bool](right.ValueFrom(EmptyContext, shared.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}

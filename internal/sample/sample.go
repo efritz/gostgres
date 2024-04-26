@@ -3,8 +3,10 @@ package sample
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/table"
 )
 
@@ -39,7 +41,9 @@ func CreateSampleTables(root string) (*table.Tablespace, error) {
 	}
 
 	tables := table.NewTablespace()
-	engine := engine.NewEngine(tables)
+	functions := functions.NewFunctionspace()
+	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
+	engine := engine.NewEngine(tables, functions)
 
 	for _, statement := range statements {
 		if _, err := engine.Query(statement); err != nil {

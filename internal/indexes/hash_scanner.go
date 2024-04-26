@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -33,7 +34,7 @@ func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, any, error) 
 		return 0, nil, err
 	}
 
-	value, err := i.expression.ValueFrom(row)
+	value, err := i.expression.ValueFrom(expressions.EmptyContext, row)
 	if err != nil {
 		return 0, nil, err
 	}

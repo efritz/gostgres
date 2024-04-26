@@ -3,7 +3,6 @@ package expressions
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -86,17 +85,15 @@ func (e functionExpression) Alias(field shared.Field, expression Expression) Exp
 	return NewFunction(e.name, args)
 }
 
-// TODO - This is temporary. Longer term, we need to make functions accessible
-// in execution contexts so that we can create and replace functions by name at
-// runtime vai DDL.
-var functions = map[string]func([]any) (any, error){
-	"now": func(_ []any) (any, error) { return time.Now(), nil },
-}
+func (e functionExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+	f, ok := context.Functions.GetFunction(e.name)
+	if !ok {
+		return nil, fmt.Errorf("unknown function %s", e.name)
+	}
 
-func (e functionExpression) ValueFrom(row shared.Row) (any, error) {
 	args := make([]any, 0, len(e.args))
 	for _, arg := range e.args {
-		value, err := arg.ValueFrom(row)
+		value, err := arg.ValueFrom(context, row)
 		if err != nil {
 			return nil, err
 		}
@@ -104,9 +101,5 @@ func (e functionExpression) ValueFrom(row shared.Row) (any, error) {
 		args = append(args, value)
 	}
 
-	if f, ok := functions[e.name]; ok {
-		return f(args)
-	}
-
-	return nil, fmt.Errorf("unknown function %s", e.name)
+	return f(args)
 }

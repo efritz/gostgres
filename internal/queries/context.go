@@ -2,17 +2,22 @@ package queries
 
 import (
 	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type Context struct {
-	Tables   *table.Tablespace
-	OuterRow shared.Row
+	Tables    *table.Tablespace
+	Functions *functions.Functionspace
+	OuterRow  shared.Row
 }
 
-func NewContext(tables *table.Tablespace) Context {
-	return Context{Tables: tables}
+func NewContext(tables *table.Tablespace, functions *functions.Functionspace) Context {
+	return Context{
+		Tables:    tables,
+		Functions: functions,
+	}
 }
 
 func (c Context) WithOuterRow(row shared.Row) Context {
@@ -23,5 +28,5 @@ func (c Context) WithOuterRow(row shared.Row) Context {
 }
 
 func (ctx Context) Evaluate(expr expressions.Expression, row shared.Row) (any, error) {
-	return expr.ValueFrom(shared.CombineRows(row, ctx.OuterRow))
+	return expr.ValueFrom(expressions.NewContext(ctx.Functions), shared.CombineRows(row, ctx.OuterRow))
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
 )
@@ -36,7 +37,10 @@ func mainErr() error {
 		return err
 	}
 
-	engine := engine.NewEngine(tables)
+	functions := functions.NewFunctionspace()
+	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
+
+	engine := engine.NewEngine(tables, functions)
 
 	log.SetOutput(l.Stderr())
 loop:

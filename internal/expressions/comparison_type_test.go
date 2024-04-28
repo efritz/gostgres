@@ -20,33 +20,33 @@ func TestMatchesOrderType(t *testing.T) {
 	}{
 		{
 			comparisonType: ComparisonTypeEquals,
-			matching:       []pair{{200, 200}},
-			nonMatching:    []pair{{100, 200}},
+			matching:       []pair{{int32(200), int32(200)}},
+			nonMatching:    []pair{{int32(100), int32(200)}},
 		},
 		{
 			comparisonType: ComparisonTypeDistinctFrom,
-			matching:       []pair{{100, 200}, {nil, 200}, {200, nil}},
-			nonMatching:    []pair{{200, 200}, {nil, nil}},
+			matching:       []pair{{int32(100), int32(200)}, {nil, int32(200)}, {int32(200), nil}},
+			nonMatching:    []pair{{int32(200), int32(200)}, {nil, nil}},
 		},
 		{
 			comparisonType: ComparisonTypeLessThan,
-			matching:       []pair{{100, 200}},
-			nonMatching:    []pair{{200, 200}, {300, 200}},
+			matching:       []pair{{int32(100), int32(200)}},
+			nonMatching:    []pair{{int32(200), int32(200)}, {int32(300), int32(200)}},
 		},
 		{
 			comparisonType: ComparisonTypeLessThanEquals,
-			matching:       []pair{{100, 200}, {200, 200}},
-			nonMatching:    []pair{{300, 200}},
+			matching:       []pair{{int32(100), int32(200)}, {int32(200), int32(200)}},
+			nonMatching:    []pair{{int32(300), int32(200)}},
 		},
 		{
 			comparisonType: ComparisonTypeGreaterThan,
-			matching:       []pair{{200, 100}},
-			nonMatching:    []pair{{200, 200}, {100, 200}},
+			matching:       []pair{{int32(200), int32(100)}},
+			nonMatching:    []pair{{int32(200), int32(200)}, {int32(100), int32(200)}},
 		},
 		{
 			comparisonType: ComparisonTypeGreaterThanEquals,
-			matching:       []pair{{200, 100}, {200, 200}},
-			nonMatching:    []pair{{100, 200}},
+			matching:       []pair{{int32(200), int32(100)}, {int32(200), int32(200)}},
+			nonMatching:    []pair{{int32(100), int32(200)}},
 		},
 	} {
 		for _, pair := range testCase.matching {

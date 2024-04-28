@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/efritz/gostgres/internal/shared"
+	"golang.org/x/exp/constraints"
 )
 
 func IsArithmetic(expr Expression) (_ ArithmeticType, left, right Expression) {
@@ -69,15 +70,15 @@ func newBinaryIntExpression(left, right Expression, operatorText string, f func(
 func add(a, b any) (any, error) {
 	switch v := a.(type) {
 	case int16:
-		return v + b.(int16), nil
+		return addNumbers(v, b.(int16))
 	case int32:
-		return v + b.(int32), nil
+		return addNumbers(v, b.(int32))
 	case int64:
-		return v + b.(int64), nil
+		return addNumbers(v, b.(int64))
 	case float32:
-		return v + b.(float32), nil
+		return addNumbers(v, b.(float32))
 	case float64:
-		return v + b.(float64), nil
+		return addNumbers(v, b.(float64))
 	case *big.Float:
 		return new(big.Float).Add(v, b.(*big.Float)), nil
 	}
@@ -85,18 +86,22 @@ func add(a, b any) (any, error) {
 	panic("unreachable after promotion")
 }
 
+func addNumbers[T constraints.Integer | constraints.Float](a, b T) (T, error) {
+	return a + b, nil
+}
+
 func sub(a, b any) (any, error) {
 	switch v := a.(type) {
 	case int16:
-		return v - b.(int16), nil
+		return subNumbers(v, b.(int16))
 	case int32:
-		return v - b.(int32), nil
+		return subNumbers(v, b.(int32))
 	case int64:
-		return v - b.(int64), nil
+		return subNumbers(v, b.(int64))
 	case float32:
-		return v - b.(float32), nil
+		return subNumbers(v, b.(float32))
 	case float64:
-		return v - b.(float64), nil
+		return subNumbers(v, b.(float64))
 	case *big.Float:
 		return new(big.Float).Sub(v, b.(*big.Float)), nil
 	}
@@ -104,18 +109,22 @@ func sub(a, b any) (any, error) {
 	panic("unreachable after promotion")
 }
 
+func subNumbers[T constraints.Integer | constraints.Float](a, b T) (T, error) {
+	return a - b, nil
+}
+
 func mul(a, b any) (any, error) {
 	switch v := a.(type) {
 	case int16:
-		return v * b.(int16), nil
+		return mulNumbers(v, b.(int16))
 	case int32:
-		return v * b.(int32), nil
+		return mulNumbers(v, b.(int32))
 	case int64:
-		return v * b.(int64), nil
+		return mulNumbers(v, b.(int64))
 	case float32:
-		return v * b.(float32), nil
+		return mulNumbers(v, b.(float32))
 	case float64:
-		return v * b.(float64), nil
+		return mulNumbers(v, b.(float64))
 	case *big.Float:
 		return new(big.Float).Mul(v, b.(*big.Float)), nil
 	}
@@ -123,25 +132,37 @@ func mul(a, b any) (any, error) {
 	panic("unreachable after promotion")
 }
 
-func div(a, b any) (any, error) {
-	if b == 0 {
-		return 0, fmt.Errorf("division by zero")
-	}
+func mulNumbers[T constraints.Integer | constraints.Float](a, b T) (T, error) {
+	return a * b, nil
+}
 
+func div(a, b any) (any, error) {
 	switch v := a.(type) {
 	case int16:
-		return v / b.(int16), nil
+		return divNumbers(v, b.(int16))
 	case int32:
-		return v / b.(int32), nil
+		return divNumbers(v, b.(int32))
 	case int64:
-		return v / b.(int64), nil
+		return divNumbers(v, b.(int64))
 	case float32:
-		return v / b.(float32), nil
+		return divNumbers(v, b.(float32))
 	case float64:
-		return v / b.(float64), nil
+		return divNumbers(v, b.(float64))
 	case *big.Float:
+		if b == 0 {
+			return 0, fmt.Errorf("division by zero")
+		}
+
 		return new(big.Float).Quo(v, b.(*big.Float)), nil
 	}
 
 	panic("unreachable after promotion")
+}
+
+func divNumbers[T constraints.Integer | constraints.Float](a, b T) (T, error) {
+	if b == 0 {
+		return 0, fmt.Errorf("division by zero")
+	}
+
+	return a / b, nil
 }

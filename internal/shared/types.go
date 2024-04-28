@@ -18,6 +18,7 @@ const (
 	TypeKindDoublePrecision
 	TypeKindNumeric
 	TypeKindBool
+	TypeKindBinary
 	TypeKindTimestampTz
 	TypeKindAny
 )
@@ -42,6 +43,8 @@ func (k TypeKind) String() string {
 		return "numeric"
 	case TypeKindBool:
 		return "bool"
+	case TypeKindBinary:
+		return "bytea"
 	case TypeKindTimestampTz:
 		return "timestamp with time zone"
 	}
@@ -69,9 +72,11 @@ var (
 	TypeNullableDoublePrecision = Type{Kind: TypeKindDoublePrecision, Nullable: true}
 	TypeNumeric                 = Type{Kind: TypeKindNumeric, Nullable: false}
 	TypeNullableNumeric         = Type{Kind: TypeKindNumeric, Nullable: true}
-	TypeBool                    = Type{Kind: TypeKindBool, Nullable: false}
+	TypeBool                    = Type{Kind: TypeKindBool, Nullable: false} // TODO - parse true yes on 1 (or unique prefix); false no off 0 (or unique prefix)
 	TypeNullableBool            = Type{Kind: TypeKindBool, Nullable: true}
-	TypeTimestampTz             = Type{Kind: TypeKindTimestampTz, Nullable: false}
+	TypeBinary                  = Type{Kind: TypeKindBinary, Nullable: false}
+	TypeNullableBinary          = Type{Kind: TypeKindBinary, Nullable: true}
+	TypeTimestampTz             = Type{Kind: TypeKindTimestampTz, Nullable: false} // TODO - add date, time, and interval
 	TypeNullableTimestampTz     = Type{Kind: TypeKindTimestampTz, Nullable: true}
 	TypeAny                     = Type{Kind: TypeKindAny, Nullable: false}
 	TypeNullableAny             = Type{Kind: TypeKindAny, Nullable: true}

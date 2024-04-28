@@ -52,7 +52,7 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	if aliasName != "" {
 		relationName = aliasName
 	}
-	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeNumeric)
+	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeBigInteger)
 
 	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
 		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), shared.TIDName),

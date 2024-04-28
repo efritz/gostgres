@@ -17,7 +17,7 @@ func (i *hashIndex) Scanner(ctx queries.Context, opts HashIndexScanOptions) (tid
 
 	j := 0
 
-	return tidScannerFunc(func() (int, error) {
+	return tidScannerFunc(func() (int64, error) {
 		if j < len(items) {
 			tid := items[j].tid
 			j++
@@ -28,7 +28,7 @@ func (i *hashIndex) Scanner(ctx queries.Context, opts HashIndexScanOptions) (tid
 	}), nil
 }
 
-func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int, any, error) {
+func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int64, any, error) {
 	tid, err := row.TID()
 	if err != nil {
 		return 0, nil, err

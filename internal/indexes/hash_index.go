@@ -16,7 +16,7 @@ type hashIndex struct {
 }
 
 type hashItem struct {
-	tid   int
+	tid   int64
 	value any
 }
 

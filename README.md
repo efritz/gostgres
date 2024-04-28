@@ -38,7 +38,6 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
 
 - Short-term
     - Support CTEs
-    - Support builtin functions
     - Support DISTINCT (ON)
     - Support GROUP BY and HAVING
     - Support TRUNCATE
@@ -52,7 +51,6 @@ Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varyi
     - Constraints
     - Views
     - Materialized views
-    - Default values
     - ON CONFLICT
     - Non-inner joins
 

@@ -80,16 +80,28 @@ func (p *parser) parseColumn() (shared.Field, error) {
 	switch strings.ToLower(dataType.Text) {
 	case "text":
 		typ = shared.TypeNullableText
+	case "smallint":
+		typ = shared.TypeNullableSmallInteger
 	case "integer":
+		typ = shared.TypeNullableInteger
+	case "bigint":
+		typ = shared.TypeNullableBigInteger
+	case "real":
+		typ = shared.TypeNullableReal
+	case "double":
+		if !p.advanceIf(isIdent("precision")) {
+			return shared.Field{}, fmt.Errorf("unknown type %q", "double")
+		}
+		typ = shared.TypeNullableDoublePrecision
+	case "numeric":
 		typ = shared.TypeNullableNumeric
 	case "boolean":
 		typ = shared.TypeNullableBool
 	case "timestamp":
-		if p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			typ = shared.TypeNullableTimestampTz
-		} else {
+		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
 			return shared.Field{}, fmt.Errorf("unknown type %q", "timestamp")
 		}
+		typ = shared.TypeNullableTimestampTz
 	default:
 		return shared.Field{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}

@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,21 +15,40 @@ func TestCompareValues(t *testing.T) {
 		expected OrderType
 	}{
 		{
-			name:     "numbers =",
-			left:     200,
-			right:    200,
+			name:     "integers =",
+			left:     int32(200),
+			right:    int32(200),
 			expected: OrderTypeEqual,
 		},
 		{
-			name:     "numbers <",
-			left:     100,
-			right:    200,
+			name:     "integers <",
+			left:     int32(100),
+			right:    int32(200),
 			expected: OrderTypeBefore,
 		},
 		{
-			name:     "numbers >",
-			left:     200,
-			right:    100,
+			name:     "integers >",
+			left:     int32(200),
+			right:    int32(100),
+			expected: OrderTypeAfter,
+		},
+
+		{
+			name:     "promotable numbers =",
+			left:     int16(200),
+			right:    float32(200),
+			expected: OrderTypeEqual,
+		},
+		{
+			name:     "promotable numbers <",
+			left:     int64(100),
+			right:    float32(200),
+			expected: OrderTypeBefore,
+		},
+		{
+			name:     "promotable numbers >",
+			left:     big.NewFloat(200),
+			right:    int32(100),
 			expected: OrderTypeAfter,
 		},
 		{
@@ -71,62 +91,62 @@ func TestCompareValueSlices(t *testing.T) {
 	}{
 		{
 			name:     "single column =",
-			left:     []any{200},
-			right:    []any{200},
+			left:     []any{int32(200)},
+			right:    []any{int32(200)},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "single column <",
-			left:     []any{100},
-			right:    []any{200},
+			left:     []any{int32(100)},
+			right:    []any{int32(200)},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "single column >",
-			left:     []any{200},
-			right:    []any{100},
+			left:     []any{int32(200)},
+			right:    []any{int32(100)},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, columns =",
-			left:     []any{"foo", 200},
-			right:    []any{"foo", 200},
+			left:     []any{"foo", int32(200)},
+			right:    []any{"foo", int32(200)},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "multi-column, first column <",
-			left:     []any{"bar", 100},
-			right:    []any{"foo", 200},
+			left:     []any{"bar", int32(100)},
+			right:    []any{"foo", int32(200)},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "multi-column, first column >",
-			left:     []any{"foo", 200},
-			right:    []any{"bar", 100},
+			left:     []any{"foo", int32(200)},
+			right:    []any{"bar", int32(100)},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, second column <",
-			left:     []any{"foo", 100},
-			right:    []any{"foo", 200},
+			left:     []any{"foo", int32(100)},
+			right:    []any{"foo", int32(200)},
 			expected: OrderTypeBefore,
 		},
 		{
 			name:     "multi-column, second column >",
-			left:     []any{"foo", 200},
-			right:    []any{"foo", 100},
+			left:     []any{"foo", int32(200)},
+			right:    []any{"foo", int32(100)},
 			expected: OrderTypeAfter,
 		},
 		{
 			name:     "multi-column, left larger",
-			left:     []any{"foo", 200, "bar"},
-			right:    []any{"foo", 200},
+			left:     []any{"foo", int32(200), "bar"},
+			right:    []any{"foo", int32(200)},
 			expected: OrderTypeEqual,
 		},
 		{
 			name:     "multi-column, right larger",
-			left:     []any{"foo", 200},
-			right:    []any{"foo", 200, "bar"},
+			left:     []any{"foo", int32(200)},
+			right:    []any{"foo", int32(200), "bar"},
 			expected: OrderTypeEqual,
 		},
 	} {

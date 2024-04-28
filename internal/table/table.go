@@ -1,8 +1,6 @@
 package table
 
 import (
-	"sort"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 	"golang.org/x/exp/slices"
@@ -11,7 +9,7 @@ import (
 type Table struct {
 	name    string
 	fields  []shared.Field
-	rows    map[int]shared.Row
+	rows    map[int64]shared.Row
 	indexes []Index
 }
 
@@ -24,7 +22,7 @@ type Index interface {
 
 func NewTable(name string, fields []shared.Field) *Table {
 	tableFields := []shared.Field{
-		shared.NewInternalField(name, shared.TIDName, shared.TypeNumeric),
+		shared.NewInternalField(name, shared.TIDName, shared.TypeBigInteger),
 	}
 	for _, field := range fields {
 		tableFields = append(tableFields, field.WithRelationName(name))
@@ -33,7 +31,7 @@ func NewTable(name string, fields []shared.Field) *Table {
 	return &Table{
 		name:   name,
 		fields: tableFields,
-		rows:   map[int]shared.Row{},
+		rows:   map[int64]shared.Row{},
 	}
 }
 
@@ -53,17 +51,17 @@ func (t *Table) Size() int {
 	return len(t.rows)
 }
 
-func (t *Table) TIDs() []int {
-	tids := make([]int, 0, len(t.rows))
+func (t *Table) TIDs() []int64 {
+	tids := make([]int64, 0, len(t.rows))
 	for tid := range t.rows {
 		tids = append(tids, tid)
 	}
-	sort.Ints(tids)
+	slices.Sort(tids)
 
 	return tids
 }
 
-func (t *Table) Row(tid int) (shared.Row, bool) {
+func (t *Table) Row(tid int64) (shared.Row, bool) {
 	row, ok := t.rows[tid]
 	return row, ok
 }
@@ -79,7 +77,7 @@ func (t *Table) AddIndex(index Index) error {
 	return nil
 }
 
-var tid = 0
+var tid = int64(0)
 
 func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	tid++

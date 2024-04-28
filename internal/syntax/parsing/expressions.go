@@ -92,12 +92,26 @@ func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expressio
 
 // numericLiteralExpression := number
 func (p *parser) parseNumericLiteralExpression(token tokens.Token) (expressions.Expression, error) {
+	if p.advanceIf(isType(tokens.TokenTypeDot)) {
+		fractionalPart, err := p.mustAdvance(isType(tokens.TokenTypeNumber))
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := strconv.ParseFloat(token.Text+"."+fractionalPart.Text, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		return expressions.NewConstant(float64(value)), err
+	}
+
 	value, err := strconv.Atoi(token.Text)
 	if err != nil {
 		return nil, err
 	}
 
-	return expressions.NewConstant(value), nil
+	return expressions.NewConstant(int32(value)), nil
 }
 
 // numericLiteralExpression := string

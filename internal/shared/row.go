@@ -18,12 +18,12 @@ func NewRow(fields []Field, values []any) (_ Row, err error) {
 
 const TIDName = "tid"
 
-func (r Row) TID() (int, error) {
+func (r Row) TID() (int64, error) {
 	if len(r.Fields) == 0 || r.Fields[0].Name() != TIDName {
 		return 0, nil
 	}
 
-	tid, ok := r.Values[0].(int)
+	tid, ok := r.Values[0].(int64)
 	if !ok {
 		return 0, fmt.Errorf("no tid in row")
 	}

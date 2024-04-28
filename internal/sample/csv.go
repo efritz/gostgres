@@ -3,6 +3,7 @@ package sample
 import (
 	"encoding/csv"
 	"fmt"
+	"math/big"
 	"os"
 	"strconv"
 	"time"
@@ -95,8 +96,27 @@ func convertValue(rawValue string, typ shared.Type) (any, error) {
 	case shared.TypeKindText:
 		return rawValue, nil
 
+	case shared.TypeKindSmallInteger:
+		v, err := strconv.ParseInt(rawValue, 10, 16)
+		return int16(v), err
+
+	case shared.TypeKindInteger:
+		v, err := strconv.ParseInt(rawValue, 10, 32)
+		return int32(v), err
+
+	case shared.TypeKindBigInteger:
+		return strconv.ParseInt(rawValue, 10, 64)
+
+	case shared.TypeKindReal:
+		v, err := strconv.ParseFloat(rawValue, 32)
+		return float32(v), err
+
+	case shared.TypeKindDoublePrecision:
+		return strconv.ParseFloat(rawValue, 64)
+
 	case shared.TypeKindNumeric:
-		return strconv.Atoi(rawValue)
+		v, err := strconv.ParseFloat(rawValue, 64)
+		return big.NewFloat(v), err
 
 	case shared.TypeKindBool:
 		return rawValue == "true", nil

@@ -16,7 +16,7 @@ type btreeIndex struct {
 }
 
 type btreeNode struct {
-	tid    int
+	tid    int64
 	values []any
 	left   *btreeNode // TODO - make a proper BTree (not BST)
 	right  *btreeNode
@@ -167,7 +167,7 @@ func (i *btreeIndex) Insert(row shared.Row) error {
 	return nil
 }
 
-func (n *btreeNode) insert(values []any, tid int) *btreeNode {
+func (n *btreeNode) insert(values []any, tid int64) *btreeNode {
 	if n == nil {
 		return &btreeNode{tid: tid, values: values}
 	}
@@ -192,7 +192,7 @@ func (i *btreeIndex) Delete(row shared.Row) error {
 	return nil
 }
 
-func (n *btreeNode) delete(values []any, tid int) *btreeNode {
+func (n *btreeNode) delete(values []any, tid int64) *btreeNode {
 	if n == nil {
 		return nil
 	}

@@ -1,5 +1,11 @@
 package shared
 
+import (
+	"math/big"
+
+	"golang.org/x/exp/constraints"
+)
+
 type OrderType int
 
 const (
@@ -31,20 +37,6 @@ func CompareValues(left, right any) OrderType {
 		return OrderTypeBefore
 	}
 
-	if lVal, ok := left.(int); ok {
-		if rVal, ok := right.(int); ok {
-			if lVal == rVal {
-				return OrderTypeEqual
-			}
-
-			if lVal < rVal {
-				return OrderTypeBefore
-			}
-
-			return OrderTypeAfter
-		}
-	}
-
 	if lVal, ok := left.(string); ok {
 		if rVal, ok := right.(string); ok {
 			if lVal == rVal {
@@ -59,5 +51,43 @@ func CompareValues(left, right any) OrderType {
 		}
 	}
 
+	if a, b, err := PromoteToCommonNumericValues(left, right); err == nil {
+		switch v := a.(type) {
+		case int16:
+			return compareNumbers(v, b.(int16))
+		case int32:
+			return compareNumbers(v, b.(int32))
+		case int64:
+			return compareNumbers(v, b.(int64))
+		case float32:
+			return compareNumbers(v, b.(float32))
+		case float64:
+			return compareNumbers(v, b.(float64))
+		case *big.Float:
+			cmp := v.Cmp(b.(*big.Float))
+			if cmp == -1 {
+				return OrderTypeBefore
+			}
+
+			if cmp == 1 {
+				return OrderTypeAfter
+			}
+
+			return OrderTypeEqual
+		}
+	}
+
 	return OrderTypeIncomparable
+}
+
+func compareNumbers[T constraints.Integer | constraints.Float](a, b T) OrderType {
+	if a < b {
+		return OrderTypeBefore
+	}
+
+	if a > b {
+		return OrderTypeAfter
+	}
+
+	return OrderTypeEqual
 }

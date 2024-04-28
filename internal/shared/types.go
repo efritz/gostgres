@@ -2,6 +2,7 @@ package shared
 
 import (
 	"fmt"
+	"math/big"
 	"time"
 )
 
@@ -10,6 +11,11 @@ type TypeKind int
 const (
 	TypeKindInvalid TypeKind = iota
 	TypeKindText
+	TypeKindSmallInteger
+	TypeKindInteger
+	TypeKindBigInteger
+	TypeKindReal
+	TypeKindDoublePrecision
 	TypeKindNumeric
 	TypeKindBool
 	TypeKindTimestampTz
@@ -22,6 +28,16 @@ func (k TypeKind) String() string {
 		return "invalid"
 	case TypeKindText:
 		return "text"
+	case TypeKindSmallInteger:
+		return "smallint"
+	case TypeKindInteger:
+		return "integer"
+	case TypeKindBigInteger:
+		return "bigint"
+	case TypeKindReal:
+		return "real"
+	case TypeKindDoublePrecision:
+		return "double precision"
 	case TypeKindNumeric:
 		return "numeric"
 	case TypeKindBool:
@@ -39,16 +55,26 @@ type Type struct {
 }
 
 var (
-	TypeText                = Type{Kind: TypeKindText, Nullable: false}
-	TypeNullableText        = Type{Kind: TypeKindText, Nullable: true}
-	TypeNumeric             = Type{Kind: TypeKindNumeric, Nullable: false}
-	TypeNullableNumeric     = Type{Kind: TypeKindNumeric, Nullable: true}
-	TypeBool                = Type{Kind: TypeKindBool, Nullable: false}
-	TypeNullableBool        = Type{Kind: TypeKindBool, Nullable: true}
-	TypeTimestampTz         = Type{Kind: TypeKindTimestampTz, Nullable: false}
-	TypeNullableTimestampTz = Type{Kind: TypeKindTimestampTz, Nullable: true}
-	TypeAny                 = Type{Kind: TypeKindAny, Nullable: false}
-	TypeNullableAny         = Type{Kind: TypeKindAny, Nullable: true}
+	TypeText                    = Type{Kind: TypeKindText, Nullable: false}
+	TypeNullableText            = Type{Kind: TypeKindText, Nullable: true}
+	TypeSmallInteger            = Type{Kind: TypeKindSmallInteger, Nullable: false}
+	TypeNullableSmallInteger    = Type{Kind: TypeKindSmallInteger, Nullable: true}
+	TypeInteger                 = Type{Kind: TypeKindInteger, Nullable: false}
+	TypeNullableInteger         = Type{Kind: TypeKindInteger, Nullable: true}
+	TypeBigInteger              = Type{Kind: TypeKindBigInteger, Nullable: false}
+	TypeNullableBigInteger      = Type{Kind: TypeKindBigInteger, Nullable: true}
+	TypeReal                    = Type{Kind: TypeKindReal, Nullable: false}
+	TypeNullableReal            = Type{Kind: TypeKindReal, Nullable: true}
+	TypeDoublePrecision         = Type{Kind: TypeKindDoublePrecision, Nullable: false}
+	TypeNullableDoublePrecision = Type{Kind: TypeKindDoublePrecision, Nullable: true}
+	TypeNumeric                 = Type{Kind: TypeKindNumeric, Nullable: false}
+	TypeNullableNumeric         = Type{Kind: TypeKindNumeric, Nullable: true}
+	TypeBool                    = Type{Kind: TypeKindBool, Nullable: false}
+	TypeNullableBool            = Type{Kind: TypeKindBool, Nullable: true}
+	TypeTimestampTz             = Type{Kind: TypeKindTimestampTz, Nullable: false}
+	TypeNullableTimestampTz     = Type{Kind: TypeKindTimestampTz, Nullable: true}
+	TypeAny                     = Type{Kind: TypeKindAny, Nullable: false}
+	TypeNullableAny             = Type{Kind: TypeKindAny, Nullable: true}
 )
 
 func (typ Type) String() string {
@@ -82,7 +108,22 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 			t, ok := typ.refineToKind(TypeKindText)
 			return t, v, ok
 		}
-	case int:
+	case int16:
+		t, ok := typ.refineToKind(TypeKindSmallInteger, TypeKindInteger, TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
+		return t, v, ok
+	case int32:
+		t, ok := typ.refineToKind(TypeKindInteger, TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
+		return t, v, ok
+	case int64:
+		t, ok := typ.refineToKind(TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
+		return t, v, ok
+	case float32:
+		t, ok := typ.refineToKind(TypeKindReal, TypeKindDoublePrecision, TypeKindNumeric)
+		return t, v, ok
+	case float64:
+		t, ok := typ.refineToKind(TypeKindDoublePrecision, TypeKindNumeric)
+		return t, v, ok
+	case *big.Float:
 		t, ok := typ.refineToKind(TypeKindNumeric)
 		return t, v, ok
 	case bool:
@@ -96,9 +137,11 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 	return Type{}, nil, false
 }
 
-func (typ Type) refineToKind(kind TypeKind) (Type, bool) {
-	if typ.Kind == TypeKindAny || typ.Kind == kind {
-		return Type{Kind: kind, Nullable: typ.Nullable}, true
+func (typ Type) refineToKind(kinds ...TypeKind) (Type, bool) {
+	for _, kind := range append(kinds, TypeKindAny) {
+		if typ.Kind == kind {
+			return Type{Kind: kind, Nullable: typ.Nullable}, true
+		}
 	}
 
 	return Type{}, false

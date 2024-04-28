@@ -32,7 +32,7 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 	withinLowerBound := func(values []any) bool { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
 	withinUpperBound := func(values []any) bool { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
 
-	return tidScannerFunc(func() (int, error) {
+	return tidScannerFunc(func() (int64, error) {
 		for current != nil || len(stack) > 0 {
 			for current != nil {
 				stack = append(stack, current)
@@ -71,7 +71,7 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 	}), nil
 }
 
-func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int, []any, error) {
+func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, error) {
 	tid, err := row.TID()
 	if err != nil {
 		return 0, nil, err

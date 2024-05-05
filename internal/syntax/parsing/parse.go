@@ -2,6 +2,8 @@ package parsing
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
@@ -25,4 +27,24 @@ func Parse(tokenStream []tokens.Token, tables TableGetter) (Query, error) {
 	}
 
 	return statement, nil
+}
+
+func SplitStatements(input string) []string {
+	var filtered []string
+	for _, s := range strings.SplitAfter(stripComments(input), ";") {
+		if trimmed := strings.TrimSpace(s); trimmed != "" {
+			filtered = append(filtered, trimmed)
+		}
+	}
+
+	return filtered
+}
+
+func stripComments(input string) string {
+	var lines []string
+	for _, line := range strings.Split(string(input), "\n") {
+		lines = append(lines, strings.TrimRightFunc(strings.Split(line, "--")[0], unicode.IsSpace))
+	}
+
+	return strings.Join(lines, "\n")
 }

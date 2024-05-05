@@ -12,6 +12,7 @@ import (
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
+	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/efritz/gostgres/internal/table"
 )
 
@@ -33,37 +34,52 @@ func mainErr() error {
 	}
 	defer l.Close()
 
+	log.SetOutput(l.Stderr())
+
 	tables := table.NewTablespace()
 	functions := functions.NewFunctionspace()
 	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
 	engine := engine.NewEngine(tables, functions)
 
-	log.SetOutput(l.Stderr())
+	buffer := ""
 loop:
 	for {
 		line, err := l.Readline()
 		if err != nil {
 			return err
 		}
-
 		line = strings.TrimSpace(line)
 
-		switch {
-		case line == "":
-			continue
+		if buffer == "" {
+			switch line {
+			case "exit":
+				break loop
 
-		case line == "load sample":
-			if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
-				return err
+			case "load sample":
+				if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
+					return err
+				}
+
+				continue
+			}
+		}
+
+		if buffer != "" {
+			buffer += "\n"
+		}
+		buffer += line
+
+		if buffer != "" {
+			parts := parsing.SplitStatements(buffer)
+			for len(parts) > 0 && parts[0][len(parts[0])-1] == ';' {
+				line := parts[0]
+				parts = parts[1:]
+				if err := handleQuery(engine, line); err != nil {
+					fmt.Printf("error: %s\n", err)
+				}
 			}
 
-		case line == "exit":
-			break loop
-
-		default:
-			if err := handleQuery(engine, line); err != nil {
-				fmt.Printf("error: %s\n", err)
-			}
+			buffer = strings.Join(parts, "\n")
 		}
 	}
 

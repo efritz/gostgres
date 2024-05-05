@@ -3,9 +3,9 @@ package sample
 import (
 	"embed"
 	"path/filepath"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
 
 func LoadPagilaSampleSchemaAndData(engine *engine.Engine) error {
@@ -37,23 +37,5 @@ func readPagilaFile(path string) ([]string, error) {
 		return nil, err
 	}
 
-	return parseStatements(string(schemaContent)), nil
-}
-
-func parseStatements(content string) []string {
-	var normalized []string
-	for _, line := range strings.Split(string(content), "\n") {
-		normalized = append(normalized, strings.Split(line, "--")[0])
-	}
-	statements := strings.Split(strings.Join(normalized, "\n"), ";")
-
-	var filtered []string
-	for _, s := range statements {
-		s = strings.TrimSpace(s)
-		if s != "" {
-			filtered = append(filtered, s)
-		}
-	}
-
-	return filtered
+	return parsing.SplitStatements(string(schemaContent)), nil
 }

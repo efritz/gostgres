@@ -11,7 +11,13 @@ This shell starts with an empty tablespace, but a sample database based on [pagi
 ```
 $ go build ./cmd/repl && ./repl
 gostgres ❯ load sample
-gostgres ❯ select f.title, f.rating, c.name from film f join film_category fc on fc.film_id = f.film_id join category c on c.category_id = fc.category_id where rating = 'R' order by f.title limit 20;
+gostgres ❯ SELECT f.title, f.rating, c.name
+gostgres ❯ FROM film f
+gostgres ❯ JOIN film_category fc ON fc.film_id = f.film_id
+gostgres ❯ JOIN category c ON c.category_id = fc.category_id
+gostgres ❯ WHERE rating = 'R'
+gostgres ❯ ORDER BY f.title
+gostgres ❯ LIMIT 20;
          title        | rating |     name
 ----------------------+--------+-------------
       AIRPORT POLLOCK |      R |      Horror

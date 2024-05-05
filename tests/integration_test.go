@@ -2,6 +2,8 @@ package tests
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -15,18 +17,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type TestCase struct {
-	name  string
-	query string
-}
+const rootDir = "queries"
 
-func runTests(t *testing.T, testCases []TestCase) {
-	t.Helper()
+func TestIntegration(t *testing.T) {
+	entries, err := os.ReadDir(rootDir)
+	require.NoError(t, err)
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Skip()
-			got, err := runTestQuery(testCase.query)
+	for _, entry := range entries {
+		name := entry.Name()
+
+		t.Run(name, func(t *testing.T) {
+			query, err := os.ReadFile(filepath.Join(rootDir, name))
+			require.NoError(t, err)
+
+			got, err := runTestQuery(string(query))
 			require.NoError(t, err)
 			autogold.ExpectFile(t, got, autogold.Dir("golden"))
 		})

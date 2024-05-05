@@ -6,68 +6,35 @@ Postgres in Go as a learning exercise.
 
 Simply run `go build ./cmd/repl && ./repl` to drop into a psql-like shell where you can issue SQL commands to an in-memory database.
 
-Currently this shell pre-loads a number of relations and data (`employees`, `departments`, `locations`, and `regions`).
+This shell starts with an empty tablespace, but a sample database based on [pagila](https://github.com/devrimgunduz/pagila) can be loaded via `load sample`.
 
 ```
 $ go build ./cmd/repl && ./repl
-gostgres ❯ select * from employees where department_id = 2 order by last_name;
- employee_id | first_name | last_name |              email             | manager_id | department_id
--------------+------------+-----------+--------------------------------+------------+---------------
-           6 |    Timothy |   Cornish |    timothy.cornish@company.com |          4 |             2
-           2 |    Clayton |  Mahaffey |   clayton.mahaffey@company.com |          4 |             2
-           8 |  Frederick |  McLendon | frederick.mclendon@company.com |          4 |             2
-(3 rows)
+gostgres ❯ load sample
+gostgres ❯ select f.title, f.rating, c.name from film f join film_category fc on fc.film_id = f.film_id join category c on c.category_id = fc.category_id where rating = 'R' order by f.title limit 20;
+         title        | rating |     name
+----------------------+--------+-------------
+      AIRPORT POLLOCK |      R |      Horror
+           ALONE TRIP |      R |       Music
+  AMELIE HELLFIGHTERS |      R |       Music
+      AMERICAN CIRCUS |      R |      Action
+ ANACONDA CONFESSIONS |      R |   Animation
+     ANALYZE HOOSIERS |      R |      Horror
+    ANYTHING SAVANNAH |      R |      Horror
+ APOCALYPSE FLAMINGOS |      R |         New
+     ARMY FLINTSTONES |      R | Documentary
+          BADMAN DAWN |      R |      Sci-Fi
+     BANGER PINOCCHIO |      R |       Music
+       BEAR GRACELAND |      R |    Children
+      BEAST HUNCHBACK |      R |    Classics
+       BEVERLY OUTLAW |      R |      Sci-Fi
+        BOOGIE AMELIE |      R |       Music
+        BOULEVARD MOB |      R |         New
+      BROOKLYN DESERT |      R |     Foreign
+  BROTHERHOOD BLANKET |      R | Documentary
+        BUBBLE GROSSE |      R |      Sports
+      CAMPUS REMEMBER |      R |      Action
+(20 rows)
 
-gostgres ❯ select l.*, r.region_name from locations l join regions r on l.region_id = r.region_id;
- location_id | location_name | region_id | region_name
--------------+---------------+-----------+-------------
-           1 | San Francisco |         1 |          NA
-           2 |       Toronto |         1 |          NA
-           3 |      New York |         1 |          NA
-           4 |     Barcelona |         2 |        EMEA
-           5 |     Cape Town |         2 |        EMEA
-           6 |     Guangzhou |         2 |        EMEA
-(6 rows)
-
-Time: 106.244µs
+Time: 187.273833ms
 ```
-
-Currently, Gostgres supports `SELECT`, `INSERT`, `UPDATE`, and `DELETE` to varying degrees.
-
-## TODO
-
-- Short-term
-    - Support CTEs
-    - Support DISTINCT (ON)
-    - Support GROUP BY and HAVING
-    - Support TRUNCATE
-    - Support subquery expressions (EXISTS/IN/NOT IN/ANY/SOME/ALL)
-    - Support row comparisons (IN/NOT IN/ANY/SOME/ALL)
-
-- Medium-term
-    - Primary keys
-    - Foreign keys
-    - Enums
-    - Constraints
-    - Views
-    - Materialized views
-    - ON CONFLICT
-    - Non-inner joins
-
-- Long-term
-    - Complete DDL
-    - Recursive CTEs
-    - Window queries
-    - Write to disk
-    - Networking
-    - Multiple clients
-    - Functions
-    - Transactions
-    - Triggers
-    - WAL
-
-- Tech debt
-    - Non-hack planning for merge joins
-    - Implement Mark+Restore on indexes directly
-    - Break `Node` iface into optional components
-    - Combine alias and projection nodes (if possible)

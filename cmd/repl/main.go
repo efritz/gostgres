@@ -12,6 +12,7 @@ import (
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 func main() {
@@ -32,14 +33,9 @@ func mainErr() error {
 	}
 	defer l.Close()
 
-	tables, err := sample.CreateSampleTables("tests/")
-	if err != nil {
-		return err
-	}
-
+	tables := table.NewTablespace()
 	functions := functions.NewFunctionspace()
 	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
-
 	engine := engine.NewEngine(tables, functions)
 
 	log.SetOutput(l.Stderr())
@@ -55,6 +51,11 @@ loop:
 		switch {
 		case line == "":
 			continue
+
+		case line == "load sample":
+			if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
+				return err
+			}
 
 		case line == "exit":
 			break loop

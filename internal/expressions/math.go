@@ -149,7 +149,7 @@ func div(a, b any) (any, error) {
 	case float64:
 		return divNumbers(v, b.(float64))
 	case *big.Float:
-		if b == 0 {
+		if b.(*big.Float).Cmp(big.NewFloat(0)) == 0 {
 			return 0, fmt.Errorf("division by zero")
 		}
 

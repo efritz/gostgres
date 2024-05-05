@@ -100,51 +100,16 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 
 	switch v := value.(type) {
 	case string:
-		if typ.Kind == TypeKindTimestampTz {
-			if t, err := time.Parse("2006-01-02 15:04:05-07", v); err == nil {
-				return typ, t, true
-			}
-		} else {
-			t, ok := typ.refineToKind(TypeKindText)
-			return t, v, ok
-		}
-	case int16:
-		t, ok := typ.refineToKind(TypeKindSmallInteger, TypeKindInteger, TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
-		return t, v, ok
-	case int32:
-		t, ok := typ.refineToKind(TypeKindInteger, TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
-		return t, v, ok
-	case int64:
-		t, ok := typ.refineToKind(TypeKindBigInteger, TypeKindDoublePrecision, TypeKindNumeric)
-		return t, v, ok
-	case float32:
-		t, ok := typ.refineToKind(TypeKindReal, TypeKindDoublePrecision, TypeKindNumeric)
-		return t, v, ok
-	case float64:
-		t, ok := typ.refineToKind(TypeKindDoublePrecision, TypeKindNumeric)
-		return t, v, ok
-	case *big.Float:
-		t, ok := typ.refineToKind(TypeKindNumeric)
-		return t, v, ok
+		return refineString(v, typ)
+	case int16, int32, int64, float32, float64, *big.Float:
+		return refineNumeric(v, typ)
 	case bool:
-		t, ok := typ.refineToKind(TypeKindBool)
-		return t, v, ok
+		return typ, v, typ.Kind == TypeKindAny || typ.Kind == TypeKindBool
 	case time.Time:
-		t, ok := typ.refineToKind(TypeKindTimestampTz)
-		return t, v, ok
+		return typ, v, typ.Kind == TypeKindAny || typ.Kind == TypeKindTimestampTz
 	}
 
 	return Type{}, nil, false
-}
-
-func (typ Type) refineToKind(kinds ...TypeKind) (Type, bool) {
-	for _, kind := range append(kinds, TypeKindAny) {
-		if typ.Kind == kind {
-			return Type{Kind: kind, Nullable: typ.Nullable}, true
-		}
-	}
-
-	return Type{}, false
 }
 
 func ValueAs[T any](untypedValue any, err error) (*T, error) {

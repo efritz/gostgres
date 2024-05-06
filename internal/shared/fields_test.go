@@ -44,7 +44,7 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 				NewField("t2", "c", TypeText),
 			},
 		)
-		require.ErrorContains(t, err, "ambiguous field b")
+		require.ErrorContains(t, err, `ambiguous field "b"`)
 	})
 
 	t.Run("unknown field", func(t *testing.T) {
@@ -56,6 +56,6 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 				NewField("t", "c", TypeText),
 			},
 		)
-		require.ErrorContains(t, err, "unknown field d")
+		require.ErrorContains(t, err, `unknown field "t"."d"`)
 	})
 }

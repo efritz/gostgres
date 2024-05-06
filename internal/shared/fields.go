@@ -82,9 +82,14 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 			return unqualifiedIndexes[0], nil
 		}
 		if len(unqualifiedIndexes) > 1 {
-			return 0, fmt.Errorf("ambiguous field %s", needle.Name())
+			return 0, fmt.Errorf("ambiguous field %q", needle.name)
 		}
 	}
 
-	return 0, fmt.Errorf("unknown field %s", needle.Name())
+	name := fmt.Sprintf("%q", needle.name)
+	if needle.relationName != "" {
+		name = fmt.Sprintf("%q.%s", needle.relationName, name)
+	}
+
+	return 0, fmt.Errorf("unknown field %s", name)
 }

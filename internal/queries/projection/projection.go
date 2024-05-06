@@ -61,7 +61,7 @@ func (n *projectionNode) Filter() expressions.Expression {
 		return nil
 	}
 
-	return n.projector.deprojectExtension(filter)
+	return n.projector.deprojectExpression(filter)
 }
 
 func (n *projectionNode) Ordering() expressions.OrderExpression {
@@ -71,7 +71,7 @@ func (n *projectionNode) Ordering() expressions.OrderExpression {
 	}
 
 	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
-		return n.projector.deprojectExtension(expression)
+		return n.projector.deprojectExpression(expression)
 	})
 }
 

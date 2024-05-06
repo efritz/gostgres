@@ -77,7 +77,7 @@ func (p *Projector) projectExpression(expression expressions.Expression) express
 	return expression
 }
 
-func (p *Projector) deprojectExtension(expression expressions.Expression) expressions.Expression {
+func (p *Projector) deprojectExpression(expression expressions.Expression) expressions.Expression {
 	for i, alias := range p.aliases {
 		if field, ok := alias.expression.Named(); ok {
 			expression = expression.Alias(field, expressions.NewNamed(p.projectedFields[i]))

@@ -11,35 +11,44 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 	stack := []*btreeNode{}
 	current := i.root
 
-	checkBounds := func(nodeValues []any, bounds [][]scanBound, expected shared.OrderType) bool {
+	checkBounds := func(nodeValues []any, bounds [][]scanBound, expected shared.OrderType) (bool, error) {
 		for j, bounds := range bounds[:min(len(bounds), len(nodeValues))] {
 			for _, bound := range bounds {
 				value, err := ctx.Evaluate(bound.expression, shared.Row{})
 				if err != nil {
-					return false
+					return false, err
 				}
 
 				orderType := shared.CompareValues(nodeValues[j], value)
 				if !(orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)) {
-					return false
+					return false, nil
 				}
 			}
 		}
 
-		return true
+		return true, nil
 	}
 
-	withinLowerBound := func(values []any) bool { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
-	withinUpperBound := func(values []any) bool { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
+	withinLowerBound := func(values []any) (bool, error) { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
+	withinUpperBound := func(values []any) (bool, error) { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
 
 	return tidScannerFunc(func() (int64, error) {
 		for current != nil || len(stack) > 0 {
 			for current != nil {
 				stack = append(stack, current)
 
-				if opts.scanDirection != ScanDirectionBackward && withinLowerBound(current.values) {
+				lowerOk, err := withinLowerBound(current.values)
+				if err != nil {
+					return 0, err
+				}
+				upperOk, err := withinUpperBound(current.values)
+				if err != nil {
+					return 0, err
+				}
+
+				if opts.scanDirection == ScanDirectionForward && lowerOk {
 					current = current.left
-				} else if opts.scanDirection == ScanDirectionBackward == withinUpperBound(current.values) {
+				} else if opts.scanDirection == ScanDirectionBackward && upperOk {
 					current = current.right
 				} else {
 					current = nil
@@ -54,15 +63,24 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 			node := stack[idx]
 			stack = stack[:idx]
 
-			if opts.scanDirection == ScanDirectionForward && withinUpperBound(node.values) {
+			upperOk, err := withinUpperBound(node.values)
+			if err != nil {
+				return 0, err
+			}
+			lowerOk, err := withinLowerBound(node.values)
+			if err != nil {
+				return 0, err
+			}
+
+			if opts.scanDirection == ScanDirectionForward && upperOk {
 				current = node.right
-			} else if opts.scanDirection == ScanDirectionBackward && withinLowerBound(node.values) {
+			} else if opts.scanDirection == ScanDirectionBackward && lowerOk {
 				current = node.left
 			} else {
 				current = nil
 			}
 
-			if withinLowerBound(node.values) && withinUpperBound(node.values) {
+			if upperOk && lowerOk {
 				return node.tid, nil
 			}
 		}

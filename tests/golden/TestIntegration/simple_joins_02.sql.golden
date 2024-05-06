@@ -1,0 +1,90 @@
+`
+Query:
+
+SELECT f.title, a.first_name || ' ' || a.last_name
+FROM film f
+JOIN film_actor fa ON fa.film_id = f.film_id
+JOIN actor a ON a.actor_id = fa.actor_id
+ORDER BY a.last_name DESC, a.first_name DESC
+LIMIT 50;
+
+Plan:
+
+                                 query plan
+---------------------------------------------------------------------------
+ select (title, a.first_name ||   || a.last_name as ?column?)
+    limit 50
+        order by a.last_name desc, a.first_name desc
+            join using nested loop
+                join using nested loop
+                    alias as f
+                        table scan of film
+                with
+                    alias as fa
+                        btree index scan of film_actor via idx_fk_film_id
+                            index cond: film_actor.film_id = f.film_id
+                on fa.film_id = f.film_id
+            with
+                alias as a
+                    table scan of actor
+                        filter: actor.actor_id = fa.actor_id
+            on a.actor_id = fa.actor_id
+
+(1 rows)
+
+Results:
+
+          title          |      ?column?
+-------------------------+-------------------
+          ACE GOLDFINGER |  MINNIE ZELLWEGER
+          ALICE FANTASIA |  MINNIE ZELLWEGER
+             BILL OTHERS |  MINNIE ZELLWEGER
+        BONNIE HOLOCAUST |  MINNIE ZELLWEGER
+        BOWFINGER GABLES |  MINNIE ZELLWEGER
+          CHOCOLATE DUCK |  MINNIE ZELLWEGER
+          DAY UNFAITHFUL |  MINNIE ZELLWEGER
+          EVERYONE CRAFT |  MINNIE ZELLWEGER
+          EXPRESS LONELY |  MINNIE ZELLWEGER
+ EXTRAORDINARY CONQUERER |  MINNIE ZELLWEGER
+           FRIDA SLIPPER |  MINNIE ZELLWEGER
+          GROOVE FICTION |  MINNIE ZELLWEGER
+           HOLIDAY GAMES |  MINNIE ZELLWEGER
+        HYSTERICAL GRAIL |  MINNIE ZELLWEGER
+           INSECTS STONE |  MINNIE ZELLWEGER
+            JAPANESE RUN |  MINNIE ZELLWEGER
+              JAWS HARRY |  MINNIE ZELLWEGER
+            LIFE TWISTED |  MINNIE ZELLWEGER
+          MADIGAN DORADO |  MINNIE ZELLWEGER
+         MANNEQUIN WORST |  MINNIE ZELLWEGER
+           MONSOON CAUSE |  MINNIE ZELLWEGER
+       NOTTING SPEAKEASY |  MINNIE ZELLWEGER
+          PICKUP DRIVING |  MINNIE ZELLWEGER
+         RAGING AIRPLANE |  MINNIE ZELLWEGER
+             SANTA PARIS |  MINNIE ZELLWEGER
+      SMOKING BARBARELLA |  MINNIE ZELLWEGER
+         SUSPECTS QUILLS |  MINNIE ZELLWEGER
+       TALENTED HOMICIDE |  MINNIE ZELLWEGER
+        TOMORROW HUSTLER |  MINNIE ZELLWEGER
+             WAR NOTTING |  MINNIE ZELLWEGER
+              WARS PLUTO |  MINNIE ZELLWEGER
+    BREAKFAST GOLDFINGER |   JULIA ZELLWEGER
+        CRANES RESERVOIR |   JULIA ZELLWEGER
+             DARES PLUTO |   JULIA ZELLWEGER
+        DETECTIVE VISION |   JULIA ZELLWEGER
+         DIVORCE SHINING |   JULIA ZELLWEGER
+         HOLLOW JEOPARDY |   JULIA ZELLWEGER
+         JEOPARDY ENCINO |   JULIA ZELLWEGER
+        LAMBS CINCINATTI |   JULIA ZELLWEGER
+         MAJESTIC FLOATS |   JULIA ZELLWEGER
+            MINDS TRUMAN |   JULIA ZELLWEGER
+            OPEN AFRICAN |   JULIA ZELLWEGER
+            OUTLAW HANKY |   JULIA ZELLWEGER
+         PANKY SUBMARINE |   JULIA ZELLWEGER
+        RIDER CADDYSHACK |   JULIA ZELLWEGER
+               WON DARES |   JULIA ZELLWEGER
+           WYOMING STORM |   JULIA ZELLWEGER
+           BEAUTY GREASE | CAMERON ZELLWEGER
+        BLACKOUT PRIVATE | CAMERON ZELLWEGER
+       BRIGHT ENCOUNTERS | CAMERON ZELLWEGER
+(50 rows)
+`

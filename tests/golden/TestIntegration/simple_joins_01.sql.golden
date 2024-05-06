@@ -1,0 +1,61 @@
+`
+Query:
+
+SELECT f.title, f.rating, c.name
+FROM film f
+JOIN film_category fc ON fc.film_id = f.film_id
+JOIN category c ON c.category_id = fc.category_id
+WHERE rating = 'R'
+ORDER BY f.title
+LIMIT 20;
+
+Plan:
+
+                             query plan
+-------------------------------------------------------------------
+ select (title, rating, name)
+    limit 20
+        join using nested loop
+            join using nested loop
+                alias as f
+                    btree index scan of film via idx_title
+                        filter: rating = R
+            with
+                alias as fc
+                    table scan of film_category
+                        filter: film_category.film_id = f.film_id
+            on fc.film_id = f.film_id
+        with
+            alias as c
+                table scan of category
+                    filter: category.category_id = fc.category_id
+        on c.category_id = fc.category_id
+
+(1 rows)
+
+Results:
+
+         title        | rating |     name
+----------------------+--------+-------------
+      AIRPORT POLLOCK |      R |      Horror
+           ALONE TRIP |      R |       Music
+  AMELIE HELLFIGHTERS |      R |       Music
+      AMERICAN CIRCUS |      R |      Action
+ ANACONDA CONFESSIONS |      R |   Animation
+     ANALYZE HOOSIERS |      R |      Horror
+    ANYTHING SAVANNAH |      R |      Horror
+ APOCALYPSE FLAMINGOS |      R |         New
+     ARMY FLINTSTONES |      R | Documentary
+          BADMAN DAWN |      R |      Sci-Fi
+     BANGER PINOCCHIO |      R |       Music
+       BEAR GRACELAND |      R |    Children
+      BEAST HUNCHBACK |      R |    Classics
+       BEVERLY OUTLAW |      R |      Sci-Fi
+        BOOGIE AMELIE |      R |       Music
+        BOULEVARD MOB |      R |         New
+      BROOKLYN DESERT |      R |     Foreign
+  BROTHERHOOD BLANKET |      R | Documentary
+        BUBBLE GROSSE |      R |      Sports
+      CAMPUS REMEMBER |      R |      Action
+(20 rows)
+`

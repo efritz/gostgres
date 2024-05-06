@@ -20,33 +20,29 @@ import (
 const rootDir = "queries"
 
 func TestIntegration(t *testing.T) {
+	tables := table.NewTablespace()
+	functions := functions.NewFunctionspace()
+	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
+
+	engine := engine.NewEngine(tables, functions)
+	require.NoError(t, sample.LoadPagilaSampleSchemaAndData(engine))
+
 	entries, err := os.ReadDir(rootDir)
 	require.NoError(t, err)
 
 	for _, entry := range entries {
-		name := entry.Name()
-
-		t.Run(name, func(t *testing.T) {
-			query, err := os.ReadFile(filepath.Join(rootDir, name))
+		t.Run(entry.Name(), func(t *testing.T) {
+			query, err := os.ReadFile(filepath.Join(rootDir, entry.Name()))
 			require.NoError(t, err)
 
-			got, err := runTestQuery(string(query))
+			got, err := runTestQuery(engine, string(query))
 			require.NoError(t, err)
 			autogold.ExpectFile(t, got, autogold.Dir("golden"))
 		})
 	}
 }
 
-func runTestQuery(input string) (string, error) {
-	tables := table.NewTablespace()
-	functions := functions.NewFunctionspace()
-	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
-	engine := engine.NewEngine(tables, functions)
-
-	if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
-		return "", err
-	}
-
+func runTestQuery(engine *engine.Engine, input string) (string, error) {
 	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", input))
 	if err != nil {
 		return "", err

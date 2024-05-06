@@ -14,7 +14,7 @@ type Expression interface {
 	Fields() []shared.Field
 	Named() (shared.Field, bool)
 	Fold() Expression
-	Alias(field shared.Field, expression Expression) Expression
+	Map(f func(Expression) Expression) Expression
 	Conjunctions() []Expression
 	ValueFrom(context Context, row shared.Row) (any, error)
 }

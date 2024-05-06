@@ -71,7 +71,7 @@ func (p *Projector) ProjectRow(ctx queries.Context, row shared.Row) (shared.Row,
 
 func (p *Projector) projectExpression(expression expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		expression = expression.Alias(shared.NewField("", alias.alias, shared.TypeNullableAny), alias.expression)
+		expression = Alias(expression, shared.NewField("", alias.alias, shared.TypeNullableAny), alias.expression)
 	}
 
 	return expression
@@ -80,7 +80,7 @@ func (p *Projector) projectExpression(expression expressions.Expression) express
 func (p *Projector) deprojectExpression(expression expressions.Expression) expressions.Expression {
 	for i, alias := range p.aliases {
 		if field, ok := alias.expression.Named(); ok {
-			expression = expression.Alias(field, expressions.NewNamed(p.projectedFields[i]))
+			expression = Alias(expression, field, expressions.NewNamed(p.projectedFields[i]))
 		}
 	}
 
@@ -135,7 +135,7 @@ func (p aliasProjection) String() string {
 func (p aliasProjection) Dealias(name string, fields []shared.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
-		expression = expression.Alias(field.WithRelationName(name), expressions.NewNamed(field))
+		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
 	return aliasProjection{
@@ -220,4 +220,14 @@ func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasPr
 	}
 
 	return projections, nil
+}
+
+func Alias(e expressions.Expression, field shared.Field, target expressions.Expression) expressions.Expression {
+	return e.Map(func(e expressions.Expression) expressions.Expression {
+		if f, ok := e.Named(); ok && f.Name() == field.Name() && (f.RelationName() == field.RelationName() || field.RelationName() == "") {
+			return target
+		}
+
+		return e
+	})
 }

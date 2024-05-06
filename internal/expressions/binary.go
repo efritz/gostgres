@@ -64,8 +64,8 @@ func (e binaryExpression) Fold() Expression {
 	return tryEvaluate(newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom))
 }
 
-func (e binaryExpression) Alias(field shared.Field, expression Expression) Expression {
-	return newBinaryExpression(e.left.Alias(field, expression), e.right.Alias(field, expression), e.operatorText, e.valueFrom)
+func (e binaryExpression) Map(f func(Expression) Expression) Expression {
+	return f(newBinaryExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom))
 }
 
 func (e binaryExpression) Conjunctions() []Expression {

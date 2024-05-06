@@ -76,13 +76,13 @@ func (e functionExpression) Conjunctions() []Expression {
 	return []Expression{e}
 }
 
-func (e functionExpression) Alias(field shared.Field, expression Expression) Expression {
+func (e functionExpression) Map(f func(Expression) Expression) Expression {
 	args := make([]Expression, 0, len(e.args))
 	for _, arg := range e.args {
-		args = append(args, arg.Alias(field, expression))
+		args = append(args, arg.Map(f))
 	}
 
-	return NewFunction(e.name, args)
+	return f(NewFunction(e.name, args))
 }
 
 func (e functionExpression) ValueFrom(context Context, row shared.Row) (any, error) {

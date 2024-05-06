@@ -50,8 +50,8 @@ func (e unaryExpression) Fold() Expression {
 	return tryEvaluate(newUnaryExpression(e.expression.Fold(), e.operatorText, e.valueFrom))
 }
 
-func (e unaryExpression) Alias(field shared.Field, expression Expression) Expression {
-	return newUnaryExpression(e.expression.Alias(field, expression), e.operatorText, e.valueFrom)
+func (e unaryExpression) Map(f func(Expression) Expression) Expression {
+	return f(newUnaryExpression(e.expression.Map(f), e.operatorText, e.valueFrom))
 }
 
 func (e unaryExpression) ValueFrom(context Context, row shared.Row) (any, error) {

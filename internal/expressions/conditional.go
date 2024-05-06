@@ -128,8 +128,8 @@ func (e conditionalExpression) Fold() Expression {
 	return tryEvaluate(e.foldFunc(e.left.Fold(), e.right.Fold()))
 }
 
-func (e conditionalExpression) Alias(field shared.Field, expression Expression) Expression {
-	return newConditionalExpression(e.left.Alias(field, expression), e.right.Alias(field, expression), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions)
+func (e conditionalExpression) Map(f func(Expression) Expression) Expression {
+	return f(newConditionalExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
 }
 
 func (e conditionalExpression) Conjunctions() []Expression {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/queries/projection"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -52,7 +53,7 @@ func (n *aliasNode) Optimize() {
 
 func (n *aliasNode) AddFilter(filter expressions.Expression) {
 	for _, field := range n.fields {
-		filter = filter.Alias(field, namedFromField(field, n.Node.Name()))
+		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
 	}
 
 	n.Node.AddFilter(filter)
@@ -61,7 +62,7 @@ func (n *aliasNode) AddFilter(filter expressions.Expression) {
 func (n *aliasNode) AddOrder(order expressions.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
 		for _, field := range n.fields {
-			expression = expression.Alias(field, namedFromField(field, n.Node.Name()))
+			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
 
 		return expression
@@ -75,7 +76,7 @@ func (n *aliasNode) Filter() expressions.Expression {
 	}
 
 	for _, field := range filter.Fields() {
-		filter = filter.Alias(field, namedFromField(field, n.name))
+		filter = projection.Alias(filter, field, namedFromField(field, n.name))
 	}
 
 	return filter
@@ -89,7 +90,7 @@ func (n *aliasNode) Ordering() expressions.OrderExpression {
 
 	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
 		for _, field := range expression.Fields() {
-			expression = expression.Alias(field, namedFromField(field, n.name))
+			expression = projection.Alias(expression, field, namedFromField(field, n.name))
 		}
 
 		return expression

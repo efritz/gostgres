@@ -40,7 +40,7 @@ func (n *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 }
 
 func (n *createIndex) execute(ctx queries.Context) error {
-	factories := map[string]func() (table.Index, error){
+	factories := map[string]func(ctx queries.Context) (table.Index, error){
 		"btree": n.createBtreeIndex,
 		"hash":  n.createHashIndex,
 	}
@@ -50,7 +50,7 @@ func (n *createIndex) execute(ctx queries.Context) error {
 		return fmt.Errorf("unknown index method %q", n.method)
 	}
 
-	index, err := factory()
+	index, err := factory(ctx)
 	if err != nil {
 		return err
 	}
@@ -67,20 +67,28 @@ func (n *createIndex) execute(ctx queries.Context) error {
 	return nil
 }
 
-func (n *createIndex) createBtreeIndex() (table.Index, error) {
+func (n *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error) {
+	var columnExpressions []expressions.ExpressionWithDirection
+	for _, column := range n.columnExpressions {
+		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
+			Expression: setRelationName(column.Expression, n.tableName),
+			Reverse:    column.Reverse,
+		})
+	}
+
 	var index indexes.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
 		n.name,
 		n.tableName,
-		n.columnExpressions,
+		columnExpressions,
 	)
 	if n.where != nil {
-		index = indexes.NewPartialIndex(index, n.where)
+		index = indexes.NewPartialIndex(index, setRelationName(n.where, n.tableName))
 	}
 
 	return index, nil
 }
 
-func (n *createIndex) createHashIndex() (table.Index, error) {
+func (n *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) {
 	if len(n.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}
@@ -91,11 +99,22 @@ func (n *createIndex) createHashIndex() (table.Index, error) {
 	var index indexes.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
 		n.name,
 		n.tableName,
-		n.columnExpressions[0].Expression,
+		setRelationName(n.columnExpressions[0].Expression, n.tableName),
 	)
+
 	if n.where != nil {
-		index = indexes.NewPartialIndex(index, n.where)
+		index = indexes.NewPartialIndex(index, setRelationName(n.where, n.tableName))
 	}
 
 	return index, nil
+}
+
+func setRelationName(e expressions.Expression, name string) expressions.Expression {
+	return e.Map(func(e expressions.Expression) expressions.Expression {
+		if f, ok := e.Named(); ok {
+			return expressions.NewNamed(f.WithRelationName(name))
+		}
+
+		return e
+	})
 }

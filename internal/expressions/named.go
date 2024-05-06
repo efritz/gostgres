@@ -48,12 +48,8 @@ func (e namedExpression) Conjunctions() []Expression {
 	return []Expression{e}
 }
 
-func (e namedExpression) Alias(field shared.Field, expression Expression) Expression {
-	if e.field.Name() == field.Name() && (e.field.RelationName() == field.RelationName() || field.RelationName() == "") {
-		return expression
-	}
-
-	return e
+func (e namedExpression) Map(f func(Expression) Expression) Expression {
+	return f(e)
 }
 
 func (e namedExpression) ValueFrom(context Context, row shared.Row) (any, error) {

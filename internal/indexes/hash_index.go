@@ -11,6 +11,7 @@ import (
 type hashIndex struct {
 	name       string
 	tableName  string
+	unique     bool
 	expression expressions.Expression
 	entries    map[uint64][]hashItem
 }
@@ -26,10 +27,11 @@ type HashIndexScanOptions struct {
 
 var _ Index[HashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name, tableName string, expression expressions.Expression) *hashIndex {
+func NewHashIndex(name, tableName string, unique bool, expression expressions.Expression) *hashIndex {
 	return &hashIndex{
 		name:       name,
 		tableName:  tableName,
+		unique:     unique,
 		expression: expression,
 		entries:    map[uint64][]hashItem{},
 	}
@@ -66,6 +68,14 @@ func (i *hashIndex) Insert(row shared.Row) error {
 	}
 
 	hash := shared.Hash(value)
+	if i.unique {
+		for _, values := range i.entries[hash] {
+			if shared.CompareValues(values.value, value) == shared.OrderTypeEqual {
+				return fmt.Errorf("unique constraint violation")
+			}
+		}
+	}
+
 	i.entries[hash] = append(i.entries[hash], hashItem{tid, value})
 	return nil
 }

@@ -156,6 +156,23 @@ CREATE TABLE store (
 -- ALTER TABLE ONLY staff ADD CONSTRAINT staff_pkey PRIMARY KEY (staff_id);
 -- ALTER TABLE ONLY store ADD CONSTRAINT store_pkey PRIMARY KEY (store_id);
 
+-- TODO - support direct primary keys
+CREATE UNIQUE INDEX actor_pkey ON actor(actor_id);
+CREATE UNIQUE INDEX address_pkey ON address(address_id);
+CREATE UNIQUE INDEX category_pkey ON category(category_id);
+CREATE UNIQUE INDEX city_pkey ON city(city_id);
+CREATE UNIQUE INDEX country_pkey ON country(country_id);
+CREATE UNIQUE INDEX customer_pkey ON customer(customer_id);
+CREATE UNIQUE INDEX film_pkey ON film(film_id);
+CREATE UNIQUE INDEX film_actor_pkey ON film_actor(actor_id, film_id);
+CREATE UNIQUE INDEX film_category_pkey ON film_category(film_id, category_id);
+CREATE UNIQUE INDEX inventory_pkey ON inventory(inventory_id);
+CREATE UNIQUE INDEX language_pkey ON language(language_id);
+CREATE UNIQUE INDEX payment_pkey ON payment(payment_date, payment_id);
+CREATE UNIQUE INDEX rental_pkey ON rental(rental_id);
+CREATE UNIQUE INDEX staff_pkey ON staff(staff_id);
+CREATE UNIQUE INDEX store_pkey ON store(store_id);
+
 -- ALTER TABLE ONLY address ADD CONSTRAINT address_city_id_fkey FOREIGN KEY (city_id) REFERENCES city(city_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 -- ALTER TABLE ONLY city ADD CONSTRAINT city_country_id_fkey FOREIGN KEY (country_id) REFERENCES country(country_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 -- ALTER TABLE ONLY customer ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT;
@@ -192,8 +209,8 @@ CREATE INDEX idx_fk_store_id ON customer USING btree (store_id);
 CREATE INDEX idx_last_name ON customer USING btree (last_name);
 CREATE INDEX idx_store_id_film_id ON inventory USING btree (store_id, film_id);
 CREATE INDEX idx_title ON film USING btree (title);
--- CREATE UNIQUE INDEX idx_unq_manager_staff_id ON store USING btree (manager_staff_id);
--- CREATE UNIQUE INDEX idx_unq_rental_rental_date_inventory_id_customer_id ON rental USING btree (rental_date, inventory_id, customer_id);
+CREATE UNIQUE INDEX idx_unq_manager_staff_id ON store USING btree (manager_staff_id);
+CREATE UNIQUE INDEX idx_unq_rental_rental_date_inventory_id_customer_id ON rental USING btree (rental_date, inventory_id, customer_id);
 CREATE INDEX payment_customer_id_idx ON payment USING btree (customer_id);
 -- CREATE UNIQUE INDEX rental_category ON rental_by_category USING btree (category);
 -- CREATE INDEX film_fulltext_idx ON film USING gist (fulltext);

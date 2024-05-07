@@ -53,6 +53,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"table":     tokens.TokenTypeTable,
 	"true":      tokens.TokenTypeTrue,
 	"union":     tokens.TokenTypeUnion,
+	"unique":    tokens.TokenTypeUnique,
 	"unknown":   tokens.TokenTypeKwUnknown,
 	"update":    tokens.TokenTypeUpdate,
 	"using":     tokens.TokenTypeUsing,

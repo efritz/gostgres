@@ -52,6 +52,7 @@ const (
 	TokenTypeTable
 	TokenTypeTrue
 	TokenTypeUnion
+	TokenTypeUnique
 	TokenTypeUpdate
 	TokenTypeUsing
 	TokenTypeValues

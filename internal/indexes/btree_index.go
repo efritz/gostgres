@@ -11,6 +11,7 @@ import (
 type btreeIndex struct {
 	name        string
 	tableName   string
+	unique      bool
 	expressions []expressions.ExpressionWithDirection
 	root        *btreeNode
 }
@@ -35,10 +36,11 @@ type scanBound struct {
 
 var _ Index[BtreeIndexScanOptions] = &btreeIndex{}
 
-func NewBTreeIndex(name, tableName string, expressions []expressions.ExpressionWithDirection) *btreeIndex {
+func NewBTreeIndex(name, tableName string, unique bool, expressions []expressions.ExpressionWithDirection) *btreeIndex {
 	return &btreeIndex{
 		name:        name,
 		tableName:   tableName,
+		unique:      unique,
 		expressions: expressions,
 	}
 }
@@ -163,23 +165,38 @@ func (i *btreeIndex) Insert(row shared.Row) error {
 		return err
 	}
 
-	i.root = i.root.insert(values, tid)
-	return nil
+	i.root, err = i.root.insert(values, tid, i.unique)
+	return err
 }
 
-func (n *btreeNode) insert(values []any, tid int64) *btreeNode {
+func (n *btreeNode) insert(values []any, tid int64, unique bool) (*btreeNode, error) {
 	if n == nil {
-		return &btreeNode{tid: tid, values: values}
+		return &btreeNode{tid: tid, values: values}, nil
 	}
 
 	switch shared.CompareValueSlices(values, n.values) {
-	case shared.OrderTypeBefore, shared.OrderTypeEqual:
-		n.left = n.left.insert(values, tid)
+	case shared.OrderTypeEqual:
+		if unique {
+			return nil, fmt.Errorf("unique constraint violation")
+		}
+		fallthrough
+
+	case shared.OrderTypeBefore:
+		newLeft, err := n.left.insert(values, tid, unique)
+		if err != nil {
+			return nil, err
+		}
+		n.left = newLeft
+
 	case shared.OrderTypeAfter:
-		n.right = n.right.insert(values, tid)
+		newRight, err := n.right.insert(values, tid, unique)
+		if err != nil {
+			return nil, err
+		}
+		n.right = newRight
 	}
 
-	return n
+	return n, nil
 }
 
 func (i *btreeIndex) Delete(row shared.Row) error {

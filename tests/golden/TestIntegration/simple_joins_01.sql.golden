@@ -11,8 +11,8 @@ LIMIT 20;
 
 Plan:
 
-                             query plan
--------------------------------------------------------------------
+                                  query plan
+------------------------------------------------------------------------------
  select (title, rating, name)
     limit 20
         join using nested loop
@@ -22,13 +22,13 @@ Plan:
                         filter: rating = R
             with
                 alias as fc
-                    table scan of film_category
-                        filter: film_category.film_id = f.film_id
+                    btree index scan of film_category via film_category_pkey
+                        index cond: film_category.film_id = f.film_id
             on fc.film_id = f.film_id
         with
             alias as c
-                table scan of category
-                    filter: category.category_id = fc.category_id
+                btree index scan of category via category_pkey
+                    index cond: category.category_id = fc.category_id
         on c.category_id = fc.category_id
 
 (1 rows)

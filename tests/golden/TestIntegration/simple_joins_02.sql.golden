@@ -26,8 +26,8 @@ Plan:
                 on fa.film_id = f.film_id
             with
                 alias as a
-                    table scan of actor
-                        filter: actor.actor_id = fa.actor_id
+                    btree index scan of actor via actor_pkey
+                        index cond: actor.actor_id = fa.actor_id
             on a.actor_id = fa.actor_id
 
 (1 rows)

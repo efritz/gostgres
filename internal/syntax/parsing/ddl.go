@@ -13,14 +13,21 @@ import (
 
 // create := `TABLE` createTable
 //
-//	| `INDEX` createIndex
+//	| [ `UNIQUE` ] `INDEX` createIndex
 func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeTable)) {
 		return p.parseCreateTable(token)
 	}
 
+	unique := false
+	if p.advanceIf(isType(tokens.TokenTypeUnique)) {
+		unique = true
+	}
+
 	if p.advanceIf(isType(tokens.TokenTypeIndex)) {
-		return p.parseCreateIndex(token)
+		return p.parseCreateIndex(token, unique)
+	} else if unique {
+		return nil, fmt.Errorf("expected create index statement (near %s)", p.current().Text)
 	}
 
 	return nil, fmt.Errorf("expected create statement (near %s)", p.current().Text)
@@ -145,12 +152,11 @@ func (p *parser) parseColumn() (shared.Field, error) {
 // createIndex := name `ON` tableName [ `USING` methodName ] `(` expression [ `ASC` | `DESC` ] [, ...] `)` [ `WHERE` predicate ]
 //
 // TODO: if not exists
-// TODO: unique
 // TODO: concurrently
 // TODO: NULLS FIRST | LAST
 // TODO: include
 // TODO: nulls distinct
-func (p *parser) parseCreateIndex(token tokens.Token) (queries.Query, error) {
+func (p *parser) parseCreateIndex(token tokens.Token, unique bool) (queries.Query, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -219,5 +225,5 @@ func (p *parser) parseCreateIndex(token tokens.Token) (queries.Query, error) {
 		where = whereExpression
 	}
 
-	return ddl.NewCreateIndex(name.Text, tableName.Text, method, columnExpressions, where), nil
+	return ddl.NewCreateIndex(name.Text, tableName.Text, method, unique, columnExpressions, where), nil
 }

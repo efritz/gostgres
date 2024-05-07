@@ -14,17 +14,19 @@ type createIndex struct {
 	name              string
 	tableName         string
 	method            string
+	unique            bool
 	columnExpressions []expressions.ExpressionWithDirection
 	where             expressions.Expression
 }
 
 var _ queries.Query = &createIndex{}
 
-func NewCreateIndex(name, tableName, method string, columnExpressions []expressions.ExpressionWithDirection, where expressions.Expression) *createIndex {
+func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []expressions.ExpressionWithDirection, where expressions.Expression) *createIndex {
 	return &createIndex{
 		name:              name,
 		tableName:         tableName,
 		method:            method,
+		unique:            unique,
 		columnExpressions: columnExpressions,
 		where:             where,
 	}
@@ -79,6 +81,7 @@ func (n *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error)
 	var index indexes.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
 		n.name,
 		n.tableName,
+		n.unique,
 		columnExpressions,
 	)
 	if n.where != nil {
@@ -99,6 +102,7 @@ func (n *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) 
 	var index indexes.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
 		n.name,
 		n.tableName,
+		n.unique,
 		setRelationName(n.columnExpressions[0].Expression, n.tableName),
 	)
 

@@ -1,4 +1,4 @@
-package table
+package constraints
 
 import (
 	"fmt"
@@ -6,11 +6,6 @@ import (
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
-
-type Constraint interface {
-	Name() string
-	Check(row shared.Row) error
-}
 
 type checkConstraint struct {
 	name       string

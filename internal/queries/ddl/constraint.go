@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/constraints"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 type createPrimaryKeyConstraint struct {
@@ -39,12 +39,12 @@ func (q *createPrimaryKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 }
 
 func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
-	t, ok := ctx.Tables.GetTable(q.tableName)
+	table, ok := ctx.Tables.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
-	fields := t.Fields()
+	fields := table.Fields()
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, columnName := range q.columnNames {
 		i := slices.IndexFunc(fields, func(f shared.Field) bool { return f.Name() == columnName })
@@ -70,7 +70,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 		columnExpressions,
 	)
 
-	return t.SetPrimaryKey(index)
+	return table.SetPrimaryKey(index)
 }
 
 type createCheckConstraint struct {
@@ -100,11 +100,11 @@ func (q *createCheckConstraint) Execute(ctx queries.Context, w protocol.Response
 }
 
 func (q *createCheckConstraint) ExecuteDDL(ctx queries.Context) error {
-	t, ok := ctx.Tables.GetTable(q.tableName)
+	table, ok := ctx.Tables.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
-	constraint := table.NewCheckConstraint(q.name, q.expression)
-	return t.AddConstraint(constraint)
+	constraint := constraints.NewCheckConstraint(q.name, q.expression)
+	return table.AddConstraint(constraint)
 }

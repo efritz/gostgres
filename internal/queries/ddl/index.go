@@ -20,6 +20,7 @@ type createIndex struct {
 }
 
 var _ queries.Query = &createIndex{}
+var _ DDLQuery = &createIndex{}
 
 func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []expressions.ExpressionWithDirection, where expressions.Expression) *createIndex {
 	return &createIndex{
@@ -32,8 +33,8 @@ func NewCreateIndex(name, tableName, method string, unique bool, columnExpressio
 	}
 }
 
-func (n *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
-	if err := n.execute(ctx); err != nil {
+func (q *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
 	}
@@ -41,15 +42,15 @@ func (n *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (n *createIndex) execute(ctx queries.Context) error {
+func (q *createIndex) ExecuteDDL(ctx queries.Context) error {
 	factories := map[string]func(ctx queries.Context) (table.Index, error){
-		"btree": n.createBtreeIndex,
-		"hash":  n.createHashIndex,
+		"btree": q.createBtreeIndex,
+		"hash":  q.createHashIndex,
 	}
 
-	factory, ok := factories[n.method]
+	factory, ok := factories[q.method]
 	if !ok {
-		return fmt.Errorf("unknown index method %q", n.method)
+		return fmt.Errorf("unknown index method %q", q.method)
 	}
 
 	index, err := factory(ctx)
@@ -57,9 +58,9 @@ func (n *createIndex) execute(ctx queries.Context) error {
 		return err
 	}
 
-	table, ok := ctx.Tables.GetTable(n.tableName)
+	table, ok := ctx.Tables.GetTable(q.tableName)
 	if !ok {
-		return fmt.Errorf("unknown table %q", n.tableName)
+		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
 	if err := table.AddIndex(index); err != nil {
@@ -69,45 +70,45 @@ func (n *createIndex) execute(ctx queries.Context) error {
 	return nil
 }
 
-func (n *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error) {
+func (q *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error) {
 	var columnExpressions []expressions.ExpressionWithDirection
-	for _, column := range n.columnExpressions {
+	for _, column := range q.columnExpressions {
 		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
-			Expression: setRelationName(column.Expression, n.tableName),
+			Expression: setRelationName(column.Expression, q.tableName),
 			Reverse:    column.Reverse,
 		})
 	}
 
 	var index indexes.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
-		n.name,
-		n.tableName,
-		n.unique,
+		q.name,
+		q.tableName,
+		q.unique,
 		columnExpressions,
 	)
-	if n.where != nil {
-		index = indexes.NewPartialIndex(index, setRelationName(n.where, n.tableName))
+	if q.where != nil {
+		index = indexes.NewPartialIndex(index, setRelationName(q.where, q.tableName))
 	}
 
 	return index, nil
 }
 
-func (n *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) {
-	if len(n.columnExpressions) != 1 {
+func (q *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) {
+	if len(q.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}
-	if n.columnExpressions[0].Reverse {
+	if q.columnExpressions[0].Reverse {
 		return nil, fmt.Errorf("hash index do not support ordering")
 	}
 
 	var index indexes.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
-		n.name,
-		n.tableName,
-		n.unique,
-		setRelationName(n.columnExpressions[0].Expression, n.tableName),
+		q.name,
+		q.tableName,
+		q.unique,
+		setRelationName(q.columnExpressions[0].Expression, q.tableName),
 	)
 
-	if n.where != nil {
-		index = indexes.NewPartialIndex(index, setRelationName(n.where, n.tableName))
+	if q.where != nil {
+		index = indexes.NewPartialIndex(index, setRelationName(q.where, q.tableName))
 	}
 
 	return index, nil

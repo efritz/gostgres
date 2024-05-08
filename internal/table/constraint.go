@@ -8,20 +8,29 @@ import (
 )
 
 type Constraint interface {
+	Name() string
 	Check(row shared.Row) error
 }
 
-type expressionConstraint struct {
+type checkConstraint struct {
+	name       string
 	expression expressions.Expression
 }
 
-func NewConstraint(expression expressions.Expression) Constraint {
-	return &expressionConstraint{
+var _ Constraint = &checkConstraint{}
+
+func NewCheckConstraint(name string, expression expressions.Expression) *checkConstraint {
+	return &checkConstraint{
+		name:       name,
 		expression: expression,
 	}
 }
 
-func (c *expressionConstraint) Check(row shared.Row) error {
+func (c *checkConstraint) Name() string {
+	return c.name
+}
+
+func (c *checkConstraint) Check(row shared.Row) error {
 	// TODO - need to pass functionspace
 	if val, err := c.expression.ValueFrom(expressions.EmptyContext, row); err != nil {
 		fmt.Printf("WtF: %#v\n", row)

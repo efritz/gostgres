@@ -1,6 +1,8 @@
 package table
 
 import (
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 	"golang.org/x/exp/slices"
@@ -10,11 +12,13 @@ type Table struct {
 	name        string
 	fields      []shared.Field
 	rows        map[int64]shared.Row
+	primaryKey  Index
 	indexes     []Index
 	constraints []Constraint
 }
 
 type Index interface {
+	Name() string
 	Unwrap() Index
 	Filter() expressions.Expression
 	Insert(row shared.Row) error
@@ -41,6 +45,10 @@ func (t *Table) Name() string {
 }
 
 func (t *Table) Indexes() []Index {
+	if t.primaryKey != nil {
+		return append([]Index{t.primaryKey}, t.indexes...)
+	}
+
 	return t.indexes
 }
 
@@ -65,6 +73,21 @@ func (t *Table) TIDs() []int64 {
 func (t *Table) Row(tid int64) (shared.Row, bool) {
 	row, ok := t.rows[tid]
 	return row, ok
+}
+
+func (t *Table) SetPrimaryKey(index Index) error {
+	if t.primaryKey != nil {
+		return fmt.Errorf("primary key already set")
+	}
+
+	for _, row := range t.rows {
+		if err := index.Insert(row); err != nil {
+			return err
+		}
+	}
+
+	t.primaryKey = index
+	return nil
 }
 
 func (t *Table) AddIndex(index Index) error {
@@ -106,7 +129,7 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 		}
 	}
 
-	for _, index := range t.indexes {
+	for _, index := range t.Indexes() {
 		if err := index.Insert(newRow); err != nil {
 			return shared.Row{}, err
 		}

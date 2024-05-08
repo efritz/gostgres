@@ -9,7 +9,6 @@ import (
 	"github.com/efritz/gostgres/internal/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 // create := `TABLE` createTable
@@ -17,7 +16,7 @@ import (
 //	| [ `UNIQUE` ] `INDEX` createIndex
 func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeTable)) {
-		return p.parseCreateTable(token)
+		return p.parseCreateTable()
 	}
 
 	unique := false
@@ -26,7 +25,7 @@ func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	}
 
 	if p.advanceIf(isType(tokens.TokenTypeIndex)) {
-		return p.parseCreateIndex(token, unique)
+		return p.parseCreateIndex(unique)
 	} else if unique {
 		return nil, fmt.Errorf("expected create index statement (near %s)", p.current().Text)
 	}
@@ -35,7 +34,7 @@ func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 }
 
 // createTable := name `(` [ column [, ...] ] `)`
-func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
+func (p *parser) parseCreateTable() (queries.Query, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -45,10 +44,10 @@ func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 		return nil, err
 	}
 
-	columns := []table.ColumnDefinition{}
+	columns := []columnDescription{}
 	if !p.advanceIf(isType(tokens.TokenTypeRightParen)) {
 		for {
-			column, err := p.parseColumn()
+			column, err := p.parseColumn(name.Text)
 			if err != nil {
 				return nil, err
 			}
@@ -65,7 +64,19 @@ func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 		}
 	}
 
-	return ddl.NewCreateTable(name.Text, columns), nil
+	var fields []shared.Field
+	var constraints []ddl.DDLQuery
+	for _, column := range columns {
+		fields = append(fields, column.field)
+		constraints = append(constraints, column.constraints...)
+	}
+
+	return ddl.NewSet(append([]ddl.DDLQuery{ddl.NewCreateTable(name.Text, fields)}, constraints...)), nil
+}
+
+type columnDescription struct {
+	field       shared.Field
+	constraints []ddl.DDLQuery
 }
 
 // column := columnName dataType [( NOT NULL )] [ CHECK ( expression )] [ NOT NULL ] [ DEFAULT expression ]
@@ -74,15 +85,15 @@ func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 // TODO: unique, primary key, reference column constraints
 // TODO: named column constraints
 // TODO: table constraints
-func (p *parser) parseColumn() (table.ColumnDefinition, error) {
+func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
-		return table.ColumnDefinition{}, err
+		return columnDescription{}, err
 	}
 
 	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
-		return table.ColumnDefinition{}, err
+		return columnDescription{}, err
 	}
 
 	var typ shared.Type
@@ -99,7 +110,7 @@ func (p *parser) parseColumn() (table.ColumnDefinition, error) {
 		typ = shared.TypeNullableReal
 	case "double":
 		if !p.advanceIf(isIdent("precision")) {
-			return table.ColumnDefinition{}, fmt.Errorf("unknown type %q", "double")
+			return columnDescription{}, fmt.Errorf("unknown type %q", "double")
 		}
 		typ = shared.TypeNullableDoublePrecision
 	case "numeric":
@@ -108,43 +119,57 @@ func (p *parser) parseColumn() (table.ColumnDefinition, error) {
 		typ = shared.TypeNullableBool
 	case "timestamp":
 		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			return table.ColumnDefinition{}, fmt.Errorf("unknown type %q", "timestamp")
+			return columnDescription{}, fmt.Errorf("unknown type %q", "timestamp")
 		}
 		typ = shared.TypeNullableTimestampTz
 	default:
-		return table.ColumnDefinition{}, fmt.Errorf("unknown type %s", dataType.Text)
+		return columnDescription{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}
 
-	var constraints []expressions.Expression
+	var constraints []ddl.DDLQuery
 	var defaultExpression expressions.Expression
+
 	for {
 		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
 			typ = typ.NonNullable()
 			continue
 		}
 
-		if p.advanceIf(isType(tokens.TokenTypeDefault)) {
-			expression, err := p.parseExpression(0)
-			if err != nil {
-				return table.ColumnDefinition{}, err
-			}
-
-			defaultExpression = expression
-			continue
+		if p.advanceIf(isType(tokens.TokenTypePrimaryKey)) {
+			typ = typ.NonNullable()
+			constraints = append(constraints, ddl.NewCreatePrimaryKeyConstraint(
+				fmt.Sprintf("%s_pkey", tableName),
+				tableName,
+				[]string{name.Text},
+			))
 		}
 
 		if p.advanceIf(isType(tokens.TokenTypeCheck)) {
 			token, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen))
 			if err != nil {
-				return table.ColumnDefinition{}, err
+				return columnDescription{}, err
 			}
 
 			expr, err := p.parseParenthesizedExpression(token)
 			if err != nil {
-				return table.ColumnDefinition{}, err
+				return columnDescription{}, err
 			}
 
-			constraints = append(constraints, expr)
+			constraints = append(constraints, ddl.NewCreateCheckConstraint(
+				fmt.Sprintf("%s_%s_check", tableName, name.Text),
+				tableName,
+				expr,
+			))
+			continue
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeDefault)) {
+			expression, err := p.parseExpression(0)
+			if err != nil {
+				return columnDescription{}, err
+			}
+
+			defaultExpression = expression
 			continue
 		}
 
@@ -164,9 +189,9 @@ func (p *parser) parseColumn() (table.ColumnDefinition, error) {
 		})
 	}
 
-	return table.ColumnDefinition{
-		Field:       field,
-		Constraints: constraints,
+	return columnDescription{
+		field:       field,
+		constraints: constraints,
 	}, nil
 }
 
@@ -177,7 +202,7 @@ func (p *parser) parseColumn() (table.ColumnDefinition, error) {
 // TODO: NULLS FIRST | LAST
 // TODO: include
 // TODO: nulls distinct
-func (p *parser) parseCreateIndex(token tokens.Token, unique bool) (queries.Query, error) {
+func (p *parser) parseCreateIndex(unique bool) (queries.Query, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return nil, err
@@ -247,4 +272,79 @@ func (p *parser) parseCreateIndex(token tokens.Token, unique bool) (queries.Quer
 	}
 
 	return ddl.NewCreateIndex(name.Text, tableName.Text, method, unique, columnExpressions, where), nil
+}
+
+// alter := `TABLE` tableName  alterTable
+func (p *parser) parseAlter(token tokens.Token) (queries.Query, error) {
+	if p.advanceIf(isType(tokens.TokenTypeTable)) {
+		name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+		if err != nil {
+			return nil, err
+		}
+
+		return p.parseAlterTable(name.Text)
+	}
+
+	return nil, fmt.Errorf("expected alter statement (near %s)", p.current().Text)
+}
+
+// alterTable := `ADD` `CONSTRAINT` constraintName constraint
+//
+// constraint := `PRIMARY` `KEY` `(` columnName [ , ... ] `)`
+//
+//	| `CHECK` `(` expr `)`
+func (p *parser) parseAlterTable(tableName string) (queries.Query, error) {
+	if p.advanceIf(isType(tokens.TokenTypeAdd), isType(tokens.TokenTypeConstraint)) {
+		name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+		if err != nil {
+			return nil, err
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypePrimaryKey)) {
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen)); err != nil {
+				return nil, err
+			}
+
+			var columnNames []string
+			if !p.advanceIf(isType(tokens.TokenTypeRightParen)) {
+				for {
+					columnName, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+					if err != nil {
+						return nil, err
+					}
+
+					columnNames = append(columnNames, columnName.Text)
+
+					if !p.advanceIf(isType(tokens.TokenTypeComma)) {
+						break
+					}
+				}
+
+				if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+					return nil, err
+				}
+			}
+
+			// TODO - also ensure column names are not-null
+			return ddl.NewCreatePrimaryKeyConstraint(name.Text, tableName, columnNames), nil
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeCheck)) {
+			token, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen))
+			if err != nil {
+				return nil, err
+			}
+
+			expr, err := p.parseParenthesizedExpression(token)
+			if err != nil {
+				return nil, err
+			}
+
+			return ddl.NewCreateCheckConstraint(name.Text, tableName, expr), nil
+		}
+
+		return nil, fmt.Errorf("expected add constraint statement (near %s)", p.current().Text)
+	}
+
+	return nil, fmt.Errorf("expected alter table statement (near %s)", p.current().Text)
 }

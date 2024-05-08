@@ -3,25 +3,26 @@ package ddl
 import (
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/table"
+	"github.com/efritz/gostgres/internal/shared"
 )
 
 type createTable struct {
-	name    string
-	columns []table.ColumnDefinition
+	name   string
+	fields []shared.Field
 }
 
 var _ queries.Query = &createTable{}
+var _ DDLQuery = &createTable{}
 
-func NewCreateTable(name string, columns []table.ColumnDefinition) *createTable {
+func NewCreateTable(name string, fields []shared.Field) *createTable {
 	return &createTable{
-		name:    name,
-		columns: columns,
+		name:   name,
+		fields: fields,
 	}
 }
 
-func (n *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
-	if err := n.execute(ctx); err != nil {
+func (q *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
 	}
@@ -29,8 +30,8 @@ func (n *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (n *createTable) execute(ctx queries.Context) error {
-	if err := ctx.Tables.CreateTable(n.name, n.columns); err != nil {
+func (q *createTable) ExecuteDDL(ctx queries.Context) error {
+	if err := ctx.Tables.CreateTable(q.name, q.fields); err != nil {
 		return err
 	}
 

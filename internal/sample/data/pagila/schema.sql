@@ -143,38 +143,21 @@ CREATE TABLE store (
     last_update timestamp with time zone DEFAULT now() NOT NULL
 );
 
--- ALTER TABLE ONLY actor ADD CONSTRAINT actor_pkey PRIMARY KEY (actor_id);
--- ALTER TABLE ONLY address ADD CONSTRAINT address_pkey PRIMARY KEY (address_id);
--- ALTER TABLE ONLY category ADD CONSTRAINT category_pkey PRIMARY KEY (category_id);
--- ALTER TABLE ONLY city ADD CONSTRAINT city_pkey PRIMARY KEY (city_id);
--- ALTER TABLE ONLY country ADD CONSTRAINT country_pkey PRIMARY KEY (country_id);
--- ALTER TABLE ONLY customer ADD CONSTRAINT customer_pkey PRIMARY KEY (customer_id);
--- ALTER TABLE ONLY film ADD CONSTRAINT film_pkey PRIMARY KEY (film_id);
--- ALTER TABLE ONLY film_actor ADD CONSTRAINT film_actor_pkey PRIMARY KEY (actor_id, film_id);
--- ALTER TABLE ONLY film_category ADD CONSTRAINT film_category_pkey PRIMARY KEY (film_id, category_id);
--- ALTER TABLE ONLY inventory ADD CONSTRAINT inventory_pkey PRIMARY KEY (inventory_id);
--- ALTER TABLE ONLY language ADD CONSTRAINT language_pkey PRIMARY KEY (language_id);
--- ALTER TABLE ONLY payment ADD CONSTRAINT payment_pkey PRIMARY KEY (payment_date, payment_id);
--- ALTER TABLE ONLY rental ADD CONSTRAINT rental_pkey PRIMARY KEY (rental_id);
--- ALTER TABLE ONLY staff ADD CONSTRAINT staff_pkey PRIMARY KEY (staff_id);
--- ALTER TABLE ONLY store ADD CONSTRAINT store_pkey PRIMARY KEY (store_id);
-
--- TODO - support direct primary keys
-CREATE UNIQUE INDEX actor_pkey ON actor(actor_id);
-CREATE UNIQUE INDEX address_pkey ON address(address_id);
-CREATE UNIQUE INDEX category_pkey ON category(category_id);
-CREATE UNIQUE INDEX city_pkey ON city(city_id);
-CREATE UNIQUE INDEX country_pkey ON country(country_id);
-CREATE UNIQUE INDEX customer_pkey ON customer(customer_id);
-CREATE UNIQUE INDEX film_pkey ON film(film_id);
-CREATE UNIQUE INDEX film_actor_pkey ON film_actor(actor_id, film_id);
-CREATE UNIQUE INDEX film_category_pkey ON film_category(film_id, category_id);
-CREATE UNIQUE INDEX inventory_pkey ON inventory(inventory_id);
-CREATE UNIQUE INDEX language_pkey ON language(language_id);
-CREATE UNIQUE INDEX payment_pkey ON payment(payment_date, payment_id);
-CREATE UNIQUE INDEX rental_pkey ON rental(rental_id);
-CREATE UNIQUE INDEX staff_pkey ON staff(staff_id);
-CREATE UNIQUE INDEX store_pkey ON store(store_id);
+ALTER TABLE actor ADD CONSTRAINT actor_pkey PRIMARY KEY (actor_id);
+ALTER TABLE address ADD CONSTRAINT address_pkey PRIMARY KEY (address_id);
+ALTER TABLE category ADD CONSTRAINT category_pkey PRIMARY KEY (category_id);
+ALTER TABLE city ADD CONSTRAINT city_pkey PRIMARY KEY (city_id);
+ALTER TABLE country ADD CONSTRAINT country_pkey PRIMARY KEY (country_id);
+ALTER TABLE customer ADD CONSTRAINT customer_pkey PRIMARY KEY (customer_id);
+ALTER TABLE film ADD CONSTRAINT film_pkey PRIMARY KEY (film_id);
+ALTER TABLE film_actor ADD CONSTRAINT film_actor_pkey PRIMARY KEY (actor_id, film_id);
+ALTER TABLE film_category ADD CONSTRAINT film_category_pkey PRIMARY KEY (film_id, category_id);
+ALTER TABLE inventory ADD CONSTRAINT inventory_pkey PRIMARY KEY (inventory_id);
+ALTER TABLE language ADD CONSTRAINT language_pkey PRIMARY KEY (language_id);
+ALTER TABLE payment ADD CONSTRAINT payment_pkey PRIMARY KEY (payment_date, payment_id);
+ALTER TABLE rental ADD CONSTRAINT rental_pkey PRIMARY KEY (rental_id);
+ALTER TABLE staff ADD CONSTRAINT staff_pkey PRIMARY KEY (staff_id);
+ALTER TABLE store ADD CONSTRAINT store_pkey PRIMARY KEY (store_id);
 
 -- ALTER TABLE ONLY address ADD CONSTRAINT address_city_id_fkey FOREIGN KEY (city_id) REFERENCES city(city_id) ON UPDATE CASCADE ON DELETE RESTRICT;
 -- ALTER TABLE ONLY city ADD CONSTRAINT city_country_id_fkey FOREIGN KEY (country_id) REFERENCES country(country_id) ON UPDATE CASCADE ON DELETE RESTRICT;

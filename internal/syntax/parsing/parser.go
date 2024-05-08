@@ -41,6 +41,7 @@ func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
 	}
 	parser.ddlParsers = map[tokens.TokenType]ddlParserFunc{
 		tokens.TokenTypeCreate: parser.parseCreate,
+		tokens.TokenTypeAlter:  parser.parseAlter,
 	}
 	parser.explainableParsers = map[tokens.TokenType]statementParserFunc{
 		tokens.TokenTypeSelect: parser.parseSelect,

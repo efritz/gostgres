@@ -45,6 +45,10 @@ func (i *hashIndex) Filter() expressions.Expression {
 	return nil
 }
 
+func (i *hashIndex) Name() string {
+	return i.name
+}
+
 func (i *hashIndex) Description(opts HashIndexScanOptions) string {
 	return fmt.Sprintf("hash index scan of %s via %s", i.tableName, i.name)
 }

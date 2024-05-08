@@ -29,6 +29,7 @@ var tokenSequenceReplacements = []tokenSequenceReplacement{
 	{tokens.TokenTypeNotILike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeILike}},
 	{tokens.TokenTypeNotLike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeLike}},
 	{tokens.TokenTypeNotNull, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeNull}},
+	{tokens.TokenTypePrimaryKey, []tokens.TokenType{tokens.TokenTypePrimary, tokens.TokenTypeKey}},
 }
 
 func init() {

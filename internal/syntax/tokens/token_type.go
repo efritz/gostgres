@@ -14,13 +14,16 @@ const (
 	//
 	// Keywords
 
+	TokenTypeAdd
 	TokenTypeAll
+	TokenTypeAlter
 	TokenTypeAnd
 	TokenTypeAs
 	TokenTypeAscending
 	TokenTypeBetween
 	TokenTypeBy
 	TokenTypeCheck
+	TokenTypeConstraint
 	TokenTypeCreate
 	TokenTypeDefault
 	TokenTypeDelete
@@ -37,6 +40,7 @@ const (
 	TokenTypeInto
 	TokenTypeIs
 	TokenTypeJoin
+	TokenTypeKey
 	TokenTypeKwUnknown
 	TokenTypeLike
 	TokenTypeLimit
@@ -46,6 +50,7 @@ const (
 	TokenTypeOn
 	TokenTypeOr
 	TokenTypeOrder
+	TokenTypePrimary
 	TokenTypeReturning
 	TokenTypeSelect
 	TokenTypeSet
@@ -102,6 +107,7 @@ const (
 	TokenTypeNotILike
 	TokenTypeNotLike
 	TokenTypeNotNull
+	TokenTypePrimaryKey
 
 	TokenTypeUnknown
 )

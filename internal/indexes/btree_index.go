@@ -53,6 +53,10 @@ func (i *btreeIndex) Filter() expressions.Expression {
 	return nil
 }
 
+func (i *btreeIndex) Name() string {
+	return i.name
+}
+
 func (i *btreeIndex) Description(opts BtreeIndexScanOptions) string {
 	direction := ""
 	if opts.scanDirection == ScanDirectionBackward {

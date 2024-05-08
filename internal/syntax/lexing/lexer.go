@@ -20,6 +20,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"asc":       tokens.TokenTypeAscending,
 	"between":   tokens.TokenTypeBetween,
 	"by":        tokens.TokenTypeBy,
+	"check":     tokens.TokenTypeCheck,
 	"create":    tokens.TokenTypeCreate,
 	"default":   tokens.TokenTypeDefault,
 	"delete":    tokens.TokenTypeDelete,

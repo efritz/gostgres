@@ -9,6 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 // create := `TABLE` createTable
@@ -44,15 +45,15 @@ func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 		return nil, err
 	}
 
-	fields := []shared.Field{}
+	columns := []table.ColumnDefinition{}
 	if !p.advanceIf(isType(tokens.TokenTypeRightParen)) {
 		for {
-			field, err := p.parseColumn()
+			column, err := p.parseColumn()
 			if err != nil {
 				return nil, err
 			}
 
-			fields = append(fields, field)
+			columns = append(columns, column)
 
 			if !p.advanceIf(isType(tokens.TokenTypeComma)) {
 				break
@@ -64,23 +65,24 @@ func (p *parser) parseCreateTable(token tokens.Token) (queries.Query, error) {
 		}
 	}
 
-	return ddl.NewCreateTable(name.Text, fields), nil
+	return ddl.NewCreateTable(name.Text, columns), nil
 }
 
-// column := columnName dataType [( NOT NULL )]
+// column := columnName dataType [( NOT NULL )] [ CHECK ( expression )] [ NOT NULL ] [ DEFAULT expression ]
 //
 // TODO: if not exists
+// TODO: unique, primary key, reference column constraints
+// TODO: named column constraints
 // TODO: table constraints
-// TODO: column constraints
-func (p *parser) parseColumn() (shared.Field, error) {
+func (p *parser) parseColumn() (table.ColumnDefinition, error) {
 	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
-		return shared.Field{}, err
+		return table.ColumnDefinition{}, err
 	}
 
 	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
-		return shared.Field{}, err
+		return table.ColumnDefinition{}, err
 	}
 
 	var typ shared.Type
@@ -97,7 +99,7 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		typ = shared.TypeNullableReal
 	case "double":
 		if !p.advanceIf(isIdent("precision")) {
-			return shared.Field{}, fmt.Errorf("unknown type %q", "double")
+			return table.ColumnDefinition{}, fmt.Errorf("unknown type %q", "double")
 		}
 		typ = shared.TypeNullableDoublePrecision
 	case "numeric":
@@ -106,13 +108,14 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		typ = shared.TypeNullableBool
 	case "timestamp":
 		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			return shared.Field{}, fmt.Errorf("unknown type %q", "timestamp")
+			return table.ColumnDefinition{}, fmt.Errorf("unknown type %q", "timestamp")
 		}
 		typ = shared.TypeNullableTimestampTz
 	default:
-		return shared.Field{}, fmt.Errorf("unknown type %s", dataType.Text)
+		return table.ColumnDefinition{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}
 
+	var constraints []expressions.Expression
 	var defaultExpression expressions.Expression
 	for {
 		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
@@ -123,10 +126,25 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		if p.advanceIf(isType(tokens.TokenTypeDefault)) {
 			expression, err := p.parseExpression(0)
 			if err != nil {
-				return shared.Field{}, err
+				return table.ColumnDefinition{}, err
 			}
 
 			defaultExpression = expression
+			continue
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeCheck)) {
+			token, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen))
+			if err != nil {
+				return table.ColumnDefinition{}, err
+			}
+
+			expr, err := p.parseParenthesizedExpression(token)
+			if err != nil {
+				return table.ColumnDefinition{}, err
+			}
+
+			constraints = append(constraints, expr)
 			continue
 		}
 
@@ -146,7 +164,10 @@ func (p *parser) parseColumn() (shared.Field, error) {
 		})
 	}
 
-	return field, nil
+	return table.ColumnDefinition{
+		Field:       field,
+		Constraints: constraints,
+	}, nil
 }
 
 // createIndex := name `ON` tableName [ `USING` methodName ] `(` expression [ `ASC` | `DESC` ] [, ...] `)` [ `WHERE` predicate ]

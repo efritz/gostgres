@@ -38,7 +38,7 @@ CREATE TABLE film (
     film_id integer NOT NULL, -- DEFAULT nextval('film_film_id_seq'::regclass)
     title text NOT NULL,
     description text,
-    release_year integer, -- year,
+    release_year integer NOT NULL CHECK (release_year >= 1901 AND release_year <= 2155), -- year,
     language_id integer NOT NULL,
     original_language_id integer,
     rental_duration smallint DEFAULT 3 NOT NULL,
@@ -50,6 +50,9 @@ CREATE TABLE film (
     -- special_features text[],
     -- fulltext tsvector NOT NULL
 );
+
+-- TODO - support adding constraints
+-- ALTER TABLE film ADD CONSTRAINT film_release_year CHECK (year >= 1901 AND value <= 2155);
 
 CREATE TABLE film_actor (
     actor_id integer NOT NULL,

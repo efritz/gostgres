@@ -20,6 +20,7 @@ const (
 	TokenTypeAscending
 	TokenTypeBetween
 	TokenTypeBy
+	TokenTypeCheck
 	TokenTypeCreate
 	TokenTypeDefault
 	TokenTypeDelete

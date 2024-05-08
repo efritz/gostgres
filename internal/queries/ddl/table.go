@@ -3,20 +3,20 @@ package ddl
 import (
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type createTable struct {
-	name   string
-	fields []shared.Field
+	name    string
+	columns []table.ColumnDefinition
 }
 
 var _ queries.Query = &createTable{}
 
-func NewCreateTable(name string, fields []shared.Field) *createTable {
+func NewCreateTable(name string, columns []table.ColumnDefinition) *createTable {
 	return &createTable{
-		name:   name,
-		fields: fields,
+		name:    name,
+		columns: columns,
 	}
 }
 
@@ -30,7 +30,7 @@ func (n *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 }
 
 func (n *createTable) execute(ctx queries.Context) error {
-	if err := ctx.Tables.CreateTable(n.name, n.fields); err != nil {
+	if err := ctx.Tables.CreateTable(n.name, n.columns); err != nil {
 		return err
 	}
 

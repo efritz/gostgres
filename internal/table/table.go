@@ -7,10 +7,11 @@ import (
 )
 
 type Table struct {
-	name    string
-	fields  []shared.Field
-	rows    map[int64]shared.Row
-	indexes []Index
+	name        string
+	fields      []shared.Field
+	rows        map[int64]shared.Row
+	indexes     []Index
+	constraints []Constraint
 }
 
 type Index interface {
@@ -77,6 +78,17 @@ func (t *Table) AddIndex(index Index) error {
 	return nil
 }
 
+func (t *Table) AddConstraint(constraint Constraint) error {
+	for _, row := range t.rows {
+		if err := constraint.Check(row); err != nil {
+			return err
+		}
+	}
+
+	t.constraints = append(t.constraints, constraint)
+	return nil
+}
+
 var tid = int64(0)
 
 func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
@@ -86,6 +98,12 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	newRow, err := shared.NewRow(t.fields, append([]any{id}, row.Values...))
 	if err != nil {
 		return shared.Row{}, err
+	}
+
+	for _, constraint := range t.constraints {
+		if err := constraint.Check(newRow); err != nil {
+			return shared.Row{}, err
+		}
 	}
 
 	for _, index := range t.indexes {

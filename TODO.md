@@ -2,7 +2,6 @@
 
 ## Schema features
 
-- Support constraints
 - Support primary keys
 - Support foreign keys
 - Support enums

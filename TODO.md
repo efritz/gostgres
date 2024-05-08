@@ -2,7 +2,7 @@
 
 ## Schema features
 
-- Support foreign keys
+- Support sequences
 - Support enums
 - Support views
 - Support materialized views

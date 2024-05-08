@@ -3,7 +3,6 @@ package table
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/constraints"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 	"golang.org/x/exp/slices"
@@ -15,7 +14,7 @@ type Table struct {
 	rows        map[int64]shared.Row
 	primaryKey  Index
 	indexes     []Index
-	constraints []constraints.Constraint
+	constraints []Constraint
 }
 
 type Index interface {
@@ -24,6 +23,11 @@ type Index interface {
 	Filter() expressions.Expression
 	Insert(row shared.Row) error
 	Delete(row shared.Row) error
+}
+
+type Constraint interface {
+	Name() string
+	Check(row shared.Row) error
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -102,7 +106,7 @@ func (t *Table) AddIndex(index Index) error {
 	return nil
 }
 
-func (t *Table) AddConstraint(constraint constraints.Constraint) error {
+func (t *Table) AddConstraint(constraint Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(row); err != nil {
 			return err

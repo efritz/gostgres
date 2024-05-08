@@ -32,6 +32,7 @@ const (
 	TokenTypeExcept
 	TokenTypeExplain
 	TokenTypeFalse
+	TokenTypeForeign
 	TokenTypeFrom
 	TokenTypeILike
 	TokenTypeIndex
@@ -51,6 +52,7 @@ const (
 	TokenTypeOr
 	TokenTypeOrder
 	TokenTypePrimary
+	TokenTypeReferences
 	TokenTypeReturning
 	TokenTypeSelect
 	TokenTypeSet

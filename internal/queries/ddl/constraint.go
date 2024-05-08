@@ -108,3 +108,64 @@ func (q *createCheckConstraint) ExecuteDDL(ctx queries.Context) error {
 	constraint := constraints.NewCheckConstraint(q.name, q.expression)
 	return table.AddConstraint(constraint)
 }
+
+type createForeignKeyConstraint struct {
+	name           string
+	tableName      string
+	columnNames    []string
+	refTableName   string
+	refColumnNames []string
+}
+
+var _ queries.Query = &createForeignKeyConstraint{}
+var _ DDLQuery = &createForeignKeyConstraint{}
+
+func NewCreateForeignKeyConstraint(name, tableName string, columnNames []string, refTableName string, refColumnNames []string) *createForeignKeyConstraint {
+	return &createForeignKeyConstraint{
+		name:           name,
+		tableName:      tableName,
+		columnNames:    columnNames,
+		refTableName:   refTableName,
+		refColumnNames: refColumnNames,
+	}
+}
+
+func (q *createForeignKeyConstraint) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+	if err := q.ExecuteDDL(ctx); err != nil {
+		w.Error(err)
+		return
+	}
+
+	w.Done()
+}
+
+func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
+	table, ok := ctx.Tables.GetTable(q.tableName)
+	if !ok {
+		return fmt.Errorf("unknown table %q", q.tableName)
+	}
+
+	var exprs []expressions.Expression
+	for _, columnName := range q.columnNames {
+		i := slices.IndexFunc(table.Fields(), func(f shared.Field) bool { return f.Name() == columnName })
+		if i < 0 {
+			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
+		}
+		field := table.Fields()[i]
+
+		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
+	}
+
+	refTable, ok := ctx.Tables.GetTable(q.refTableName)
+	if !ok {
+		return fmt.Errorf("unknown table %q", q.refTableName)
+	}
+
+	// TODO - look for matching unique index
+	// there is no unique constraint matching given keys for referenced table
+	_ = refTable
+	var refIndex indexes.Index[indexes.BtreeIndexScanOptions]
+
+	constraint := constraints.NewForeignKeyConstraint(q.name, exprs, refIndex)
+	return table.AddConstraint(constraint)
+}

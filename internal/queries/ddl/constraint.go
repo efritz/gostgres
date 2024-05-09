@@ -3,6 +3,7 @@ package ddl
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/constraints"
 	"github.com/efritz/gostgres/internal/expressions"
@@ -161,10 +162,17 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 		return fmt.Errorf("unknown table %q", q.refTableName)
 	}
 
-	// TODO - look for matching unique index
-	// there is no unique constraint matching given keys for referenced table
-	_ = refTable
 	var refIndex indexes.Index[indexes.BtreeIndexScanOptions]
+	for _, index := range refTable.Indexes() {
+		// TODO - actually check that columns match
+		if strings.Contains(index.Name(), "_pkey") {
+			refIndex = index.(indexes.Index[indexes.BtreeIndexScanOptions])
+			break
+		}
+	}
+	if refIndex == nil {
+		return fmt.Errorf("there is no unique constraint matching given keys for referenced table")
+	}
 
 	constraint := constraints.NewForeignKeyConstraint(q.name, exprs, refIndex)
 	return table.AddConstraint(constraint)

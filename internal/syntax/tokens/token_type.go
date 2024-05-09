@@ -94,6 +94,7 @@ const (
 	// Multiple-keyword operators
 
 	TokenTypeBetweenSymmetric
+	TokenTypeForeignKey
 	TokenTypeIsDistinctFrom
 	TokenTypeIsFalse
 	TokenTypeIsNotDistinctFrom

@@ -11,7 +11,7 @@ import (
 type hashIndex struct {
 	name       string
 	tableName  string
-	unique     bool
+	unique     bool // TODO - not supported
 	expression expressions.Expression
 	entries    map[uint64][]hashItem
 }

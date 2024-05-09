@@ -34,6 +34,26 @@ type scanBound struct {
 	inclusive  bool
 }
 
+func NewBtreeSearchOptions(values []any) BtreeIndexScanOptions {
+	var lowerBounds [][]scanBound
+	var upperBounds [][]scanBound
+
+	for _, value := range values {
+		bound := []scanBound{{
+			expression: expressions.NewConstant(value),
+			inclusive:  true,
+		}}
+		lowerBounds = append(lowerBounds, bound)
+		upperBounds = append(upperBounds, bound)
+	}
+
+	return BtreeIndexScanOptions{
+		scanDirection: ScanDirectionForward,
+		lowerBounds:   lowerBounds,
+		upperBounds:   upperBounds,
+	}
+}
+
 var _ Index[BtreeIndexScanOptions] = &btreeIndex{}
 
 func NewBTreeIndex(name, tableName string, unique bool, expressions []expressions.ExpressionWithDirection) *btreeIndex {
@@ -47,6 +67,24 @@ func NewBTreeIndex(name, tableName string, unique bool, expressions []expression
 
 func (i *btreeIndex) Unwrap() table.Index {
 	return i
+}
+
+func (i *btreeIndex) UniqueOn() []shared.Field {
+	if !i.unique {
+		return nil
+	}
+
+	var fields []shared.Field
+	for _, e := range i.expressions {
+		field, ok := e.Expression.Named()
+		if !ok {
+			return nil
+		}
+
+		fields = append(fields, field)
+	}
+
+	return fields
 }
 
 func (i *btreeIndex) Filter() expressions.Expression {

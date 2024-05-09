@@ -11,7 +11,7 @@ import (
 type hashIndex struct {
 	name       string
 	tableName  string
-	unique     bool
+	unique     bool // TODO - not supported
 	expression expressions.Expression
 	entries    map[uint64][]hashItem
 }
@@ -39,6 +39,10 @@ func NewHashIndex(name, tableName string, unique bool, expression expressions.Ex
 
 func (i *hashIndex) Unwrap() table.Index {
 	return i
+}
+
+func (i *hashIndex) UniqueOn() []shared.Field {
+	return nil
 }
 
 func (i *hashIndex) Filter() expressions.Expression {

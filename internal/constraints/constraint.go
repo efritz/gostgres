@@ -1,8 +1,9 @@
 package constraints
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/table"
+)
 
 type Constraint interface {
-	Name() string
-	Check(row shared.Row) error
+	table.Constraint
 }

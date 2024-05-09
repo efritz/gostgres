@@ -14,6 +14,7 @@ type tokenSequenceReplacement struct {
 
 var tokenSequenceReplacements = []tokenSequenceReplacement{
 	{tokens.TokenTypeBetweenSymmetric, []tokens.TokenType{tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}},
+	{tokens.TokenTypeForeignKey, []tokens.TokenType{tokens.TokenTypeForeign, tokens.TokenTypeKey}},
 	{tokens.TokenTypeIsDistinctFrom, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}},
 	{tokens.TokenTypeIsFalse, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeFalse}},
 	{tokens.TokenTypeIsNotDistinctFrom, []tokens.TokenType{tokens.TokenTypeIs, tokens.TokenTypeNot, tokens.TokenTypeDistinct, tokens.TokenTypeFrom}},

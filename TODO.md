@@ -2,7 +2,8 @@
 
 ## Schema features
 
-- Support foreign keys
+- Support table constraints
+- Support sequences
 - Support enums
 - Support views
 - Support materialized views
@@ -10,6 +11,7 @@
 - Support additional DDL statements
 - Support functions
 - Support exclusion constraints
+- Support ON DELETE/ON UPDATE of fkey constraints
 
 ## Query features
 

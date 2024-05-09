@@ -79,7 +79,7 @@ type columnDescription struct {
 	constraints []ddl.DDLQuery
 }
 
-// column := columnName dataType [( NOT NULL )] [ CHECK ( expression )] [ NOT NULL ] [ DEFAULT expression ]
+// column := columnName dataType [( NOT NULL )] [ CHECK ( expression )] [ REFERENCES reftable `(` columnName `)` ] [ NOT NULL ] [ DEFAULT expression ]
 //
 // TODO: if not exists
 // TODO: unique, primary key, reference column constraints
@@ -142,6 +142,38 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 				tableName,
 				[]string{name.Text},
 			))
+			continue
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeReferences)) {
+			refTable, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+			if err != nil {
+				return columnDescription{}, err
+			}
+
+			// TODO - refcolumn name should be optional, but we need a way
+			// to determine the primary key of the target table otherwise.
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen)); err != nil {
+				return columnDescription{}, err
+			}
+
+			refColumn, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+			if err != nil {
+				return columnDescription{}, err
+			}
+
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+				return columnDescription{}, err
+			}
+
+			constraints = append(constraints, ddl.NewCreateForeignKeyConstraint(
+				fmt.Sprintf("%s_%s_fkey", tableName, name.Text),
+				tableName,
+				[]string{name.Text},
+				refTable.Text,
+				[]string{refColumn.Text},
+			))
+			continue
 		}
 
 		if p.advanceIf(isType(tokens.TokenTypeCheck)) {
@@ -292,6 +324,7 @@ func (p *parser) parseAlter(token tokens.Token) (queries.Query, error) {
 //
 // constraint := `PRIMARY` `KEY` `(` columnName [ , ... ] `)`
 //
+//	| `FOREIGN` `KEY` `(` columnName [ , ... ] `)` `REFERENCES` refTable `(` refColumn [ , ... ] `)`
 //	| `CHECK` `(` expr `)`
 func (p *parser) parseAlterTable(tableName string) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeAdd), isType(tokens.TokenTypeConstraint)) {
@@ -301,32 +334,36 @@ func (p *parser) parseAlterTable(tableName string) (queries.Query, error) {
 		}
 
 		if p.advanceIf(isType(tokens.TokenTypePrimaryKey)) {
-			if _, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen)); err != nil {
+			columnNames, err := p.mustParseColumnNames()
+			if err != nil {
 				return nil, err
-			}
-
-			var columnNames []string
-			if !p.advanceIf(isType(tokens.TokenTypeRightParen)) {
-				for {
-					columnName, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
-					if err != nil {
-						return nil, err
-					}
-
-					columnNames = append(columnNames, columnName.Text)
-
-					if !p.advanceIf(isType(tokens.TokenTypeComma)) {
-						break
-					}
-				}
-
-				if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
-					return nil, err
-				}
 			}
 
 			// TODO - also ensure column names are not-null
 			return ddl.NewCreatePrimaryKeyConstraint(name.Text, tableName, columnNames), nil
+		}
+
+		if p.advanceIf(isType(tokens.TokenTypeForeignKey)) {
+			columnNames, err := p.mustParseColumnNames()
+			if err != nil {
+				return nil, err
+			}
+
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeReferences)); err != nil {
+				return nil, err
+			}
+
+			refTable, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+			if err != nil {
+				return nil, err
+			}
+
+			refColumnNames, err := p.mustParseColumnNames()
+			if err != nil {
+				return nil, err
+			}
+
+			return ddl.NewCreateForeignKeyConstraint(name.Text, tableName, columnNames, refTable.Text, refColumnNames), nil
 		}
 
 		if p.advanceIf(isType(tokens.TokenTypeCheck)) {

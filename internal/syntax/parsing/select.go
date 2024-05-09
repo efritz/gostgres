@@ -293,6 +293,19 @@ func (p *parser) parseColumnNames() ([]string, error) {
 	return columnNames, nil
 }
 
+func (p *parser) mustParseColumnNames() ([]string, error) {
+	columnNames, err := p.parseColumnNames()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(columnNames) == 0 {
+		return nil, fmt.Errorf("expected column name list near %s", p.current().Text)
+	}
+
+	return columnNames, nil
+}
+
 // alias := [[`AS`] ident]
 func (p *parser) parseAlias() (string, bool, error) {
 	return p.parseAliasPrefix()

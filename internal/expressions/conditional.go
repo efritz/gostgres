@@ -7,7 +7,7 @@ import (
 )
 
 func NewNot(expression Expression) Expression {
-	return newUnaryExpression(expression, "not", func(context Context, expression Expression, row shared.Row) (any, error) {
+	return newUnaryExpression(expression, "not", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
 		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
@@ -160,7 +160,7 @@ func (e conditionalExpression) disjunctions() (disjunctions []Expression) {
 	return disjunctions
 }
 
-func (e conditionalExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+func (e conditionalExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {
 	lVal, err := shared.ValueAs[bool](e.left.ValueFrom(context, row))
 	if err != nil {
 		return nil, err

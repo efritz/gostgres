@@ -28,7 +28,11 @@ type Index interface {
 
 type Constraint interface {
 	Name() string
-	Check(row shared.Row) error
+	Check(ctx ConstraintContext, row shared.Row) error
+}
+
+type ConstraintContext interface {
+	expressions.ExpressionContext
 }
 
 func NewTable(name string, fields []shared.Field) *Table {
@@ -108,8 +112,10 @@ func (t *Table) AddIndex(index Index) error {
 }
 
 func (t *Table) AddConstraint(constraint Constraint) error {
+	ctx := expressions.EmptyContext // TODO
+
 	for _, row := range t.rows {
-		if err := constraint.Check(row); err != nil {
+		if err := constraint.Check(ctx, row); err != nil {
 			return err
 		}
 	}
@@ -129,8 +135,10 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 		return shared.Row{}, err
 	}
 
+	ctx := expressions.EmptyContext // TODO
+
 	for _, constraint := range t.constraints {
-		if err := constraint.Check(newRow); err != nil {
+		if err := constraint.Check(ctx, newRow); err != nil {
 			return shared.Row{}, err
 		}
 	}

@@ -55,6 +55,7 @@ const (
 	TokenTypeReferences
 	TokenTypeReturning
 	TokenTypeSelect
+	TokenTypeSequence
 	TokenTypeSet
 	TokenTypeSymmetric
 	TokenTypeTable

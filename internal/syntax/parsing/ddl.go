@@ -13,10 +13,15 @@ import (
 
 // create := `TABLE` createTable
 //
+//	| `SEQUENCE` createSequence
 //	| [ `UNIQUE` ] `INDEX` createIndex
 func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeTable)) {
 		return p.parseCreateTable()
+	}
+
+	if p.advanceIf(isType(tokens.TokenTypeSequence)) {
+		return p.parseCreateSequence()
 	}
 
 	unique := false
@@ -91,39 +96,9 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 		return columnDescription{}, err
 	}
 
-	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+	typ, err := p.parseType()
 	if err != nil {
 		return columnDescription{}, err
-	}
-
-	var typ shared.Type
-	switch strings.ToLower(dataType.Text) {
-	case "text":
-		typ = shared.TypeNullableText
-	case "smallint":
-		typ = shared.TypeNullableSmallInteger
-	case "integer":
-		typ = shared.TypeNullableInteger
-	case "bigint":
-		typ = shared.TypeNullableBigInteger
-	case "real":
-		typ = shared.TypeNullableReal
-	case "double":
-		if !p.advanceIf(isIdent("precision")) {
-			return columnDescription{}, fmt.Errorf("unknown type %q", "double")
-		}
-		typ = shared.TypeNullableDoublePrecision
-	case "numeric":
-		typ = shared.TypeNullableNumeric
-	case "boolean":
-		typ = shared.TypeNullableBool
-	case "timestamp":
-		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			return columnDescription{}, fmt.Errorf("unknown type %q", "timestamp")
-		}
-		typ = shared.TypeNullableTimestampTz
-	default:
-		return columnDescription{}, fmt.Errorf("unknown type %s", dataType.Text)
 	}
 
 	var constraints []ddl.DDLQuery
@@ -225,6 +200,67 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 		field:       field,
 		constraints: constraints,
 	}, nil
+}
+
+func (p *parser) parseType() (shared.Type, error) {
+	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+	if err != nil {
+		return shared.Type{}, err
+	}
+
+	var typ shared.Type
+	switch strings.ToLower(dataType.Text) {
+	case "text":
+		typ = shared.TypeNullableText
+	case "smallint":
+		typ = shared.TypeNullableSmallInteger
+	case "integer":
+		typ = shared.TypeNullableInteger
+	case "bigint":
+		typ = shared.TypeNullableBigInteger
+	case "real":
+		typ = shared.TypeNullableReal
+		// TODO - use multi-phrase keyword
+	case "double":
+		if !p.advanceIf(isIdent("precision")) {
+			return shared.Type{}, fmt.Errorf("unknown type %q", "double")
+		}
+		typ = shared.TypeNullableDoublePrecision
+	case "numeric":
+		typ = shared.TypeNullableNumeric
+	case "boolean":
+		typ = shared.TypeNullableBool
+		// TODO - use multi-phrase keyword(s)
+	case "timestamp":
+		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
+			return shared.Type{}, fmt.Errorf("unknown type %q", "timestamp")
+		}
+		typ = shared.TypeNullableTimestampTz
+	default:
+		return shared.Type{}, fmt.Errorf("unknown type %s", dataType.Text)
+	}
+
+	return typ, nil
+}
+
+// createSequence := name [ `AS` datatype ]
+//
+// TODO - increment, min/max value, start, cycle
+func (p *parser) parseCreateSequence() (queries.Query, error) {
+	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	typ := shared.TypeBigInteger
+	if p.advanceIf(isType(tokens.TokenTypeAs)) {
+		typ, err = p.parseType()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ddl.NewCreateSequence(name.Text, typ), nil
 }
 
 // createIndex := name `ON` tableName [ `USING` methodName ] `(` expression [ `ASC` | `DESC` ] [, ...] `)` [ `WHERE` predicate ]

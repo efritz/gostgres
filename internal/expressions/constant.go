@@ -50,6 +50,6 @@ func (e constantExpression) Map(f func(Expression) Expression) Expression {
 	return f(e)
 }
 
-func (e constantExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+func (e constantExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {
 	return e.value, nil
 }

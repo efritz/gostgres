@@ -12,7 +12,7 @@ type unaryExpression struct {
 	valueFrom    unaryValueFromFunc
 }
 
-type unaryValueFromFunc func(context Context, expression Expression, row shared.Row) (any, error)
+type unaryValueFromFunc func(context ExpressionContext, expression Expression, row shared.Row) (any, error)
 
 func newUnaryExpression(expression Expression, operatorText string, valueFrom unaryValueFromFunc) Expression {
 	return unaryExpression{
@@ -54,6 +54,6 @@ func (e unaryExpression) Map(f func(Expression) Expression) Expression {
 	return f(newUnaryExpression(e.expression.Map(f), e.operatorText, e.valueFrom))
 }
 
-func (e unaryExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+func (e unaryExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {
 	return e.valueFrom(context, e.expression, row)
 }

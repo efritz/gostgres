@@ -3,7 +3,7 @@ package expressions
 import "github.com/efritz/gostgres/internal/shared"
 
 func NewIsNull(expression Expression) Expression {
-	return newUnaryExpression(expression, "is null", func(context Context, expression Expression, row shared.Row) (any, error) {
+	return newUnaryExpression(expression, "is null", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
 		val, err := expression.ValueFrom(context, row)
 		if err != nil {
 			return nil, err
@@ -13,7 +13,7 @@ func NewIsNull(expression Expression) Expression {
 }
 
 func NewIsTrue(expression Expression) Expression {
-	return newUnaryExpression(expression, "is true", func(context Context, expression Expression, row shared.Row) (any, error) {
+	return newUnaryExpression(expression, "is true", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
 		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
@@ -23,7 +23,7 @@ func NewIsTrue(expression Expression) Expression {
 }
 
 func NewIsFalse(expression Expression) Expression {
-	return newUnaryExpression(expression, "is false", func(context Context, expression Expression, row shared.Row) (any, error) {
+	return newUnaryExpression(expression, "is false", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
 		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
 		if err != nil {
 			return nil, err
@@ -33,7 +33,7 @@ func NewIsFalse(expression Expression) Expression {
 }
 
 func NewIsUnknown(expression Expression) Expression {
-	return newUnaryExpression(expression, "is unknown", func(context Context, expression Expression, row shared.Row) (any, error) {
+	return newUnaryExpression(expression, "is unknown", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
 		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
 		if err != nil {
 			return nil, err

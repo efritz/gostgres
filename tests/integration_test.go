@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/efritz/gostgres/internal/engine"
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
+	"github.com/efritz/gostgres/internal/sequence"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/table"
 	"github.com/hexops/autogold/v2"
@@ -21,10 +21,10 @@ const rootDir = "queries"
 
 func TestIntegration(t *testing.T) {
 	tables := table.NewTablespace()
-	functions := functions.NewFunctionspace()
-	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
+	sequences := sequence.NewSequencespace()
+	functions := functions.NewDefaultFunctionspace()
 
-	engine := engine.NewEngine(tables, functions)
+	engine := engine.NewEngine(tables, sequences, functions)
 	require.NoError(t, sample.LoadPagilaSampleSchemaAndData(engine))
 
 	entries, err := os.ReadDir(rootDir)

@@ -13,7 +13,7 @@ type binaryExpression struct {
 	valueFrom    binaryValueFromFunc
 }
 
-type binaryValueFromFunc func(context Context, left, right Expression, row shared.Row) (any, error)
+type binaryValueFromFunc func(context ExpressionContext, left, right Expression, row shared.Row) (any, error)
 
 func newBinaryExpression(left, right Expression, operatorText string, valueFrom binaryValueFromFunc) Expression {
 	return binaryExpression{
@@ -72,6 +72,6 @@ func (e binaryExpression) Conjunctions() []Expression {
 	return []Expression{e}
 }
 
-func (e binaryExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+func (e binaryExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {
 	return e.valueFrom(context, e.left, e.right, row)
 }

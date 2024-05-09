@@ -3,7 +3,6 @@ package ddl
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/efritz/gostgres/internal/constraints"
 	"github.com/efritz/gostgres/internal/expressions"
@@ -164,9 +163,18 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 
 	var refIndex indexes.Index[indexes.BtreeIndexScanOptions]
 	for _, index := range refTable.Indexes() {
-		// TODO - actually check that columns match
-		if strings.Contains(index.Name(), "_pkey") {
-			refIndex = index.(indexes.Index[indexes.BtreeIndexScanOptions])
+		btreeIndex, ok := index.(indexes.Index[indexes.BtreeIndexScanOptions])
+		if !ok {
+			continue
+		}
+
+		var fieldNames []string
+		for _, field := range index.UniqueOn() {
+			fieldNames = append(fieldNames, field.Name())
+		}
+
+		if len(fieldNames) > 0 && slices.Equal(fieldNames, q.refColumnNames) {
+			refIndex = btreeIndex
 			break
 		}
 	}

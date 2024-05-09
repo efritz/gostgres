@@ -69,6 +69,24 @@ func (i *btreeIndex) Unwrap() table.Index {
 	return i
 }
 
+func (i *btreeIndex) UniqueOn() []shared.Field {
+	if !i.unique {
+		return nil
+	}
+
+	var fields []shared.Field
+	for _, e := range i.expressions {
+		field, ok := e.Expression.Named()
+		if !ok {
+			return nil
+		}
+
+		fields = append(fields, field)
+	}
+
+	return fields
+}
+
 func (i *btreeIndex) Filter() expressions.Expression {
 	return nil
 }

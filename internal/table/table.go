@@ -20,6 +20,7 @@ type Table struct {
 type Index interface {
 	Name() string
 	Unwrap() Index
+	UniqueOn() []shared.Field
 	Filter() expressions.Expression
 	Insert(row shared.Row) error
 	Delete(row shared.Row) error

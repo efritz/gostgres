@@ -41,6 +41,10 @@ func (i *hashIndex) Unwrap() table.Index {
 	return i
 }
 
+func (i *hashIndex) UniqueOn() []shared.Field {
+	return nil
+}
+
 func (i *hashIndex) Filter() expressions.Expression {
 	return nil
 }

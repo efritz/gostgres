@@ -1,9 +1,12 @@
 package constraints
 
 import (
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
@@ -45,6 +48,10 @@ func (c *foreignKeyConstraint) Check(row shared.Row) error {
 	}
 
 	if _, err := scanner.Scan(); err != nil {
+		if err == scan.ErrNoRows {
+			return fmt.Errorf("foreign key constraint %q failed", c.name)
+		}
+
 		return err
 	}
 

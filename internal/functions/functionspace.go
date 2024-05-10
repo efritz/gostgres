@@ -10,6 +10,12 @@ func NewFunctionspace() *Functionspace {
 	}
 }
 
+func NewDefaultFunctionspace() *Functionspace {
+	return &Functionspace{
+		functions: DefaultFunctions(),
+	}
+}
+
 func (t *Functionspace) GetFunction(name string) (Function, bool) {
 	function, ok := t.functions[name]
 	return function, ok

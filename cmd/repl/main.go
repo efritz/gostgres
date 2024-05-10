@@ -11,6 +11,7 @@ import (
 	"github.com/efritz/gostgres/internal/engine"
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
+	"github.com/efritz/gostgres/internal/sequence"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/efritz/gostgres/internal/table"
@@ -37,9 +38,9 @@ func mainErr() error {
 	log.SetOutput(l.Stderr())
 
 	tables := table.NewTablespace()
-	functions := functions.NewFunctionspace()
-	functions.SetFunction("now", func(args []any) (any, error) { return time.Now(), nil })
-	engine := engine.NewEngine(tables, functions)
+	sequences := sequence.NewSequencespace()
+	functions := functions.NewDefaultFunctionspace()
+	engine := engine.NewEngine(tables, sequences, functions)
 
 	buffer := ""
 loop:

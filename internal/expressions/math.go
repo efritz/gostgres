@@ -43,7 +43,7 @@ func NewUnaryMinus(expression Expression) Expression {
 }
 
 func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b any) (any, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(context Context, left, right Expression, row shared.Row) (any, error) {
+	return newBinaryExpression(left, right, operatorText, func(context ExpressionContext, left, right Expression, row shared.Row) (any, error) {
 		lVal, err := left.ValueFrom(context, row)
 		if err != nil {
 			return nil, err

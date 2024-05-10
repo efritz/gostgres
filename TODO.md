@@ -3,7 +3,6 @@
 ## Schema features
 
 - Support table constraints
-- Support sequences
 - Support enums
 - Support views
 - Support materialized views

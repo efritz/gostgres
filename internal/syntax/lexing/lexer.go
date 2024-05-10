@@ -56,6 +56,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"references": tokens.TokenTypeReferences,
 	"returning":  tokens.TokenTypeReturning,
 	"select":     tokens.TokenTypeSelect,
+	"sequence":   tokens.TokenTypeSequence,
 	"set":        tokens.TokenTypeSet,
 	"symmetric":  tokens.TokenTypeSymmetric,
 	"table":      tokens.TokenTypeTable,

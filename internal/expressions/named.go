@@ -52,7 +52,7 @@ func (e namedExpression) Map(f func(Expression) Expression) Expression {
 	return f(e)
 }
 
-func (e namedExpression) ValueFrom(context Context, row shared.Row) (any, error) {
+func (e namedExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {
 	index, err := shared.FindMatchingFieldIndex(e.field, row.Fields)
 	if err != nil {
 		return nil, err

@@ -85,15 +85,15 @@ func (e functionExpression) Map(f func(Expression) Expression) Expression {
 	return f(NewFunction(e.name, args))
 }
 
-func (e functionExpression) ValueFrom(context Context, row shared.Row) (any, error) {
-	f, ok := context.Functions.GetFunction(e.name)
+func (e functionExpression) ValueFrom(ctx ExpressionContext, row shared.Row) (any, error) {
+	f, ok := ctx.GetFunction(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %s", e.name)
 	}
 
 	args := make([]any, 0, len(e.args))
 	for _, arg := range e.args {
-		value, err := arg.ValueFrom(context, row)
+		value, err := arg.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
 		}
@@ -101,5 +101,5 @@ func (e functionExpression) ValueFrom(context Context, row shared.Row) (any, err
 		args = append(args, value)
 	}
 
-	return f(args)
+	return f(ctx, args)
 }

@@ -13,10 +13,15 @@ import (
 
 // create := `TABLE` createTable
 //
+//	| `SEQUENCE` createSequence
 //	| [ `UNIQUE` ] `INDEX` createIndex
 func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
 	if p.advanceIf(isType(tokens.TokenTypeTable)) {
 		return p.parseCreateTable()
+	}
+
+	if p.advanceIf(isType(tokens.TokenTypeSequence)) {
+		return p.parseCreateSequence()
 	}
 
 	unique := false
@@ -65,17 +70,20 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 	}
 
 	var fields []shared.Field
+	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	for _, column := range columns {
 		fields = append(fields, column.field)
+		sequences = append(sequences, column.sequences...)
 		constraints = append(constraints, column.constraints...)
 	}
 
-	return ddl.NewSet(append([]ddl.DDLQuery{ddl.NewCreateTable(name.Text, fields)}, constraints...)), nil
+	return ddl.NewSet(append(append(sequences, ddl.NewCreateTable(name.Text, fields)), constraints...)), nil
 }
 
 type columnDescription struct {
 	field       shared.Field
+	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
 
@@ -97,37 +105,33 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 	}
 
 	var typ shared.Type
-	switch strings.ToLower(dataType.Text) {
-	case "text":
-		typ = shared.TypeNullableText
-	case "smallint":
-		typ = shared.TypeNullableSmallInteger
-	case "integer":
-		typ = shared.TypeNullableInteger
-	case "bigint":
-		typ = shared.TypeNullableBigInteger
-	case "real":
-		typ = shared.TypeNullableReal
-	case "double":
-		if !p.advanceIf(isIdent("precision")) {
-			return columnDescription{}, fmt.Errorf("unknown type %q", "double")
-		}
-		typ = shared.TypeNullableDoublePrecision
-	case "numeric":
-		typ = shared.TypeNullableNumeric
-	case "boolean":
-		typ = shared.TypeNullableBool
-	case "timestamp":
-		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			return columnDescription{}, fmt.Errorf("unknown type %q", "timestamp")
-		}
-		typ = shared.TypeNullableTimestampTz
-	default:
-		return columnDescription{}, fmt.Errorf("unknown type %s", dataType.Text)
-	}
-
+	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	var defaultExpression expressions.Expression
+
+	makeSequence := func() {
+		sequenceName := fmt.Sprintf("%s_%s_seq", tableName, name.Text)
+		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, typ))
+		defaultExpression = expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
+	}
+
+	switch strings.ToLower(dataType.Text) {
+	case "smallserial":
+		typ = shared.TypeSmallInteger
+		makeSequence()
+	case "serial":
+		typ = shared.TypeInteger
+		makeSequence()
+	case "bigserial":
+		typ = shared.TypeBigInteger
+		makeSequence()
+
+	default:
+		typ, err = p.parseBasicType(dataType.Text)
+		if err != nil {
+			return columnDescription{}, err
+		}
+	}
 
 	for {
 		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
@@ -223,8 +227,71 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 
 	return columnDescription{
 		field:       field,
+		sequences:   sequences,
 		constraints: constraints,
 	}, nil
+}
+
+func (p *parser) parseBasicType(name string) (shared.Type, error) {
+
+	var typ shared.Type
+	switch strings.ToLower(name) {
+	case "text":
+		typ = shared.TypeNullableText
+	case "smallint":
+		typ = shared.TypeNullableSmallInteger
+	case "integer":
+		typ = shared.TypeNullableInteger
+	case "bigint":
+		typ = shared.TypeNullableBigInteger
+	case "real":
+		typ = shared.TypeNullableReal
+		// TODO - use multi-phrase keyword
+	case "double":
+		if !p.advanceIf(isIdent("precision")) {
+			return shared.Type{}, fmt.Errorf("unknown type %q", "double")
+		}
+		typ = shared.TypeNullableDoublePrecision
+	case "numeric":
+		typ = shared.TypeNullableNumeric
+	case "boolean":
+		typ = shared.TypeNullableBool
+		// TODO - use multi-phrase keyword(s)
+	case "timestamp":
+		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
+			return shared.Type{}, fmt.Errorf("unknown type %q", "timestamp")
+		}
+		typ = shared.TypeNullableTimestampTz
+	default:
+		return shared.Type{}, fmt.Errorf("unknown type %s", name)
+	}
+
+	return typ, nil
+}
+
+// createSequence := name [ `AS` datatype ]
+//
+// TODO - increment, min/max value, start, cycle
+func (p *parser) parseCreateSequence() (queries.Query, error) {
+	name, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+	if err != nil {
+		return nil, err
+	}
+
+	typ := shared.TypeBigInteger
+	if p.advanceIf(isType(tokens.TokenTypeAs)) {
+		dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+		if err != nil {
+			return nil, err
+		}
+
+		typ, err = p.parseBasicType(dataType.Text)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ddl.NewCreateSequence(name.Text, typ), nil
 }
 
 // createIndex := name `ON` tableName [ `USING` methodName ] `(` expression [ `ASC` | `DESC` ] [, ...] `)` [ `WHERE` predicate ]

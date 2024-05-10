@@ -673,9 +673,9 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 		}
 	}
 
-	var tableFields []shared.TableField
+	var tableFields []table.TableField
 	for _, field := range fields {
-		tableFields = append(tableFields, shared.NewTableField(field.RelationName(), field.Name(), field.Type()))
+		tableFields = append(tableFields, table.NewTableField(field.RelationName(), field.Name(), field.Type()))
 	}
 	table := table.NewTable("", tableFields)
 

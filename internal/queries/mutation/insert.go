@@ -86,7 +86,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	var nonInternalFields []shared.TableField
+	var nonInternalFields []table.TableField
 	for _, field := range n.table.Fields() {
 		if !field.Internal() {
 			nonInternalFields = append(nonInternalFields, field)
@@ -104,7 +104,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		values, err := n.prepareValuesForRow(row, nonInternalFields)
+		values, err := n.prepareValuesForRow(ctx, row, nonInternalFields)
 		if err != nil {
 			return shared.Row{}, err
 		}
@@ -123,7 +123,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.TableField) ([]any, error) {
+func (n *insertNode) prepareValuesForRow(ctx queries.Context, row shared.Row, fields []table.TableField) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {
@@ -132,6 +132,7 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.TableFi
 	}
 
 	if n.columnNames == nil {
+		// TODO - still need to check nullability?
 		return values, nil
 	}
 
@@ -148,10 +149,16 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.TableFi
 	for _, field := range fields {
 		value, ok := valueMap[field.Name()]
 		if !ok {
-			value, ok = field.Default()
-			if !ok && !field.Nullable() {
-				return nil, fmt.Errorf("no value supplied for %s", field.Name())
+			defaultValue, err := field.Default(ctx)
+			if err != nil {
+				return nil, err
 			}
+
+			value = defaultValue
+		}
+
+		if value == nil && !field.Nullable() {
+			return nil, fmt.Errorf("%s is not a nullable column", field.Name())
 		}
 
 		reordered = append(reordered, value)

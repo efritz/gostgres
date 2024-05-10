@@ -1,9 +1,5 @@
 package table
 
-import (
-	"github.com/efritz/gostgres/internal/shared"
-)
-
 type Tablespace struct {
 	tables map[string]*Table
 }
@@ -19,12 +15,12 @@ func (t *Tablespace) GetTable(name string) (*Table, bool) {
 	return table, ok
 }
 
-func (t *Tablespace) CreateTable(name string, fields []shared.TableField) error {
+func (t *Tablespace) CreateTable(name string, fields []TableField) error {
 	_, err := t.CreateAndGetTable(name, fields)
 	return err
 }
 
-func (t *Tablespace) CreateAndGetTable(name string, fields []shared.TableField) (*Table, error) {
+func (t *Tablespace) CreateAndGetTable(name string, fields []TableField) (*Table, error) {
 	table := NewTable(name, fields)
 	t.tables[name] = table
 	return table, nil

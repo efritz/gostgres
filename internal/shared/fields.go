@@ -49,58 +49,6 @@ func (f Field) WithType(typ Type) Field {
 	return newField(f.relationName, f.name, typ, f.internal)
 }
 
-type TableField struct {
-	Field
-	nullable     bool
-	defaultValue func() any
-}
-
-func NewTableField(relationName, name string, typ Type) TableField {
-	return newTableField(relationName, name, typ, false, true, nil)
-}
-
-func NewInternalTableField(relationName, name string, typ Type) TableField {
-	return newTableField(relationName, name, typ, true, true, nil)
-}
-
-func newTableField(relationName, name string, typ Type, internal, nullable bool, defaultValue func() any) TableField {
-	return TableField{
-		Field:        newField(relationName, name, typ, internal),
-		nullable:     nullable,
-		defaultValue: defaultValue,
-	}
-}
-
-func (f TableField) Nullable() bool {
-	return f.nullable
-}
-
-func (f TableField) Default() (any, bool) {
-	if f.defaultValue == nil {
-		return nil, false
-	}
-
-	return f.defaultValue(), true
-}
-
-func (f TableField) WithRelationName(relationName string) TableField {
-	return newTableField(relationName, f.name, f.typ, f.internal, f.nullable, f.defaultValue)
-}
-
-func (f TableField) WithType(typ Type) TableField {
-	return newTableField(f.relationName, f.name, typ, f.internal, f.nullable, f.defaultValue)
-}
-
-// TODO - make actual constraint?
-func (f TableField) WithNonNullable() TableField {
-	return newTableField(f.relationName, f.name, f.typ, f.internal, false, f.defaultValue)
-}
-
-// TODO - stash expression
-func (f TableField) WithDefault(defaultValue func() any) TableField {
-	return newTableField(f.relationName, f.name, f.typ, f.internal, f.nullable, defaultValue)
-}
-
 func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 	unqualifiedIndexes := make([]int, 0, len(haystack))
 	for index, field := range haystack {

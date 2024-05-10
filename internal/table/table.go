@@ -10,7 +10,7 @@ import (
 
 type Table struct {
 	name        string
-	fields      []shared.TableField
+	fields      []TableField
 	rows        map[int64]shared.Row
 	primaryKey  Index
 	indexes     []Index
@@ -35,9 +35,9 @@ type ConstraintContext interface {
 	expressions.ExpressionContext
 }
 
-func NewTable(name string, fields []shared.TableField) *Table {
-	tableFields := []shared.TableField{
-		shared.NewInternalTableField(name, shared.TIDName, shared.TypeBigInteger),
+func NewTable(name string, fields []TableField) *Table {
+	tableFields := []TableField{
+		NewInternalTableField(name, shared.TIDName, shared.TypeBigInteger),
 	}
 	for _, field := range fields {
 		tableFields = append(tableFields, field.WithRelationName(name))
@@ -62,7 +62,7 @@ func (t *Table) Indexes() []Index {
 	return t.indexes
 }
 
-func (t *Table) Fields() []shared.TableField {
+func (t *Table) Fields() []TableField {
 	return slices.Clone(t.fields)
 }
 

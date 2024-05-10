@@ -3,18 +3,18 @@ package ddl
 import (
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type createTable struct {
 	name   string
-	fields []shared.TableField
+	fields []table.TableField
 }
 
 var _ queries.Query = &createTable{}
 var _ DDLQuery = &createTable{}
 
-func NewCreateTable(name string, fields []shared.TableField) *createTable {
+func NewCreateTable(name string, fields []table.TableField) *createTable {
 	return &createTable{
 		name:   name,
 		fields: fields,

@@ -9,6 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 // create := `TABLE` createTable
@@ -69,7 +70,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 		}
 	}
 
-	var fields []shared.TableField
+	var fields []table.TableField
 	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	for _, column := range columns {
@@ -82,7 +83,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 }
 
 type columnDescription struct {
-	field       shared.TableField
+	field       table.TableField
 	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
@@ -107,21 +108,12 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 
-	field := shared.NewTableField("", name.Text, shared.TypeAny)
+	field := table.NewTableField("", name.Text, shared.TypeAny)
 
 	makeSequence := func() {
 		sequenceName := fmt.Sprintf("%s_%s_seq", tableName, name.Text)
 		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, field.Type()))
-
-		field = field.WithDefault(func() any {
-			expression := expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
-
-			value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
-			if err != nil {
-				panic(err.Error())
-			}
-			return value
-		})
+		field = field.WithDefault(expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)}))
 	}
 
 	switch strings.ToLower(dataType.Text) {
@@ -219,13 +211,7 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 				return columnDescription{}, err
 			}
 
-			field = field.WithDefault(func() any {
-				value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
-				if err != nil {
-					panic(err.Error())
-				}
-				return value
-			})
+			field = field.WithDefault(expression)
 			continue
 		}
 

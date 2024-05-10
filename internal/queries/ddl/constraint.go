@@ -9,7 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/table"
 )
 
 type createPrimaryKeyConstraint struct {
@@ -39,15 +39,15 @@ func (q *createPrimaryKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 }
 
 func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
-	table, ok := ctx.Tables.GetTable(q.tableName)
+	t, ok := ctx.Tables.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
-	fields := table.Fields()
+	fields := t.Fields()
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(fields, func(f shared.TableField) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(fields, func(f table.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
@@ -70,7 +70,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 		columnExpressions,
 	)
 
-	return table.SetPrimaryKey(index)
+	return t.SetPrimaryKey(index)
 }
 
 type createCheckConstraint struct {
@@ -140,18 +140,18 @@ func (q *createForeignKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 }
 
 func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
-	table, ok := ctx.Tables.GetTable(q.tableName)
+	t, ok := ctx.Tables.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
 	var exprs []expressions.Expression
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(table.Fields(), func(f shared.TableField) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(t.Fields(), func(f table.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
-		field := table.Fields()[i].Field
+		field := t.Fields()[i].Field
 
 		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
 	}
@@ -183,5 +183,5 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 	}
 
 	constraint := constraints.NewForeignKeyConstraint(q.name, exprs, refIndex)
-	return table.AddConstraint(constraint)
+	return t.AddConstraint(constraint)
 }

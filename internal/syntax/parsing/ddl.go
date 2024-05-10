@@ -291,7 +291,6 @@ func (p *parser) parseCreateSequence() (queries.Query, error) {
 		}
 	}
 
-	// TODO - parse SERIAL/BIGSERIAL types, add as default
 	return ddl.NewCreateSequence(name.Text, typ), nil
 }
 

@@ -97,3 +97,17 @@ func (i *hashIndex) Delete(row shared.Row) error {
 
 	return nil
 }
+
+func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int64, any, error) {
+	tid, err := row.TID()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	value, err := i.expression.ValueFrom(expressions.EmptyContext, row)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return tid, value, nil
+}

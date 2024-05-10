@@ -1,7 +1,6 @@
 package indexes
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -11,44 +10,24 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 	stack := []*btreeNode{}
 	current := i.root
 
-	checkBounds := func(nodeValues []any, bounds [][]scanBound, expected shared.OrderType) (bool, error) {
-		for j, bounds := range bounds[:min(len(bounds), len(nodeValues))] {
-			for _, bound := range bounds {
-				value, err := ctx.Evaluate(bound.expression, shared.Row{})
-				if err != nil {
-					return false, err
-				}
-
-				orderType := shared.CompareValues(nodeValues[j], value)
-				if !(orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)) {
-					return false, nil
-				}
-			}
-		}
-
-		return true, nil
+	lowerBounds, err := resolveScanBounds(ctx, opts.lowerBounds)
+	if err != nil {
+		return nil, err
 	}
 
-	withinLowerBound := func(values []any) (bool, error) { return checkBounds(values, opts.lowerBounds, shared.OrderTypeAfter) }
-	withinUpperBound := func(values []any) (bool, error) { return checkBounds(values, opts.upperBounds, shared.OrderTypeBefore) }
+	upperBounds, err := resolveScanBounds(ctx, opts.upperBounds)
+	if err != nil {
+		return nil, err
+	}
 
 	return tidScannerFunc(func() (int64, error) {
 		for current != nil || len(stack) > 0 {
 			for current != nil {
 				stack = append(stack, current)
 
-				lowerOk, err := withinLowerBound(current.values)
-				if err != nil {
-					return 0, err
-				}
-				upperOk, err := withinUpperBound(current.values)
-				if err != nil {
-					return 0, err
-				}
-
-				if opts.scanDirection == ScanDirectionForward && lowerOk {
+				if opts.scanDirection == ScanDirectionForward && checkBounds(current.values, lowerBounds, shared.OrderTypeAfter) {
 					current = current.left
-				} else if opts.scanDirection == ScanDirectionBackward && upperOk {
+				} else if opts.scanDirection == ScanDirectionBackward && checkBounds(current.values, upperBounds, shared.OrderTypeBefore) {
 					current = current.right
 				} else {
 					current = nil
@@ -63,14 +42,8 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 			node := stack[idx]
 			stack = stack[:idx]
 
-			upperOk, err := withinUpperBound(node.values)
-			if err != nil {
-				return 0, err
-			}
-			lowerOk, err := withinLowerBound(node.values)
-			if err != nil {
-				return 0, err
-			}
+			lowerOk := checkBounds(node.values, lowerBounds, shared.OrderTypeAfter)
+			upperOk := checkBounds(node.values, upperBounds, shared.OrderTypeBefore)
 
 			if opts.scanDirection == ScanDirectionForward && upperOk {
 				current = node.right
@@ -89,21 +62,42 @@ func (i *btreeIndex) Scanner(ctx queries.Context, opts BtreeIndexScanOptions) (t
 	}), nil
 }
 
-func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, error) {
-	tid, err := row.TID()
-	if err != nil {
-		return 0, nil, err
-	}
+type resolvedScanBound struct {
+	value     any
+	inclusive bool
+}
 
-	values := []any{}
-	for _, expression := range i.expressions {
-		value, err := expression.Expression.ValueFrom(expressions.EmptyContext, row)
-		if err != nil {
-			return 0, nil, err
+func resolveScanBounds(ctx queries.Context, scanBounds [][]scanBound) ([][]resolvedScanBound, error) {
+	var resolvedScanBounds [][]resolvedScanBound
+	for _, bounds := range scanBounds {
+		resolvedBounds := []resolvedScanBound{}
+		for _, bound := range bounds {
+			value, err := ctx.Evaluate(bound.expression, shared.Row{})
+			if err != nil {
+				return nil, err
+			}
+
+			resolvedBounds = append(resolvedBounds, resolvedScanBound{
+				value:     value,
+				inclusive: bound.inclusive,
+			})
 		}
 
-		values = append(values, value)
+		resolvedScanBounds = append(resolvedScanBounds, resolvedBounds)
 	}
 
-	return tid, values, nil
+	return resolvedScanBounds, nil
+}
+
+func checkBounds(nodeValues []any, bounds [][]resolvedScanBound, expected shared.OrderType) bool {
+	for j, bounds := range bounds[:min(len(bounds), len(nodeValues))] {
+		for _, bound := range bounds {
+			orderType := shared.CompareValues(nodeValues[j], bound.value)
+			if !(orderType == expected || (orderType == shared.OrderTypeEqual && bound.inclusive)) {
+				return false
+			}
+		}
+	}
+
+	return true
 }

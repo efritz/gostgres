@@ -277,3 +277,22 @@ func (n *btreeNode) delete(values []any, tid int64) *btreeNode {
 
 	return n
 }
+
+func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, error) {
+	tid, err := row.TID()
+	if err != nil {
+		return 0, nil, err
+	}
+
+	values := []any{}
+	for _, expression := range i.expressions {
+		value, err := expression.Expression.ValueFrom(expressions.EmptyContext, row)
+		if err != nil {
+			return 0, nil, err
+		}
+
+		values = append(values, value)
+	}
+
+	return tid, values, nil
+}

@@ -36,7 +36,6 @@
 ## Tech debt
 
 - Rewrite non-null types into constraints
-- Move default out of fields and into table column definition
 - Non-hack planning for merge joins
 - Implement Mark+Restore on indexes directly
 - Break `Node` iface into optional components

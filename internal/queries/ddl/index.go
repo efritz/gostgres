@@ -99,11 +99,13 @@ func (q *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) 
 	if q.columnExpressions[0].Reverse {
 		return nil, fmt.Errorf("hash index do not support ordering")
 	}
+	if q.unique {
+		return nil, fmt.Errorf("hash index do not support uniqueness")
+	}
 
 	var index indexes.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
 		q.name,
 		q.tableName,
-		q.unique,
 		setRelationName(q.columnExpressions[0].Expression, q.tableName),
 	)
 

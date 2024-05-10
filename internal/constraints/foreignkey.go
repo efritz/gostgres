@@ -39,6 +39,11 @@ func (c *foreignKeyConstraint) Check(ctx table.ConstraintContext, row shared.Row
 			return err
 		}
 
+		if val == nil {
+			// TODO: What to do with multiple values where one is null?
+			return nil
+		}
+
 		values = append(values, val)
 	}
 

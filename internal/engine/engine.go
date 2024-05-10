@@ -37,7 +37,7 @@ func (e *Engine) Query(input string) (shared.Rows, error) {
 	query.Execute(queries.NewContext(e.tables, e.sequences, e.functions), collector)
 	rows, err := collector.Rows()
 	if err != nil {
-		return shared.Rows{}, fmt.Errorf("failed to execute query: %s", err)
+		return shared.Rows{}, fmt.Errorf("failed to execute query %q: %s", input, err)
 	}
 
 	return rows, nil

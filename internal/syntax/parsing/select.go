@@ -630,62 +630,26 @@ func (p *parser) parseValues() (queries.Node, error) {
 
 // valuesList := ( parenthesizedExpressionList [, ...] )
 func (p *parser) parseValuesList() (queries.Node, error) {
-	var allRows [][]any
+	var allRowExpressions [][]expressions.Expression
 	for {
-		parenthesizedExpressions, err := p.parseParenthesizedExpressionList()
+		rowExpressions, err := p.parseParenthesizedExpressionList()
 		if err != nil {
 			return nil, err
 		}
 
-		values := make([]any, 0, len(parenthesizedExpressions))
-		for _, expression := range parenthesizedExpressions {
-			// TODO - need to do this lazily, store as expressions
-			value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
-			if err != nil {
-				return nil, err
-			}
-
-			values = append(values, value)
-		}
-
-		allRows = append(allRows, values)
+		allRowExpressions = append(allRowExpressions, rowExpressions)
 
 		if !p.advanceIf(isType(tokens.TokenTypeComma)) {
 			break
 		}
 	}
 
-	fields := make([]shared.Field, 0, len(allRows[0]))
-	for i := range allRows[0] {
+	fields := make([]shared.Field, 0, len(allRowExpressions[0]))
+	for i := range allRowExpressions[0] {
 		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeAny))
 	}
 
-	rows, err := shared.NewRows(fields)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, values := range allRows {
-		var err error
-		rows, err = rows.AddValues(values)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var tableFields []table.TableField
-	for _, field := range fields {
-		tableFields = append(tableFields, table.NewTableField(field.RelationName(), field.Name(), field.Type()))
-	}
-	table := table.NewTable("", tableFields)
-
-	for i := 0; i < rows.Size(); i++ {
-		if _, err := table.Insert(rows.Row(i)); err != nil {
-			return nil, err
-		}
-	}
-
-	return access.NewAccess(table), nil
+	return access.NewValues(fields, allRowExpressions), nil
 }
 
 // parenthesizedExpressionList := `(` ( expression [, ... ] ) `)`

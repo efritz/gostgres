@@ -111,9 +111,7 @@ func (t *Table) AddIndex(index Index) error {
 	return nil
 }
 
-func (t *Table) AddConstraint(constraint Constraint) error {
-	ctx := expressions.EmptyContext // TODO
-
+func (t *Table) AddConstraint(ctx expressions.ExpressionContext, constraint Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(ctx, row); err != nil {
 			return err
@@ -126,7 +124,7 @@ func (t *Table) AddConstraint(constraint Constraint) error {
 
 var tid = int64(0)
 
-func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
+func (t *Table) Insert(ctx expressions.ExpressionContext, row shared.Row) (_ shared.Row, err error) {
 	tid++
 	id := tid
 
@@ -139,8 +137,6 @@ func (t *Table) Insert(row shared.Row) (_ shared.Row, err error) {
 	if err != nil {
 		return shared.Row{}, err
 	}
-
-	ctx := expressions.EmptyContext // TODO
 
 	for _, constraint := range t.constraints {
 		if err := constraint.Check(ctx, newRow); err != nil {

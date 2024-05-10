@@ -114,7 +114,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 			return shared.Row{}, err
 		}
 
-		insertedRow, err = n.table.Insert(insertedRow)
+		insertedRow, err = n.table.Insert(ctx, insertedRow)
 		if err != nil {
 			return shared.Row{}, err
 		}

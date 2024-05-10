@@ -106,7 +106,7 @@ func (q *createCheckConstraint) ExecuteDDL(ctx queries.Context) error {
 	}
 
 	constraint := constraints.NewCheckConstraint(q.name, q.expression)
-	return table.AddConstraint(constraint)
+	return table.AddConstraint(ctx, constraint)
 }
 
 type createForeignKeyConstraint struct {
@@ -183,5 +183,5 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 	}
 
 	constraint := constraints.NewForeignKeyConstraint(q.name, exprs, refIndex)
-	return t.AddConstraint(constraint)
+	return t.AddConstraint(ctx, constraint)
 }

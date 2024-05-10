@@ -60,7 +60,7 @@ func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expressio
 			return nil, err
 		}
 
-		return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeNullableAny)), nil
+		return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken.Text, shared.TypeAny)), nil
 	}
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
@@ -87,7 +87,7 @@ func (p *parser) parseNamedExpression(token tokens.Token) (expressions.Expressio
 		return expressions.NewFunction(token.Text, args), nil
 	}
 
-	return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeNullableAny)), nil
+	return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeAny)), nil
 }
 
 // numericLiteralExpression := number

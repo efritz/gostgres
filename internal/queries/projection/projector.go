@@ -71,7 +71,7 @@ func (p *Projector) ProjectRow(ctx queries.Context, row shared.Row) (shared.Row,
 
 func (p *Projector) projectExpression(expression expressions.Expression) expressions.Expression {
 	for _, alias := range p.aliases {
-		expression = Alias(expression, shared.NewField("", alias.alias, shared.TypeNullableAny), alias.expression)
+		expression = Alias(expression, shared.NewField("", alias.alias, shared.TypeAny), alias.expression)
 	}
 
 	return expression
@@ -105,7 +105,7 @@ func expandProjection(fields []shared.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []aliasProjection) []shared.Field {
 	fields := make([]shared.Field, 0, len(aliases))
 	for _, field := range aliases {
-		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeNullableAny))
+		fields = append(fields, shared.NewField(relationName, field.alias, shared.TypeAny))
 	}
 
 	return fields

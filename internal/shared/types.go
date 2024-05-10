@@ -50,52 +50,33 @@ func (k TypeKind) String() string {
 }
 
 type Type struct {
-	Kind     TypeKind
-	Nullable bool
+	Kind TypeKind // TODO - unwrap
 }
 
 var (
-	TypeText                    = Type{Kind: TypeKindText, Nullable: false}
-	TypeNullableText            = Type{Kind: TypeKindText, Nullable: true}
-	TypeSmallInteger            = Type{Kind: TypeKindSmallInteger, Nullable: false}
-	TypeNullableSmallInteger    = Type{Kind: TypeKindSmallInteger, Nullable: true}
-	TypeInteger                 = Type{Kind: TypeKindInteger, Nullable: false}
-	TypeNullableInteger         = Type{Kind: TypeKindInteger, Nullable: true}
-	TypeBigInteger              = Type{Kind: TypeKindBigInteger, Nullable: false}
-	TypeNullableBigInteger      = Type{Kind: TypeKindBigInteger, Nullable: true}
-	TypeReal                    = Type{Kind: TypeKindReal, Nullable: false}
-	TypeNullableReal            = Type{Kind: TypeKindReal, Nullable: true}
-	TypeDoublePrecision         = Type{Kind: TypeKindDoublePrecision, Nullable: false}
-	TypeNullableDoublePrecision = Type{Kind: TypeKindDoublePrecision, Nullable: true}
-	TypeNumeric                 = Type{Kind: TypeKindNumeric, Nullable: false}
-	TypeNullableNumeric         = Type{Kind: TypeKindNumeric, Nullable: true}
-	TypeBool                    = Type{Kind: TypeKindBool, Nullable: false}
-	TypeNullableBool            = Type{Kind: TypeKindBool, Nullable: true}
-	TypeTimestampTz             = Type{Kind: TypeKindTimestampTz, Nullable: false}
-	TypeNullableTimestampTz     = Type{Kind: TypeKindTimestampTz, Nullable: true}
-	TypeAny                     = Type{Kind: TypeKindAny, Nullable: false}
-	TypeNullableAny             = Type{Kind: TypeKindAny, Nullable: true}
+	TypeText            = Type{Kind: TypeKindText}
+	TypeSmallInteger    = Type{Kind: TypeKindSmallInteger}
+	TypeInteger         = Type{Kind: TypeKindInteger}
+	TypeBigInteger      = Type{Kind: TypeKindBigInteger}
+	TypeReal            = Type{Kind: TypeKindReal}
+	TypeDoublePrecision = Type{Kind: TypeKindDoublePrecision}
+	TypeNumeric         = Type{Kind: TypeKindNumeric}
+	TypeBool            = Type{Kind: TypeKindBool}
+	TypeTimestampTz     = Type{Kind: TypeKindTimestampTz}
+	TypeAny             = Type{Kind: TypeKindAny}
 )
 
 func (typ Type) String() string {
-	if typ.Nullable {
-		return fmt.Sprintf("%s?", typ.Kind)
-	}
-
 	return typ.Kind.String()
 }
 
 func (typ Type) Equals(other Type) bool {
-	return typ.Kind == other.Kind && typ.Nullable == other.Nullable
-}
-
-func (typ Type) NonNullable() Type {
-	return Type{Kind: typ.Kind, Nullable: false}
+	return typ.Kind == other.Kind
 }
 
 func (typ Type) Refine(value any) (Type, any, bool) {
 	if value == nil {
-		return typ, nil, typ.Nullable
+		return typ, nil, true
 	}
 
 	switch v := value.(type) {

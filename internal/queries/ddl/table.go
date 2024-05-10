@@ -8,13 +8,13 @@ import (
 
 type createTable struct {
 	name   string
-	fields []shared.Field
+	fields []shared.TableField
 }
 
 var _ queries.Query = &createTable{}
 var _ DDLQuery = &createTable{}
 
-func NewCreateTable(name string, fields []shared.Field) *createTable {
+func NewCreateTable(name string, fields []shared.TableField) *createTable {
 	return &createTable{
 		name:   name,
 		fields: fields,

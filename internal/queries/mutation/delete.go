@@ -24,13 +24,18 @@ type deleteNode struct {
 var _ queries.Node = &deleteNode{}
 
 func NewDelete(node queries.Node, table *table.Table, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+	var fields []shared.Field
+	for _, field := range table.Fields() {
+		fields = append(fields, field.Field)
+	}
+
 	if alias != "" {
 		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(table.Name(), table.Fields(), alias)
+			expressions[i] = pe.Dealias(table.Name(), fields, alias)
 		}
 	}
 
-	projector, err := projection.NewProjector(node.Name(), table.Fields(), expressions)
+	projector, err := projection.NewProjector(node.Name(), fields, expressions)
 	if err != nil {
 		return nil, err
 	}

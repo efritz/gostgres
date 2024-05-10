@@ -47,18 +47,18 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 	fields := table.Fields()
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(fields, func(f shared.Field) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(fields, func(f shared.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
 		field := fields[i]
 
-		if field.Type().Nullable {
+		if field.Nullable() {
 			return fmt.Errorf("primary key fields must be nullable")
 		}
 
 		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
-			Expression: setRelationName(expressions.NewNamed(field), q.tableName),
+			Expression: setRelationName(expressions.NewNamed(field.Field), q.tableName),
 			Reverse:    false,
 		})
 	}
@@ -147,11 +147,11 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 
 	var exprs []expressions.Expression
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(table.Fields(), func(f shared.Field) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(table.Fields(), func(f shared.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
-		field := table.Fields()[i]
+		field := table.Fields()[i].Field
 
 		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
 	}

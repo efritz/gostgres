@@ -24,13 +24,18 @@ type insertNode struct {
 var _ queries.Node = &insertNode{}
 
 func NewInsert(node queries.Node, table *table.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+	var fields []shared.Field
+	for _, field := range table.Fields() {
+		fields = append(fields, field.Field)
+	}
+
 	if alias != "" {
 		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(name, table.Fields(), alias)
+			expressions[i] = pe.Dealias(name, fields, alias)
 		}
 	}
 
-	projector, err := projection.NewProjector(node.Name(), table.Fields(), expressions)
+	projector, err := projection.NewProjector(node.Name(), fields, expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -81,20 +86,25 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
+	var nonInternalFields []shared.TableField
+	for _, field := range n.table.Fields() {
+		if !field.Internal() {
+			nonInternalFields = append(nonInternalFields, field)
+		}
+	}
+
+	var fields []shared.Field
+	for _, field := range nonInternalFields {
+		fields = append(fields, field.Field)
+	}
+
 	return scan.ScannerFunc(func() (shared.Row, error) {
 		row, err := scanner.Scan()
 		if err != nil {
 			return shared.Row{}, err
 		}
 
-		fields := make([]shared.Field, 0, len(n.table.Fields()))
-		for _, field := range n.table.Fields() {
-			if !field.Internal() {
-				fields = append(fields, field)
-			}
-		}
-
-		values, err := n.prepareValuesForRow(row, fields)
+		values, err := n.prepareValuesForRow(row, nonInternalFields)
 		if err != nil {
 			return shared.Row{}, err
 		}
@@ -113,7 +123,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) ([]any, error) {
+func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.TableField) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {
@@ -139,7 +149,7 @@ func (n *insertNode) prepareValuesForRow(row shared.Row, fields []shared.Field) 
 		value, ok := valueMap[field.Name()]
 		if !ok {
 			value, ok = field.Default()
-			if !ok && !field.Type().Nullable {
+			if !ok && !field.Nullable() {
 				return nil, fmt.Errorf("no value supplied for %s", field.Name())
 			}
 		}

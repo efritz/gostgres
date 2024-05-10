@@ -3,7 +3,6 @@ package access
 import (
 	"fmt"
 	"io"
-	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
@@ -34,9 +33,11 @@ func (n *accessNode) Name() string {
 }
 
 func (n *accessNode) Fields() []shared.Field {
-	fields := slices.Clone(n.table.Fields())
-	for i := range fields {
-		fields[i] = fields[i].WithRelationName(n.table.Name())
+	var fields []shared.Field
+	for _, field := range n.table.Fields() {
+		// TODO - should never not be the case?
+		field := field.WithRelationName(n.table.Name())
+		fields = append(fields, field.Field)
 	}
 
 	return fields

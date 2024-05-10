@@ -69,7 +69,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 		}
 	}
 
-	var fields []shared.Field
+	var fields []shared.TableField
 	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	for _, column := range columns {
@@ -82,7 +82,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 }
 
 type columnDescription struct {
-	field       shared.Field
+	field       shared.TableField
 	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
@@ -104,43 +104,57 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 		return columnDescription{}, err
 	}
 
-	var typ shared.Type
 	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
-	var defaultExpression expressions.Expression
+
+	field := shared.NewTableField("", name.Text, shared.TypeAny)
 
 	makeSequence := func() {
 		sequenceName := fmt.Sprintf("%s_%s_seq", tableName, name.Text)
-		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, typ))
-		defaultExpression = expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
+		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, field.Type()))
+
+		field.WithDefault(func() any {
+			expression := expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
+
+			value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
+			if err != nil {
+				panic(err.Error())
+			}
+			return value
+		})
 	}
 
 	switch strings.ToLower(dataType.Text) {
 	case "smallserial":
-		typ = shared.TypeSmallInteger
+		field = field.WithType(shared.TypeSmallInteger)
+		field = field.WithNonNullable()
 		makeSequence()
 	case "serial":
-		typ = shared.TypeInteger
+		field = field.WithType(shared.TypeInteger)
+		field = field.WithNonNullable()
 		makeSequence()
 	case "bigserial":
-		typ = shared.TypeBigInteger
+		field = field.WithType(shared.TypeBigInteger)
+		field = field.WithNonNullable()
 		makeSequence()
 
 	default:
-		typ, err = p.parseBasicType(dataType.Text)
+		typ, err := p.parseBasicType(dataType.Text)
 		if err != nil {
 			return columnDescription{}, err
 		}
+
+		field = field.WithType(typ)
 	}
 
 	for {
 		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
-			typ = typ.NonNullable()
+			field = field.WithNonNullable()
 			continue
 		}
 
 		if p.advanceIf(isType(tokens.TokenTypePrimaryKey)) {
-			typ = typ.NonNullable()
+			field = field.WithNonNullable()
 			constraints = append(constraints, ddl.NewCreatePrimaryKeyConstraint(
 				fmt.Sprintf("%s_pkey", tableName),
 				tableName,
@@ -205,24 +219,17 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 				return columnDescription{}, err
 			}
 
-			defaultExpression = expression
+			field = field.WithDefault(func() any {
+				value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})
+				if err != nil {
+					panic(err.Error())
+				}
+				return value
+			})
 			continue
 		}
 
 		break
-	}
-
-	field := shared.NewField("", name.Text, typ)
-
-	if defaultExpression != nil {
-		field = field.WithDefault(func() any {
-			// TODO - need to do this lazily, store as expressions
-			value, err := defaultExpression.ValueFrom(expressions.EmptyContext, shared.Row{})
-			if err != nil {
-				panic(err.Error()) // TODO
-			}
-			return value
-		})
 	}
 
 	return columnDescription{
@@ -233,35 +240,34 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 }
 
 func (p *parser) parseBasicType(name string) (shared.Type, error) {
-
 	var typ shared.Type
 	switch strings.ToLower(name) {
 	case "text":
-		typ = shared.TypeNullableText
+		typ = shared.TypeText
 	case "smallint":
-		typ = shared.TypeNullableSmallInteger
+		typ = shared.TypeSmallInteger
 	case "integer":
-		typ = shared.TypeNullableInteger
+		typ = shared.TypeInteger
 	case "bigint":
-		typ = shared.TypeNullableBigInteger
+		typ = shared.TypeBigInteger
 	case "real":
-		typ = shared.TypeNullableReal
+		typ = shared.TypeReal
 		// TODO - use multi-phrase keyword
 	case "double":
 		if !p.advanceIf(isIdent("precision")) {
 			return shared.Type{}, fmt.Errorf("unknown type %q", "double")
 		}
-		typ = shared.TypeNullableDoublePrecision
+		typ = shared.TypeDoublePrecision
 	case "numeric":
-		typ = shared.TypeNullableNumeric
+		typ = shared.TypeNumeric
 	case "boolean":
-		typ = shared.TypeNullableBool
+		typ = shared.TypeBool
 		// TODO - use multi-phrase keyword(s)
 	case "timestamp":
 		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
 			return shared.Type{}, fmt.Errorf("unknown type %q", "timestamp")
 		}
-		typ = shared.TypeNullableTimestampTz
+		typ = shared.TypeTimestampTz
 	default:
 		return shared.Type{}, fmt.Errorf("unknown type %s", name)
 	}

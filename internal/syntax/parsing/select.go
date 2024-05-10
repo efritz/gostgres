@@ -657,7 +657,7 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 
 	fields := make([]shared.Field, 0, len(allRows[0]))
 	for i := range allRows[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeNullableAny))
+		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeAny))
 	}
 
 	rows, err := shared.NewRows(fields)
@@ -673,7 +673,11 @@ func (p *parser) parseValuesList() (queries.Node, error) {
 		}
 	}
 
-	table := table.NewTable("", rows.Fields)
+	var tableFields []shared.TableField
+	for _, field := range fields {
+		tableFields = append(tableFields, shared.NewTableField(field.RelationName(), field.Name(), field.Type()))
+	}
+	table := table.NewTable("", tableFields)
 
 	for i := 0; i < rows.Size(); i++ {
 		if _, err := table.Insert(rows.Row(i)); err != nil {

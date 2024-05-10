@@ -70,17 +70,20 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 	}
 
 	var fields []shared.Field
+	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	for _, column := range columns {
 		fields = append(fields, column.field)
+		sequences = append(sequences, column.sequences...)
 		constraints = append(constraints, column.constraints...)
 	}
 
-	return ddl.NewSet(append([]ddl.DDLQuery{ddl.NewCreateTable(name.Text, fields)}, constraints...)), nil
+	return ddl.NewSet(append(append(sequences, ddl.NewCreateTable(name.Text, fields)), constraints...)), nil
 }
 
 type columnDescription struct {
 	field       shared.Field
+	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
 
@@ -96,13 +99,39 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 		return columnDescription{}, err
 	}
 
-	typ, err := p.parseType()
+	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
 	if err != nil {
 		return columnDescription{}, err
 	}
 
+	var typ shared.Type
+	var sequences []ddl.DDLQuery
 	var constraints []ddl.DDLQuery
 	var defaultExpression expressions.Expression
+
+	makeSequence := func() {
+		sequenceName := fmt.Sprintf("%s_%s_seq", tableName, name.Text)
+		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, typ))
+		defaultExpression = expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
+	}
+
+	switch strings.ToLower(dataType.Text) {
+	case "smallserial":
+		typ = shared.TypeSmallInteger
+		makeSequence()
+	case "serial":
+		typ = shared.TypeInteger
+		makeSequence()
+	case "bigserial":
+		typ = shared.TypeBigInteger
+		makeSequence()
+
+	default:
+		typ, err = p.parseBasicType(dataType.Text)
+		if err != nil {
+			return columnDescription{}, err
+		}
+	}
 
 	for {
 		if p.advanceIf(isType(tokens.TokenTypeNotNull)) {
@@ -198,18 +227,15 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 
 	return columnDescription{
 		field:       field,
+		sequences:   sequences,
 		constraints: constraints,
 	}, nil
 }
 
-func (p *parser) parseType() (shared.Type, error) {
-	dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
-	if err != nil {
-		return shared.Type{}, err
-	}
+func (p *parser) parseBasicType(name string) (shared.Type, error) {
 
 	var typ shared.Type
-	switch strings.ToLower(dataType.Text) {
+	switch strings.ToLower(name) {
 	case "text":
 		typ = shared.TypeNullableText
 	case "smallint":
@@ -237,7 +263,7 @@ func (p *parser) parseType() (shared.Type, error) {
 		}
 		typ = shared.TypeNullableTimestampTz
 	default:
-		return shared.Type{}, fmt.Errorf("unknown type %s", dataType.Text)
+		return shared.Type{}, fmt.Errorf("unknown type %s", name)
 	}
 
 	return typ, nil
@@ -254,7 +280,12 @@ func (p *parser) parseCreateSequence() (queries.Query, error) {
 
 	typ := shared.TypeBigInteger
 	if p.advanceIf(isType(tokens.TokenTypeAs)) {
-		typ, err = p.parseType()
+		dataType, err := p.mustAdvance(isType(tokens.TokenTypeIdent))
+		if err != nil {
+			return nil, err
+		}
+
+		typ, err = p.parseBasicType(dataType.Text)
 		if err != nil {
 			return nil, err
 		}

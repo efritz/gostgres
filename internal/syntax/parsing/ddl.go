@@ -113,7 +113,7 @@ func (p *parser) parseColumn(tableName string) (columnDescription, error) {
 		sequenceName := fmt.Sprintf("%s_%s_seq", tableName, name.Text)
 		sequences = append(sequences, ddl.NewCreateSequence(sequenceName, field.Type()))
 
-		field.WithDefault(func() any {
+		field = field.WithDefault(func() any {
 			expression := expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
 
 			value, err := expression.ValueFrom(expressions.EmptyContext, shared.Row{})

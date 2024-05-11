@@ -67,7 +67,7 @@ func (n *joinNode) Optimize() {
 }
 
 func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
-	for _, field := range expr.Fields() {
+	for _, field := range expressions.Fields(expr) {
 		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false
 		}

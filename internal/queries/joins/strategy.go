@@ -63,7 +63,7 @@ func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 		return nil, false
 	}
 
-	for _, expr := range n.filter.Conjunctions() {
+	for _, expr := range expressions.Conjunctions(n.filter) {
 		if comparisonType, left, right := expressions.IsComparison(expr); comparisonType == expressions.ComparisonTypeEquals {
 			if bindsAllFields(n.left, left) && bindsAllFields(n.right, right) {
 				pairs = append(pairs, equalityPair{left: left, right: right})

@@ -30,20 +30,8 @@ func (e constantExpression) String() string {
 	return fmt.Sprintf("%v", e.value)
 }
 
-func (e constantExpression) Fields() []shared.Field {
-	return nil
-}
-
-func (e constantExpression) Named() (shared.Field, bool) {
-	return shared.Field{}, false
-}
-
 func (e constantExpression) Fold() Expression {
 	return e
-}
-
-func (e constantExpression) Conjunctions() []Expression {
-	return []Expression{e}
 }
 
 func (e constantExpression) Map(f func(Expression) Expression) Expression {

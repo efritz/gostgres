@@ -48,7 +48,7 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() expressions.Expression {
 		return filterExpression
 	}
 
-	return expressions.UnionFilters(append(filterExpression.Conjunctions(), condition.Conjunctions()...)...)
+	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpression {

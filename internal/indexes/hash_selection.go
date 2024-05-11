@@ -36,7 +36,7 @@ func CanSelectHashIndex(
 	}
 	hashExpression := hashExpressioner.HashExpression()
 
-	for _, conjunction := range filterExpression.Conjunctions() {
+	for _, conjunction := range expressions.Conjunctions(filterExpression) {
 		if comparisonType, left, right := expressions.IsComparison(conjunction); comparisonType == expressions.ComparisonTypeEquals {
 			if left.Equal(hashExpression) {
 				return hashIndex, HashIndexScanOptions{expression: right}, true

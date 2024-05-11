@@ -7,9 +7,9 @@ import (
 )
 
 func LowerFilter(filter expressions.Expression, nodes ...queries.Node) {
-	for _, expression := range filter.Conjunctions() {
+	for _, expression := range expressions.Conjunctions(filter) {
 		missing := make([]bool, len(nodes))
-		for _, field := range expression.Fields() {
+		for _, field := range expressions.Fields(expression) {
 			for i, node := range nodes {
 				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
 					missing[i] = true

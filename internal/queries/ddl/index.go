@@ -118,8 +118,8 @@ func (q *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) 
 
 func setRelationName(e expressions.Expression, name string) expressions.Expression {
 	return e.Map(func(e expressions.Expression) expressions.Expression {
-		if f, ok := e.Named(); ok {
-			return expressions.NewNamed(f.WithRelationName(name))
+		if named, ok := e.(expressions.NamedExpression); ok {
+			return expressions.NewNamed(named.Field().WithRelationName(name))
 		}
 
 		return e

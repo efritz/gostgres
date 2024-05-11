@@ -6,19 +6,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func NewNot(expression Expression) Expression {
-	return newUnaryExpression(expression, "not", func(context ExpressionContext, expression Expression, row shared.Row) (any, error) {
-		val, err := shared.ValueAs[bool](expression.ValueFrom(context, row))
-		if err != nil {
-			return nil, err
-		}
-		if val == nil {
-			return nil, nil
-		}
-		return !*val, nil
-	})
-}
-
 func NewAnd(left, right Expression) Expression {
 	return newConditionalExpression(left, right, "and", func(a, b *bool) (any, error) {
 		if (a != nil && !*a) || (b != nil && !*b) {
@@ -85,11 +72,11 @@ func (e conditionalExpression) String() string {
 func (e conditionalExpression) Equal(other Expression) bool {
 	if o, ok := other.(conditionalExpression); ok {
 		if e.conjunctions && o.conjunctions {
-			return compareExpressionBags(e.Conjunctions(), o.Conjunctions())
+			return compareExpressionBags(Conjunctions(e), Conjunctions(o))
 		}
 
 		if !e.conjunctions && !o.conjunctions {
-			return compareExpressionBags(e.disjunctions(), o.disjunctions())
+			return compareExpressionBags(Disjunctions(e), Disjunctions(o))
 		}
 	}
 
@@ -116,12 +103,8 @@ outer:
 	return len(bs) == 0
 }
 
-func (e conditionalExpression) Fields() []shared.Field {
-	return append(e.left.Fields(), e.right.Fields()...)
-}
-
-func (e conditionalExpression) Named() (shared.Field, bool) {
-	return shared.Field{}, false
+func (e conditionalExpression) Children() []Expression {
+	return []Expression{e.left, e.right}
 }
 
 func (e conditionalExpression) Fold() Expression {
@@ -130,34 +113,6 @@ func (e conditionalExpression) Fold() Expression {
 
 func (e conditionalExpression) Map(f func(Expression) Expression) Expression {
 	return f(newConditionalExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
-}
-
-func (e conditionalExpression) Conjunctions() []Expression {
-	if !e.conjunctions {
-		return []Expression{e}
-	}
-
-	return append(e.left.Conjunctions(), e.right.Conjunctions()...)
-}
-
-func (e conditionalExpression) disjunctions() (disjunctions []Expression) {
-	if e.conjunctions {
-		return []Expression{e}
-	}
-
-	if l, ok := e.left.(conditionalExpression); ok {
-		disjunctions = append(disjunctions, l.disjunctions()...)
-	} else {
-		disjunctions = append(disjunctions, e.left)
-	}
-
-	if r, ok := e.right.(conditionalExpression); ok {
-		disjunctions = append(disjunctions, r.disjunctions()...)
-	} else {
-		disjunctions = append(disjunctions, e.right)
-	}
-
-	return disjunctions
 }
 
 func (e conditionalExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {

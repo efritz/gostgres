@@ -43,10 +43,10 @@ func selectAccessStrategy(
 		}
 
 		if filterExpression != nil {
-			oldLen := len(filterExpression.Conjunctions())
+			oldLen := len(expressions.Conjunctions(filterExpression))
 			newLen := 0
 			if remainingFilter := expressions.FilterDifference(filterExpression, index.Filter()); remainingFilter != nil {
-				newLen = len(remainingFilter.Conjunctions())
+				newLen = len(expressions.Conjunctions(remainingFilter))
 			}
 
 			indexCost += (oldLen - newLen) * 10

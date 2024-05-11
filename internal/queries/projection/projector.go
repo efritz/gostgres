@@ -79,8 +79,8 @@ func (p *Projector) projectExpression(expression expressions.Expression) express
 
 func (p *Projector) deprojectExpression(expression expressions.Expression) expressions.Expression {
 	for i, alias := range p.aliases {
-		if field, ok := alias.expression.Named(); ok {
-			expression = Alias(expression, field, expressions.NewNamed(p.projectedFields[i]))
+		if named, ok := alias.expression.(expressions.NamedExpression); ok {
+			expression = Alias(expression, named.Field(), expressions.NewNamed(p.projectedFields[i]))
 		}
 	}
 
@@ -224,8 +224,12 @@ func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasPr
 
 func Alias(e expressions.Expression, field shared.Field, target expressions.Expression) expressions.Expression {
 	return e.Map(func(e expressions.Expression) expressions.Expression {
-		if f, ok := e.Named(); ok && f.Name() == field.Name() && (f.RelationName() == field.RelationName() || field.RelationName() == "") {
-			return target
+		if named, ok := e.(expressions.NamedExpression); ok {
+			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
+				if named.Field().Name() == field.Name() {
+					return target
+				}
+			}
 		}
 
 		return e

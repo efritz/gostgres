@@ -2,6 +2,7 @@ package expressions
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/efritz/gostgres/internal/shared"
@@ -50,17 +51,8 @@ func (e functionExpression) Name() string {
 	return e.name
 }
 
-func (e functionExpression) Fields() []shared.Field {
-	fields := []shared.Field{}
-	for _, arg := range e.args {
-		fields = append(fields, arg.Fields()...)
-	}
-
-	return fields
-}
-
-func (e functionExpression) Named() (shared.Field, bool) {
-	return shared.Field{}, false
+func (e functionExpression) Children() []Expression {
+	return slices.Clone(e.args)
 }
 
 func (e functionExpression) Fold() Expression {
@@ -70,10 +62,6 @@ func (e functionExpression) Fold() Expression {
 	}
 
 	return NewFunction(e.name, args)
-}
-
-func (e functionExpression) Conjunctions() []Expression {
-	return []Expression{e}
 }
 
 func (e functionExpression) Map(f func(Expression) Expression) Expression {

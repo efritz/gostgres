@@ -76,12 +76,12 @@ func (i *btreeIndex) UniqueOn() []shared.Field {
 
 	var fields []shared.Field
 	for _, e := range i.expressions {
-		field, ok := e.Expression.Named()
+		named, ok := e.Expression.(expressions.NamedExpression)
 		if !ok {
 			return nil
 		}
 
-		fields = append(fields, field)
+		fields = append(fields, named.Field())
 	}
 
 	return fields

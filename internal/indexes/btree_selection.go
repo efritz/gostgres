@@ -85,7 +85,7 @@ func extractBounds(filter expressions.Expression, indexedExprs []expressions.Exp
 		return nil, nil
 	}
 
-	conjunctions := filter.Conjunctions()
+	conjunctions := expressions.Conjunctions(filter)
 
 	for _, target := range indexedExprs {
 		var (

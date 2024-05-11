@@ -34,16 +34,8 @@ func (e unaryExpression) Equal(other Expression) bool {
 	return false
 }
 
-func (e unaryExpression) Fields() []shared.Field {
-	return e.expression.Fields()
-}
-
-func (e unaryExpression) Named() (shared.Field, bool) {
-	return shared.Field{}, false
-}
-
-func (e unaryExpression) Conjunctions() []Expression {
-	return []Expression{e}
+func (e unaryExpression) Children() []Expression {
+	return []Expression{e.expression}
 }
 
 func (e unaryExpression) Fold() Expression {

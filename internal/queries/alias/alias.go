@@ -75,7 +75,7 @@ func (n *aliasNode) Filter() expressions.Expression {
 		return nil
 	}
 
-	for _, field := range filter.Fields() {
+	for _, field := range expressions.Fields(filter) {
 		filter = projection.Alias(filter, field, namedFromField(field, n.name))
 	}
 
@@ -89,7 +89,7 @@ func (n *aliasNode) Ordering() expressions.OrderExpression {
 	}
 
 	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
-		for _, field := range expression.Fields() {
+		for _, field := range expressions.Fields(expression) {
 			expression = projection.Alias(expression, field, namedFromField(field, n.name))
 		}
 

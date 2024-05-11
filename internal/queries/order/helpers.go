@@ -13,7 +13,7 @@ func LowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
 		filteredExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
 	exprLoop:
 		for _, expression := range orderExpressions {
-			for _, field := range expression.Expression.Fields() {
+			for _, field := range expressions.Fields(expression.Expression) {
 				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
 					continue exprLoop
 				}

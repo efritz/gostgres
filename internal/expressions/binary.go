@@ -52,12 +52,8 @@ func (e binaryExpression) Equal(other Expression) bool {
 	return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
 }
 
-func (e binaryExpression) Fields() []shared.Field {
-	return append(e.left.Fields(), e.right.Fields()...)
-}
-
-func (e binaryExpression) Named() (shared.Field, bool) {
-	return shared.Field{}, false
+func (e binaryExpression) Children() []Expression {
+	return []Expression{e.left, e.right}
 }
 
 func (e binaryExpression) Fold() Expression {
@@ -66,10 +62,6 @@ func (e binaryExpression) Fold() Expression {
 
 func (e binaryExpression) Map(f func(Expression) Expression) Expression {
 	return f(newBinaryExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom))
-}
-
-func (e binaryExpression) Conjunctions() []Expression {
-	return []Expression{e}
 }
 
 func (e binaryExpression) ValueFrom(context ExpressionContext, row shared.Row) (any, error) {

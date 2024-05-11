@@ -32,20 +32,12 @@ func (e namedExpression) Name() string {
 	return e.field.Name()
 }
 
-func (e namedExpression) Fields() []shared.Field {
-	return []shared.Field{e.field}
-}
-
-func (e namedExpression) Named() (shared.Field, bool) {
-	return e.field, true
+func (e namedExpression) Field() shared.Field {
+	return e.field
 }
 
 func (e namedExpression) Fold() Expression {
 	return e
-}
-
-func (e namedExpression) Conjunctions() []Expression {
-	return []Expression{e}
 }
 
 func (e namedExpression) Map(f func(Expression) Expression) Expression {

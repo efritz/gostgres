@@ -63,8 +63,8 @@ func matchesPartial(index table.Index, filterExpression expressions.Expression) 
 	}
 
 	// TODO - need to do a more tight "subsumes" check
-	for _, v := range indexFilter.Conjunctions() {
-		if diff := expressions.FilterDifference(v, filterExpression); diff != nil && len(diff.Conjunctions()) >= len(filterExpression.Conjunctions()) {
+	for _, v := range expressions.Conjunctions(indexFilter) {
+		if diff := expressions.FilterDifference(v, filterExpression); diff != nil && len(expressions.Conjunctions(diff)) >= len(expressions.Conjunctions(filterExpression)) {
 			return false
 		}
 	}

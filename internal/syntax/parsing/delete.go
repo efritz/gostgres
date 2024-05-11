@@ -12,7 +12,7 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// delete := `FROM` table using where returning
+// deleteTail := `FROM` table deleteUsing where returning
 func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 		node = alias.NewAlias(node, aliasName)
 	}
 
-	usingExpressions, err := p.parseUsing()
+	usingExpressions, err := p.parseDeleteUsing()
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +64,8 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	return mutation.NewDelete(node, table, aliasName, returningExpressions)
 }
 
-// using := `USING` tableExpressions
-func (p *parser) parseUsing() ([]queries.Node, error) {
+// deleteUsing := `USING` tableExpressions
+func (p *parser) parseDeleteUsing() ([]queries.Node, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-// insert := `INTO` table columnNames selectOrValues returning
+// insertTail := `INTO` table [ `(` ident [, ...] `)` ] selectOrValues returning
 func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
@@ -17,12 +17,12 @@ func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	columnNames, err := p.parseColumnNames()
+	columnNames, err := parseParenthesizedCommaSeparatedList(p, true, false, p.parseIdent)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO - support `DEFAULT VALUES`
+	// TODO - support `DEFAULT` expression and `DEFAULT VALUES`
 	node, err := p.parseSelectOrValues()
 	if err != nil {
 		return nil, err

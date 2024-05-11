@@ -99,7 +99,7 @@ func (p *parser) parseColumnType(name string, tableName string, description *col
 			}
 		}
 
-		return shared.Type{}, false
+		return shared.TypeUnknown, false
 	}
 
 	if typ, ok := parseSequenceType(); ok {

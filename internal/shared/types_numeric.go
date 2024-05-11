@@ -9,12 +9,12 @@ import (
 )
 
 func refineNumeric(value any, typ Type) (Type, any, bool) {
-	if typ.Kind == TypeKindAny {
+	if typ == TypeAny {
 		return typ, value, true
 	}
 
 	lIndex := numericTypeIndex(numericTypeKindFromValue(value))
-	rIndex := numericTypeIndex(typ.Kind)
+	rIndex := numericTypeIndex(typ)
 
 	if lIndex >= 0 && rIndex >= 0 {
 		if vx, err := converters[lIndex][rIndex](value); err == nil {
@@ -22,7 +22,7 @@ func refineNumeric(value any, typ Type) (Type, any, bool) {
 		}
 	}
 
-	return Type{}, nil, false
+	return TypeUnknown, nil, false
 }
 
 //
@@ -143,24 +143,24 @@ func convertFloat[T constraints.Float, R constraints.Integer | constraints.Float
 //
 //
 
-func numericTypeIndex(value TypeKind) int {
-	return int(value - TypeKindSmallInteger)
+func numericTypeIndex(value Type) int {
+	return int(value - TypeSmallInteger)
 }
 
-func numericTypeKindFromValue(value any) TypeKind {
+func numericTypeKindFromValue(value any) Type {
 	switch value.(type) {
 	case int16:
-		return TypeKindSmallInteger
+		return TypeSmallInteger
 	case int32:
-		return TypeKindInteger
+		return TypeInteger
 	case int64:
-		return TypeKindBigInteger
+		return TypeBigInteger
 	case float32:
-		return TypeKindReal
+		return TypeReal
 	case float64:
-		return TypeKindDoublePrecision
+		return TypeDoublePrecision
 	case *big.Float:
-		return TypeKindNumeric
+		return TypeNumeric
 	}
 
 	return -1

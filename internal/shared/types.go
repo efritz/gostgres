@@ -6,72 +6,47 @@ import (
 	"time"
 )
 
-type TypeKind int
+type Type int
 
 const (
-	TypeKindInvalid TypeKind = iota
-	TypeKindText
-	TypeKindSmallInteger
-	TypeKindInteger
-	TypeKindBigInteger
-	TypeKindReal
-	TypeKindDoublePrecision
-	TypeKindNumeric
-	TypeKindBool
-	TypeKindTimestampTz
-	TypeKindAny
-)
-
-func (k TypeKind) String() string {
-	switch k {
-	case TypeKindInvalid:
-		return "invalid"
-	case TypeKindText:
-		return "text"
-	case TypeKindSmallInteger:
-		return "smallint"
-	case TypeKindInteger:
-		return "integer"
-	case TypeKindBigInteger:
-		return "bigint"
-	case TypeKindReal:
-		return "real"
-	case TypeKindDoublePrecision:
-		return "double precision"
-	case TypeKindNumeric:
-		return "numeric"
-	case TypeKindBool:
-		return "bool"
-	case TypeKindTimestampTz:
-		return "timestamp with time zone"
-	}
-
-	return "any"
-}
-
-type Type struct {
-	Kind TypeKind // TODO - unwrap
-}
-
-var (
-	TypeText            = Type{Kind: TypeKindText}
-	TypeSmallInteger    = Type{Kind: TypeKindSmallInteger}
-	TypeInteger         = Type{Kind: TypeKindInteger}
-	TypeBigInteger      = Type{Kind: TypeKindBigInteger}
-	TypeReal            = Type{Kind: TypeKindReal}
-	TypeDoublePrecision = Type{Kind: TypeKindDoublePrecision}
-	TypeNumeric         = Type{Kind: TypeKindNumeric}
-	TypeBool            = Type{Kind: TypeKindBool}
-	TypeTimestampTz     = Type{Kind: TypeKindTimestampTz}
-	TypeAny             = Type{Kind: TypeKindAny}
+	TypeUnknown Type = iota
+	TypeText
+	TypeSmallInteger
+	TypeInteger
+	TypeBigInteger
+	TypeReal
+	TypeDoublePrecision
+	TypeNumeric
+	TypeBool
+	TypeTimestampTz
+	TypeAny
 )
 
 func (typ Type) String() string {
-	return typ.Kind.String()
-}
+	switch typ {
+	case TypeText:
+		return "text"
+	case TypeSmallInteger:
+		return "smallint"
+	case TypeInteger:
+		return "integer"
+	case TypeBigInteger:
+		return "bigint"
+	case TypeReal:
+		return "real"
+	case TypeDoublePrecision:
+		return "double precision"
+	case TypeNumeric:
+		return "numeric"
+	case TypeBool:
+		return "bool"
+	case TypeTimestampTz:
+		return "timestamp with time zone"
+	case TypeAny:
+		return "any"
+	}
 
-func (typ Type) Equals(other Type) bool {
-	return typ.Kind == other.Kind
+	return "unknown"
 }
 
 func (typ Type) Refine(value any) (Type, any, bool) {
@@ -85,12 +60,12 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 	case int16, int32, int64, float32, float64, *big.Float:
 		return refineNumeric(v, typ)
 	case bool:
-		return typ, v, typ.Kind == TypeKindAny || typ.Kind == TypeKindBool
+		return typ, v, typ == TypeAny || typ == TypeBool
 	case time.Time:
-		return typ, v, typ.Kind == TypeKindAny || typ.Kind == TypeKindTimestampTz
+		return typ, v, typ == TypeAny || typ == TypeTimestampTz
 	}
 
-	return Type{}, nil, false
+	return TypeUnknown, nil, false
 }
 
 func ValueAs[T any](untypedValue any, err error) (*T, error) {

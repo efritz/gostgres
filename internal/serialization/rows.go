@@ -54,8 +54,14 @@ func SerializeRows(rows shared.Rows) string {
 				b.WriteString(c.values[i])
 			} else {
 				// Left-align all other types
-				b.WriteString(c.values[i])
-				b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
+				for i, line := range strings.Split(c.values[i], "\n") {
+					if i != 0 {
+						b.WriteRune('\n')
+					}
+
+					b.WriteString(line)
+					b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(line)])
+				}
 			}
 		}
 		b.WriteRune('\n')
@@ -86,7 +92,16 @@ func SerializeRowsExpanded(rows shared.Rows) string {
 			b.WriteString(name)
 			b.WriteString(spacesBuffer[:serialized.maxFieldWidth-len(name)])
 			b.WriteString(" | ")
-			b.WriteString(c.values[i])
+
+			for i, line := range strings.Split(c.values[i], "\n") {
+				if i != 0 {
+					b.WriteRune('\n')
+					b.WriteString(spacesBuffer[:serialized.maxFieldWidth])
+					b.WriteString(" | ")
+				}
+
+				b.WriteString(line)
+			}
 			b.WriteRune('\n')
 		}
 	}

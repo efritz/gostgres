@@ -30,32 +30,31 @@ Plan:
                 btree index scan of category via category_pkey
                     index cond: category.category_id = fc.category_id
         on c.category_id = fc.category_id
-
 (1 rows)
 
 Results:
 
-         title        | rating |     name
+        title         | rating |    name
 ----------------------+--------+-------------
-      AIRPORT POLLOCK |      R |      Horror
-           ALONE TRIP |      R |       Music
-  AMELIE HELLFIGHTERS |      R |       Music
-      AMERICAN CIRCUS |      R |      Action
- ANACONDA CONFESSIONS |      R |   Animation
-     ANALYZE HOOSIERS |      R |      Horror
-    ANYTHING SAVANNAH |      R |      Horror
- APOCALYPSE FLAMINGOS |      R |         New
-     ARMY FLINTSTONES |      R | Documentary
-          BADMAN DAWN |      R |      Sci-Fi
-     BANGER PINOCCHIO |      R |       Music
-       BEAR GRACELAND |      R |    Children
-      BEAST HUNCHBACK |      R |    Classics
-       BEVERLY OUTLAW |      R |      Sci-Fi
-        BOOGIE AMELIE |      R |       Music
-        BOULEVARD MOB |      R |         New
-      BROOKLYN DESERT |      R |     Foreign
-  BROTHERHOOD BLANKET |      R | Documentary
-        BUBBLE GROSSE |      R |      Sports
-      CAMPUS REMEMBER |      R |      Action
+ AIRPORT POLLOCK      | R      | Horror
+ ALONE TRIP           | R      | Music
+ AMELIE HELLFIGHTERS  | R      | Music
+ AMERICAN CIRCUS      | R      | Action
+ ANACONDA CONFESSIONS | R      | Animation
+ ANALYZE HOOSIERS     | R      | Horror
+ ANYTHING SAVANNAH    | R      | Horror
+ APOCALYPSE FLAMINGOS | R      | New
+ ARMY FLINTSTONES     | R      | Documentary
+ BADMAN DAWN          | R      | Sci-Fi
+ BANGER PINOCCHIO     | R      | Music
+ BEAR GRACELAND       | R      | Children
+ BEAST HUNCHBACK      | R      | Classics
+ BEVERLY OUTLAW       | R      | Sci-Fi
+ BOOGIE AMELIE        | R      | Music
+ BOULEVARD MOB        | R      | New
+ BROOKLYN DESERT      | R      | Foreign
+ BROTHERHOOD BLANKET  | R      | Documentary
+ BUBBLE GROSSE        | R      | Sports
+ CAMPUS REMEMBER      | R      | Action
 (20 rows)
 `

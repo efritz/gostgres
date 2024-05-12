@@ -49,6 +49,25 @@ func (typ Type) String() string {
 	return "unknown"
 }
 
+func (typ Type) IsNumber() bool {
+	switch typ {
+	case TypeSmallInteger:
+		return true
+	case TypeInteger:
+		return true
+	case TypeBigInteger:
+		return true
+	case TypeReal:
+		return true
+	case TypeDoublePrecision:
+		return true
+	case TypeNumeric:
+		return true
+	}
+
+	return false
+}
+
 func (typ Type) Refine(value any) (Type, any, bool) {
 	if value == nil {
 		return typ, nil, true

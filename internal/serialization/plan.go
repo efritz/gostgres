@@ -2,17 +2,12 @@ package serialization
 
 import (
 	"bytes"
-	"io"
 
 	"github.com/efritz/gostgres/internal/queries"
 )
 
-func SerializePlanString(node queries.Node) string {
+func SerializePlan(node queries.Node) string {
 	var buf bytes.Buffer
-	SerializePlan(&buf, node)
+	node.Serialize(&buf, 0)
 	return buf.String()
-}
-
-func SerializePlan(w io.Writer, node queries.Node) {
-	node.Serialize(w, 0)
 }

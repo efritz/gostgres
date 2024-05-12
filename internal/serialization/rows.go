@@ -1,79 +1,153 @@
 package serialization
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/efritz/gostgres/internal/shared"
 )
 
-func SerializeRowsString(rows shared.Rows) string {
-	var buf bytes.Buffer
-	SerializeRows(&buf, rows)
-	return buf.String()
-}
+func SerializeRows(rows shared.Rows) string {
+	var b strings.Builder
+	serialized := serializeRows(rows)
+	spacesBuffer := strings.Repeat(" ", max(serialized.maxFieldWidth, serialized.maxValueWidth))
+	dashesBuffer := strings.Repeat("-", max(serialized.maxFieldWidth, serialized.maxValueWidth))
 
-func SerializeRows(w io.Writer, rows shared.Rows) {
-	allValues := make([][]string, 0, len(rows.Fields))
-	for _, rowValues := range rows.Values {
-		strValues := make([]string, 0, len(rowValues))
-		for _, value := range rowValues {
-			strValues = append(strValues, fmt.Sprintf("%v", value))
-		}
-
-		allValues = append(allValues, strValues)
-	}
-
-	columnWidths := make([]int, len(rows.Fields))
-	for i, field := range rows.Fields {
-		columnWidths[i] = len(field.Name())
-
-		for _, values := range allValues {
-			columnWidths[i] = max(columnWidths[i], longestLine(values[i]))
-		}
-	}
-
-	fmt.Fprintf(w, " ")
-	for i, field := range rows.Fields {
+	// Write table header
+	b.WriteRune(' ')
+	for i, c := range serialized.columns {
 		if i != 0 {
-			fmt.Fprintf(w, " | ")
+			b.WriteString(" | ")
 		}
 
-		name := field.Name()
-		if len(name) < columnWidths[i] {
-			name += strings.Repeat(" ", (columnWidths[i]-len(name))/2)
-		}
-		fmt.Fprintf(w, fmt.Sprintf("%% %ds", columnWidths[i]), name)
+		// Center column name
+		name := c.field.Name()
+		padding := c.maxWidthWithFieldName - len(name)
+		b.WriteString(spacesBuffer[:padding/2])
+		b.WriteString(name)
+		b.WriteString(spacesBuffer[:padding-padding/2])
 	}
-	fmt.Fprintf(w, "\n")
+	b.WriteRune('\n')
 
-	fmt.Fprintf(w, "-")
-	for i := range rows.Fields {
+	// Write table header separator
+	b.WriteRune('-')
+	for i, c := range serialized.columns {
 		if i != 0 {
-			fmt.Fprintf(w, "-+-")
+			b.WriteString("-+-")
 		}
-		fmt.Fprintf(w, strings.Repeat("-", columnWidths[i]))
+		b.WriteString(dashesBuffer[:c.maxWidthWithFieldName])
 	}
-	fmt.Fprintf(w, "-")
-	fmt.Fprintf(w, "\n")
+	b.WriteRune('-')
+	b.WriteRune('\n')
 
-	for _, values := range allValues {
-		fmt.Fprintf(w, " ")
-
-		for i, value := range values {
-			if i != 0 {
-				fmt.Fprintf(w, " | ")
+	// Write each row
+	for i := range serialized.columns[0].values {
+		b.WriteRune(' ')
+		for j, c := range serialized.columns {
+			if j != 0 {
+				b.WriteString(" | ")
 			}
 
-			fmt.Fprintf(w, fmt.Sprintf("%% %ds", columnWidths[i]), value)
+			if c.field.Type().IsNumber() {
+				// Right-align numeric types
+				b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
+				b.WriteString(c.values[i])
+			} else {
+				// Left-align all other types
+				b.WriteString(c.values[i])
+				b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
+			}
 		}
-
-		fmt.Fprintf(w, "\n")
+		b.WriteRune('\n')
 	}
 
-	fmt.Fprintf(w, "(%d rows)\n", len(allValues))
+	// Write row count trailer
+	b.WriteString(fmt.Sprintf("(%d rows)\n", len(serialized.columns[0].values)))
+	return b.String()
+}
+
+func SerializeRowsExpanded(rows shared.Rows) string {
+	var b strings.Builder
+	serialized := serializeRows(rows)
+	maxLineWidth := serialized.maxFieldWidth + serialized.maxValueWidth + 3
+	spacesBuffer := strings.Repeat(" ", serialized.maxFieldWidth)
+	dashesBuffer := strings.Repeat("-", maxLineWidth-13) // 13 for `-[ RECORD x ]-`
+
+	for i := 0; i < serialized.numRows; i++ {
+		recordIndex := fmt.Sprintf("%d", i+1)
+		b.WriteString("-[ RECORD ")
+		b.WriteString(recordIndex)
+		b.WriteString(" ]-")
+		b.WriteString(dashesBuffer[:len(dashesBuffer)-len(recordIndex)])
+		b.WriteRune('\n')
+
+		for _, c := range serialized.columns {
+			name := c.field.Name()
+			b.WriteString(name)
+			b.WriteString(spacesBuffer[:serialized.maxFieldWidth-len(name)])
+			b.WriteString(" | ")
+			b.WriteString(c.values[i])
+			b.WriteRune('\n')
+		}
+	}
+
+	return b.String()
+}
+
+type serializedRows struct {
+	columns       []serializedColumn
+	numRows       int
+	maxFieldWidth int // maximum length of all field names
+	maxValueWidth int // maximum length of all serialized values
+}
+
+type serializedColumn struct {
+	field                 shared.Field
+	values                []string
+	maxValueWidth         int // maximum length of serialized value in this column
+	maxWidthWithFieldName int // max(maxValueWidth, len(field.Name()))
+}
+
+func serializeRows(rows shared.Rows) serializedRows {
+	var columns []serializedColumn
+	for _, field := range rows.Fields {
+		columns = append(columns, serializedColumn{field: field})
+	}
+
+	for _, rowValues := range rows.Values {
+		for i, value := range rowValues {
+			strValue := ""
+			switch value {
+			case nil:
+				strValue = "[NULL]"
+			case true:
+				strValue = "t"
+			case false:
+				strValue = "f"
+			default:
+				strValue = fmt.Sprintf("%v", value)
+			}
+
+			columns[i].values = append(columns[i].values, strValue)
+			columns[i].maxValueWidth = max(columns[i].maxValueWidth, longestLine(strValue))
+		}
+	}
+
+	maxFieldWidth := 0
+	maxValueWidth := 0
+	for i, c := range columns {
+		nameLen := len(c.field.Name())
+		maxFieldWidth = max(maxFieldWidth, nameLen)
+		maxValueWidth = max(maxValueWidth, c.maxValueWidth)
+		columns[i].maxWidthWithFieldName = max(c.maxValueWidth, nameLen)
+	}
+
+	return serializedRows{
+		columns:       columns,
+		numRows:       rows.Size(),
+		maxFieldWidth: maxFieldWidth,
+		maxValueWidth: maxValueWidth,
+	}
 }
 
 func longestLine(text string) (maxLine int) {

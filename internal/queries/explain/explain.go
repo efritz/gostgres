@@ -58,7 +58,7 @@ func (n *explain) SupportsMarkRestore() bool {
 }
 
 func (n *explain) Scanner(ctx queries.Context) (scan.Scanner, error) {
-	plan := serialization.SerializePlanString(n.n)
+	plan := serialization.SerializePlan(n.n)
 	emitted := false
 
 	return scan.ScannerFunc(func() (shared.Row, error) {

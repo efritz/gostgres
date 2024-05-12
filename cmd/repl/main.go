@@ -24,6 +24,10 @@ func main() {
 	}
 }
 
+type options struct {
+	displayExpandedResults bool
+}
+
 func mainErr() error {
 	l, err := readline.NewEx(&readline.Config{
 		Prompt:            "gostgres \033[32m❯\033[0m ",
@@ -37,6 +41,7 @@ func mainErr() error {
 
 	log.SetOutput(l.Stderr())
 
+	opts := options{}
 	tables := table.NewTablespace()
 	sequences := sequence.NewSequencespace()
 	functions := functions.NewDefaultFunctionspace()
@@ -55,6 +60,10 @@ loop:
 			switch line {
 			case "exit":
 				break loop
+
+			case "\\x":
+				opts.displayExpandedResults = !opts.displayExpandedResults
+				continue
 
 			case "load sample":
 				if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
@@ -75,7 +84,7 @@ loop:
 			for len(parts) > 0 && parts[0][len(parts[0])-1] == ';' {
 				line := parts[0]
 				parts = parts[1:]
-				if err := handleQuery(engine, line); err != nil {
+				if err := handleQuery(engine, opts, line); err != nil {
 					fmt.Printf("error: %s\n", err)
 				}
 			}
@@ -87,7 +96,7 @@ loop:
 	return nil
 }
 
-func handleQuery(engine *engine.Engine, input string) (err error) {
+func handleQuery(engine *engine.Engine, opts options, input string) (err error) {
 	start := time.Now()
 	defer func() {
 		if err == nil {
@@ -101,7 +110,11 @@ func handleQuery(engine *engine.Engine, input string) (err error) {
 	}
 
 	if len(rows.Fields) > 0 {
-		fmt.Println(serialization.SerializeRowsString(rows))
+		if opts.displayExpandedResults {
+			fmt.Println(serialization.SerializeRowsExpanded(rows))
+		} else {
+			fmt.Println(serialization.SerializeRows(rows))
+		}
 	}
 
 	return nil

@@ -56,7 +56,7 @@ func runTestQuery(engine *engine.Engine, input string) (string, error) {
 	return fmt.Sprintf(
 		"\nQuery:\n\n%v\n\nPlan:\n\n%v\nResults:\n\n%v",
 		strings.TrimSpace(input),
-		serialization.SerializeRowsString(planRows),
-		serialization.SerializeRowsString(resultRows),
+		serialization.SerializeRows(planRows),
+		serialization.SerializeRows(resultRows),
 	), nil
 }

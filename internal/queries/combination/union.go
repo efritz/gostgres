@@ -59,11 +59,6 @@ func (n *unionNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *unionNode) Optimize() {
-	n.left.Optimize()
-	n.right.Optimize()
-}
-
 func (n *unionNode) AddFilter(filterExpression expressions.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
@@ -72,17 +67,17 @@ func (n *unionNode) AddOrder(orderExpression expressions.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
+func (n *unionNode) Optimize() {
+	n.left.Optimize()
+	n.right.Optimize()
+}
+
 func (n *unionNode) Filter() expressions.Expression {
 	return expressions.FilterIntersection(n.left.Filter(), n.right.Filter())
 }
 
-func (n *unionNode) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *unionNode) SupportsMarkRestore() bool {
-	return false
-}
+func (n *unionNode) Ordering() expressions.OrderExpression { return nil }
+func (n *unionNode) SupportsMarkRestore() bool             { return false }
 
 func (n *unionNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	hash := map[string]struct{}{}

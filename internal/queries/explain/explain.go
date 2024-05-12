@@ -31,9 +31,9 @@ func (n *explain) Fields() []shared.Field {
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter)     {}
-func (n *explain) Optimize()                                  { n.n.Optimize() }
 func (n *explain) AddFilter(filter expressions.Expression)    {}
 func (n *explain) AddOrder(order expressions.OrderExpression) {}
+func (n *explain) Optimize()                                  { n.n.Optimize() }
 func (n *explain) Filter() expressions.Expression             { return nil }
 func (n *explain) Ordering() expressions.OrderExpression      { return nil }
 func (n *explain) SupportsMarkRestore() bool                  { return false }

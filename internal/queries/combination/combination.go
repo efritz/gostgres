@@ -76,11 +76,6 @@ func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *combinationNode) Optimize() {
-	n.left.Optimize()
-	n.right.Optimize()
-}
-
 func (n *combinationNode) AddFilter(filterExpression expressions.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
@@ -89,17 +84,17 @@ func (n *combinationNode) AddOrder(orderExpression expressions.OrderExpression) 
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
+func (n *combinationNode) Optimize() {
+	n.left.Optimize()
+	n.right.Optimize()
+}
+
 func (n *combinationNode) Filter() expressions.Expression {
 	return n.left.Filter()
 }
 
-func (n *combinationNode) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *combinationNode) SupportsMarkRestore() bool {
-	return false
-}
+func (n *combinationNode) Ordering() expressions.OrderExpression { return nil }
+func (n *combinationNode) SupportsMarkRestore() bool             { return false }
 
 func (n *combinationNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)

@@ -31,29 +31,12 @@ func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *offsetNode) Optimize() {
-	n.Node.Optimize()
-}
-
-func (n *offsetNode) AddFilter(filter expressions.Expression) {
-	// filter boundary: do not recurse
-}
-
-func (n *offsetNode) AddOrder(order expressions.OrderExpression) {
-	// order boundary: do not recurse
-}
-
-func (n *offsetNode) Filter() expressions.Expression {
-	return n.Node.Filter()
-}
-
-func (n *offsetNode) Ordering() expressions.OrderExpression {
-	return n.Node.Ordering()
-}
-
-func (n *offsetNode) SupportsMarkRestore() bool {
-	return false
-}
+func (n *offsetNode) AddFilter(filter expressions.Expression)    {}
+func (n *offsetNode) AddOrder(order expressions.OrderExpression) {}
+func (n *offsetNode) Optimize()                                  { n.Node.Optimize() }
+func (n *offsetNode) Filter() expressions.Expression             { return n.Node.Filter() }
+func (n *offsetNode) Ordering() expressions.OrderExpression      { return n.Node.Ordering() }
+func (n *offsetNode) SupportsMarkRestore() bool                  { return false }
 
 func (n *offsetNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

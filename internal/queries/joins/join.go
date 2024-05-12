@@ -51,6 +51,14 @@ func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
+func (n *joinNode) AddFilter(filterExpression expressions.Expression) {
+	n.filter = expressions.UnionFilters(n.filter, filterExpression)
+}
+
+func (n *joinNode) AddOrder(orderExpression expressions.OrderExpression) {
+	order.LowerOrder(orderExpression, n.left, n.right)
+}
+
 func (n *joinNode) Optimize() {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
@@ -61,24 +69,6 @@ func (n *joinNode) Optimize() {
 	n.right.Optimize()
 	n.filter = expressions.FilterDifference(n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
 	n.strategy = selectJoinStrategy(n)
-}
-
-func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
-	for _, field := range expressions.Fields(expr) {
-		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (n *joinNode) AddFilter(filterExpression expressions.Expression) {
-	n.filter = expressions.UnionFilters(n.filter, filterExpression)
-}
-
-func (n *joinNode) AddOrder(orderExpression expressions.OrderExpression) {
-	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
 func (n *joinNode) Filter() expressions.Expression {

@@ -82,6 +82,16 @@ func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 	return pairs, len(pairs) > 0
 }
 
+func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
+	for _, field := range expressions.Fields(expr) {
+		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
+			return false
+		}
+	}
+
+	return true
+}
+
 type equalityPair struct {
 	left  expressions.Expression
 	right expressions.Expression

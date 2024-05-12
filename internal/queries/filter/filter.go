@@ -30,6 +30,14 @@ func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
+func (n *filterNode) AddFilter(filter expressions.Expression) {
+	n.filter = expressions.UnionFilters(n.filter, filter)
+}
+
+func (n *filterNode) AddOrder(order expressions.OrderExpression) {
+	n.Node.AddOrder(order)
+}
+
 func (n *filterNode) Optimize() {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
@@ -38,14 +46,6 @@ func (n *filterNode) Optimize() {
 
 	n.Node.Optimize()
 	n.filter = expressions.FilterDifference(n.filter, n.Node.Filter())
-}
-
-func (n *filterNode) AddFilter(filter expressions.Expression) {
-	n.filter = expressions.UnionFilters(n.filter, filter)
-}
-
-func (n *filterNode) AddOrder(order expressions.OrderExpression) {
-	n.Node.AddOrder(order)
 }
 
 func (n *filterNode) Filter() expressions.Expression {

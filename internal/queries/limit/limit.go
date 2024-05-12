@@ -27,29 +27,12 @@ func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *limitNode) Optimize() {
-	n.Node.Optimize()
-}
-
-func (n *limitNode) AddFilter(filter expressions.Expression) {
-	// filter boundary: do not recurse
-}
-
-func (n *limitNode) AddOrder(order expressions.OrderExpression) {
-	// filter boundary: do not recurse
-}
-
-func (n *limitNode) Filter() expressions.Expression {
-	return n.Node.Filter()
-}
-
-func (n *limitNode) Ordering() expressions.OrderExpression {
-	return n.Node.Ordering()
-}
-
-func (n *limitNode) SupportsMarkRestore() bool {
-	return false
-}
+func (n *limitNode) AddFilter(filter expressions.Expression)    {}
+func (n *limitNode) AddOrder(order expressions.OrderExpression) {}
+func (n *limitNode) Optimize()                                  { n.Node.Optimize() }
+func (n *limitNode) Filter() expressions.Expression             { return n.Node.Filter() }
+func (n *limitNode) Ordering() expressions.OrderExpression      { return n.Node.Ordering() }
+func (n *limitNode) SupportsMarkRestore() bool                  { return false }
 
 func (n *limitNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

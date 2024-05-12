@@ -48,6 +48,14 @@ func (n *accessNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
+func (n *accessNode) AddFilter(filterExpression expressions.Expression) {
+	n.filter = expressions.UnionFilters(n.filter, filterExpression)
+}
+
+func (n *accessNode) AddOrder(order expressions.OrderExpression) {
+	n.order = order
+}
+
 func (n *accessNode) Optimize() {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
@@ -60,14 +68,6 @@ func (n *accessNode) Optimize() {
 	n.strategy = selectAccessStrategy(n.table, n.filter, n.order)
 	n.filter = expressions.FilterDifference(n.filter, n.strategy.Filter())
 	n.order = nil
-}
-
-func (n *accessNode) AddFilter(filterExpression expressions.Expression) {
-	n.filter = expressions.UnionFilters(n.filter, filterExpression)
-}
-
-func (n *accessNode) AddOrder(order expressions.OrderExpression) {
-	n.order = order
 }
 
 func (n *accessNode) Filter() expressions.Expression {

@@ -11,9 +11,9 @@ type Node interface {
 	Name() string
 	Fields() []shared.Field
 	Serialize(w serialization.IndentWriter)
-	Optimize()
 	AddFilter(filter expressions.Expression)
 	AddOrder(order expressions.OrderExpression)
+	Optimize()
 	Filter() expressions.Expression
 	Ordering() expressions.OrderExpression
 

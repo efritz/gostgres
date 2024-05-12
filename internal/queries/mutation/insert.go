@@ -56,28 +56,17 @@ func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
+func (n *insertNode) AddFilter(filter expressions.Expression)    {}
+func (n *insertNode) AddOrder(order expressions.OrderExpression) {}
+
 func (n *insertNode) Optimize() {
 	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
-func (n *insertNode) AddFilter(filter expressions.Expression) {
-}
-
-func (n *insertNode) AddOrder(order expressions.OrderExpression) {
-}
-
-func (n *insertNode) Filter() expressions.Expression {
-	return nil
-}
-
-func (n *insertNode) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *insertNode) SupportsMarkRestore() bool {
-	return false
-}
+func (n *insertNode) Filter() expressions.Expression        { return nil }
+func (n *insertNode) Ordering() expressions.OrderExpression { return nil }
+func (n *insertNode) SupportsMarkRestore() bool             { return false }
 
 func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

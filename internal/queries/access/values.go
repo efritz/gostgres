@@ -34,9 +34,9 @@ func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")
 }
 
-func (n *valuesNode) Optimize()                                  {}
 func (n *valuesNode) AddFilter(filter expressions.Expression)    {}
 func (n *valuesNode) AddOrder(order expressions.OrderExpression) {}
+func (n *valuesNode) Optimize()                                  {}
 func (n *valuesNode) Filter() expressions.Expression             { return nil }
 func (n *valuesNode) Ordering() expressions.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool                  { return false }

@@ -30,6 +30,18 @@ func (n *orderNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
+func (n *orderNode) AddFilter(filter expressions.Expression) {
+	n.Node.AddFilter(filter)
+}
+
+func (n *orderNode) AddOrder(order expressions.OrderExpression) {
+	// We are nested in a parent sort and un-separated by an ordering boundary
+	// (such as limit or offset). We'll ignore our old sort criteria and adopt
+	// our parent since the ordering of rows at this point in the query should
+	// not have an effect on the result.
+	n.order = order
+}
+
 func (n *orderNode) Optimize() {
 	if n.order != nil {
 		n.order = n.order.Fold()
@@ -41,18 +53,6 @@ func (n *orderNode) Optimize() {
 	if expressions.SubsumesOrder(n.order, n.Node.Ordering()) {
 		n.order = nil
 	}
-}
-
-func (n *orderNode) AddFilter(filter expressions.Expression) {
-	n.Node.AddFilter(filter)
-}
-
-func (n *orderNode) AddOrder(order expressions.OrderExpression) {
-	// We are nested in a parent sort and un-separated by an ordering boundary
-	// (such as limit or offset). We'll ignore our old sort criteria and adopt
-	// our parent since the ordering of rows at this point in the query should
-	// not have an effect on the result.
-	n.order = order
 }
 
 func (n *orderNode) Ordering() expressions.OrderExpression {

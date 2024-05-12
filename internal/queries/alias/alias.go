@@ -45,10 +45,6 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *aliasNode) Optimize() {
-	n.Node.Optimize()
-}
-
 func (n *aliasNode) AddFilter(filter expressions.Expression) {
 	for _, field := range n.fields {
 		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
@@ -65,6 +61,10 @@ func (n *aliasNode) AddOrder(order expressions.OrderExpression) {
 
 		return expression
 	}))
+}
+
+func (n *aliasNode) Optimize() {
+	n.Node.Optimize()
 }
 
 func (n *aliasNode) Filter() expressions.Expression {

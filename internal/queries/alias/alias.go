@@ -1,8 +1,6 @@
 package alias
 
 import (
-	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -42,9 +40,9 @@ func (n *aliasNode) Fields() []shared.Field {
 	return slices.Clone(n.fields)
 }
 
-func (n *aliasNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%salias as %s\n", serialization.Indent(indentationLevel), n.name))
-	n.Node.Serialize(w, indentationLevel+1)
+func (n *aliasNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("alias as %s", n.name)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *aliasNode) Optimize() {

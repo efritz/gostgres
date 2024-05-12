@@ -2,7 +2,6 @@ package access
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
@@ -29,11 +28,11 @@ func NewIndexAccessStrategy[O indexes.ScanOptions](table *table.Table, index ind
 	}
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%s%s\n", serialization.Indent(indentationLevel), s.index.Description(s.opts)))
+func (s *indexAccessStrategy[ScanOptions]) Serialize(w serialization.IndentWriter) {
+	w.WritefLine(s.index.Description(s.opts))
 
 	if filter := s.Filter(); filter != nil {
-		io.WriteString(w, fmt.Sprintf("%sindex cond: %s\n", serialization.Indent(indentationLevel+1), filter))
+		w.Indent().WritefLine("index cond: %s", filter)
 	}
 }
 

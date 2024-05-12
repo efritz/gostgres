@@ -1,9 +1,6 @@
 package access
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/queries/filter"
@@ -43,11 +40,11 @@ func (n *accessNode) Fields() []shared.Field {
 	return fields
 }
 
-func (n *accessNode) Serialize(w io.Writer, indentationLevel int) {
-	n.strategy.Serialize(w, indentationLevel)
+func (n *accessNode) Serialize(w serialization.IndentWriter) {
+	n.strategy.Serialize(w)
 
 	if n.filter != nil {
-		io.WriteString(w, fmt.Sprintf("%sfilter: %s\n", serialization.Indent(indentationLevel+1), n.filter))
+		w.Indent().WritefLine("filter: %s", n.filter)
 	}
 }
 

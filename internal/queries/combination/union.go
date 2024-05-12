@@ -2,7 +2,6 @@ package combination
 
 import (
 	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -53,12 +52,11 @@ func (n *unionNode) Fields() []shared.Field {
 	return slices.Clone(n.fields)
 }
 
-func (n *unionNode) Serialize(w io.Writer, indentationLevel int) {
-	indentation := serialization.Indent(indentationLevel)
-	io.WriteString(w, fmt.Sprintf("%sunion\n", indentation))
-	n.left.Serialize(w, indentationLevel+1)
-	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
-	n.right.Serialize(w, indentationLevel+1)
+func (n *unionNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("union")
+	n.left.Serialize(w.Indent())
+	w.WritefLine("with")
+	n.right.Serialize(w.Indent())
 }
 
 func (n *unionNode) Optimize() {

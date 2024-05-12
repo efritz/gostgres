@@ -2,7 +2,6 @@ package access
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
@@ -22,8 +21,8 @@ func NewTableAccessStrategy(table *table.Table) accessStrategy {
 	return &tableAccessStrategy{table: table}
 }
 
-func (s *tableAccessStrategy) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%stable scan of %s\n", serialization.Indent(indentationLevel), s.table.Name()))
+func (s *tableAccessStrategy) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("table scan of %s", s.table.Name())
 }
 
 func (s *tableAccessStrategy) Filter() expressions.Expression {

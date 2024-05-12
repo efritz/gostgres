@@ -1,9 +1,6 @@
 package filter
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -24,14 +21,13 @@ func NewFilter(node queries.Node, filter expressions.Expression) queries.Node {
 	}
 }
 
-func (n *filterNode) Serialize(w io.Writer, indentationLevel int) {
+func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	if n.filter == nil {
-		n.Node.Serialize(w, indentationLevel)
-		return
+		n.Node.Serialize(w)
+	} else {
+		w.WritefLine("filter by %s", n.filter)
+		n.Node.Serialize(w.Indent())
 	}
-
-	io.WriteString(w, fmt.Sprintf("%sfilter by %s\n", serialization.Indent(indentationLevel), n.filter))
-	n.Node.Serialize(w, indentationLevel+1)
 }
 
 func (n *filterNode) Optimize() {

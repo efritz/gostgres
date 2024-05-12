@@ -2,7 +2,6 @@ package combination
 
 import (
 	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -70,12 +69,11 @@ func (n *combinationNode) Fields() []shared.Field {
 	return slices.Clone(n.fields)
 }
 
-func (n *combinationNode) Serialize(w io.Writer, indentationLevel int) {
-	indentation := serialization.Indent(indentationLevel)
-	io.WriteString(w, fmt.Sprintf("%scombination\n", indentation))
-	n.left.Serialize(w, indentationLevel+1)
-	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
-	n.right.Serialize(w, indentationLevel+1)
+func (n *combinationNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("combination")
+	n.left.Serialize(w.Indent())
+	w.WritefLine("with")
+	n.right.Serialize(w.Indent())
 }
 
 func (n *combinationNode) Optimize() {

@@ -1,9 +1,6 @@
 package order
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -24,14 +21,13 @@ func NewOrder(node queries.Node, order expressions.OrderExpression) queries.Node
 	}
 }
 
-func (n *orderNode) Serialize(w io.Writer, indentationLevel int) {
+func (n *orderNode) Serialize(w serialization.IndentWriter) {
 	if n.order == nil {
-		n.Node.Serialize(w, indentationLevel)
-		return
+		n.Node.Serialize(w)
+	} else {
+		w.WritefLine("order by %s", n.order)
+		n.Node.Serialize(w.Indent())
 	}
-
-	io.WriteString(w, fmt.Sprintf("%sorder by %s\n", serialization.Indent(indentationLevel), n.order))
-	n.Node.Serialize(w, indentationLevel+1)
 }
 
 func (n *orderNode) Optimize() {

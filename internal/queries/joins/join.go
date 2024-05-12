@@ -1,8 +1,6 @@
 package joins
 
 import (
-	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -42,15 +40,14 @@ func (n *joinNode) Fields() []shared.Field {
 	return slices.Clone(n.fields)
 }
 
-func (n *joinNode) Serialize(w io.Writer, indentationLevel int) {
-	indentation := serialization.Indent(indentationLevel)
-	io.WriteString(w, fmt.Sprintf("%sjoin using %s\n", indentation, n.strategy.Name()))
-	n.left.Serialize(w, indentationLevel+1)
-	io.WriteString(w, fmt.Sprintf("%swith\n", indentation))
-	n.right.Serialize(w, indentationLevel+1)
+func (n *joinNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("join using %s", n.strategy.Name())
+	n.left.Serialize(w.Indent())
+	w.WritefLine("with")
+	n.right.Serialize(w.Indent())
 
 	if n.filter != nil {
-		io.WriteString(w, fmt.Sprintf("%son %s\n", indentation, n.filter))
+		w.WritefLine("on %s", n.filter)
 	}
 }
 

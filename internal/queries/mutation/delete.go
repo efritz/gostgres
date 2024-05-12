@@ -1,8 +1,6 @@
 package mutation
 
 import (
-	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -51,9 +49,9 @@ func (n *deleteNode) Fields() []shared.Field {
 	return slices.Clone(n.projector.Fields())
 }
 
-func (n *deleteNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sdelete returning (%s)\n", serialization.Indent(indentationLevel), n.projector))
-	n.Node.Serialize(w, indentationLevel+1)
+func (n *deleteNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("delete returning (%s)", n.projector)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *deleteNode) Optimize() {

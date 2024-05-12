@@ -1,17 +1,16 @@
 package queries
 
 import (
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type Node interface {
 	Name() string
 	Fields() []shared.Field
-	Serialize(w io.Writer, indentationLevel int)
+	Serialize(w serialization.IndentWriter)
 	Optimize()
 	AddFilter(filter expressions.Expression)
 	AddOrder(order expressions.OrderExpression)

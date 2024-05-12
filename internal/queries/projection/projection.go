@@ -1,8 +1,6 @@
 package projection
 
 import (
-	"fmt"
-	"io"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/expressions"
@@ -35,9 +33,9 @@ func (n *projectionNode) Fields() []shared.Field {
 	return slices.Clone(n.projector.projectedFields)
 }
 
-func (n *projectionNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%sselect (%s)\n", serialization.Indent(indentationLevel), n.projector))
-	n.Node.Serialize(w, indentationLevel+1)
+func (n *projectionNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("select (%s)", n.projector)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *projectionNode) Optimize() {

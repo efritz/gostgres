@@ -1,9 +1,6 @@
 package limit
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -25,14 +22,13 @@ func NewOffset(node queries.Node, offset int) queries.Node {
 	}
 }
 
-func (n *offsetNode) Serialize(w io.Writer, indentationLevel int) {
+func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	if n.offset == 0 {
-		n.Node.Serialize(w, indentationLevel)
-		return
+		n.Node.Serialize(w)
+	} else {
+		w.WritefLine("offset %d", n.offset)
+		n.Node.Serialize(w.Indent())
 	}
-
-	io.WriteString(w, fmt.Sprintf("%soffset %d\n", serialization.Indent(indentationLevel), n.offset))
-	n.Node.Serialize(w, indentationLevel+1)
 }
 
 func (n *offsetNode) Optimize() {

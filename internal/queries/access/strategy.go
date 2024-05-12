@@ -1,17 +1,16 @@
 package access
 
 import (
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/indexes"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
+	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/table"
 )
 
 type accessStrategy interface {
-	Serialize(w io.Writer, indentationLevel int)
+	Serialize(w serialization.IndentWriter)
 	Filter() expressions.Expression
 	Ordering() expressions.OrderExpression
 	Scanner(ctx queries.Context) (scan.Scanner, error)

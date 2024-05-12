@@ -1,9 +1,6 @@
 package limit
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -25,9 +22,9 @@ func NewLimit(node queries.Node, limit int) queries.Node {
 	}
 }
 
-func (n *limitNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%slimit %d\n", serialization.Indent(indentationLevel), n.limit))
-	n.Node.Serialize(w, indentationLevel+1)
+func (n *limitNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("limit %d", n.limit)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *limitNode) Optimize() {

@@ -1,8 +1,6 @@
 package explain
 
 import (
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -32,30 +30,13 @@ func (n *explain) Fields() []shared.Field {
 	}
 }
 
-func (n *explain) Serialize(w io.Writer, indentationLevel int) {
-}
-
-func (n *explain) Optimize() {
-	n.n.Optimize()
-}
-
-func (n *explain) AddFilter(filter expressions.Expression) {
-}
-
-func (n *explain) AddOrder(order expressions.OrderExpression) {
-}
-
-func (n *explain) Filter() expressions.Expression {
-	return nil
-}
-
-func (n *explain) Ordering() expressions.OrderExpression {
-	return nil
-}
-
-func (n *explain) SupportsMarkRestore() bool {
-	return false
-}
+func (n *explain) Serialize(w serialization.IndentWriter)     {}
+func (n *explain) Optimize()                                  { n.n.Optimize() }
+func (n *explain) AddFilter(filter expressions.Expression)    {}
+func (n *explain) AddOrder(order expressions.OrderExpression) {}
+func (n *explain) Filter() expressions.Expression             { return nil }
+func (n *explain) Ordering() expressions.OrderExpression      { return nil }
+func (n *explain) SupportsMarkRestore() bool                  { return false }
 
 func (n *explain) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	plan := serialization.SerializePlan(n.n)

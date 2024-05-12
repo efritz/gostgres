@@ -1,9 +1,6 @@
 package access
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/scan"
@@ -33,8 +30,8 @@ func (n *valuesNode) Fields() []shared.Field {
 	return n.fields
 }
 
-func (n *valuesNode) Serialize(w io.Writer, indentationLevel int) {
-	io.WriteString(w, fmt.Sprintf("%svalues\n", serialization.Indent(indentationLevel)))
+func (n *valuesNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("values")
 }
 
 func (n *valuesNode) Optimize()                                  {}

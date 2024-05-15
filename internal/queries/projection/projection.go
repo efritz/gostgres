@@ -38,8 +38,11 @@ func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *projectionNode) PushDown(filter expressions.Expression, order expressions.OrderExpression) {
+func (n *projectionNode) AddFilter(filter expressions.Expression) {
 	n.Node.AddFilter(n.projector.projectExpression(filter))
+}
+
+func (n *projectionNode) AddOrder(order expressions.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
 		return n.projector.projectExpression(expression)
 	}))

@@ -81,6 +81,7 @@ func (s *hashJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 				return shared.Row{}, err
 			}
 
+			// TODO - handle hash collision
 			rightRows = h[shared.Hash(lKeys)]
 		}
 	}), nil

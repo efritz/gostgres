@@ -39,7 +39,11 @@ func (w *rowCollector) SendRow(row shared.Row) {
 		return
 	}
 
-	w.rows, _ = w.rows.AddValues(row.Values)
+	if rows, err := w.rows.AddValues(row.Values); err != nil {
+		w.Error(err)
+	} else {
+		w.rows = rows
+	}
 }
 
 func (w *rowCollector) Done() {

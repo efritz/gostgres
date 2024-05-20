@@ -9,12 +9,9 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/efritz/gostgres/internal/engine"
-	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
-	"github.com/efritz/gostgres/internal/sequence"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 func main() {
@@ -42,12 +39,9 @@ func mainErr() error {
 	log.SetOutput(l.Stderr())
 
 	opts := options{}
-	tables := table.NewTablespace()
-	sequences := sequence.NewSequencespace()
-	functions := functions.NewDefaultFunctionspace()
-	engine := engine.NewEngine(tables, sequences, functions)
-
+	engine := engine.NewDefaultEngine()
 	buffer := ""
+
 loop:
 	for {
 		line, err := l.Readline()

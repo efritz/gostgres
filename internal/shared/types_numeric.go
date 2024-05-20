@@ -143,6 +143,10 @@ func convertFloat[T constraints.Float, R constraints.Integer | constraints.Float
 //
 //
 
+func IsNumeric(value any) bool {
+	return numericTypeKindFromValue(value) >= 0
+}
+
 func numericTypeIndex(value Type) int {
 	return int(value - TypeSmallInteger)
 }

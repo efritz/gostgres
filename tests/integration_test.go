@@ -8,11 +8,8 @@ import (
 	"testing"
 
 	"github.com/efritz/gostgres/internal/engine"
-	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sample"
-	"github.com/efritz/gostgres/internal/sequence"
 	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/table"
 	"github.com/hexops/autogold/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -20,11 +17,7 @@ import (
 const rootDir = "queries"
 
 func TestIntegration(t *testing.T) {
-	tables := table.NewTablespace()
-	sequences := sequence.NewSequencespace()
-	functions := functions.NewDefaultFunctionspace()
-
-	engine := engine.NewEngine(tables, sequences, functions)
+	engine := engine.NewDefaultEngine()
 	require.NoError(t, sample.LoadPagilaSampleSchemaAndData(engine))
 
 	entries, err := os.ReadDir(rootDir)

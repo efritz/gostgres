@@ -128,6 +128,14 @@ func NewAliasProjectionExpression(expression expressions.Expression, alias strin
 	}
 }
 
+func UnwrapAlias(e ProjectionExpression) (expressions.Expression, string, bool) {
+	if alias, ok := e.(aliasProjection); ok {
+		return alias.expression, alias.alias, true
+	}
+
+	return nil, "", false
+}
+
 func (p aliasProjection) String() string {
 	return fmt.Sprintf("%s as %s", p.expression, p.alias)
 }

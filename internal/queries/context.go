@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"github.com/efritz/gostgres/internal/aggregates"
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/sequence"
@@ -9,17 +10,24 @@ import (
 )
 
 type Context struct {
-	Tables    *table.Tablespace
-	Sequences *sequence.Sequencespace
-	Functions *functions.Functionspace
-	OuterRow  shared.Row
+	Tables     *table.Tablespace
+	Sequences  *sequence.Sequencespace
+	Functions  *functions.Functionspace
+	Aggregates *aggregates.Aggregatespace
+	OuterRow   shared.Row
 }
 
-func NewContext(tables *table.Tablespace, Sequences *sequence.Sequencespace, functions *functions.Functionspace) Context {
+func NewContext(
+	tables *table.Tablespace,
+	sequences *sequence.Sequencespace,
+	functions *functions.Functionspace,
+	aggregates *aggregates.Aggregatespace,
+) Context {
 	return Context{
-		Tables:    tables,
-		Sequences: Sequences,
-		Functions: functions,
+		Tables:     tables,
+		Sequences:  sequences,
+		Functions:  functions,
+		Aggregates: aggregates,
 	}
 }
 
@@ -40,4 +48,8 @@ func (ctx Context) GetFunction(name string) (functions.Function, bool) {
 
 func (ctx Context) GetSequence(name string) (*sequence.Sequence, bool) {
 	return ctx.Sequences.GetSequence(name)
+}
+
+func (ctx Context) GetAggregate(name string) (aggregates.Aggregate, bool) {
+	return ctx.Aggregates.GetAggregate(name)
 }

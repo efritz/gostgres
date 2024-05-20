@@ -4,15 +4,15 @@ type Functionspace struct {
 	functions map[string]Function
 }
 
-func NewFunctionspace() *Functionspace {
-	return &Functionspace{
-		functions: map[string]Function{},
-	}
-}
-
 func NewDefaultFunctionspace() *Functionspace {
 	return &Functionspace{
 		functions: DefaultFunctions(),
+	}
+}
+
+func NewFunctionspace() *Functionspace {
+	return &Functionspace{
+		functions: map[string]Function{},
 	}
 }
 

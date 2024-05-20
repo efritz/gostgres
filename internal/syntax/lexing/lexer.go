@@ -34,6 +34,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"false":      tokens.TokenTypeFalse,
 	"foreign":    tokens.TokenTypeForeign,
 	"from":       tokens.TokenTypeFrom,
+	"group":      tokens.TokenTypeGroup,
 	"ilike":      tokens.TokenTypeILike,
 	"index":      tokens.TokenTypeIndex,
 	"insert":     tokens.TokenTypeInsert,

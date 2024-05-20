@@ -45,11 +45,11 @@ func setval(ctx FunctionContext, args []any) (any, error) {
 	}
 	name, ok := args[0].(string)
 	if !ok {
-		return nil, fmt.Errorf("setval() takes two arguments of type string, any")
+		return nil, fmt.Errorf("setval() takes two arguments of type string, biginteger")
 	}
 	value, ok := args[1].(int64)
 	if !ok {
-		return nil, fmt.Errorf("setval() takes two arguments of type biginteger, any")
+		return nil, fmt.Errorf("setval() takes two arguments of type string, biginteger")
 	}
 
 	sequence, ok := ctx.GetSequence(name)

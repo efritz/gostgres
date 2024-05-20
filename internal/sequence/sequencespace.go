@@ -8,15 +8,15 @@ type Sequencespace struct {
 	sequences map[string]*Sequence
 }
 
+func (s *Sequencespace) GetSequence(name string) (*Sequence, bool) {
+	table, ok := s.sequences[name]
+	return table, ok
+}
+
 func NewSequencespace() *Sequencespace {
 	return &Sequencespace{
 		sequences: map[string]*Sequence{},
 	}
-}
-
-func (s *Sequencespace) GetSequence(name string) (*Sequence, bool) {
-	table, ok := s.sequences[name]
-	return table, ok
 }
 
 func (s *Sequencespace) CreateSequence(name string, typ shared.Type) error {

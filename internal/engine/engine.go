@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/aggregates"
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/protocol"
 	"github.com/efritz/gostgres/internal/queries"
@@ -14,16 +15,32 @@ import (
 )
 
 type Engine struct {
-	tables    *table.Tablespace
-	sequences *sequence.Sequencespace
-	functions *functions.Functionspace
+	tables     *table.Tablespace
+	sequences  *sequence.Sequencespace
+	functions  *functions.Functionspace
+	aggregates *aggregates.Aggregatespace
 }
 
-func NewEngine(tables *table.Tablespace, sequences *sequence.Sequencespace, functions *functions.Functionspace) *Engine {
+func NewDefaultEngine() *Engine {
+	return NewEngine(
+		table.NewTablespace(),
+		sequence.NewSequencespace(),
+		functions.NewDefaultFunctionspace(),
+		aggregates.NewDefaultAggregatespace(),
+	)
+}
+
+func NewEngine(
+	tables *table.Tablespace,
+	sequences *sequence.Sequencespace,
+	functions *functions.Functionspace,
+	aggregates *aggregates.Aggregatespace,
+) *Engine {
 	return &Engine{
-		tables:    tables,
-		sequences: sequences,
-		functions: functions,
+		tables:     tables,
+		sequences:  sequences,
+		functions:  functions,
+		aggregates: aggregates,
 	}
 }
 
@@ -33,8 +50,15 @@ func (e *Engine) Query(input string) (shared.Rows, error) {
 		return shared.Rows{}, fmt.Errorf("failed to parse query: %s", err)
 	}
 
+	ctx := queries.NewContext(
+		e.tables,
+		e.sequences,
+		e.functions,
+		e.aggregates,
+	)
+
 	collector := protocol.NewRowCollector()
-	query.Execute(queries.NewContext(e.tables, e.sequences, e.functions), collector)
+	query.Execute(ctx, collector)
 	rows, err := collector.Rows()
 	if err != nil {
 		return shared.Rows{}, fmt.Errorf("failed to execute query %q: %s", input, err)

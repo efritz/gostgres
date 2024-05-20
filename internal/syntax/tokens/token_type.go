@@ -34,6 +34,7 @@ const (
 	TokenTypeFalse
 	TokenTypeForeign
 	TokenTypeFrom
+	TokenTypeGroup
 	TokenTypeILike
 	TokenTypeIndex
 	TokenTypeInsert

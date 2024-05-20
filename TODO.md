@@ -18,7 +18,7 @@
 - Support CTEs
 - Support recursive CTEs
 - Support DISTINCT (ON)
-- Support GROUP BY and HAVING
+- Support HAVING
 - Support window queries
 - Support subquery expressions (EXISTS/IN/NOT IN/ANY/SOME/ALL)
 - Support row comparisons (IN/NOT IN/ANY/SOME/ALL)

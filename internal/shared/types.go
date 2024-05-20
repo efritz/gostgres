@@ -69,8 +69,8 @@ func (typ Type) IsNumber() bool {
 }
 
 func (typ Type) Refine(value any) (Type, any, bool) {
-	if value == nil {
-		return typ, nil, true
+	if value == nil || typ == TypeAny {
+		return typ, value, true
 	}
 
 	switch v := value.(type) {

@@ -13,7 +13,7 @@ type functionExpression struct {
 	args []Expression
 }
 
-var _ Expression = &functionExpression{}
+var _ Expression = functionExpression{}
 
 func NewFunction(name string, args []Expression) Expression {
 	return functionExpression{

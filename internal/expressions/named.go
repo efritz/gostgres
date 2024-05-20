@@ -8,7 +8,7 @@ type namedExpression struct {
 	field shared.Field
 }
 
-var _ Expression = &namedExpression{}
+var _ Expression = namedExpression{}
 
 func NewNamed(field shared.Field) Expression {
 	return namedExpression{

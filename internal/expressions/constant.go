@@ -10,7 +10,7 @@ type constantExpression struct {
 	value any
 }
 
-var _ Expression = &constantExpression{}
+var _ Expression = constantExpression{}
 
 func NewConstant(value any) Expression {
 	return constantExpression{

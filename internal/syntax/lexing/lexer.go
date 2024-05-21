@@ -69,6 +69,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"using":      tokens.TokenTypeUsing,
 	"values":     tokens.TokenTypeValues,
 	"where":      tokens.TokenTypeWhere,
+	"with":       tokens.TokenTypeWith,
 }
 
 var punctuationMap = map[rune]tokens.TokenType{

@@ -67,6 +67,7 @@ const (
 	TokenTypeUsing
 	TokenTypeValues
 	TokenTypeWhere
+	TokenTypeWith
 
 	//
 	// Single-character operators

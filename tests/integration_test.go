@@ -10,6 +10,7 @@ import (
 	"github.com/efritz/gostgres/internal/engine"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
+	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/hexops/autogold/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -36,12 +37,17 @@ func TestIntegration(t *testing.T) {
 }
 
 func runTestQuery(engine *engine.Engine, input string) (string, error) {
-	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", input))
+	statements := parsing.SplitStatements(input)
+	if len(statements) != 1 {
+		return "", fmt.Errorf("expected exactly one statement")
+	}
+
+	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", statements[0]))
 	if err != nil {
 		return "", err
 	}
 
-	resultRows, err := engine.Query(input)
+	resultRows, err := engine.Query(statements[0])
 	if err != nil {
 		return "", err
 	}

@@ -1,0 +1,23 @@
+`
+Query:
+
+SELECT min(replacement_cost), max(replacement_cost)
+FROM film
+-- Temporarily necessary
+GROUP BY 1;
+
+Plan:
+
+          query plan
+------------------------------
+ group by 1, select(min, max)
+    table scan of film
+(1 rows)
+
+Results:
+
+ min  |  max
+------+-------
+ 9.99 | 29.99
+(1 rows)
+`

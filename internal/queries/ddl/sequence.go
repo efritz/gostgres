@@ -31,7 +31,7 @@ func (q *createSequence) Execute(ctx queries.Context, w protocol.ResponseWriter)
 }
 
 func (q *createSequence) ExecuteDDL(ctx queries.Context) error {
-	if _, err := ctx.Sequences.CreateAndGetSequence(q.name, q.typ); err != nil {
+	if _, err := ctx.CreateAndGetSequence(q.name, q.typ); err != nil {
 		return err
 	}
 

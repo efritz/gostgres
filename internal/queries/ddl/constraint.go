@@ -39,7 +39,7 @@ func (q *createPrimaryKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 }
 
 func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
-	t, ok := ctx.Tables.GetTable(q.tableName)
+	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -100,7 +100,7 @@ func (q *createCheckConstraint) Execute(ctx queries.Context, w protocol.Response
 }
 
 func (q *createCheckConstraint) ExecuteDDL(ctx queries.Context) error {
-	table, ok := ctx.Tables.GetTable(q.tableName)
+	table, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -140,7 +140,7 @@ func (q *createForeignKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 }
 
 func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
-	t, ok := ctx.Tables.GetTable(q.tableName)
+	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -156,7 +156,7 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
 		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
 	}
 
-	refTable, ok := ctx.Tables.GetTable(q.refTableName)
+	refTable, ok := ctx.GetTable(q.refTableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.refTableName)
 	}

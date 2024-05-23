@@ -31,7 +31,7 @@ func (q *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 }
 
 func (q *createTable) ExecuteDDL(ctx queries.Context) error {
-	if err := ctx.Tables.CreateTable(q.name, q.fields); err != nil {
+	if err := ctx.CreateTable(q.name, q.fields); err != nil {
 		return err
 	}
 

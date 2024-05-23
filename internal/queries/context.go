@@ -10,11 +10,11 @@ import (
 )
 
 type Context struct {
-	Tables     *table.Tablespace
-	Sequences  *sequence.Sequencespace
-	Functions  *functions.Functionspace
-	Aggregates *aggregates.Aggregatespace
-	OuterRow   shared.Row
+	tables     *table.Tablespace
+	sequences  *sequence.Sequencespace
+	functions  *functions.Functionspace
+	aggregates *aggregates.Aggregatespace
+	outerRow   shared.Row
 }
 
 func NewContext(
@@ -24,35 +24,47 @@ func NewContext(
 	aggregates *aggregates.Aggregatespace,
 ) Context {
 	return Context{
-		Tables:     tables,
-		Sequences:  sequences,
-		Functions:  functions,
-		Aggregates: aggregates,
+		tables:     tables,
+		sequences:  sequences,
+		functions:  functions,
+		aggregates: aggregates,
 	}
 }
 
 func (c Context) WithOuterRow(row shared.Row) Context {
 	return Context{
-		Tables:     c.Tables,
-		Sequences:  c.Sequences,
-		Functions:  c.Functions,
-		Aggregates: c.Aggregates,
-		OuterRow:   row,
+		tables:     c.tables,
+		sequences:  c.sequences,
+		functions:  c.functions,
+		aggregates: c.aggregates,
+		outerRow:   row,
 	}
 }
 
 func (ctx Context) Evaluate(expr expressions.Expression, row shared.Row) (any, error) {
-	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.OuterRow))
+	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.outerRow))
+}
+
+func (ctx Context) GetTable(name string) (*table.Table, bool) {
+	return ctx.tables.GetTable(name)
+}
+
+func (ctx Context) CreateTable(name string, fields []table.TableField) error {
+	return ctx.tables.CreateTable(name, fields)
 }
 
 func (ctx Context) GetFunction(name string) (functions.Function, bool) {
-	return ctx.Functions.GetFunction(name)
+	return ctx.functions.GetFunction(name)
 }
 
 func (ctx Context) GetSequence(name string) (*sequence.Sequence, bool) {
-	return ctx.Sequences.GetSequence(name)
+	return ctx.sequences.GetSequence(name)
+}
+
+func (ctx Context) CreateAndGetSequence(name string, typ shared.Type) (*sequence.Sequence, error) {
+	return ctx.sequences.CreateAndGetSequence(name, typ)
 }
 
 func (ctx Context) GetAggregate(name string) (aggregates.Aggregate, bool) {
-	return ctx.Aggregates.GetAggregate(name)
+	return ctx.aggregates.GetAggregate(name)
 }

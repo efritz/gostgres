@@ -41,10 +41,6 @@ func (c Context) WithOuterRow(row shared.Row) Context {
 	}
 }
 
-func (ctx Context) Evaluate(expr expressions.Expression, row shared.Row) (any, error) {
-	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.outerRow))
-}
-
 func (ctx Context) GetTable(name string) (*table.Table, bool) {
 	return ctx.tables.GetTable(name)
 }
@@ -67,4 +63,8 @@ func (ctx Context) CreateAndGetSequence(name string, typ shared.Type) (*sequence
 
 func (ctx Context) GetAggregate(name string) (aggregates.Aggregate, bool) {
 	return ctx.aggregates.GetAggregate(name)
+}
+
+func Evaluate(ctx Context, expr expressions.Expression, row shared.Row) (any, error) {
+	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.outerRow))
 }

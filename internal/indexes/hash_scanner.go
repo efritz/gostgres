@@ -7,7 +7,7 @@ import (
 )
 
 func (i *hashIndex) Scanner(ctx queries.Context, opts HashIndexScanOptions) (tidScanner, error) {
-	value, err := ctx.Evaluate(opts.expression, shared.Row{})
+	value, err := queries.Evaluate(ctx, opts.expression, shared.Row{})
 	if err != nil {
 		return nil, err
 	}

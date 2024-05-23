@@ -19,7 +19,7 @@ func NewFilterScanner(ctx queries.Context, scanner scan.Scanner, filter expressi
 				return shared.Row{}, err
 			}
 
-			if ok, err := shared.ValueAs[bool](ctx.Evaluate(filter, row)); err != nil {
+			if ok, err := shared.ValueAs[bool](queries.Evaluate(ctx, filter, row)); err != nil {
 				return shared.Row{}, err
 			} else if ok == nil || !*ok {
 				continue

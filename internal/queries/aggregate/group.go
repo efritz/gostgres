@@ -154,7 +154,7 @@ func (n *hashAggregate) Scanner(ctx queries.Context) (scan.Scanner, error) {
 
 func evaluatePair(ctx queries.Context, expressions []expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, expression := range expressions {
-		value, err := ctx.Evaluate(expression, row)
+		value, err := queries.Evaluate(ctx, expression, row)
 		if err != nil {
 			return nil, err
 		}

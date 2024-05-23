@@ -54,7 +54,7 @@ func (n *valuesNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 
 		var values []any
 		for _, expr := range exprs {
-			value, err := ctx.Evaluate(expr, shared.Row{})
+			value, err := queries.Evaluate(ctx, expr, shared.Row{})
 			if err != nil {
 				return shared.Row{}, err
 			}

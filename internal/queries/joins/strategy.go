@@ -102,7 +102,7 @@ var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.r
 
 func evaluatePair(ctx queries.Context, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
-		value, err := ctx.Evaluate(expression(pair), row)
+		value, err := queries.Evaluate(ctx, expression(pair), row)
 		if err != nil {
 			return nil, err
 		}

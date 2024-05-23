@@ -72,7 +72,7 @@ func resolveScanBounds(ctx queries.Context, scanBounds [][]scanBound) ([][]resol
 	for _, bounds := range scanBounds {
 		resolvedBounds := []resolvedScanBound{}
 		for _, bound := range bounds {
-			value, err := ctx.Evaluate(bound.expression, shared.Row{})
+			value, err := queries.Evaluate(ctx, bound.expression, shared.Row{})
 			if err != nil {
 				return nil, err
 			}

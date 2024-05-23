@@ -75,7 +75,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, err
 			}
 
 			if s.n.filter != nil {
-				if ok, err := shared.ValueAs[bool](ctx.Evaluate(s.n.filter, row)); err != nil {
+				if ok, err := shared.ValueAs[bool](queries.Evaluate(ctx, s.n.filter, row)); err != nil {
 					return shared.Row{}, err
 				} else if ok == nil || !*ok {
 					continue

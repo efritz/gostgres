@@ -113,7 +113,7 @@ func makeIndexValues(ctx queries.Context, expressions []expressions.ExpressionWi
 	for i := range rows.Values {
 		values := make([]any, 0, len(expressions))
 		for _, expression := range expressions {
-			value, err := ctx.Evaluate(expression.Expression, rows.Row(i))
+			value, err := queries.Evaluate(ctx, expression.Expression, rows.Row(i))
 			if err != nil {
 				return nil, err
 			}

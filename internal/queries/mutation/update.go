@@ -89,7 +89,7 @@ func (n *updateNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 		values := slices.Clone(row.Values)
 
 		for _, set := range n.setExpressions {
-			value, err := ctx.Evaluate(set.Expression, row)
+			value, err := queries.Evaluate(ctx, set.Expression, row)
 			if err != nil {
 				return shared.Row{}, err
 			}

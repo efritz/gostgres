@@ -58,7 +58,7 @@ func (p *Projector) Optimize() {
 func (p *Projector) ProjectRow(ctx queries.Context, row shared.Row) (shared.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
-		value, err := ctx.Evaluate(field.expression, row)
+		value, err := queries.Evaluate(ctx, field.expression, row)
 		if err != nil {
 			return shared.Row{}, err
 		}

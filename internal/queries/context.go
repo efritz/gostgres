@@ -33,8 +33,11 @@ func NewContext(
 
 func (c Context) WithOuterRow(row shared.Row) Context {
 	return Context{
-		Tables:   c.Tables,
-		OuterRow: row,
+		Tables:     c.Tables,
+		Sequences:  c.Sequences,
+		Functions:  c.Functions,
+		Aggregates: c.Aggregates,
+		OuterRow:   row,
 	}
 }
 

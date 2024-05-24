@@ -1,6 +1,7 @@
 package joins
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
@@ -11,7 +12,7 @@ import (
 type joinStrategy interface {
 	Name() string
 	Ordering() expressions.OrderExpression
-	Scanner(ctx queries.Context) (scan.Scanner, error)
+	Scanner(ctx execution.Context) (scan.Scanner, error)
 }
 
 const (
@@ -100,7 +101,7 @@ type equalityPair struct {
 var leftOfPair = func(pair equalityPair) expressions.Expression { return pair.left }
 var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.right }
 
-func evaluatePair(ctx queries.Context, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx execution.Context, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := queries.Evaluate(ctx, expression(pair), row)
 		if err != nil {

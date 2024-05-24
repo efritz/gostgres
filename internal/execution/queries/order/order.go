@@ -1,6 +1,7 @@
 package order
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -67,7 +68,7 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *orderNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

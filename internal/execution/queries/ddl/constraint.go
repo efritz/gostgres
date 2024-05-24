@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/catalog/constraints"
-	"github.com/efritz/gostgres/internal/catalog/indexes"
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/catalog/table/constraints"
+	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -29,7 +30,7 @@ func NewCreatePrimaryKeyConstraint(name, tableName string, columnNames []string)
 	}
 }
 
-func (q *createPrimaryKeyConstraint) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *createPrimaryKeyConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -38,7 +39,7 @@ func (q *createPrimaryKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 	w.Done()
 }
 
-func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx queries.Context) error {
+func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx execution.Context) error {
 	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -90,7 +91,7 @@ func NewCreateCheckConstraint(name, tableName string, expression expressions.Exp
 	}
 }
 
-func (q *createCheckConstraint) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *createCheckConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -99,7 +100,7 @@ func (q *createCheckConstraint) Execute(ctx queries.Context, w protocol.Response
 	w.Done()
 }
 
-func (q *createCheckConstraint) ExecuteDDL(ctx queries.Context) error {
+func (q *createCheckConstraint) ExecuteDDL(ctx execution.Context) error {
 	table, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -130,7 +131,7 @@ func NewCreateForeignKeyConstraint(name, tableName string, columnNames []string,
 	}
 }
 
-func (q *createForeignKeyConstraint) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *createForeignKeyConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -139,7 +140,7 @@ func (q *createForeignKeyConstraint) Execute(ctx queries.Context, w protocol.Res
 	w.Done()
 }
 
-func (q *createForeignKeyConstraint) ExecuteDDL(ctx queries.Context) error {
+func (q *createForeignKeyConstraint) ExecuteDDL(ctx execution.Context) error {
 	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)

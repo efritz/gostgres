@@ -3,10 +3,10 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/indexes"
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -54,7 +54,7 @@ func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpressio
 	return s.index.Ordering(s.opts)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err

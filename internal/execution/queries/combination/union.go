@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
@@ -79,7 +80,7 @@ func (n *unionNode) Filter() expressions.Expression {
 func (n *unionNode) Ordering() expressions.OrderExpression { return nil }
 func (n *unionNode) SupportsMarkRestore() bool             { return false }
 
-func (n *unionNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *unionNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := shared.HashSlice(row.Values)

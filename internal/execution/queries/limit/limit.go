@@ -1,6 +1,7 @@
 package limit
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -34,7 +35,7 @@ func (n *limitNode) Filter() expressions.Expression             { return n.Node.
 func (n *limitNode) Ordering() expressions.OrderExpression      { return n.Node.Ordering() }
 func (n *limitNode) SupportsMarkRestore() bool                  { return false }
 
-func (n *limitNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *limitNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package ddl
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 )
@@ -21,7 +22,7 @@ func NewCreateTable(name string, fields []table.TableField) *createTable {
 	}
 }
 
-func (q *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *createTable) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -30,7 +31,7 @@ func (q *createTable) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createTable) ExecuteDDL(ctx queries.Context) error {
+func (q *createTable) ExecuteDDL(ctx execution.Context) error {
 	if err := ctx.CreateTable(q.name, q.fields); err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package access
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -41,7 +42,7 @@ func (n *valuesNode) Filter() expressions.Expression             { return nil }
 func (n *valuesNode) Ordering() expressions.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool                  { return false }
 
-func (n *valuesNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *valuesNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	i := 0
 
 	return scan.ScannerFunc(func() (shared.Row, error) {

@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
@@ -68,7 +69,7 @@ func (n *insertNode) Filter() expressions.Expression        { return nil }
 func (n *insertNode) Ordering() expressions.OrderExpression { return nil }
 func (n *insertNode) SupportsMarkRestore() bool             { return false }
 
-func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *insertNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -111,7 +112,7 @@ func (n *insertNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(ctx queries.Context, row shared.Row, fields []table.TableField) ([]any, error) {
+func (n *insertNode) prepareValuesForRow(ctx execution.Context, row shared.Row, fields []table.TableField) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {

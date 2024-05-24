@@ -1,4 +1,4 @@
-package eval
+package catalog
 
 type Catalog[T any] struct {
 	entries map[string]T

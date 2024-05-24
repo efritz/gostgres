@@ -1,6 +1,7 @@
-package eval
+package execution
 
 import (
+	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/catalog/aggregates"
 	"github.com/efritz/gostgres/internal/catalog/functions"
 	"github.com/efritz/gostgres/internal/catalog/sequence"
@@ -9,18 +10,18 @@ import (
 )
 
 type Context struct {
-	tables     *Catalog[*table.Table]
-	sequences  *Catalog[*sequence.Sequence]
-	functions  *Catalog[functions.Function]
-	aggregates *Catalog[aggregates.Aggregate]
+	tables     *catalog.Catalog[*table.Table]
+	sequences  *catalog.Catalog[*sequence.Sequence]
+	functions  *catalog.Catalog[functions.Function]
+	aggregates *catalog.Catalog[aggregates.Aggregate]
 	outerRow   shared.Row
 }
 
 func NewContext(
-	tables *Catalog[*table.Table],
-	sequences *Catalog[*sequence.Sequence],
-	functions *Catalog[functions.Function],
-	aggregates *Catalog[aggregates.Aggregate],
+	tables *catalog.Catalog[*table.Table],
+	sequences *catalog.Catalog[*sequence.Sequence],
+	functions *catalog.Catalog[functions.Function],
+	aggregates *catalog.Catalog[aggregates.Aggregate],
 ) Context {
 	return Context{
 		tables:     tables,

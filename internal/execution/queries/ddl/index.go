@@ -3,8 +3,9 @@ package ddl
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/indexes"
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -33,7 +34,7 @@ func NewCreateIndex(name, tableName, method string, unique bool, columnExpressio
 	}
 }
 
-func (q *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *createIndex) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -42,8 +43,8 @@ func (q *createIndex) Execute(ctx queries.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createIndex) ExecuteDDL(ctx queries.Context) error {
-	factories := map[string]func(ctx queries.Context) (table.Index, error){
+func (q *createIndex) ExecuteDDL(ctx execution.Context) error {
+	factories := map[string]func(ctx execution.Context) (table.Index, error){
 		"btree": q.createBtreeIndex,
 		"hash":  q.createHashIndex,
 	}
@@ -70,7 +71,7 @@ func (q *createIndex) ExecuteDDL(ctx queries.Context) error {
 	return nil
 }
 
-func (q *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error) {
+func (q *createIndex) createBtreeIndex(ctx execution.Context) (table.Index, error) {
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, column := range q.columnExpressions {
 		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
@@ -92,7 +93,7 @@ func (q *createIndex) createBtreeIndex(ctx queries.Context) (table.Index, error)
 	return index, nil
 }
 
-func (q *createIndex) createHashIndex(ctx queries.Context) (table.Index, error) {
+func (q *createIndex) createHashIndex(ctx execution.Context) (table.Index, error) {
 	if len(q.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}

@@ -1,6 +1,7 @@
 package explain
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -38,7 +39,7 @@ func (n *explain) Filter() expressions.Expression             { return nil }
 func (n *explain) Ordering() expressions.OrderExpression      { return nil }
 func (n *explain) SupportsMarkRestore() bool                  { return false }
 
-func (n *explain) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *explain) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	plan := serialization.SerializePlan(n.n)
 	emitted := false
 

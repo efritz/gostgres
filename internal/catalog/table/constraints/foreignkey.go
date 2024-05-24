@@ -3,9 +3,9 @@ package constraints
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/indexes"
+	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -46,7 +46,7 @@ func (c *foreignKeyConstraint) Check(ctx expressions.ExpressionContext, row shar
 		values = append(values, val)
 	}
 
-	scanner, err := c.refIndex.Scanner(queries.Context{}, indexes.NewBtreeSearchOptions(values))
+	scanner, err := c.refIndex.Scanner(execution.Context{}, indexes.NewBtreeSearchOptions(values))
 	if err != nil {
 		return err
 	}

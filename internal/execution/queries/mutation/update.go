@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
@@ -74,7 +75,7 @@ func (n *updateNode) Filter() expressions.Expression        { return nil }
 func (n *updateNode) Ordering() expressions.OrderExpression { return nil }
 func (n *updateNode) SupportsMarkRestore() bool             { return false }
 
-func (n *updateNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *updateNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
@@ -96,7 +97,7 @@ func (n *combinationNode) Filter() expressions.Expression {
 func (n *combinationNode) Ordering() expressions.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool             { return false }
 
-func (n *combinationNode) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *combinationNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err

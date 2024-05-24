@@ -1,10 +1,10 @@
 package access
 
 import (
-	"github.com/efritz/gostgres/internal/catalog/indexes"
 	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 )
@@ -13,7 +13,7 @@ type accessStrategy interface {
 	Serialize(w serialization.IndentWriter)
 	Filter() expressions.Expression
 	Ordering() expressions.OrderExpression
-	Scanner(ctx queries.Context) (scan.Scanner, error)
+	Scanner(ctx execution.Context) (scan.Scanner, error)
 }
 
 func selectAccessStrategy(

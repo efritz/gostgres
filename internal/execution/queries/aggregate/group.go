@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
@@ -82,7 +83,7 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *hashAggregate) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (n *hashAggregate) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func (n *hashAggregate) Scanner(ctx queries.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func evaluatePair(ctx queries.Context, expressions []expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx execution.Context, expressions []expressions.Expression, row shared.Row) (values []any, _ error) {
 	for _, expression := range expressions {
 		value, err := queries.Evaluate(ctx, expression, row)
 		if err != nil {

@@ -3,8 +3,8 @@ package joins
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -23,7 +23,7 @@ func (s *mergeJoinStrategy) Ordering() expressions.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *mergeJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
+func (s *mergeJoinStrategy) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (s *mergeJoinStrategy) Scanner(ctx queries.Context) (scan.Scanner, error) {
 }
 
 type mergeJoinScanner struct {
-	ctx          queries.Context
+	ctx          execution.Context
 	strategy     *mergeJoinStrategy
 	leftScanner  scan.Scanner
 	rightScanner scan.Scanner

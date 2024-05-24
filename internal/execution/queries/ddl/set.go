@@ -1,6 +1,7 @@
 package ddl
 
 import (
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 )
@@ -11,7 +12,7 @@ type ddlSet struct {
 
 type DDLQuery interface {
 	queries.Query
-	ExecuteDDL(ctx queries.Context) error
+	ExecuteDDL(ctx execution.Context) error
 }
 
 var _ queries.Query = &ddlSet{}
@@ -22,7 +23,7 @@ func NewSet(queries []DDLQuery) *ddlSet {
 	}
 }
 
-func (q *ddlSet) Execute(ctx queries.Context, w protocol.ResponseWriter) {
+func (q *ddlSet) Execute(ctx execution.Context, w protocol.ResponseWriter) {
 	for _, query := range q.queries {
 		if err := query.ExecuteDDL(ctx); err != nil {
 			w.Error(err)

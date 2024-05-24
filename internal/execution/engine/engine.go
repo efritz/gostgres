@@ -3,11 +3,12 @@ package engine
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/catalog/aggregates"
 	"github.com/efritz/gostgres/internal/catalog/functions"
 	"github.com/efritz/gostgres/internal/catalog/sequence"
 	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution/eval"
+	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
@@ -15,26 +16,26 @@ import (
 )
 
 type Engine struct {
-	tables     *eval.Catalog[*table.Table]
-	sequences  *eval.Catalog[*sequence.Sequence]
-	functions  *eval.Catalog[functions.Function]
-	aggregates *eval.Catalog[aggregates.Aggregate]
+	tables     *catalog.Catalog[*table.Table]
+	sequences  *catalog.Catalog[*sequence.Sequence]
+	functions  *catalog.Catalog[functions.Function]
+	aggregates *catalog.Catalog[aggregates.Aggregate]
 }
 
 func NewDefaultEngine() *Engine {
 	return NewEngine(
-		eval.NewCatalog[*table.Table](),
-		eval.NewCatalog[*sequence.Sequence](),
-		eval.NewCatalogWithEntries[functions.Function](functions.DefaultFunctions()),
-		eval.NewCatalogWithEntries[aggregates.Aggregate](aggregates.DefaultAggregates()),
+		catalog.NewCatalog[*table.Table](),
+		catalog.NewCatalog[*sequence.Sequence](),
+		catalog.NewCatalogWithEntries[functions.Function](functions.DefaultFunctions()),
+		catalog.NewCatalogWithEntries[aggregates.Aggregate](aggregates.DefaultAggregates()),
 	)
 }
 
 func NewEngine(
-	tables *eval.Catalog[*table.Table],
-	sequences *eval.Catalog[*sequence.Sequence],
-	functions *eval.Catalog[functions.Function],
-	aggregates *eval.Catalog[aggregates.Aggregate],
+	tables *catalog.Catalog[*table.Table],
+	sequences *catalog.Catalog[*sequence.Sequence],
+	functions *catalog.Catalog[functions.Function],
+	aggregates *catalog.Catalog[aggregates.Aggregate],
 ) *Engine {
 	return &Engine{
 		tables:     tables,
@@ -50,7 +51,7 @@ func (e *Engine) Query(input string) (shared.Rows, error) {
 		return shared.Rows{}, fmt.Errorf("failed to parse query: %s", err)
 	}
 
-	ctx := eval.NewContext(
+	ctx := execution.NewContext(
 		e.tables,
 		e.sequences,
 		e.functions,

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/aggregates"
+	"github.com/efritz/gostgres/internal/eval"
 	"github.com/efritz/gostgres/internal/functions"
 	"github.com/efritz/gostgres/internal/protocol"
-	"github.com/efritz/gostgres/internal/queries"
 	"github.com/efritz/gostgres/internal/sequence"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
@@ -50,7 +50,7 @@ func (e *Engine) Query(input string) (shared.Rows, error) {
 		return shared.Rows{}, fmt.Errorf("failed to parse query: %s", err)
 	}
 
-	ctx := queries.NewContext(
+	ctx := eval.NewContext(
 		e.tables,
 		e.sequences,
 		e.functions,

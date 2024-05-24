@@ -5,7 +5,6 @@ import (
 
 	"github.com/efritz/gostgres/internal/expressions"
 	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 type checkConstraint struct {
@@ -26,7 +25,7 @@ func (c *checkConstraint) Name() string {
 	return c.name
 }
 
-func (c *checkConstraint) Check(ctx table.ConstraintContext, row shared.Row) error {
+func (c *checkConstraint) Check(ctx expressions.ExpressionContext, row shared.Row) error {
 	if val, err := c.expression.ValueFrom(ctx, row); err != nil {
 		return err
 	} else if val != true {

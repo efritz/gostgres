@@ -28,11 +28,7 @@ type Index interface {
 
 type Constraint interface {
 	Name() string
-	Check(ctx ConstraintContext, row shared.Row) error
-}
-
-type ConstraintContext interface {
-	expressions.ExpressionContext
+	Check(ctx expressions.ExpressionContext, row shared.Row) error
 }
 
 func NewTable(name string, fields []TableField) *Table {

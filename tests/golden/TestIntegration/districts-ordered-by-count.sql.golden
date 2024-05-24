@@ -4,7 +4,7 @@ Query:
 SELECT a.district, count(1)
 FROM address a
 GROUP BY a.district
-ORDER BY a.count DESC
+ORDER BY a.count DESC, a.district
 LIMIT 10;
 
 Plan:
@@ -12,7 +12,7 @@ Plan:
                       query plan
 ------------------------------------------------------
  limit 10
-    order by a.count desc
+    order by a.count desc, a.district
         group by a.district, select(district, count)
             alias as a
                 table scan of address
@@ -23,14 +23,14 @@ Results:
      district     | count
 ------------------+-------
  Buenos Aires     | 10
- West Bengali     | 9
  California       | 9
  Shandong         | 9
- Uttar Pradesh    | 8
+ West Bengali     | 9
  So Paulo         | 8
+ Uttar Pradesh    | 8
  England          | 7
  Maharashtra      | 7
  Southern Tagalog | 6
- Punjab           | 5
+ Gois             | 5
 (10 rows)
 `

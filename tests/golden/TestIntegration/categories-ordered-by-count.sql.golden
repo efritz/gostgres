@@ -6,13 +6,13 @@ FROM film f
 JOIN film_category fc ON fc.film_id = f.film_id
 JOIN category c ON c.category_id = fc.category_id
 GROUP BY c.name
-ORDER BY count;
+ORDER BY count, name;
 
 Plan:
 
                                   query plan
 ------------------------------------------------------------------------------
- order by count
+ order by count, name
     group by c.name, select(name, count)
         join using nested loop
             join using nested loop
@@ -36,8 +36,8 @@ Results:
 -------------+-------
  Music       | 51
  Horror      | 56
- Travel      | 57
  Classics    | 57
+ Travel      | 57
  Comedy      | 58
  Children    | 60
  Games       | 61

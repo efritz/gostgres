@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/efritz/gostgres/internal/expressions"
+	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )

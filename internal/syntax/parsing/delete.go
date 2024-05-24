@@ -1,13 +1,13 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/queries/access"
-	"github.com/efritz/gostgres/internal/queries/alias"
-	"github.com/efritz/gostgres/internal/queries/filter"
-	"github.com/efritz/gostgres/internal/queries/mutation"
-	"github.com/efritz/gostgres/internal/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/access"
+	"github.com/efritz/gostgres/internal/execution/queries/alias"
+	"github.com/efritz/gostgres/internal/execution/queries/filter"
+	"github.com/efritz/gostgres/internal/execution/queries/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )

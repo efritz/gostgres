@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/execution/engine"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/syntax/parsing"

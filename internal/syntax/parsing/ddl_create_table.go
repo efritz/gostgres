@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/queries/ddl"
+	"github.com/efritz/gostgres/internal/catalog/table"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 // createTableTail := ident `(` [ columnDescription [, ...] ] `)`

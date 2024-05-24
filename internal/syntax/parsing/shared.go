@@ -1,8 +1,8 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 

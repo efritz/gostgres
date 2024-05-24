@@ -24,7 +24,7 @@ type parser struct {
 }
 
 type TableGetter interface {
-	GetTable(name string) (*table.Table, bool)
+	Get(name string) (*table.Table, bool)
 }
 
 type tokenFilterFunc func(token tokens.Token) bool

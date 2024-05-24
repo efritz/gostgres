@@ -15,26 +15,26 @@ import (
 )
 
 type Engine struct {
-	tables     *table.Tablespace
-	sequences  *sequence.Sequencespace
-	functions  *functions.Functionspace
-	aggregates *aggregates.Aggregatespace
+	tables     *eval.Catalog[*table.Table]
+	sequences  *eval.Catalog[*sequence.Sequence]
+	functions  *eval.Catalog[functions.Function]
+	aggregates *eval.Catalog[aggregates.Aggregate]
 }
 
 func NewDefaultEngine() *Engine {
 	return NewEngine(
-		table.NewTablespace(),
-		sequence.NewSequencespace(),
-		functions.NewDefaultFunctionspace(),
-		aggregates.NewDefaultAggregatespace(),
+		eval.NewCatalog[*table.Table](),
+		eval.NewCatalog[*sequence.Sequence](),
+		eval.NewCatalogWithEntries[functions.Function](functions.DefaultFunctions()),
+		eval.NewCatalogWithEntries[aggregates.Aggregate](aggregates.DefaultAggregates()),
 	)
 }
 
 func NewEngine(
-	tables *table.Tablespace,
-	sequences *sequence.Sequencespace,
-	functions *functions.Functionspace,
-	aggregates *aggregates.Aggregatespace,
+	tables *eval.Catalog[*table.Table],
+	sequences *eval.Catalog[*sequence.Sequence],
+	functions *eval.Catalog[functions.Function],
+	aggregates *eval.Catalog[aggregates.Aggregate],
 ) *Engine {
 	return &Engine{
 		tables:     tables,

@@ -9,18 +9,18 @@ import (
 )
 
 type Context struct {
-	tables     *table.Tablespace
-	sequences  *sequence.Sequencespace
-	functions  *functions.Functionspace
-	aggregates *aggregates.Aggregatespace
+	tables     *Catalog[*table.Table]
+	sequences  *Catalog[*sequence.Sequence]
+	functions  *Catalog[functions.Function]
+	aggregates *Catalog[aggregates.Aggregate]
 	outerRow   shared.Row
 }
 
 func NewContext(
-	tables *table.Tablespace,
-	sequences *sequence.Sequencespace,
-	functions *functions.Functionspace,
-	aggregates *aggregates.Aggregatespace,
+	tables *Catalog[*table.Table],
+	sequences *Catalog[*sequence.Sequence],
+	functions *Catalog[functions.Function],
+	aggregates *Catalog[aggregates.Aggregate],
 ) Context {
 	return Context{
 		tables:     tables,
@@ -45,25 +45,28 @@ func (c Context) WithOuterRow(row shared.Row) Context {
 }
 
 func (ctx Context) GetTable(name string) (*table.Table, bool) {
-	return ctx.tables.GetTable(name)
-}
-
-func (ctx Context) CreateTable(name string, fields []table.TableField) error {
-	return ctx.tables.CreateTable(name, fields)
+	return ctx.tables.Get(name)
 }
 
 func (ctx Context) GetFunction(name string) (functions.Function, bool) {
-	return ctx.functions.GetFunction(name)
+	return ctx.functions.Get(name)
 }
 
 func (ctx Context) GetSequence(name string) (*sequence.Sequence, bool) {
-	return ctx.sequences.GetSequence(name)
-}
-
-func (ctx Context) CreateAndGetSequence(name string, typ shared.Type) (*sequence.Sequence, error) {
-	return ctx.sequences.CreateAndGetSequence(name, typ)
+	return ctx.sequences.Get(name)
 }
 
 func (ctx Context) GetAggregate(name string) (aggregates.Aggregate, bool) {
-	return ctx.aggregates.GetAggregate(name)
+	return ctx.aggregates.Get(name)
+}
+
+func (ctx Context) CreateTable(name string, fields []table.TableField) error {
+	ctx.tables.Set(name, table.NewTable(name, fields))
+	return nil
+}
+
+func (ctx Context) CreateAndGetSequence(name string, typ shared.Type) (*sequence.Sequence, error) {
+	sequence := sequence.NewSequence(name, typ)
+	ctx.sequences.Set(name, sequence)
+	return sequence, nil
 }

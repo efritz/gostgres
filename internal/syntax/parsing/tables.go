@@ -21,7 +21,7 @@ func (p *parser) parseTable() (*table.Table, string, string, error) {
 		return nil, "", "", err
 	}
 
-	table, ok := p.tables.GetTable(name)
+	table, ok := p.tables.Get(name)
 	if !ok {
 		return nil, "", "", fmt.Errorf("unknown table %s", name)
 	}
@@ -141,7 +141,7 @@ func (p *parser) parseTableReference() (queries.Node, error) {
 		return nil, err
 	}
 
-	table, ok := p.tables.GetTable(nameToken)
+	table, ok := p.tables.Get(nameToken)
 	if !ok {
 		return nil, fmt.Errorf("unknown table %s", nameToken)
 	}

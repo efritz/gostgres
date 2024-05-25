@@ -3,7 +3,6 @@ package indexes
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -35,7 +34,7 @@ func NewHashIndex(name, tableName string, expression expressions.Expression) *ha
 	}
 }
 
-func (i *hashIndex) Unwrap() table.Index {
+func (i *hashIndex) Unwrap() BaseIndex {
 	return i
 }
 

@@ -1,7 +1,6 @@
 package indexes
 
 import (
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 )
 
@@ -14,8 +13,7 @@ func (i *btreeIndex) Expressions() []expressions.ExpressionWithDirection {
 }
 
 func CanSelectBtreeIndex(
-	table *table.Table,
-	index table.Index,
+	index BaseIndex,
 	filterExpression expressions.Expression,
 	order expressions.OrderExpression,
 ) (_ Index[BtreeIndexScanOptions], opts BtreeIndexScanOptions, _ bool) {

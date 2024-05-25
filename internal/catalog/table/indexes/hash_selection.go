@@ -1,7 +1,6 @@
 package indexes
 
 import (
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 )
 
@@ -14,8 +13,7 @@ func (i *hashIndex) HashExpression() expressions.Expression {
 }
 
 func CanSelectHashIndex(
-	table *table.Table,
-	index table.Index,
+	index BaseIndex,
 	filterExpression expressions.Expression,
 ) (_ Index[HashIndexScanOptions], opts HashIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {

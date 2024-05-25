@@ -6,8 +6,10 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 )
 
+type BaseIndex = table.Index
+
 type Index[O ScanOptions] interface {
-	table.Index
+	BaseIndex
 
 	Description(opts O) string
 	Condition(opts O) expressions.Expression

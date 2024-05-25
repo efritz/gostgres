@@ -23,11 +23,11 @@ func selectAccessStrategy(
 ) accessStrategy {
 	var candidates []accessStrategy
 	for _, index := range table.Indexes() {
-		if index, opts, ok := indexes.CanSelectHashIndex(table, index, filterExpression); ok {
+		if index, opts, ok := indexes.CanSelectHashIndex(index, filterExpression); ok {
 			candidates = append(candidates, NewIndexAccessStrategy(table, index, opts))
 		}
 
-		if index, opts, ok := indexes.CanSelectBtreeIndex(table, index, filterExpression, orderExpression); ok {
+		if index, opts, ok := indexes.CanSelectBtreeIndex(index, filterExpression, orderExpression); ok {
 			candidates = append(candidates, NewIndexAccessStrategy(table, index, opts))
 		}
 	}

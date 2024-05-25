@@ -3,7 +3,6 @@ package indexes
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
@@ -65,7 +64,7 @@ func NewBTreeIndex(name, tableName string, unique bool, expressions []expression
 	}
 }
 
-func (i *btreeIndex) Unwrap() table.Index {
+func (i *btreeIndex) Unwrap() BaseIndex {
 	return i
 }
 

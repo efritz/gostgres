@@ -2,11 +2,11 @@ package access
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type valuesNode struct {
@@ -42,12 +42,12 @@ func (n *valuesNode) Filter() impls.Expression             { return nil }
 func (n *valuesNode) Ordering() impls.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool            { return false }
 
-func (n *valuesNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *valuesNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Values scanner")
 
 	i := 0
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Values")
 
 		if i >= len(n.expressions) {

@@ -3,10 +3,10 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type mergeJoinStrategy struct {
@@ -23,7 +23,7 @@ func (s *mergeJoinStrategy) Ordering() impls.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Merge Join Strategy scanner")
 
 	leftScanner, err := s.n.left.Scanner(ctx)
@@ -53,8 +53,8 @@ func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 type mergeJoinScanner struct {
 	ctx          impls.Context
 	strategy     *mergeJoinStrategy
-	leftScanner  scan.Scanner
-	rightScanner scan.Scanner
+	leftScanner  scan.RowScanner
+	rightScanner scan.RowScanner
 	markRestorer scan.MarkRestorer
 
 	// state
@@ -175,7 +175,7 @@ func (s *mergeJoinScanner) advanceRight() error {
 	return scanIntoTarget(s.rightScanner, &s.rightRow)
 }
 
-func scanIntoTarget(scanner scan.Scanner, target **rows.Row) error {
+func scanIntoTarget(scanner scan.RowScanner, target **rows.Row) error {
 	row, err := scanner.Scan()
 	if err != nil {
 		*target = nil

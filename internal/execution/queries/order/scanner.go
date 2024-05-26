@@ -5,11 +5,11 @@ import (
 	"sort"
 
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type orderScanner struct {
@@ -20,7 +20,7 @@ type orderScanner struct {
 	mark    int
 }
 
-func NewOrderScanner(ctx impls.Context, scanner scan.Scanner, fields []fields.Field, order impls.OrderExpression) (scan.Scanner, error) {
+func NewOrderScanner(ctx impls.Context, scanner scan.RowScanner, fields []fields.Field, order impls.OrderExpression) (scan.RowScanner, error) {
 	ctx.Log("Building Order scanner")
 
 	rows, err := rows.NewRows(fields)

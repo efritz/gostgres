@@ -5,11 +5,11 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type deleteNode struct {
@@ -66,7 +66,7 @@ func (n *deleteNode) Filter() impls.Expression        { return nil }
 func (n *deleteNode) Ordering() impls.OrderExpression { return nil }
 func (n *deleteNode) SupportsMarkRestore() bool       { return false }
 
-func (n *deleteNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *deleteNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Delete scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -74,7 +74,7 @@ func (n *deleteNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Delete")
 
 		row, err := scanner.Scan()

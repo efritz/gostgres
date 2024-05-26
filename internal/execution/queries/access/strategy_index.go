@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type indexAccessStrategy[O impls.ScanOptions] struct {
@@ -52,7 +52,7 @@ func (s *indexAccessStrategy[ScanOptions]) Ordering() impls.OrderExpression {
 	return s.index.Ordering(s.opts)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Index Access scanner Strategy")
 
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
@@ -60,7 +60,7 @@ func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.Context) (scan.Scan
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Index Access Strategy")
 
 		tid, err := tidScanner.Scan()

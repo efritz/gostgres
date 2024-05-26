@@ -5,9 +5,9 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
@@ -33,7 +33,7 @@ func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Nested Loop Join Strategy scanner")
 
 	leftScanner, err := s.n.left.Scanner(ctx)
@@ -43,10 +43,10 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error
 
 	var (
 		leftRow      *rows.Row
-		rightScanner scan.Scanner
+		rightScanner scan.RowScanner
 	)
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Nested Loop Join Strategy")
 
 		for {

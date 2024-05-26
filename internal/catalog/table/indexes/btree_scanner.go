@@ -2,13 +2,13 @@ package indexes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (impls.TIDScanner, error) {
+func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (scan.TIDScanner, error) {
 	ctx.Log("Building BTree Index scanner")
 
 	stack := []*btreeNode{}
@@ -24,7 +24,7 @@ func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (imp
 		return nil, err
 	}
 
-	return tidScannerFunc(func() (int64, error) {
+	return scan.TIDScannerFunc(func() (int64, error) {
 		ctx.Log("Scanning BTree Index")
 
 		for current != nil || len(stack) > 0 {

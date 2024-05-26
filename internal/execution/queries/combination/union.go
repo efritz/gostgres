@@ -8,11 +8,11 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
@@ -82,7 +82,7 @@ func (n *unionNode) Filter() impls.Expression {
 func (n *unionNode) Ordering() impls.OrderExpression { return nil }
 func (n *unionNode) SupportsMarkRestore() bool       { return false }
 
-func (n *unionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *unionNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Union scanner")
 
 	hash := map[string]struct{}{}
@@ -101,9 +101,9 @@ func (n *unionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	var rightScanner scan.Scanner
+	var rightScanner scan.RowScanner
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Union")
 
 		for leftScanner != nil {

@@ -2,10 +2,10 @@ package limit
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type limitNode struct {
@@ -34,7 +34,7 @@ func (n *limitNode) Filter() impls.Expression             { return n.Node.Filter
 func (n *limitNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
 func (n *limitNode) SupportsMarkRestore() bool            { return false }
 
-func (n *limitNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *limitNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Limit scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -44,7 +44,7 @@ func (n *limitNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 
 	remaining := n.limit
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Limit")
 
 		if remaining <= 0 {

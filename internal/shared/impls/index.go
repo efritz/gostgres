@@ -3,6 +3,7 @@ package impls
 import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type BaseIndex interface {
@@ -22,9 +23,5 @@ type Index[O ScanOptions] interface {
 	Description(opts O) string
 	Condition(opts O) Expression
 	Ordering(opts O) OrderExpression
-	Scanner(ctx Context, opts O) (TIDScanner, error)
-}
-
-type TIDScanner interface {
-	Scan() (int64, error)
+	Scanner(ctx Context, opts O) (scan.TIDScanner, error)
 }

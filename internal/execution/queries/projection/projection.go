@@ -4,11 +4,11 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type projectionNode struct {
@@ -78,7 +78,7 @@ func (n *projectionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *projectionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *projectionNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Projection scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -86,7 +86,7 @@ func (n *projectionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Projection")
 
 		row, err := scanner.Scan()

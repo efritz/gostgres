@@ -7,11 +7,11 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
@@ -98,7 +98,7 @@ func (n *combinationNode) Filter() impls.Expression {
 func (n *combinationNode) Ordering() impls.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
-func (n *combinationNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *combinationNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Combination scanner")
 
 	leftScanner, err := n.left.Scanner(ctx)
@@ -120,7 +120,7 @@ func (n *combinationNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 
 	var selection []sourcedRow
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Combination")
 
 	outer:

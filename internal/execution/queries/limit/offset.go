@@ -2,10 +2,10 @@ package limit
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type offsetNode struct {
@@ -38,7 +38,7 @@ func (n *offsetNode) Filter() impls.Expression             { return n.Node.Filte
 func (n *offsetNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
 func (n *offsetNode) SupportsMarkRestore() bool            { return false }
 
-func (n *offsetNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *offsetNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Offset scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -51,7 +51,7 @@ func (n *offsetNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return scanner, nil
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Offset")
 
 		for {

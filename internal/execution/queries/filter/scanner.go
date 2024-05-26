@@ -2,20 +2,20 @@ package filter
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-func NewFilterScanner(ctx impls.Context, scanner scan.Scanner, filter impls.Expression) (scan.Scanner, error) {
+func NewFilterScanner(ctx impls.Context, scanner scan.RowScanner, filter impls.Expression) (scan.RowScanner, error) {
 	ctx.Log("Building Filter scanner")
 
 	if filter == nil {
 		return scanner, nil
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Filter")
 
 		for {

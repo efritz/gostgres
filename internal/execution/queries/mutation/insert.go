@@ -6,11 +6,11 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type insertNode struct {
@@ -68,7 +68,7 @@ func (n *insertNode) Filter() impls.Expression        { return nil }
 func (n *insertNode) Ordering() impls.OrderExpression { return nil }
 func (n *insertNode) SupportsMarkRestore() bool       { return false }
 
-func (n *insertNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *insertNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Insert scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -88,7 +88,7 @@ func (n *insertNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		fields = append(fields, field.Field)
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Insert")
 
 		row, err := scanner.Scan()

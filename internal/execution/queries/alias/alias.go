@@ -6,11 +6,11 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type aliasNode struct {
@@ -101,7 +101,7 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *aliasNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Alias scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -109,7 +109,7 @@ func (n *aliasNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Alias")
 
 		row, err := scanner.Scan()

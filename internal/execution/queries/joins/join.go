@@ -7,10 +7,10 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type joinNode struct {
@@ -88,7 +88,7 @@ func (n *joinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *joinNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *joinNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}

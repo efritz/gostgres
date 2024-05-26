@@ -7,11 +7,11 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/shared/utils"
 	"golang.org/x/exp/maps"
@@ -86,7 +86,7 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *hashAggregate) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -136,7 +136,7 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	i := 0
 	keys := maps.Keys(h)
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Hash Aggregate")
 
 		if i >= len(keys) {

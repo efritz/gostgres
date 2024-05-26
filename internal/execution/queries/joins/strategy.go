@@ -4,16 +4,16 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type joinStrategy interface {
 	Name() string
 	Ordering() impls.OrderExpression
-	Scanner(ctx impls.Context) (scan.Scanner, error)
+	Scanner(ctx impls.Context) (scan.RowScanner, error)
 }
 
 const (

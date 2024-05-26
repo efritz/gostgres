@@ -3,9 +3,9 @@ package filter
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type filterNode struct {
@@ -61,7 +61,7 @@ func (n *filterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *filterNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *filterNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Filter Node scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

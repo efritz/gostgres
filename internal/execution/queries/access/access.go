@@ -4,10 +4,10 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type accessNode struct {
@@ -86,7 +86,7 @@ func (n *accessNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *accessNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *accessNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Access Node scanner")
 
 	scanner, err := n.strategy.Scanner(ctx)

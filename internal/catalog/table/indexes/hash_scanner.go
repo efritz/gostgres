@@ -2,13 +2,13 @@ package indexes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (impls.TIDScanner, error) {
+func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (scan.TIDScanner, error) {
 	ctx.Log("Building Hash Index scanner")
 
 	value, err := queries.Evaluate(ctx, opts.expression, rows.Row{})
@@ -20,7 +20,7 @@ func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (impls
 
 	j := 0
 
-	return tidScannerFunc(func() (int64, error) {
+	return scan.TIDScannerFunc(func() (int64, error) {
 		ctx.Log("Scanning Hash Index")
 
 		if j < len(items) {

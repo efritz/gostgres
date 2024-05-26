@@ -4,7 +4,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func ScanIntoRows(scanner Scanner, target rows.Rows) (rows.Rows, error) {
+func ScanIntoRows(scanner RowScanner, target rows.Rows) (rows.Rows, error) {
 	if err := VisitRows(scanner, func(row rows.Row) (bool, error) {
 		var err error
 		target, err = target.AddValues(row.Values)
@@ -18,7 +18,7 @@ func ScanIntoRows(scanner Scanner, target rows.Rows) (rows.Rows, error) {
 
 type VisitorFunc func(row rows.Row) (bool, error)
 
-func VisitRows(scanner Scanner, visitor VisitorFunc) error {
+func VisitRows(scanner RowScanner, visitor VisitorFunc) error {
 	for {
 		row, err := scanner.Scan()
 		if err != nil {

@@ -1,11 +1,5 @@
 package indexes
 
-type tidScannerFunc func() (int64, error)
-
-func (f tidScannerFunc) Scan() (int64, error) {
-	return f()
-}
-
 type ScanDirection int
 
 const (

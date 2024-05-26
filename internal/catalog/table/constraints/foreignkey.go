@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type foreignKeyConstraint struct {

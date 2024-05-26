@@ -2,9 +2,9 @@ package queries
 
 import (
 	"github.com/efritz/gostgres/internal/execution/protocol"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type Query interface {

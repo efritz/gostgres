@@ -3,10 +3,10 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type tableAccessStrategy struct {
@@ -31,14 +31,14 @@ func (s *tableAccessStrategy) Ordering() impls.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Table Access Strategy scanner")
 
 	tids := s.table.TIDs()
 
 	i := 0
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Table Access Strategy")
 
 		if i >= len(tids) {

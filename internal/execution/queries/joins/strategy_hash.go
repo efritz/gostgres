@@ -3,10 +3,10 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
@@ -23,7 +23,7 @@ func (s *hashJoinStrategy) Ordering() impls.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Join Strategy scanner")
 
 	rightScanner, err := s.n.right.Scanner(ctx)
@@ -53,7 +53,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	var leftRow rows.Row
 	var rightRows []rows.Row
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Hash Join Strategy")
 
 		for {

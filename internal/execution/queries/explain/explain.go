@@ -2,11 +2,11 @@ package explain
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
@@ -40,13 +40,13 @@ func (n *explain) Filter() impls.Expression               { return nil }
 func (n *explain) Ordering() impls.OrderExpression        { return nil }
 func (n *explain) SupportsMarkRestore() bool              { return false }
 
-func (n *explain) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *explain) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Explain scanner")
 
 	plan := serialization.SerializePlan(n.n)
 	emitted := false
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Explain")
 
 		if emitted {

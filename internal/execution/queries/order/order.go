@@ -3,9 +3,9 @@ package order
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type orderNode struct {
@@ -68,7 +68,7 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *orderNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Order Node scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

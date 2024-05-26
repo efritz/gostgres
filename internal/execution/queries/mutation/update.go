@@ -6,11 +6,11 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type updateNode struct {
@@ -74,7 +74,7 @@ func (n *updateNode) Filter() impls.Expression        { return nil }
 func (n *updateNode) Ordering() impls.OrderExpression { return nil }
 func (n *updateNode) SupportsMarkRestore() bool       { return false }
 
-func (n *updateNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+func (n *updateNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	ctx.Log("Building Update scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -82,7 +82,7 @@ func (n *updateNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (rows.Row, error) {
+	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Update")
 
 		row, err := scanner.Scan()

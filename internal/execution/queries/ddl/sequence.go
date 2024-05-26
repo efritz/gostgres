@@ -1,10 +1,11 @@
 package ddl
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
+	"github.com/efritz/gostgres/internal/catalog/sequence"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type createSequence struct {
@@ -22,7 +23,7 @@ func NewCreateSequence(name string, typ shared.Type) *createSequence {
 	}
 }
 
-func (q *createSequence) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createSequence) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -31,10 +32,7 @@ func (q *createSequence) Execute(ctx execution.Context, w protocol.ResponseWrite
 	w.Done()
 }
 
-func (q *createSequence) ExecuteDDL(ctx execution.Context) error {
-	if _, err := ctx.CreateAndGetSequence(q.name, q.typ); err != nil {
-		return err
-	}
-
+func (q *createSequence) ExecuteDDL(ctx types.Context) error {
+	ctx.SetSequence(q.name, sequence.NewSequence(q.name, q.typ))
 	return nil
 }

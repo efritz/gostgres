@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
@@ -12,6 +11,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type combinationNode struct {
@@ -77,7 +77,7 @@ func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *combinationNode) AddFilter(filterExpression expressions.Expression) {
+func (n *combinationNode) AddFilter(filterExpression types.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
@@ -90,14 +90,14 @@ func (n *combinationNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *combinationNode) Filter() expressions.Expression {
+func (n *combinationNode) Filter() types.Expression {
 	return n.left.Filter()
 }
 
 func (n *combinationNode) Ordering() expressions.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool             { return false }
 
-func (n *combinationNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *combinationNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err

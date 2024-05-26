@@ -3,12 +3,11 @@ package ddl
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type createIndex struct {
@@ -17,13 +16,13 @@ type createIndex struct {
 	method            string
 	unique            bool
 	columnExpressions []expressions.ExpressionWithDirection
-	where             expressions.Expression
+	where             types.Expression
 }
 
 var _ queries.Query = &createIndex{}
 var _ DDLQuery = &createIndex{}
 
-func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []expressions.ExpressionWithDirection, where expressions.Expression) *createIndex {
+func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []expressions.ExpressionWithDirection, where types.Expression) *createIndex {
 	return &createIndex{
 		name:              name,
 		tableName:         tableName,
@@ -34,7 +33,7 @@ func NewCreateIndex(name, tableName, method string, unique bool, columnExpressio
 	}
 }
 
-func (q *createIndex) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createIndex) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -43,8 +42,8 @@ func (q *createIndex) Execute(ctx execution.Context, w protocol.ResponseWriter) 
 	w.Done()
 }
 
-func (q *createIndex) ExecuteDDL(ctx execution.Context) error {
-	factories := map[string]func(ctx execution.Context) (table.Index, error){
+func (q *createIndex) ExecuteDDL(ctx types.Context) error {
+	factories := map[string]func(ctx types.Context) (types.BaseIndex, error){
 		"btree": q.createBtreeIndex,
 		"hash":  q.createHashIndex,
 	}
@@ -71,7 +70,7 @@ func (q *createIndex) ExecuteDDL(ctx execution.Context) error {
 	return nil
 }
 
-func (q *createIndex) createBtreeIndex(ctx execution.Context) (table.Index, error) {
+func (q *createIndex) createBtreeIndex(ctx types.Context) (types.BaseIndex, error) {
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, column := range q.columnExpressions {
 		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
@@ -93,7 +92,7 @@ func (q *createIndex) createBtreeIndex(ctx execution.Context) (table.Index, erro
 	return index, nil
 }
 
-func (q *createIndex) createHashIndex(ctx execution.Context) (table.Index, error) {
+func (q *createIndex) createHashIndex(ctx types.Context) (types.BaseIndex, error) {
 	if len(q.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}
@@ -117,8 +116,8 @@ func (q *createIndex) createHashIndex(ctx execution.Context) (table.Index, error
 	return index, nil
 }
 
-func setRelationName(e expressions.Expression, name string) expressions.Expression {
-	return e.Map(func(e expressions.Expression) expressions.Expression {
+func setRelationName(e types.Expression, name string) types.Expression {
+	return e.Map(func(e types.Expression) types.Expression {
 		if named, ok := e.(expressions.NamedExpression); ok {
 			return expressions.NewNamed(named.Field().WithRelationName(name))
 		}

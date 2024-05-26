@@ -1,14 +1,13 @@
-package table
+package types
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
 )
 
 type TableField struct {
 	shared.Field
 	nullable          bool
-	defaultExpression expressions.Expression
+	defaultExpression Expression
 }
 
 func NewTableField(relationName, name string, typ shared.Type) TableField {
@@ -19,7 +18,7 @@ func NewInternalTableField(relationName, name string, typ shared.Type) TableFiel
 	return newTableField(shared.NewInternalField(relationName, name, typ), true, nil)
 }
 
-func newTableField(field shared.Field, nullable bool, defaultExpression expressions.Expression) TableField {
+func newTableField(field shared.Field, nullable bool, defaultExpression Expression) TableField {
 	return TableField{
 		Field:             field,
 		nullable:          nullable,
@@ -31,7 +30,7 @@ func (f TableField) Nullable() bool {
 	return f.nullable
 }
 
-func (f TableField) Default(ctx expressions.ExpressionContext) (any, error) {
+func (f TableField) Default(ctx Context) (any, error) {
 	if f.defaultExpression == nil {
 		return nil, nil
 	}
@@ -52,6 +51,6 @@ func (f TableField) WithNonNullable() TableField {
 	return newTableField(f.Field, false, f.defaultExpression)
 }
 
-func (f TableField) WithDefault(defaultExpression expressions.Expression) TableField {
+func (f TableField) WithDefault(defaultExpression Expression) TableField {
 	return newTableField(f.Field, f.nullable, defaultExpression)
 }

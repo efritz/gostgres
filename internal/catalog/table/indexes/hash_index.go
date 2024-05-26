@@ -5,12 +5,13 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type hashIndex struct {
 	name       string
 	tableName  string
-	expression expressions.Expression
+	expression types.Expression
 	entries    map[uint64][]hashItem
 }
 
@@ -20,12 +21,12 @@ type hashItem struct {
 }
 
 type HashIndexScanOptions struct {
-	expression expressions.Expression
+	expression types.Expression
 }
 
 var _ Index[HashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name, tableName string, expression expressions.Expression) *hashIndex {
+func NewHashIndex(name, tableName string, expression types.Expression) *hashIndex {
 	return &hashIndex{
 		name:       name,
 		tableName:  tableName,
@@ -34,7 +35,7 @@ func NewHashIndex(name, tableName string, expression expressions.Expression) *ha
 	}
 }
 
-func (i *hashIndex) Unwrap() BaseIndex {
+func (i *hashIndex) Unwrap() types.BaseIndex {
 	return i
 }
 
@@ -42,7 +43,7 @@ func (i *hashIndex) UniqueOn() []shared.Field {
 	return nil
 }
 
-func (i *hashIndex) Filter() expressions.Expression {
+func (i *hashIndex) Filter() types.Expression {
 	return nil
 }
 
@@ -54,7 +55,7 @@ func (i *hashIndex) Description(opts HashIndexScanOptions) string {
 	return fmt.Sprintf("hash index scan of %s via %s", i.tableName, i.name)
 }
 
-func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr expressions.Expression) {
+func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr types.Expression) {
 	if i.expression == nil {
 		return nil
 	}
@@ -103,7 +104,7 @@ func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int64, any, error
 		return 0, nil, err
 	}
 
-	value, err := i.expression.ValueFrom(expressions.EmptyContext, row)
+	value, err := i.expression.ValueFrom(types.EmptyContext, row)
 	if err != nil {
 		return 0, nil, err
 	}

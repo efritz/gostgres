@@ -6,16 +6,17 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type functionExpression struct {
 	name string
-	args []Expression
+	args []types.Expression
 }
 
-var _ Expression = functionExpression{}
+var _ types.Expression = functionExpression{}
 
-func NewFunction(name string, args []Expression) Expression {
+func NewFunction(name string, args []types.Expression) types.Expression {
 	return functionExpression{
 		name: name,
 		args: args,
@@ -31,7 +32,7 @@ func (e functionExpression) String() string {
 	return fmt.Sprintf("%s(%s)", e.name, strings.Join(args, ", "))
 }
 
-func (e functionExpression) Equal(other Expression) bool {
+func (e functionExpression) Equal(other types.Expression) bool {
 	if o, ok := other.(functionExpression); ok {
 		if e.name == o.name && len(e.args) == len(o.args) {
 			for i, arg := range e.args {
@@ -51,12 +52,12 @@ func (e functionExpression) Name() string {
 	return e.name
 }
 
-func (e functionExpression) Children() []Expression {
+func (e functionExpression) Children() []types.Expression {
 	return slices.Clone(e.args)
 }
 
-func (e functionExpression) Fold() Expression {
-	args := make([]Expression, 0, len(e.args))
+func (e functionExpression) Fold() types.Expression {
+	args := make([]types.Expression, 0, len(e.args))
 	for _, arg := range e.args {
 		args = append(args, arg.Fold())
 	}
@@ -64,8 +65,8 @@ func (e functionExpression) Fold() Expression {
 	return NewFunction(e.name, args)
 }
 
-func (e functionExpression) Map(f func(Expression) Expression) Expression {
-	args := make([]Expression, 0, len(e.args))
+func (e functionExpression) Map(f func(types.Expression) types.Expression) types.Expression {
+	args := make([]types.Expression, 0, len(e.args))
 	for _, arg := range e.args {
 		args = append(args, arg.Map(f))
 	}
@@ -73,7 +74,7 @@ func (e functionExpression) Map(f func(Expression) Expression) Expression {
 	return f(NewFunction(e.name, args))
 }
 
-func (e functionExpression) ValueFrom(ctx ExpressionContext, row shared.Row) (any, error) {
+func (e functionExpression) ValueFrom(ctx types.Context, row shared.Row) (any, error) {
 	f, ok := ctx.GetFunction(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %s", e.name)
@@ -89,5 +90,5 @@ func (e functionExpression) ValueFrom(ctx ExpressionContext, row shared.Row) (an
 		args = append(args, value)
 	}
 
-	return f(ctx, args)
+	return f.Invoke(ctx, args)
 }

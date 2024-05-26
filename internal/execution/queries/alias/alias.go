@@ -3,13 +3,13 @@ package alias
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type aliasNode struct {
@@ -46,7 +46,7 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *aliasNode) AddFilter(filter expressions.Expression) {
+func (n *aliasNode) AddFilter(filter types.Expression) {
 	for _, field := range n.fields {
 		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
 	}
@@ -55,7 +55,7 @@ func (n *aliasNode) AddFilter(filter expressions.Expression) {
 }
 
 func (n *aliasNode) AddOrder(order expressions.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
+	n.Node.AddOrder(order.Map(func(expression types.Expression) types.Expression {
 		for _, field := range n.fields {
 			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
@@ -68,7 +68,7 @@ func (n *aliasNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *aliasNode) Filter() expressions.Expression {
+func (n *aliasNode) Filter() types.Expression {
 	filter := n.Node.Filter()
 	if filter == nil {
 		return nil
@@ -87,7 +87,7 @@ func (n *aliasNode) Ordering() expressions.OrderExpression {
 		return nil
 	}
 
-	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
+	return ordering.Map(func(expression types.Expression) types.Expression {
 		for _, field := range expressions.Fields(expression) {
 			expression = projection.Alias(expression, field, namedFromField(field, n.name))
 		}
@@ -100,7 +100,7 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *aliasNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -116,6 +116,6 @@ func (n *aliasNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func namedFromField(field shared.Field, relationName string) expressions.Expression {
+func namedFromField(field shared.Field, relationName string) types.Expression {
 	return expressions.NewNamed(field.WithRelationName(relationName))
 }

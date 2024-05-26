@@ -3,26 +3,25 @@ package mutation
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type deleteNode struct {
 	queries.Node
-	table       *table.Table
+	table       types.Table
 	columnNames []string
 	projector   *projection.Projector
 }
 
 var _ queries.Node = &deleteNode{}
 
-func NewDelete(node queries.Node, table *table.Table, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+func NewDelete(node queries.Node, table types.Table, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
 	var fields []shared.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -55,7 +54,7 @@ func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *deleteNode) AddFilter(filter expressions.Expression)    {}
+func (n *deleteNode) AddFilter(filter types.Expression)          {}
 func (n *deleteNode) AddOrder(order expressions.OrderExpression) {}
 
 func (n *deleteNode) Optimize() {
@@ -63,11 +62,11 @@ func (n *deleteNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *deleteNode) Filter() expressions.Expression        { return nil }
+func (n *deleteNode) Filter() types.Expression              { return nil }
 func (n *deleteNode) Ordering() expressions.OrderExpression { return nil }
 func (n *deleteNode) SupportsMarkRestore() bool             { return false }
 
-func (n *deleteNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *deleteNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

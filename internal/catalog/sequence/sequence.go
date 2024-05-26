@@ -2,6 +2,7 @@ package sequence
 
 import (
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type Sequence struct {
@@ -10,7 +11,7 @@ type Sequence struct {
 	value int64
 }
 
-func NewSequence(name string, typ shared.Type) *Sequence {
+func NewSequence(name string, typ shared.Type) types.Sequence {
 	return &Sequence{
 		name: name,
 		typ:  typ,

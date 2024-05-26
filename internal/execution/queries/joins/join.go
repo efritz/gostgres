@@ -3,7 +3,6 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
@@ -11,19 +10,20 @@ import (
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type joinNode struct {
 	left     queries.Node
 	right    queries.Node
-	filter   expressions.Expression
+	filter   types.Expression
 	fields   []shared.Field
 	strategy joinStrategy
 }
 
 var _ queries.Node = &joinNode{}
 
-func NewJoin(left queries.Node, right queries.Node, condition expressions.Expression) queries.Node {
+func NewJoin(left queries.Node, right queries.Node, condition types.Expression) queries.Node {
 	return &joinNode{
 		left:     left,
 		right:    right,
@@ -52,7 +52,7 @@ func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *joinNode) AddFilter(filterExpression expressions.Expression) {
+func (n *joinNode) AddFilter(filterExpression types.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
@@ -72,7 +72,7 @@ func (n *joinNode) Optimize() {
 	n.strategy = selectJoinStrategy(n)
 }
 
-func (n *joinNode) Filter() expressions.Expression {
+func (n *joinNode) Filter() types.Expression {
 	return expressions.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
@@ -88,7 +88,7 @@ func (n *joinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *joinNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *joinNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}

@@ -5,10 +5,11 @@ import (
 	"math/big"
 
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 	"golang.org/x/exp/constraints"
 )
 
-func IsArithmetic(expr Expression) (_ ArithmeticType, left, right Expression) {
+func IsArithmetic(expr types.Expression) (_ ArithmeticType, left, right types.Expression) {
 	if e, ok := expr.(binaryExpression); ok {
 		if ct := ArithmeticTypeFromString(e.operatorText); ct != ArithmeticTypeUnknown {
 			return ct, e.left, e.right
@@ -18,38 +19,38 @@ func IsArithmetic(expr Expression) (_ ArithmeticType, left, right Expression) {
 	return ArithmeticTypeUnknown, nil, nil
 }
 
-func NewAddition(left, right Expression) Expression {
+func NewAddition(left, right types.Expression) types.Expression {
 	return newBinaryIntExpression(left, right, "+", add)
 }
 
-func NewSubtraction(left, right Expression) Expression {
+func NewSubtraction(left, right types.Expression) types.Expression {
 	return newBinaryIntExpression(left, right, "-", sub)
 }
 
-func NewMultiplication(left, right Expression) Expression {
+func NewMultiplication(left, right types.Expression) types.Expression {
 	return newBinaryIntExpression(left, right, "*", mul)
 }
 
-func NewDivision(left, right Expression) Expression {
+func NewDivision(left, right types.Expression) types.Expression {
 	return newBinaryIntExpression(left, right, "/", div)
 }
 
-func NewUnaryPlus(expression Expression) Expression {
+func NewUnaryPlus(expression types.Expression) types.Expression {
 	return NewAddition(NewConstant(0), expression)
 }
 
-func NewUnaryMinus(expression Expression) Expression {
+func NewUnaryMinus(expression types.Expression) types.Expression {
 	return NewSubtraction(NewConstant(0), expression)
 }
 
-func newBinaryIntExpression(left, right Expression, operatorText string, f func(a, b any) (any, error)) Expression {
-	return newBinaryExpression(left, right, operatorText, func(context ExpressionContext, left, right Expression, row shared.Row) (any, error) {
-		lVal, err := left.ValueFrom(context, row)
+func newBinaryIntExpression(left, right types.Expression, operatorText string, f func(a, b any) (any, error)) types.Expression {
+	return newBinaryExpression(left, right, operatorText, func(ctx types.Context, left, right types.Expression, row shared.Row) (any, error) {
+		lVal, err := left.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := right.ValueFrom(context, row)
+		rVal, err := right.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
 		}

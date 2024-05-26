@@ -2,16 +2,18 @@ package expressions
 
 import (
 	"strings"
+
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type OrderExpression interface {
 	Expressions() []ExpressionWithDirection
 	Fold() OrderExpression
-	Map(f func(e Expression) Expression) OrderExpression
+	Map(f func(e types.Expression) types.Expression) OrderExpression
 }
 
 type ExpressionWithDirection struct {
-	Expression Expression
+	Expression types.Expression
 	Reverse    bool
 }
 
@@ -59,7 +61,7 @@ func (e orderExpression) Fold() OrderExpression {
 	return orderExpression{expressions: expressions}
 }
 
-func (e orderExpression) Map(f func(Expression) Expression) OrderExpression {
+func (e orderExpression) Map(f func(types.Expression) types.Expression) OrderExpression {
 	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
 		expressions = append(expressions, ExpressionWithDirection{

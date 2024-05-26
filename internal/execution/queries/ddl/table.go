@@ -2,27 +2,27 @@ package ddl
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type createTable struct {
 	name   string
-	fields []table.TableField
+	fields []types.TableField
 }
 
 var _ queries.Query = &createTable{}
 var _ DDLQuery = &createTable{}
 
-func NewCreateTable(name string, fields []table.TableField) *createTable {
+func NewCreateTable(name string, fields []types.TableField) *createTable {
 	return &createTable{
 		name:   name,
 		fields: fields,
 	}
 }
 
-func (q *createTable) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createTable) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -31,10 +31,7 @@ func (q *createTable) Execute(ctx execution.Context, w protocol.ResponseWriter) 
 	w.Done()
 }
 
-func (q *createTable) ExecuteDDL(ctx execution.Context) error {
-	if err := ctx.CreateTable(q.name, q.fields); err != nil {
-		return err
-	}
-
+func (q *createTable) ExecuteDDL(ctx types.Context) error {
+	ctx.SetTable(q.name, table.NewTable(q.name, q.fields))
 	return nil
 }

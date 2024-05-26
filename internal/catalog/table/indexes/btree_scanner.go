@@ -1,13 +1,13 @@
 package indexes
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
-func (i *btreeIndex) Scanner(ctx execution.Context, opts BtreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx types.Context, opts BtreeIndexScanOptions) (tidScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 
@@ -68,7 +68,7 @@ type resolvedScanBound struct {
 	inclusive bool
 }
 
-func resolveScanBounds(ctx execution.Context, scanBounds [][]scanBound) ([][]resolvedScanBound, error) {
+func resolveScanBounds(ctx types.Context, scanBounds [][]scanBound) ([][]resolvedScanBound, error) {
 	var resolvedScanBounds [][]resolvedScanBound
 	for _, bounds := range scanBounds {
 		resolvedBounds := []resolvedScanBound{}

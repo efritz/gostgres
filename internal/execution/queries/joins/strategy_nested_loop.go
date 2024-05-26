@@ -3,11 +3,11 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type nestedLoopJoinStrategy struct {
@@ -32,7 +32,7 @@ func (s *nestedLoopJoinStrategy) Ordering() expressions.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err

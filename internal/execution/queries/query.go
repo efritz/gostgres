@@ -1,14 +1,14 @@
 package queries
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type Query interface {
-	Execute(ctx execution.Context, w protocol.ResponseWriter)
+	Execute(ctx types.Context, w protocol.ResponseWriter)
 }
 
 type NodeQuery struct {
@@ -23,7 +23,7 @@ func NewQuery(n Node) *NodeQuery {
 	}
 }
 
-func (q *NodeQuery) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *NodeQuery) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	q.Node.Optimize()
 
 	scanner, err := q.Node.Scanner(ctx)

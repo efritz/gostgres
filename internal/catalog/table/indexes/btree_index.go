@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type btreeIndex struct {
@@ -29,7 +30,7 @@ type BtreeIndexScanOptions struct {
 }
 
 type scanBound struct {
-	expression expressions.Expression
+	expression types.Expression
 	inclusive  bool
 }
 
@@ -64,7 +65,7 @@ func NewBTreeIndex(name, tableName string, unique bool, expressions []expression
 	}
 }
 
-func (i *btreeIndex) Unwrap() BaseIndex {
+func (i *btreeIndex) Unwrap() types.BaseIndex {
 	return i
 }
 
@@ -86,7 +87,7 @@ func (i *btreeIndex) UniqueOn() []shared.Field {
 	return fields
 }
 
-func (i *btreeIndex) Filter() expressions.Expression {
+func (i *btreeIndex) Filter() types.Expression {
 	return nil
 }
 
@@ -103,8 +104,8 @@ func (i *btreeIndex) Description(opts BtreeIndexScanOptions) string {
 	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.tableName, i.name)
 }
 
-func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) expressions.Expression {
-	var allExpressions []expressions.Expression
+func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) types.Expression {
+	var allExpressions []types.Expression
 
 	for j := range i.expressions {
 		lowers, uppers, equals := i.conditionsForIndex(opts, j)
@@ -114,7 +115,7 @@ func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) expressions.Expressio
 		allExpressions = append(allExpressions, equals...)
 	}
 
-	var expr expressions.Expression
+	var expr types.Expression
 	for _, expression := range allExpressions {
 		if expr == nil {
 			expr = expression
@@ -126,7 +127,7 @@ func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) expressions.Expressio
 	return expr
 }
 
-func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (lowers, uppers, equals []expressions.Expression) {
+func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (lowers, uppers, equals []types.Expression) {
 	var lowerBounds []scanBound
 	if index < len(opts.lowerBounds) {
 		lowerBounds = opts.lowerBounds[index]
@@ -285,7 +286,7 @@ func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, e
 
 	values := []any{}
 	for _, expression := range i.expressions {
-		value, err := expression.Expression.ValueFrom(expressions.EmptyContext, row)
+		value, err := expression.Expression.ValueFrom(types.EmptyContext, row)
 		if err != nil {
 			return 0, nil, err
 		}

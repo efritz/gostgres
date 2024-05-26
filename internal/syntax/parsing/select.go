@@ -14,6 +14,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 // selectTail := simpleSelect orderBy limitOffset
@@ -132,7 +133,7 @@ func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]
-func (p *parser) parseGroupBy() ([]expressions.Expression, bool, error) {
+func (p *parser) parseGroupBy() ([]types.Expression, bool, error) {
 	// TODO - make this a combined token?
 	if !p.advanceIf(isType(tokens.TokenTypeGroup), isType(tokens.TokenTypeBy)) {
 		return nil, false, nil

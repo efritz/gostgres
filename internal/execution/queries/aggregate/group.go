@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 	"golang.org/x/exp/maps"
 )
 
 type hashAggregate struct {
 	queries.Node
-	groupExpressions  []expressions.Expression
+	groupExpressions  []types.Expression
 	selectExpressions []projection.ProjectionExpression
 	projector         *projection.Projector
 }
@@ -25,7 +25,7 @@ var _ queries.Node = &hashAggregate{}
 
 func NewHashAggregate(
 	node queries.Node,
-	groupExpressions []expressions.Expression,
+	groupExpressions []types.Expression,
 	selectExpressions []projection.ProjectionExpression,
 ) queries.Node {
 	projector, err := projection.NewProjector(node.Name(), node.Fields(), selectExpressions)
@@ -59,7 +59,7 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *hashAggregate) AddFilter(filter expressions.Expression) {
+func (n *hashAggregate) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(filter)
 }
 
@@ -71,7 +71,7 @@ func (n *hashAggregate) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *hashAggregate) Filter() expressions.Expression {
+func (n *hashAggregate) Filter() types.Expression {
 	return n.Node.Filter()
 }
 
@@ -83,14 +83,14 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *hashAggregate) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *hashAggregate) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var fields []shared.Field
-	var exprs []expressions.Expression
+	var exprs []types.Expression
 	for _, selectExpression := range n.selectExpressions {
 		expr, alias, ok := projection.UnwrapAlias(selectExpression)
 		if !ok {
@@ -153,7 +153,7 @@ func (n *hashAggregate) Scanner(ctx execution.Context) (scan.Scanner, error) {
 	}), nil
 }
 
-func evaluatePair(ctx execution.Context, expressions []expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx types.Context, expressions []types.Expression, row shared.Row) (values []any, _ error) {
 	for _, expression := range expressions {
 		value, err := queries.Evaluate(ctx, expression, row)
 		if err != nil {

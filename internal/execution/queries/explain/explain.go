@@ -1,12 +1,12 @@
 package explain
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type explain struct {
@@ -32,14 +32,14 @@ func (n *explain) Fields() []shared.Field {
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter)     {}
-func (n *explain) AddFilter(filter expressions.Expression)    {}
+func (n *explain) AddFilter(filter types.Expression)          {}
 func (n *explain) AddOrder(order expressions.OrderExpression) {}
 func (n *explain) Optimize()                                  { n.n.Optimize() }
-func (n *explain) Filter() expressions.Expression             { return nil }
+func (n *explain) Filter() types.Expression                   { return nil }
 func (n *explain) Ordering() expressions.OrderExpression      { return nil }
 func (n *explain) SupportsMarkRestore() bool                  { return false }
 
-func (n *explain) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *explain) Scanner(ctx types.Context) (scan.Scanner, error) {
 	plan := serialization.SerializePlan(n.n)
 	emitted := false
 

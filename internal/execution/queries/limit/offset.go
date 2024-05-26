@@ -1,12 +1,12 @@
 package limit
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type offsetNode struct {
@@ -32,14 +32,14 @@ func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *offsetNode) AddFilter(filter expressions.Expression)    {}
+func (n *offsetNode) AddFilter(filter types.Expression)          {}
 func (n *offsetNode) AddOrder(order expressions.OrderExpression) {}
 func (n *offsetNode) Optimize()                                  { n.Node.Optimize() }
-func (n *offsetNode) Filter() expressions.Expression             { return n.Node.Filter() }
+func (n *offsetNode) Filter() types.Expression                   { return n.Node.Filter() }
 func (n *offsetNode) Ordering() expressions.OrderExpression      { return n.Node.Ordering() }
 func (n *offsetNode) SupportsMarkRestore() bool                  { return false }
 
-func (n *offsetNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *offsetNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

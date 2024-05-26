@@ -3,18 +3,20 @@ package functions
 import (
 	"fmt"
 	"time"
+
+	"github.com/efritz/gostgres/internal/types"
 )
 
-func DefaultFunctions() map[string]Function {
-	return map[string]Function{
-		"now":     now,
-		"nextval": nextval,
-		"setval":  setval,
-		"currval": currval,
+func DefaultFunctions() map[string]types.Function {
+	return map[string]types.Function{
+		"now":     function(now),
+		"nextval": function(nextval),
+		"setval":  function(setval),
+		"currval": function(currval),
 	}
 }
 
-func now(ctx FunctionContext, args []any) (any, error) {
+func now(ctx types.Context, args []any) (any, error) {
 	if len(args) != 0 {
 		return nil, fmt.Errorf("now() takes no arguments")
 	}
@@ -22,7 +24,7 @@ func now(ctx FunctionContext, args []any) (any, error) {
 	return time.Now(), nil
 }
 
-func nextval(ctx FunctionContext, args []any) (any, error) {
+func nextval(ctx types.Context, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("nextval() takes one argument")
 	}
@@ -39,7 +41,7 @@ func nextval(ctx FunctionContext, args []any) (any, error) {
 	return sequence.Next()
 }
 
-func setval(ctx FunctionContext, args []any) (any, error) {
+func setval(ctx types.Context, args []any) (any, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("setval() takes two arguments")
 	}
@@ -60,7 +62,7 @@ func setval(ctx FunctionContext, args []any) (any, error) {
 	return nil, sequence.Set(value)
 }
 
-func currval(ctx FunctionContext, args []any) (any, error) {
+func currval(ctx types.Context, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("currval() takes one argument")
 	}

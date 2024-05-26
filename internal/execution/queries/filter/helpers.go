@@ -4,9 +4,10 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
-func LowerFilter(filter expressions.Expression, nodes ...queries.Node) {
+func LowerFilter(filter types.Expression, nodes ...queries.Node) {
 	for _, expression := range expressions.Conjunctions(filter) {
 		missing := make([]bool, len(nodes))
 		for _, field := range expressions.Fields(expression) {

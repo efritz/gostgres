@@ -3,21 +3,20 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type tableAccessStrategy struct {
-	table *table.Table
+	table types.Table
 }
 
 var _ accessStrategy = &tableAccessStrategy{}
 
-func NewTableAccessStrategy(table *table.Table) accessStrategy {
+func NewTableAccessStrategy(table types.Table) accessStrategy {
 	return &tableAccessStrategy{table: table}
 }
 
@@ -25,7 +24,7 @@ func (s *tableAccessStrategy) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("table scan of %s", s.table.Name())
 }
 
-func (s *tableAccessStrategy) Filter() expressions.Expression {
+func (s *tableAccessStrategy) Filter() types.Expression {
 	return nil
 }
 
@@ -33,7 +32,7 @@ func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
 	tids := s.table.TIDs()
 
 	i := 0

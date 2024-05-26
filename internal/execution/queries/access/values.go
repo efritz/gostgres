@@ -1,22 +1,22 @@
 package access
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type valuesNode struct {
 	fields      []shared.Field
-	expressions [][]expressions.Expression
+	expressions [][]types.Expression
 }
 
 var _ queries.Node = &valuesNode{}
 
-func NewValues(fields []shared.Field, expressions [][]expressions.Expression) queries.Node {
+func NewValues(fields []shared.Field, expressions [][]types.Expression) queries.Node {
 	return &valuesNode{
 		fields:      fields,
 		expressions: expressions,
@@ -35,14 +35,14 @@ func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")
 }
 
-func (n *valuesNode) AddFilter(filter expressions.Expression)    {}
+func (n *valuesNode) AddFilter(filter types.Expression)          {}
 func (n *valuesNode) AddOrder(order expressions.OrderExpression) {}
 func (n *valuesNode) Optimize()                                  {}
-func (n *valuesNode) Filter() expressions.Expression             { return nil }
+func (n *valuesNode) Filter() types.Expression                   { return nil }
 func (n *valuesNode) Ordering() expressions.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool                  { return false }
 
-func (n *valuesNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *valuesNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	i := 0
 
 	return scan.ScannerFunc(func() (shared.Row, error) {

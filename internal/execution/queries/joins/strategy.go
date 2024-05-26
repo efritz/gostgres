@@ -1,18 +1,18 @@
 package joins
 
 import (
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type joinStrategy interface {
 	Name() string
 	Ordering() expressions.OrderExpression
-	Scanner(ctx execution.Context) (scan.Scanner, error)
+	Scanner(ctx types.Context) (scan.Scanner, error)
 }
 
 const (
@@ -83,7 +83,7 @@ func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 	return pairs, len(pairs) > 0
 }
 
-func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
+func bindsAllFields(n queries.Node, expr types.Expression) bool {
 	for _, field := range expressions.Fields(expr) {
 		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false
@@ -94,14 +94,14 @@ func bindsAllFields(n queries.Node, expr expressions.Expression) bool {
 }
 
 type equalityPair struct {
-	left  expressions.Expression
-	right expressions.Expression
+	left  types.Expression
+	right types.Expression
 }
 
-var leftOfPair = func(pair equalityPair) expressions.Expression { return pair.left }
-var rightOfPair = func(pair equalityPair) expressions.Expression { return pair.right }
+var leftOfPair = func(pair equalityPair) types.Expression { return pair.left }
+var rightOfPair = func(pair equalityPair) types.Expression { return pair.right }
 
-func evaluatePair(ctx execution.Context, pairs []equalityPair, expression func(equalityPair) expressions.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx types.Context, pairs []equalityPair, expression func(equalityPair) types.Expression, row shared.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := queries.Evaluate(ctx, expression(pair), row)
 		if err != nil {

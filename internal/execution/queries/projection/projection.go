@@ -3,12 +3,12 @@ package projection
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type projectionNode struct {
@@ -39,12 +39,12 @@ func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *projectionNode) AddFilter(filter expressions.Expression) {
+func (n *projectionNode) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(n.projector.projectExpression(filter))
 }
 
 func (n *projectionNode) AddOrder(order expressions.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression expressions.Expression) expressions.Expression {
+	n.Node.AddOrder(order.Map(func(expression types.Expression) types.Expression {
 		return n.projector.projectExpression(expression)
 	}))
 }
@@ -54,7 +54,7 @@ func (n *projectionNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *projectionNode) Filter() expressions.Expression {
+func (n *projectionNode) Filter() types.Expression {
 	filter := n.Node.Filter()
 	if filter == nil {
 		return nil
@@ -69,7 +69,7 @@ func (n *projectionNode) Ordering() expressions.OrderExpression {
 		return nil
 	}
 
-	return ordering.Map(func(expression expressions.Expression) expressions.Expression {
+	return ordering.Map(func(expression types.Expression) types.Expression {
 		return n.projector.deprojectExpression(expression)
 	})
 }
@@ -78,7 +78,7 @@ func (n *projectionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *projectionNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *projectionNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

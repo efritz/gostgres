@@ -5,11 +5,12 @@ import (
 	"math/big"
 
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 	"golang.org/x/exp/constraints"
 )
 
-func DefaultAggregates() map[string]Aggregate {
-	return map[string]Aggregate{
+func DefaultAggregates() map[string]types.Aggregate {
+	return map[string]types.Aggregate{
 		"count": aggregatorFuncPair{countStep, countDone},
 		"sum":   simpleAggregateFunc(sum),
 		"min":   simpleAggregateFunc(min),

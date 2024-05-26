@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type updateNode struct {
 	queries.Node
-	table          *table.Table
+	table          types.Table
 	setExpressions []SetExpression
 	columnNames    []string
 	projector      *projection.Projector
@@ -26,10 +25,10 @@ var _ queries.Node = &updateNode{}
 
 type SetExpression struct {
 	Name       string
-	Expression expressions.Expression
+	Expression types.Expression
 }
 
-func NewUpdate(node queries.Node, table *table.Table, setExpressions []SetExpression, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+func NewUpdate(node queries.Node, table types.Table, setExpressions []SetExpression, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
 	var fields []shared.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -63,7 +62,7 @@ func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *updateNode) AddFilter(filter expressions.Expression)    {}
+func (n *updateNode) AddFilter(filter types.Expression)          {}
 func (n *updateNode) AddOrder(order expressions.OrderExpression) {}
 
 func (n *updateNode) Optimize() {
@@ -71,11 +70,11 @@ func (n *updateNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *updateNode) Filter() expressions.Expression        { return nil }
+func (n *updateNode) Filter() types.Expression              { return nil }
 func (n *updateNode) Ordering() expressions.OrderExpression { return nil }
 func (n *updateNode) SupportsMarkRestore() bool             { return false }
 
-func (n *updateNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *updateNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

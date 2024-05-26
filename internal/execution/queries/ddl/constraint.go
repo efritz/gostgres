@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/catalog/table/constraints"
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type createPrimaryKeyConstraint struct {
@@ -30,7 +29,7 @@ func NewCreatePrimaryKeyConstraint(name, tableName string, columnNames []string)
 	}
 }
 
-func (q *createPrimaryKeyConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createPrimaryKeyConstraint) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -39,7 +38,7 @@ func (q *createPrimaryKeyConstraint) Execute(ctx execution.Context, w protocol.R
 	w.Done()
 }
 
-func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx execution.Context) error {
+func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx types.Context) error {
 	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -48,7 +47,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx execution.Context) error {
 	fields := t.Fields()
 	var columnExpressions []expressions.ExpressionWithDirection
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(fields, func(f table.TableField) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(fields, func(f types.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
@@ -77,13 +76,13 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx execution.Context) error {
 type createCheckConstraint struct {
 	name       string
 	tableName  string
-	expression expressions.Expression
+	expression types.Expression
 }
 
 var _ queries.Query = &createCheckConstraint{}
 var _ DDLQuery = &createCheckConstraint{}
 
-func NewCreateCheckConstraint(name, tableName string, expression expressions.Expression) *createCheckConstraint {
+func NewCreateCheckConstraint(name, tableName string, expression types.Expression) *createCheckConstraint {
 	return &createCheckConstraint{
 		name:       name,
 		tableName:  tableName,
@@ -91,7 +90,7 @@ func NewCreateCheckConstraint(name, tableName string, expression expressions.Exp
 	}
 }
 
-func (q *createCheckConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createCheckConstraint) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -100,7 +99,7 @@ func (q *createCheckConstraint) Execute(ctx execution.Context, w protocol.Respon
 	w.Done()
 }
 
-func (q *createCheckConstraint) ExecuteDDL(ctx execution.Context) error {
+func (q *createCheckConstraint) ExecuteDDL(ctx types.Context) error {
 	table, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -131,7 +130,7 @@ func NewCreateForeignKeyConstraint(name, tableName string, columnNames []string,
 	}
 }
 
-func (q *createForeignKeyConstraint) Execute(ctx execution.Context, w protocol.ResponseWriter) {
+func (q *createForeignKeyConstraint) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -140,15 +139,15 @@ func (q *createForeignKeyConstraint) Execute(ctx execution.Context, w protocol.R
 	w.Done()
 }
 
-func (q *createForeignKeyConstraint) ExecuteDDL(ctx execution.Context) error {
+func (q *createForeignKeyConstraint) ExecuteDDL(ctx types.Context) error {
 	t, ok := ctx.GetTable(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
 
-	var exprs []expressions.Expression
+	var exprs []types.Expression
 	for _, columnName := range q.columnNames {
-		i := slices.IndexFunc(t.Fields(), func(f table.TableField) bool { return f.Name() == columnName })
+		i := slices.IndexFunc(t.Fields(), func(f types.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}

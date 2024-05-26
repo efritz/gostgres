@@ -3,33 +3,34 @@ package indexes
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type partialIndex[O ScanOptions] struct {
 	Index[O]
-	condition expressions.Expression
+	condition types.Expression
 }
 
 var _ Index[ScanOptions] = &partialIndex[ScanOptions]{}
 
-func NewPartialIndex[O ScanOptions](index Index[O], condition expressions.Expression) *partialIndex[O] {
+func NewPartialIndex[O ScanOptions](index Index[O], condition types.Expression) *partialIndex[O] {
 	return &partialIndex[O]{
 		Index:     index,
 		condition: condition,
 	}
 }
 
-func (i *partialIndex[O]) Unwrap() BaseIndex {
+func (i *partialIndex[O]) Unwrap() types.BaseIndex {
 	return i.Index
 }
 
-func (i *partialIndex[O]) Filter() expressions.Expression {
+func (i *partialIndex[O]) Filter() types.Expression {
 	return i.condition
 }
 
 func (i *partialIndex[O]) Insert(row shared.Row) error {
 	if i.condition != nil {
-		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(expressions.EmptyContext, row)); err != nil {
+		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(types.EmptyContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil
@@ -41,7 +42,7 @@ func (i *partialIndex[O]) Insert(row shared.Row) error {
 
 func (i *partialIndex[O]) Delete(row shared.Row) error {
 	if i.condition != nil {
-		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(expressions.EmptyContext, row)); err != nil {
+		if ok, err := shared.ValueAs[bool](i.condition.ValueFrom(types.EmptyContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil
@@ -51,7 +52,7 @@ func (i *partialIndex[O]) Delete(row shared.Row) error {
 	return i.Index.Delete(row)
 }
 
-func matchesPartial(index BaseIndex, filterExpression expressions.Expression) bool {
+func matchesPartial(index types.BaseIndex, filterExpression types.Expression) bool {
 	indexFilter := index.Filter()
 	if indexFilter == nil {
 		return true

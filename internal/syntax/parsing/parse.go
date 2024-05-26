@@ -5,13 +5,13 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type Query interface {
-	Execute(ctx execution.Context, w protocol.ResponseWriter)
+	Execute(ctx types.Context, w protocol.ResponseWriter)
 }
 
 func Parse(tokenStream []tokens.Token, tables TableGetter) (Query, error) {

@@ -2,19 +2,20 @@ package indexes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type hashExpressioner interface {
-	HashExpression() expressions.Expression
+	HashExpression() types.Expression
 }
 
-func (i *hashIndex) HashExpression() expressions.Expression {
+func (i *hashIndex) HashExpression() types.Expression {
 	return i.expression
 }
 
 func CanSelectHashIndex(
-	index BaseIndex,
-	filterExpression expressions.Expression,
+	index types.BaseIndex,
+	filterExpression types.Expression,
 ) (_ Index[HashIndexScanOptions], opts HashIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {
 		return nil, opts, false

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type Projector struct {
@@ -56,7 +56,7 @@ func (p *Projector) Optimize() {
 	}
 }
 
-func (p *Projector) ProjectRow(ctx execution.Context, row shared.Row) (shared.Row, error) {
+func (p *Projector) ProjectRow(ctx types.Context, row shared.Row) (shared.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := queries.Evaluate(ctx, field.expression, row)
@@ -70,7 +70,7 @@ func (p *Projector) ProjectRow(ctx execution.Context, row shared.Row) (shared.Ro
 	return shared.NewRow(p.projectedFields, values)
 }
 
-func (p *Projector) projectExpression(expression expressions.Expression) expressions.Expression {
+func (p *Projector) projectExpression(expression types.Expression) types.Expression {
 	for _, alias := range p.aliases {
 		expression = Alias(expression, shared.NewField("", alias.alias, shared.TypeAny), alias.expression)
 	}
@@ -78,7 +78,7 @@ func (p *Projector) projectExpression(expression expressions.Expression) express
 	return expression
 }
 
-func (p *Projector) deprojectExpression(expression expressions.Expression) expressions.Expression {
+func (p *Projector) deprojectExpression(expression types.Expression) types.Expression {
 	for i, alias := range p.aliases {
 		if named, ok := alias.expression.(expressions.NamedExpression); ok {
 			expression = Alias(expression, named.Field(), expressions.NewNamed(p.projectedFields[i]))
@@ -118,18 +118,18 @@ type ProjectionExpression interface {
 }
 
 type aliasProjection struct {
-	expression expressions.Expression
+	expression types.Expression
 	alias      string
 }
 
-func NewAliasProjectionExpression(expression expressions.Expression, alias string) ProjectionExpression {
+func NewAliasProjectionExpression(expression types.Expression, alias string) ProjectionExpression {
 	return aliasProjection{
 		expression: expression,
 		alias:      alias,
 	}
 }
 
-func UnwrapAlias(e ProjectionExpression) (expressions.Expression, string, bool) {
+func UnwrapAlias(e ProjectionExpression) (types.Expression, string, bool) {
 	if alias, ok := e.(aliasProjection); ok {
 		return alias.expression, alias.alias, true
 	}
@@ -231,8 +231,8 @@ func (p wildcardProjection) Expand(fields []shared.Field) (projections []aliasPr
 	return projections, nil
 }
 
-func Alias(e expressions.Expression, field shared.Field, target expressions.Expression) expressions.Expression {
-	return e.Map(func(e expressions.Expression) expressions.Expression {
+func Alias(e types.Expression, field shared.Field, target types.Expression) types.Expression {
+	return e.Map(func(e types.Expression) types.Expression {
 		if named, ok := e.(expressions.NamedExpression); ok {
 			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
 				if named.Field().Name() == field.Name() {

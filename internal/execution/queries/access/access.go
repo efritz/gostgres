@@ -1,26 +1,25 @@
 package access
 
 import (
-	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type accessNode struct {
-	table    *table.Table
-	filter   expressions.Expression
+	table    types.Table
+	filter   types.Expression
 	order    expressions.OrderExpression
 	strategy accessStrategy
 }
 
 var _ queries.Node = &accessNode{}
 
-func NewAccess(table *table.Table) queries.Node {
+func NewAccess(table types.Table) queries.Node {
 	return &accessNode{
 		table: table,
 	}
@@ -49,7 +48,7 @@ func (n *accessNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *accessNode) AddFilter(filterExpression expressions.Expression) {
+func (n *accessNode) AddFilter(filterExpression types.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
@@ -71,7 +70,7 @@ func (n *accessNode) Optimize() {
 	n.order = nil
 }
 
-func (n *accessNode) Filter() expressions.Expression {
+func (n *accessNode) Filter() types.Expression {
 	if filterExpression := n.strategy.Filter(); filterExpression != nil {
 		return expressions.UnionFilters(n.filter, filterExpression)
 	}
@@ -87,7 +86,7 @@ func (n *accessNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *accessNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *accessNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.strategy.Scanner(ctx)
 	if err != nil {
 		return nil, err

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 // createTableTail := ident `(` [ columnDescription [, ...] ] `)`
@@ -32,7 +32,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 		queries = append(queries, column.sequences...)
 	}
 
-	var fields []table.TableField
+	var fields []types.TableField
 	for _, column := range columns {
 		fields = append(fields, column.field)
 	}
@@ -49,7 +49,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 }
 
 type columnDescription struct {
-	field       table.TableField
+	field       types.TableField
 	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
@@ -62,7 +62,7 @@ func (p *parser) parseColumnDescription(tableName string) (columnDescription, er
 	}
 
 	description := columnDescription{
-		field:       table.NewTableField("", name, shared.TypeAny),
+		field:       types.NewTableField("", name, shared.TypeAny),
 		sequences:   nil,
 		constraints: nil,
 	}
@@ -107,7 +107,7 @@ func (p *parser) parseColumnType(name string, tableName string, description *col
 		description.sequences = append(description.sequences, ddl.NewCreateSequence(sequenceName, typ))
 		description.field = description.field.WithType(typ)
 		description.field = description.field.WithNonNullable()
-		nextValue := expressions.NewFunction("nextval", []expressions.Expression{expressions.NewConstant(sequenceName)})
+		nextValue := expressions.NewFunction("nextval", []types.Expression{expressions.NewConstant(sequenceName)})
 		description.field = description.field.WithDefault(nextValue)
 	} else {
 		typ, err := p.parseBasicType()

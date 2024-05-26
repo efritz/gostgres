@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
@@ -12,6 +11,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 type unionNode struct {
@@ -60,7 +60,7 @@ func (n *unionNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *unionNode) AddFilter(filterExpression expressions.Expression) {
+func (n *unionNode) AddFilter(filterExpression types.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
@@ -73,14 +73,14 @@ func (n *unionNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *unionNode) Filter() expressions.Expression {
+func (n *unionNode) Filter() types.Expression {
 	return expressions.FilterIntersection(n.left.Filter(), n.right.Filter())
 }
 
 func (n *unionNode) Ordering() expressions.OrderExpression { return nil }
 func (n *unionNode) SupportsMarkRestore() bool             { return false }
 
-func (n *unionNode) Scanner(ctx execution.Context) (scan.Scanner, error) {
+func (n *unionNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	hash := map[string]struct{}{}
 	mark := func(row shared.Row) bool {
 		key := shared.HashSlice(row.Values)

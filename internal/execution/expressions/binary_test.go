@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,8 +14,8 @@ func TestBinaryEqual(t *testing.T) {
 
 	for _, testCase := range []struct {
 		name     string
-		left     Expression
-		right    Expression
+		left     types.Expression
+		right    types.Expression
 		expected bool
 	}{
 		{

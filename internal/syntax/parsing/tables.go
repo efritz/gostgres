@@ -3,7 +3,6 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
@@ -12,10 +11,11 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
+	"github.com/efritz/gostgres/internal/types"
 )
 
 // table := ident alias
-func (p *parser) parseTable() (*table.Table, string, string, error) {
+func (p *parser) parseTable() (types.Table, string, string, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, "", "", err
@@ -165,7 +165,7 @@ func (p *parser) parseValues() (queries.Node, error) {
 		return nil, err
 	}
 
-	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]expressions.Expression, error) {
+	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]types.Expression, error) {
 		return parseParenthesizedCommaSeparatedList(p, false, false, p.parseRootExpression)
 	})
 	if err != nil {
@@ -225,7 +225,7 @@ func (p *parser) parseJoin(node queries.Node) (queries.Node, error) {
 		return nil, err
 	}
 
-	var condition expressions.Expression
+	var condition types.Expression
 	if p.advanceIf(isType(tokens.TokenTypeOn)) {
 		rawCondition, err := p.parseRootExpression()
 		if err != nil {

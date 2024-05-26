@@ -3,37 +3,25 @@ package table
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 	"golang.org/x/exp/slices"
 )
 
 type Table struct {
 	name        string
-	fields      []TableField
+	fields      []types.TableField
 	rows        map[int64]shared.Row
-	primaryKey  Index
-	indexes     []Index
-	constraints []Constraint
+	primaryKey  types.BaseIndex
+	indexes     []types.BaseIndex
+	constraints []types.Constraint
 }
 
-type Index interface {
-	Name() string
-	Unwrap() Index
-	UniqueOn() []shared.Field
-	Filter() expressions.Expression
-	Insert(row shared.Row) error
-	Delete(row shared.Row) error
-}
+var _ types.Table = &Table{}
 
-type Constraint interface {
-	Name() string
-	Check(ctx expressions.ExpressionContext, row shared.Row) error
-}
-
-func NewTable(name string, fields []TableField) *Table {
-	tableFields := []TableField{
-		NewInternalTableField(name, shared.TIDName, shared.TypeBigInteger),
+func NewTable(name string, fields []types.TableField) types.Table {
+	tableFields := []types.TableField{
+		types.NewInternalTableField(name, shared.TIDName, shared.TypeBigInteger),
 	}
 	for _, field := range fields {
 		tableFields = append(tableFields, field.WithRelationName(name))
@@ -50,15 +38,15 @@ func (t *Table) Name() string {
 	return t.name
 }
 
-func (t *Table) Indexes() []Index {
+func (t *Table) Indexes() []types.BaseIndex {
 	if t.primaryKey != nil {
-		return append([]Index{t.primaryKey}, t.indexes...)
+		return append([]types.BaseIndex{t.primaryKey}, t.indexes...)
 	}
 
 	return t.indexes
 }
 
-func (t *Table) Fields() []TableField {
+func (t *Table) Fields() []types.TableField {
 	return slices.Clone(t.fields)
 }
 
@@ -81,7 +69,7 @@ func (t *Table) Row(tid int64) (shared.Row, bool) {
 	return row, ok
 }
 
-func (t *Table) SetPrimaryKey(index Index) error {
+func (t *Table) SetPrimaryKey(index types.BaseIndex) error {
 	if t.primaryKey != nil {
 		return fmt.Errorf("primary key already set")
 	}
@@ -96,7 +84,7 @@ func (t *Table) SetPrimaryKey(index Index) error {
 	return nil
 }
 
-func (t *Table) AddIndex(index Index) error {
+func (t *Table) AddIndex(index types.BaseIndex) error {
 	for _, row := range t.rows {
 		if err := index.Insert(row); err != nil {
 			return err
@@ -107,7 +95,7 @@ func (t *Table) AddIndex(index Index) error {
 	return nil
 }
 
-func (t *Table) AddConstraint(ctx expressions.ExpressionContext, constraint Constraint) error {
+func (t *Table) AddConstraint(ctx types.Context, constraint types.Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(ctx, row); err != nil {
 			return err
@@ -120,7 +108,7 @@ func (t *Table) AddConstraint(ctx expressions.ExpressionContext, constraint Cons
 
 var tid = int64(0)
 
-func (t *Table) Insert(ctx expressions.ExpressionContext, row shared.Row) (_ shared.Row, err error) {
+func (t *Table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err error) {
 	tid++
 	id := tid
 

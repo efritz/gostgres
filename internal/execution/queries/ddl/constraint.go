@@ -45,7 +45,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx types.Context) error {
 	}
 
 	fields := t.Fields()
-	var columnExpressions []expressions.ExpressionWithDirection
+	var columnExpressions []types.ExpressionWithDirection
 	for _, columnName := range q.columnNames {
 		i := slices.IndexFunc(fields, func(f types.TableField) bool { return f.Name() == columnName })
 		if i < 0 {
@@ -57,7 +57,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx types.Context) error {
 			return fmt.Errorf("primary key fields must be nullable")
 		}
 
-		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
+		columnExpressions = append(columnExpressions, types.ExpressionWithDirection{
 			Expression: setRelationName(expressions.NewNamed(field.Field), q.tableName),
 			Reverse:    false,
 		})
@@ -161,9 +161,9 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx types.Context) error {
 		return fmt.Errorf("unknown table %q", q.refTableName)
 	}
 
-	var refIndex indexes.Index[indexes.BtreeIndexScanOptions]
+	var refIndex types.Index[indexes.BtreeIndexScanOptions]
 	for _, index := range refTable.Indexes() {
-		btreeIndex, ok := index.(indexes.Index[indexes.BtreeIndexScanOptions])
+		btreeIndex, ok := index.(types.Index[indexes.BtreeIndexScanOptions])
 		if !ok {
 			continue
 		}

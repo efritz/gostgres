@@ -6,29 +6,11 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-type OrderExpression interface {
-	Expressions() []ExpressionWithDirection
-	Fold() OrderExpression
-	Map(f func(e types.Expression) types.Expression) OrderExpression
-}
-
-type ExpressionWithDirection struct {
-	Expression types.Expression
-	Reverse    bool
-}
-
-func (e ExpressionWithDirection) Fold() ExpressionWithDirection {
-	return ExpressionWithDirection{
-		Expression: e.Expression.Fold(),
-		Reverse:    e.Reverse,
-	}
-}
-
 type orderExpression struct {
-	expressions []ExpressionWithDirection
+	expressions []types.ExpressionWithDirection
 }
 
-func NewOrderExpression(expressions []ExpressionWithDirection) OrderExpression {
+func NewOrderExpression(expressions []types.ExpressionWithDirection) types.OrderExpression {
 	return orderExpression{
 		expressions: expressions,
 	}
@@ -48,12 +30,12 @@ func (e orderExpression) String() string {
 	return strings.Join(parts, ", ")
 }
 
-func (e orderExpression) Expressions() []ExpressionWithDirection {
+func (e orderExpression) Expressions() []types.ExpressionWithDirection {
 	return e.expressions
 }
 
-func (e orderExpression) Fold() OrderExpression {
-	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
+func (e orderExpression) Fold() types.OrderExpression {
+	expressions := make([]types.ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
 		expressions = append(expressions, expression.Fold())
 	}
@@ -61,10 +43,10 @@ func (e orderExpression) Fold() OrderExpression {
 	return orderExpression{expressions: expressions}
 }
 
-func (e orderExpression) Map(f func(types.Expression) types.Expression) OrderExpression {
-	expressions := make([]ExpressionWithDirection, 0, len(e.expressions))
+func (e orderExpression) Map(f func(types.Expression) types.Expression) types.OrderExpression {
+	expressions := make([]types.ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
-		expressions = append(expressions, ExpressionWithDirection{
+		expressions = append(expressions, types.ExpressionWithDirection{
 			Expression: f(expression.Expression),
 			Reverse:    expression.Reverse,
 		})

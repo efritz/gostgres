@@ -3,7 +3,6 @@ package projection
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
@@ -43,7 +42,7 @@ func (n *projectionNode) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(n.projector.projectExpression(filter))
 }
 
-func (n *projectionNode) AddOrder(order expressions.OrderExpression) {
+func (n *projectionNode) AddOrder(order types.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression types.Expression) types.Expression {
 		return n.projector.projectExpression(expression)
 	}))
@@ -63,7 +62,7 @@ func (n *projectionNode) Filter() types.Expression {
 	return n.projector.deprojectExpression(filter)
 }
 
-func (n *projectionNode) Ordering() expressions.OrderExpression {
+func (n *projectionNode) Ordering() types.OrderExpression {
 	ordering := n.Node.Ordering()
 	if ordering == nil {
 		return nil

@@ -6,14 +6,14 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-type partialIndex[O ScanOptions] struct {
-	Index[O]
+type partialIndex[O types.ScanOptions] struct {
+	types.Index[O]
 	condition types.Expression
 }
 
-var _ Index[ScanOptions] = &partialIndex[ScanOptions]{}
+var _ types.Index[types.ScanOptions] = &partialIndex[types.ScanOptions]{}
 
-func NewPartialIndex[O ScanOptions](index Index[O], condition types.Expression) *partialIndex[O] {
+func NewPartialIndex[O types.ScanOptions](index types.Index[O], condition types.Expression) *partialIndex[O] {
 	return &partialIndex[O]{
 		Index:     index,
 		condition: condition,

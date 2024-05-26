@@ -11,14 +11,14 @@ import (
 type accessStrategy interface {
 	Serialize(w serialization.IndentWriter)
 	Filter() types.Expression
-	Ordering() expressions.OrderExpression
+	Ordering() types.OrderExpression
 	Scanner(ctx types.Context) (scan.Scanner, error)
 }
 
 func selectAccessStrategy(
 	table types.Table,
 	filterExpression types.Expression,
-	orderExpression expressions.OrderExpression,
+	orderExpression types.OrderExpression,
 ) accessStrategy {
 	var candidates []accessStrategy
 	for _, index := range table.Indexes() {

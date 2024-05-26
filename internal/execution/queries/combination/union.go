@@ -64,7 +64,7 @@ func (n *unionNode) AddFilter(filterExpression types.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
-func (n *unionNode) AddOrder(orderExpression expressions.OrderExpression) {
+func (n *unionNode) AddOrder(orderExpression types.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
@@ -77,8 +77,8 @@ func (n *unionNode) Filter() types.Expression {
 	return expressions.FilterIntersection(n.left.Filter(), n.right.Filter())
 }
 
-func (n *unionNode) Ordering() expressions.OrderExpression { return nil }
-func (n *unionNode) SupportsMarkRestore() bool             { return false }
+func (n *unionNode) Ordering() types.OrderExpression { return nil }
+func (n *unionNode) SupportsMarkRestore() bool       { return false }
 
 func (n *unionNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	hash := map[string]struct{}{}

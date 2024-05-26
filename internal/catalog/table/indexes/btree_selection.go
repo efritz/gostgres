@@ -6,23 +6,23 @@ import (
 )
 
 type btreeExpressioner interface {
-	Expressions() []expressions.ExpressionWithDirection
+	Expressions() []types.ExpressionWithDirection
 }
 
-func (i *btreeIndex) Expressions() []expressions.ExpressionWithDirection {
+func (i *btreeIndex) Expressions() []types.ExpressionWithDirection {
 	return i.expressions
 }
 
 func CanSelectBtreeIndex(
 	index types.BaseIndex,
 	filterExpression types.Expression,
-	order expressions.OrderExpression,
-) (_ Index[BtreeIndexScanOptions], opts BtreeIndexScanOptions, _ bool) {
+	order types.OrderExpression,
+) (_ types.Index[BtreeIndexScanOptions], opts BtreeIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {
 		return nil, opts, false
 	}
 
-	btreeIndex, ok := index.(Index[BtreeIndexScanOptions])
+	btreeIndex, ok := index.(types.Index[BtreeIndexScanOptions])
 	if !ok {
 		return nil, opts, false
 	}
@@ -47,7 +47,7 @@ func CanSelectBtreeIndex(
 	return btreeIndex, opts, true
 }
 
-func scanDirection(order expressions.OrderExpression, indexDirections []expressions.ExpressionWithDirection) ScanDirection {
+func scanDirection(order types.OrderExpression, indexDirections []types.ExpressionWithDirection) ScanDirection {
 	if order == nil {
 		return ScanDirectionUnknown
 	}
@@ -79,7 +79,7 @@ func scanDirection(order expressions.OrderExpression, indexDirections []expressi
 	return ScanDirectionForward
 }
 
-func extractBounds(filter types.Expression, indexedExprs []expressions.ExpressionWithDirection) (lowerBounds, upperBounds [][]scanBound) {
+func extractBounds(filter types.Expression, indexedExprs []types.ExpressionWithDirection) (lowerBounds, upperBounds [][]scanBound) {
 	if filter == nil {
 		return nil, nil
 	}

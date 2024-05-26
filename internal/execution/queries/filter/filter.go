@@ -35,7 +35,7 @@ func (n *filterNode) AddFilter(filter types.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filter)
 }
 
-func (n *filterNode) AddOrder(order expressions.OrderExpression) {
+func (n *filterNode) AddOrder(order types.OrderExpression) {
 	n.Node.AddOrder(order)
 }
 
@@ -53,7 +53,7 @@ func (n *filterNode) Filter() types.Expression {
 	return expressions.UnionFilters(n.filter, n.Node.Filter())
 }
 
-func (n *filterNode) Ordering() expressions.OrderExpression {
+func (n *filterNode) Ordering() types.OrderExpression {
 	return n.Node.Ordering()
 }
 

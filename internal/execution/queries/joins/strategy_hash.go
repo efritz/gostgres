@@ -3,7 +3,6 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/types"
@@ -18,7 +17,7 @@ func (s *hashJoinStrategy) Name() string {
 	return "hash"
 }
 
-func (s *hashJoinStrategy) Ordering() expressions.OrderExpression {
+func (s *hashJoinStrategy) Ordering() types.OrderExpression {
 	return s.n.left.Ordering()
 }
 

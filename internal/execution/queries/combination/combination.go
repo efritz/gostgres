@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
@@ -81,7 +80,7 @@ func (n *combinationNode) AddFilter(filterExpression types.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
-func (n *combinationNode) AddOrder(orderExpression expressions.OrderExpression) {
+func (n *combinationNode) AddOrder(orderExpression types.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
@@ -94,8 +93,8 @@ func (n *combinationNode) Filter() types.Expression {
 	return n.left.Filter()
 }
 
-func (n *combinationNode) Ordering() expressions.OrderExpression { return nil }
-func (n *combinationNode) SupportsMarkRestore() bool             { return false }
+func (n *combinationNode) Ordering() types.OrderExpression { return nil }
+func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
 func (n *combinationNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)

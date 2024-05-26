@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -62,17 +61,17 @@ func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *updateNode) AddFilter(filter types.Expression)          {}
-func (n *updateNode) AddOrder(order expressions.OrderExpression) {}
+func (n *updateNode) AddFilter(filter types.Expression)    {}
+func (n *updateNode) AddOrder(order types.OrderExpression) {}
 
 func (n *updateNode) Optimize() {
 	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
-func (n *updateNode) Filter() types.Expression              { return nil }
-func (n *updateNode) Ordering() expressions.OrderExpression { return nil }
-func (n *updateNode) SupportsMarkRestore() bool             { return false }
+func (n *updateNode) Filter() types.Expression        { return nil }
+func (n *updateNode) Ordering() types.OrderExpression { return nil }
+func (n *updateNode) SupportsMarkRestore() bool       { return false }
 
 func (n *updateNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

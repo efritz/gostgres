@@ -3,7 +3,6 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -28,7 +27,7 @@ func (s *tableAccessStrategy) Filter() types.Expression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Ordering() expressions.OrderExpression {
+func (s *tableAccessStrategy) Ordering() types.OrderExpression {
 	return nil
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-func (i *btreeIndex) Scanner(ctx types.Context, opts BtreeIndexScanOptions) (tidScanner, error) {
+func (i *btreeIndex) Scanner(ctx types.Context, opts BtreeIndexScanOptions) (types.TIDScanner, error) {
 	stack := []*btreeNode{}
 	current := i.root
 

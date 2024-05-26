@@ -12,12 +12,12 @@ import (
 type foreignKeyConstraint struct {
 	name        string
 	expressions []types.Expression
-	refIndex    indexes.Index[indexes.BtreeIndexScanOptions]
+	refIndex    types.Index[indexes.BtreeIndexScanOptions]
 }
 
 var _ types.Constraint = &foreignKeyConstraint{}
 
-func NewForeignKeyConstraint(name string, expressions []types.Expression, refIndex indexes.Index[indexes.BtreeIndexScanOptions]) *foreignKeyConstraint {
+func NewForeignKeyConstraint(name string, expressions []types.Expression, refIndex types.Index[indexes.BtreeIndexScanOptions]) types.Constraint {
 	return &foreignKeyConstraint{
 		name:        name,
 		expressions: expressions,

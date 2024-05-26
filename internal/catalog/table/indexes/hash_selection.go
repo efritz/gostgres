@@ -16,7 +16,7 @@ func (i *hashIndex) HashExpression() types.Expression {
 func CanSelectHashIndex(
 	index types.BaseIndex,
 	filterExpression types.Expression,
-) (_ Index[HashIndexScanOptions], opts HashIndexScanOptions, _ bool) {
+) (_ types.Index[HashIndexScanOptions], opts HashIndexScanOptions, _ bool) {
 	if !matchesPartial(index, filterExpression) {
 		return nil, opts, false
 	}
@@ -25,7 +25,7 @@ func CanSelectHashIndex(
 		return nil, opts, false
 	}
 
-	hashIndex, ok := index.(Index[HashIndexScanOptions])
+	hashIndex, ok := index.(types.Index[HashIndexScanOptions])
 	if !ok {
 		return nil, opts, false
 	}

@@ -42,3 +42,7 @@ func (q *NodeQuery) Execute(ctx types.Context, w protocol.ResponseWriter) {
 
 	w.Done()
 }
+
+func Evaluate(ctx types.Context, expr types.Expression, row shared.Row) (any, error) {
+	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.OuterRow()))
+}

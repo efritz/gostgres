@@ -16,10 +16,10 @@ func (p *parser) parseRootExpression() (types.Expression, error) {
 }
 
 // expressionWithDirection := expression [ `ASC` | `DESC` ]
-func (p *parser) parseExpressionWithDirection() (expressions.ExpressionWithDirection, error) {
+func (p *parser) parseExpressionWithDirection() (types.ExpressionWithDirection, error) {
 	expression, err := p.parseRootExpression()
 	if err != nil {
-		return expressions.ExpressionWithDirection{}, err
+		return types.ExpressionWithDirection{}, err
 	}
 
 	reverse := false
@@ -29,7 +29,7 @@ func (p *parser) parseExpressionWithDirection() (expressions.ExpressionWithDirec
 		reverse = true
 	}
 
-	return expressions.ExpressionWithDirection{
+	return types.ExpressionWithDirection{
 		Expression: expression,
 		Reverse:    reverse,
 	}, nil

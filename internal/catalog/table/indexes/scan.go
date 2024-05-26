@@ -1,9 +1,5 @@
 package indexes
 
-type tidScanner interface {
-	Scan() (int64, error)
-}
-
 type tidScannerFunc func() (int64, error)
 
 func (f tidScannerFunc) Scan() (int64, error) {

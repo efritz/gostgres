@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-func (i *hashIndex) Scanner(ctx types.Context, opts HashIndexScanOptions) (tidScanner, error) {
+func (i *hashIndex) Scanner(ctx types.Context, opts HashIndexScanOptions) (types.TIDScanner, error) {
 	value, err := queries.Evaluate(ctx, opts.expression, shared.Row{})
 	if err != nil {
 		return nil, err

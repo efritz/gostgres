@@ -56,7 +56,7 @@ func (n *joinNode) AddFilter(filterExpression types.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *joinNode) AddOrder(orderExpression expressions.OrderExpression) {
+func (n *joinNode) AddOrder(orderExpression types.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
@@ -76,7 +76,7 @@ func (n *joinNode) Filter() types.Expression {
 	return expressions.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
-func (n *joinNode) Ordering() expressions.OrderExpression {
+func (n *joinNode) Ordering() types.OrderExpression {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before ordering can be determined")
 	}

@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Table struct {
+type table struct {
 	name        string
 	fields      []types.TableField
 	rows        map[int64]shared.Row
@@ -17,7 +17,7 @@ type Table struct {
 	constraints []types.Constraint
 }
 
-var _ types.Table = &Table{}
+var _ types.Table = &table{}
 
 func NewTable(name string, fields []types.TableField) types.Table {
 	tableFields := []types.TableField{
@@ -27,18 +27,18 @@ func NewTable(name string, fields []types.TableField) types.Table {
 		tableFields = append(tableFields, field.WithRelationName(name))
 	}
 
-	return &Table{
+	return &table{
 		name:   name,
 		fields: tableFields,
 		rows:   map[int64]shared.Row{},
 	}
 }
 
-func (t *Table) Name() string {
+func (t *table) Name() string {
 	return t.name
 }
 
-func (t *Table) Indexes() []types.BaseIndex {
+func (t *table) Indexes() []types.BaseIndex {
 	if t.primaryKey != nil {
 		return append([]types.BaseIndex{t.primaryKey}, t.indexes...)
 	}
@@ -46,15 +46,15 @@ func (t *Table) Indexes() []types.BaseIndex {
 	return t.indexes
 }
 
-func (t *Table) Fields() []types.TableField {
+func (t *table) Fields() []types.TableField {
 	return slices.Clone(t.fields)
 }
 
-func (t *Table) Size() int {
+func (t *table) Size() int {
 	return len(t.rows)
 }
 
-func (t *Table) TIDs() []int64 {
+func (t *table) TIDs() []int64 {
 	tids := make([]int64, 0, len(t.rows))
 	for tid := range t.rows {
 		tids = append(tids, tid)
@@ -64,12 +64,12 @@ func (t *Table) TIDs() []int64 {
 	return tids
 }
 
-func (t *Table) Row(tid int64) (shared.Row, bool) {
+func (t *table) Row(tid int64) (shared.Row, bool) {
 	row, ok := t.rows[tid]
 	return row, ok
 }
 
-func (t *Table) SetPrimaryKey(index types.BaseIndex) error {
+func (t *table) SetPrimaryKey(index types.BaseIndex) error {
 	if t.primaryKey != nil {
 		return fmt.Errorf("primary key already set")
 	}
@@ -84,7 +84,7 @@ func (t *Table) SetPrimaryKey(index types.BaseIndex) error {
 	return nil
 }
 
-func (t *Table) AddIndex(index types.BaseIndex) error {
+func (t *table) AddIndex(index types.BaseIndex) error {
 	for _, row := range t.rows {
 		if err := index.Insert(row); err != nil {
 			return err
@@ -95,7 +95,7 @@ func (t *Table) AddIndex(index types.BaseIndex) error {
 	return nil
 }
 
-func (t *Table) AddConstraint(ctx types.Context, constraint types.Constraint) error {
+func (t *table) AddConstraint(ctx types.Context, constraint types.Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(ctx, row); err != nil {
 			return err
@@ -108,7 +108,7 @@ func (t *Table) AddConstraint(ctx types.Context, constraint types.Constraint) er
 
 var tid = int64(0)
 
-func (t *Table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err error) {
+func (t *table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err error) {
 	tid++
 	id := tid
 
@@ -138,7 +138,7 @@ func (t *Table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err err
 	return newRow, nil
 }
 
-func (t *Table) Delete(row shared.Row) (shared.Row, bool, error) {
+func (t *table) Delete(row shared.Row) (shared.Row, bool, error) {
 	tid, err := row.TID()
 	if err != nil {
 		return shared.Row{}, false, err

@@ -4,13 +4,14 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/types"
 )
 
-func LowerOrder(order expressions.OrderExpression, nodes ...queries.Node) {
+func LowerOrder(order types.OrderExpression, nodes ...queries.Node) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {
-		filteredExpressions := make([]expressions.ExpressionWithDirection, 0, len(orderExpressions))
+		filteredExpressions := make([]types.ExpressionWithDirection, 0, len(orderExpressions))
 	exprLoop:
 		for _, expression := range orderExpressions {
 			for _, field := range expressions.Fields(expression.Expression) {

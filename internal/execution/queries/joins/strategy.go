@@ -11,7 +11,7 @@ import (
 
 type joinStrategy interface {
 	Name() string
-	Ordering() expressions.OrderExpression
+	Ordering() types.OrderExpression
 	Scanner(ctx types.Context) (scan.Scanner, error)
 }
 
@@ -27,10 +27,10 @@ func selectJoinStrategy(n *joinNode) joinStrategy {
 			// if n.right.SupportsMarkRestore()
 
 			// TODO - HACK!
-			var lefts, rights []expressions.ExpressionWithDirection
+			var lefts, rights []types.ExpressionWithDirection
 			for _, p := range pairs {
-				lefts = append(lefts, expressions.ExpressionWithDirection{Expression: p.left})
-				rights = append(rights, expressions.ExpressionWithDirection{Expression: p.right})
+				lefts = append(lefts, types.ExpressionWithDirection{Expression: p.left})
+				rights = append(rights, types.ExpressionWithDirection{Expression: p.right})
 			}
 			n.left = order.NewOrder(n.left, expressions.NewOrderExpression(lefts))
 			n.left.Optimize()

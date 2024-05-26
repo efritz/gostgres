@@ -63,7 +63,7 @@ func (n *hashAggregate) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *hashAggregate) AddOrder(order expressions.OrderExpression) {
+func (n *hashAggregate) AddOrder(order types.OrderExpression) {
 	// TODO
 }
 
@@ -75,7 +75,7 @@ func (n *hashAggregate) Filter() types.Expression {
 	return n.Node.Filter()
 }
 
-func (n *hashAggregate) Ordering() expressions.OrderExpression {
+func (n *hashAggregate) Ordering() types.OrderExpression {
 	return nil // TODO
 }
 
@@ -101,7 +101,7 @@ func (n *hashAggregate) Scanner(ctx types.Context) (scan.Scanner, error) {
 		exprs = append(exprs, expr)
 	}
 
-	h := map[uint64][]expressions.AggregateExpression{}
+	h := map[uint64][]types.AggregateExpression{}
 	if err := scan.VisitRows(scanner, func(row shared.Row) (bool, error) {
 		keys, err := evaluatePair(ctx, n.groupExpressions, row)
 		if err != nil {

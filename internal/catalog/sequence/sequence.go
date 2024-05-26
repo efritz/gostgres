@@ -5,33 +5,33 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-type Sequence struct {
+type sequence struct {
 	name  string
 	typ   shared.Type // TODO - actually store as this type
 	value int64
 }
 
 func NewSequence(name string, typ shared.Type) types.Sequence {
-	return &Sequence{
+	return &sequence{
 		name: name,
 		typ:  typ,
 	}
 }
 
-func (s *Sequence) Name() string {
+func (s *sequence) Name() string {
 	return s.name
 }
 
-func (s *Sequence) Next() (int64, error) {
+func (s *sequence) Next() (int64, error) {
 	s.value++
 	return s.value, nil
 }
 
-func (s *Sequence) Set(value int64) error {
+func (s *sequence) Set(value int64) error {
 	s.value = value
 	return nil
 }
 
-func (s *Sequence) Value() int64 {
+func (s *sequence) Value() int64 {
 	return s.value
 }

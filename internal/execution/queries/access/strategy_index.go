@@ -3,7 +3,6 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/catalog/table/indexes"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
@@ -11,15 +10,15 @@ import (
 	"github.com/efritz/gostgres/internal/types"
 )
 
-type indexAccessStrategy[O indexes.ScanOptions] struct {
+type indexAccessStrategy[O types.ScanOptions] struct {
 	table types.Table
-	index indexes.Index[O]
+	index types.Index[O]
 	opts  O
 }
 
-var _ accessStrategy = &indexAccessStrategy[indexes.ScanOptions]{}
+var _ accessStrategy = &indexAccessStrategy[types.ScanOptions]{}
 
-func NewIndexAccessStrategy[O indexes.ScanOptions](table types.Table, index indexes.Index[O], opts O) accessStrategy {
+func NewIndexAccessStrategy[O types.ScanOptions](table types.Table, index types.Index[O], opts O) accessStrategy {
 	return &indexAccessStrategy[O]{
 		table: table,
 		index: index,
@@ -49,7 +48,7 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() types.Expression {
 	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Ordering() expressions.OrderExpression {
+func (s *indexAccessStrategy[ScanOptions]) Ordering() types.OrderExpression {
 	return s.index.Ordering(s.opts)
 }
 

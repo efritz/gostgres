@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
@@ -18,7 +17,7 @@ type orderScanner struct {
 	mark    int
 }
 
-func NewOrderScanner(ctx types.Context, scanner scan.Scanner, fields []shared.Field, order expressions.OrderExpression) (scan.Scanner, error) {
+func NewOrderScanner(ctx types.Context, scanner scan.Scanner, fields []shared.Field, order types.OrderExpression) (scan.Scanner, error) {
 	rows, err := shared.NewRows(fields)
 	if err != nil {
 		return nil, err
@@ -63,8 +62,8 @@ func (s *orderScanner) Restore() {
 	s.next = s.mark
 }
 
-func findIndexIterationOrder(ctx types.Context, order expressions.OrderExpression, rows shared.Rows) ([]int, error) {
-	var expressions []expressions.ExpressionWithDirection
+func findIndexIterationOrder(ctx types.Context, order types.OrderExpression, rows shared.Rows) ([]int, error) {
+	var expressions []types.ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
 	}
@@ -109,7 +108,7 @@ type indexValue struct {
 	values []any
 }
 
-func makeIndexValues(ctx types.Context, expressions []expressions.ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx types.Context, expressions []types.ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]any, 0, len(expressions))

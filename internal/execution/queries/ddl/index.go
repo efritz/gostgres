@@ -15,14 +15,14 @@ type createIndex struct {
 	tableName         string
 	method            string
 	unique            bool
-	columnExpressions []expressions.ExpressionWithDirection
+	columnExpressions []types.ExpressionWithDirection
 	where             types.Expression
 }
 
 var _ queries.Query = &createIndex{}
 var _ DDLQuery = &createIndex{}
 
-func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []expressions.ExpressionWithDirection, where types.Expression) *createIndex {
+func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []types.ExpressionWithDirection, where types.Expression) *createIndex {
 	return &createIndex{
 		name:              name,
 		tableName:         tableName,
@@ -71,15 +71,15 @@ func (q *createIndex) ExecuteDDL(ctx types.Context) error {
 }
 
 func (q *createIndex) createBtreeIndex(ctx types.Context) (types.BaseIndex, error) {
-	var columnExpressions []expressions.ExpressionWithDirection
+	var columnExpressions []types.ExpressionWithDirection
 	for _, column := range q.columnExpressions {
-		columnExpressions = append(columnExpressions, expressions.ExpressionWithDirection{
+		columnExpressions = append(columnExpressions, types.ExpressionWithDirection{
 			Expression: setRelationName(column.Expression, q.tableName),
 			Reverse:    column.Reverse,
 		})
 	}
 
-	var index indexes.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
+	var index types.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
 		q.name,
 		q.tableName,
 		q.unique,
@@ -103,7 +103,7 @@ func (q *createIndex) createHashIndex(ctx types.Context) (types.BaseIndex, error
 		return nil, fmt.Errorf("hash index do not support uniqueness")
 	}
 
-	var index indexes.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
+	var index types.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
 		q.name,
 		q.tableName,
 		setRelationName(q.columnExpressions[0].Expression, q.tableName),

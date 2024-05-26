@@ -24,9 +24,9 @@ type HashIndexScanOptions struct {
 	expression types.Expression
 }
 
-var _ Index[HashIndexScanOptions] = &hashIndex{}
+var _ types.Index[HashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name, tableName string, expression types.Expression) *hashIndex {
+func NewHashIndex(name, tableName string, expression types.Expression) types.Index[HashIndexScanOptions] {
 	return &hashIndex{
 		name:       name,
 		tableName:  tableName,
@@ -63,7 +63,7 @@ func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr types.Expression)
 	return expressions.NewEquals(i.expression, opts.expression)
 }
 
-func (i *hashIndex) Ordering(opts HashIndexScanOptions) expressions.OrderExpression {
+func (i *hashIndex) Ordering(opts HashIndexScanOptions) types.OrderExpression {
 	return nil
 }
 

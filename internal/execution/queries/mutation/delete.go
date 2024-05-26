@@ -3,7 +3,6 @@ package mutation
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
@@ -54,17 +53,17 @@ func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *deleteNode) AddFilter(filter types.Expression)          {}
-func (n *deleteNode) AddOrder(order expressions.OrderExpression) {}
+func (n *deleteNode) AddFilter(filter types.Expression)    {}
+func (n *deleteNode) AddOrder(order types.OrderExpression) {}
 
 func (n *deleteNode) Optimize() {
 	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
-func (n *deleteNode) Filter() types.Expression              { return nil }
-func (n *deleteNode) Ordering() expressions.OrderExpression { return nil }
-func (n *deleteNode) SupportsMarkRestore() bool             { return false }
+func (n *deleteNode) Filter() types.Expression        { return nil }
+func (n *deleteNode) Ordering() types.OrderExpression { return nil }
+func (n *deleteNode) SupportsMarkRestore() bool       { return false }
 
 func (n *deleteNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

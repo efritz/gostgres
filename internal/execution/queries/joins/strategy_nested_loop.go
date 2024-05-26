@@ -18,7 +18,7 @@ func (s *nestedLoopJoinStrategy) Name() string {
 	return "nested loop"
 }
 
-func (s *nestedLoopJoinStrategy) Ordering() expressions.OrderExpression {
+func (s *nestedLoopJoinStrategy) Ordering() types.OrderExpression {
 	leftOrdering := s.n.left.Ordering()
 	if leftOrdering == nil {
 		return nil

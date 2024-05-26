@@ -54,7 +54,7 @@ func (n *aliasNode) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *aliasNode) AddOrder(order expressions.OrderExpression) {
+func (n *aliasNode) AddOrder(order types.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression types.Expression) types.Expression {
 		for _, field := range n.fields {
 			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
@@ -81,7 +81,7 @@ func (n *aliasNode) Filter() types.Expression {
 	return filter
 }
 
-func (n *aliasNode) Ordering() expressions.OrderExpression {
+func (n *aliasNode) Ordering() types.OrderExpression {
 	ordering := n.Node.Ordering()
 	if ordering == nil {
 		return nil

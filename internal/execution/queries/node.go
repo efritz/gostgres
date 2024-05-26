@@ -1,7 +1,6 @@
 package queries
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/shared"
@@ -13,10 +12,10 @@ type Node interface {
 	Fields() []shared.Field
 	Serialize(w serialization.IndentWriter)
 	AddFilter(filter types.Expression)
-	AddOrder(order expressions.OrderExpression)
+	AddOrder(order types.OrderExpression)
 	Optimize()
 	Filter() types.Expression
-	Ordering() expressions.OrderExpression
+	Ordering() types.OrderExpression
 
 	// TODO: rough implementation
 	// https://sourcegraph.com/github.com/postgres/postgres@06286709ee0637ec7376329a5aa026b7682dcfe2/-/blob/src/backend/executor/execAmi.c?L439:59-439:79

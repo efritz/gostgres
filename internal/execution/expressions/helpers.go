@@ -99,7 +99,7 @@ func UnionFilters(filters ...types.Expression) types.Expression {
 	return filter
 }
 
-func SubsumesOrder(a, b OrderExpression) bool {
+func SubsumesOrder(a, b types.OrderExpression) bool {
 	if a == nil || b == nil {
 		return false
 	}

@@ -1,7 +1,6 @@
 package limit
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/serialization"
@@ -28,12 +27,12 @@ func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *limitNode) AddFilter(filter types.Expression)          {}
-func (n *limitNode) AddOrder(order expressions.OrderExpression) {}
-func (n *limitNode) Optimize()                                  { n.Node.Optimize() }
-func (n *limitNode) Filter() types.Expression                   { return n.Node.Filter() }
-func (n *limitNode) Ordering() expressions.OrderExpression      { return n.Node.Ordering() }
-func (n *limitNode) SupportsMarkRestore() bool                  { return false }
+func (n *limitNode) AddFilter(filter types.Expression)    {}
+func (n *limitNode) AddOrder(order types.OrderExpression) {}
+func (n *limitNode) Optimize()                            { n.Node.Optimize() }
+func (n *limitNode) Filter() types.Expression             { return n.Node.Filter() }
+func (n *limitNode) Ordering() types.OrderExpression      { return n.Node.Ordering() }
+func (n *limitNode) SupportsMarkRestore() bool            { return false }
 
 func (n *limitNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)

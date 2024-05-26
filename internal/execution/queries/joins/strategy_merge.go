@@ -3,7 +3,6 @@ package joins
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
 	"github.com/efritz/gostgres/internal/shared"
 	"github.com/efritz/gostgres/internal/types"
@@ -18,7 +17,7 @@ func (s *mergeJoinStrategy) Name() string {
 	return "merge"
 }
 
-func (s *mergeJoinStrategy) Ordering() expressions.OrderExpression {
+func (s *mergeJoinStrategy) Ordering() types.OrderExpression {
 	// TODO - can add right fields as well?
 	return s.n.left.Ordering()
 }

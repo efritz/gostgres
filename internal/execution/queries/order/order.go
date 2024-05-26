@@ -10,12 +10,12 @@ import (
 
 type orderNode struct {
 	queries.Node
-	order expressions.OrderExpression
+	order types.OrderExpression
 }
 
 var _ queries.Node = &orderNode{}
 
-func NewOrder(node queries.Node, order expressions.OrderExpression) queries.Node {
+func NewOrder(node queries.Node, order types.OrderExpression) queries.Node {
 	return &orderNode{
 		Node:  node,
 		order: order,
@@ -35,7 +35,7 @@ func (n *orderNode) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *orderNode) AddOrder(order expressions.OrderExpression) {
+func (n *orderNode) AddOrder(order types.OrderExpression) {
 	// We are nested in a parent sort and un-separated by an ordering boundary
 	// (such as limit or offset). We'll ignore our old sort criteria and adopt
 	// our parent since the ordering of rows at this point in the query should
@@ -56,7 +56,7 @@ func (n *orderNode) Optimize() {
 	}
 }
 
-func (n *orderNode) Ordering() expressions.OrderExpression {
+func (n *orderNode) Ordering() types.OrderExpression {
 	if n.order == nil {
 		return n.Node.Ordering()
 	}

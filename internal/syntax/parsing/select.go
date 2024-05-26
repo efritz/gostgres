@@ -230,7 +230,7 @@ func (p *parser) parseCombinationTarget() (queries.Node, error) {
 }
 
 // orderBy := [ `ORDER BY` ( expressionWithDirection [, ...] ) ]
-func (p *parser) parseOrderBy() (expressions.OrderExpression, bool, error) {
+func (p *parser) parseOrderBy() (types.OrderExpression, bool, error) {
 	// TODO - make this a combined token?
 	if !p.advanceIf(isType(tokens.TokenTypeOrder), isType(tokens.TokenTypeBy)) {
 		return nil, false, nil

@@ -12,7 +12,7 @@ type btreeIndex struct {
 	name        string
 	tableName   string
 	unique      bool
-	expressions []expressions.ExpressionWithDirection
+	expressions []types.ExpressionWithDirection
 	root        *btreeNode
 }
 
@@ -54,9 +54,9 @@ func NewBtreeSearchOptions(values []any) BtreeIndexScanOptions {
 	}
 }
 
-var _ Index[BtreeIndexScanOptions] = &btreeIndex{}
+var _ types.Index[BtreeIndexScanOptions] = &btreeIndex{}
 
-func NewBTreeIndex(name, tableName string, unique bool, expressions []expressions.ExpressionWithDirection) *btreeIndex {
+func NewBTreeIndex(name, tableName string, unique bool, expressions []types.ExpressionWithDirection) types.Index[BtreeIndexScanOptions] {
 	return &btreeIndex{
 		name:        name,
 		tableName:   tableName,
@@ -185,11 +185,11 @@ func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (
 	return lowers, uppers, equals
 }
 
-func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) expressions.OrderExpression {
+func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) types.OrderExpression {
 	if opts.scanDirection == ScanDirectionBackward {
-		var reversed []expressions.ExpressionWithDirection
+		var reversed []types.ExpressionWithDirection
 		for _, expression := range i.expressions {
-			reversed = append(reversed, expressions.ExpressionWithDirection{
+			reversed = append(reversed, types.ExpressionWithDirection{
 				Expression: expression.Expression,
 				Reverse:    !expression.Reverse,
 			})

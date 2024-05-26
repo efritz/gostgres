@@ -9,10 +9,10 @@ import (
 
 func DefaultFunctions() map[string]types.Function {
 	return map[string]types.Function{
-		"now":     function(now),
-		"nextval": function(nextval),
-		"setval":  function(setval),
-		"currval": function(currval),
+		"now":     simpleFunction(now),
+		"nextval": simpleFunction(nextval),
+		"setval":  simpleFunction(setval),
+		"currval": simpleFunction(currval),
 	}
 }
 

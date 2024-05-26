@@ -13,7 +13,7 @@ import (
 type accessNode struct {
 	table    types.Table
 	filter   types.Expression
-	order    expressions.OrderExpression
+	order    types.OrderExpression
 	strategy accessStrategy
 }
 
@@ -52,7 +52,7 @@ func (n *accessNode) AddFilter(filterExpression types.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *accessNode) AddOrder(order expressions.OrderExpression) {
+func (n *accessNode) AddOrder(order types.OrderExpression) {
 	n.order = order
 }
 
@@ -78,7 +78,7 @@ func (n *accessNode) Filter() types.Expression {
 	return n.filter
 }
 
-func (n *accessNode) Ordering() expressions.OrderExpression {
+func (n *accessNode) Ordering() types.OrderExpression {
 	return n.strategy.Ordering()
 }
 

@@ -1,6 +1,10 @@
 package impls
 
 import (
+	"fmt"
+	"runtime"
+	"strings"
+
 	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
@@ -11,6 +15,7 @@ type Context struct {
 	functions  *catalog.Catalog[Function]
 	aggregates *catalog.Catalog[Aggregate]
 	outerRow   rows.Row
+	debug      bool
 }
 
 var EmptyContext = NewContext(
@@ -70,4 +75,23 @@ func (ctx Context) SetTable(name string, table Table) {
 
 func (ctx Context) SetSequence(name string, sequence Sequence) {
 	ctx.sequences.Set(name, sequence)
+}
+
+func (c Context) WithDebug() Context {
+	c.debug = true
+	return c
+}
+
+func (c Context) Log(format string, args ...interface{}) {
+	if !c.debug {
+		return
+	}
+
+	_, file, line, _ := runtime.Caller(1)
+	parts := strings.Split(file, "/gostgres/internal/execution/queries/")
+	caller := fmt.Sprintf("[%s:%d]", parts[1], line)
+
+	fmt.Printf("%% [%s] ", caller)
+	fmt.Printf(format, args...)
+	fmt.Printf("\n")
 }

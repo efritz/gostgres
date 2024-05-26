@@ -87,6 +87,8 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 }
 
 func (n *hashAggregate) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Hash Aggregate scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -135,6 +137,8 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	keys := maps.Keys(h)
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Hash Aggregate")
+
 		if i >= len(keys) {
 			return rows.Row{}, scan.ErrNoRows
 		}

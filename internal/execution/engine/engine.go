@@ -43,7 +43,7 @@ func NewEngine(
 	}
 }
 
-func (e *Engine) Query(input string) (rows.Rows, error) {
+func (e *Engine) Query(input string, debug bool) (rows.Rows, error) {
 	query, err := parsing.Parse(lexing.Lex(input), e.tables)
 	if err != nil {
 		return rows.Rows{}, fmt.Errorf("failed to parse query: %s", err)
@@ -55,6 +55,9 @@ func (e *Engine) Query(input string) (rows.Rows, error) {
 		e.functions,
 		e.aggregates,
 	)
+	if debug {
+		ctx = ctx.WithDebug()
+	}
 
 	collector := protocol.NewRowCollector()
 	query.Execute(ctx, collector)

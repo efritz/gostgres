@@ -42,12 +42,12 @@ func runTestQuery(engine *engine.Engine, input string) (string, error) {
 		return "", fmt.Errorf("expected exactly one statement")
 	}
 
-	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", statements[0]))
+	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", statements[0]), false)
 	if err != nil {
 		return "", err
 	}
 
-	resultRows, err := engine.Query(statements[0])
+	resultRows, err := engine.Query(statements[0], false)
 	if err != nil {
 		return "", err
 	}

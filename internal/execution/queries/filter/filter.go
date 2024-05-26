@@ -62,6 +62,8 @@ func (n *filterNode) SupportsMarkRestore() bool {
 }
 
 func (n *filterNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Filter Node scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

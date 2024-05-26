@@ -9,6 +9,8 @@ import (
 )
 
 func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (impls.TIDScanner, error) {
+	ctx.Log("Building BTree Index scanner")
+
 	stack := []*btreeNode{}
 	current := i.root
 
@@ -23,6 +25,8 @@ func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (imp
 	}
 
 	return tidScannerFunc(func() (int64, error) {
+		ctx.Log("Scanning BTree Index")
+
 		for current != nil || len(stack) > 0 {
 			for current != nil {
 				stack = append(stack, current)

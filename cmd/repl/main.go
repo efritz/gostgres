@@ -23,6 +23,7 @@ func main() {
 
 type options struct {
 	displayExpandedResults bool
+	debug                  bool
 }
 
 func mainErr() error {
@@ -59,6 +60,10 @@ loop:
 				opts.displayExpandedResults = !opts.displayExpandedResults
 				continue
 
+			case "debug":
+				opts.debug = !opts.debug
+				continue
+
 			case "load sample":
 				if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
 					return err
@@ -91,6 +96,12 @@ loop:
 }
 
 func handleQuery(engine *engine.Engine, opts options, input string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("query execution panic: %v", r)
+		}
+	}()
+
 	start := time.Now()
 	defer func() {
 		if err == nil {
@@ -98,7 +109,7 @@ func handleQuery(engine *engine.Engine, opts options, input string) (err error) 
 		}
 	}()
 
-	rows, err := engine.Query(input)
+	rows, err := engine.Query(input, opts.debug)
 	if err != nil {
 		return err
 	}

@@ -9,11 +9,15 @@ import (
 )
 
 func NewFilterScanner(ctx impls.Context, scanner scan.Scanner, filter impls.Expression) (scan.Scanner, error) {
+	ctx.Log("Building Filter scanner")
+
 	if filter == nil {
 		return scanner, nil
 	}
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Filter")
+
 		for {
 			row, err := scanner.Scan()
 			if err != nil {

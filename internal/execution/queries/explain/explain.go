@@ -41,10 +41,14 @@ func (n *explain) Ordering() impls.OrderExpression        { return nil }
 func (n *explain) SupportsMarkRestore() bool              { return false }
 
 func (n *explain) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Explain scanner")
+
 	plan := serialization.SerializePlan(n.n)
 	emitted := false
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Explain")
+
 		if emitted {
 			return rows.Row{}, scan.ErrNoRows
 		}

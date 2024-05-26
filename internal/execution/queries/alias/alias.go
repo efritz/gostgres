@@ -102,12 +102,16 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 }
 
 func (n *aliasNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Alias scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Alias")
+
 		row, err := scanner.Scan()
 		if err != nil {
 			return rows.Row{}, err

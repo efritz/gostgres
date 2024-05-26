@@ -13,6 +13,7 @@ import (
 )
 
 type orderScanner struct {
+	ctx     impls.Context
 	rows    rows.Rows
 	indexes []int
 	next    int
@@ -20,6 +21,8 @@ type orderScanner struct {
 }
 
 func NewOrderScanner(ctx impls.Context, scanner scan.Scanner, fields []fields.Field, order impls.OrderExpression) (scan.Scanner, error) {
+	ctx.Log("Building Order scanner")
+
 	rows, err := rows.NewRows(fields)
 	if err != nil {
 		return nil, err
@@ -36,6 +39,7 @@ func NewOrderScanner(ctx impls.Context, scanner scan.Scanner, fields []fields.Fi
 	}
 
 	return &orderScanner{
+		ctx:     ctx,
 		rows:    rows,
 		indexes: indexes,
 		mark:    -1,
@@ -43,6 +47,8 @@ func NewOrderScanner(ctx impls.Context, scanner scan.Scanner, fields []fields.Fi
 }
 
 func (s *orderScanner) Scan() (rows.Row, error) {
+	s.ctx.Log("Scanning Order")
+
 	if s.next < len(s.indexes) {
 		row := s.rows.Row(s.indexes[s.next])
 		s.next++

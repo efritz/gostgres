@@ -34,6 +34,8 @@ func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 }
 
 func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Nested Loop Join Strategy scanner")
+
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -45,6 +47,8 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error
 	)
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Nested Loop Join Strategy")
+
 		for {
 			if leftRow == nil {
 				row, err := leftScanner.Scan()

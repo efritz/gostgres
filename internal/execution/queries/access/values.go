@@ -43,9 +43,13 @@ func (n *valuesNode) Ordering() impls.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool            { return false }
 
 func (n *valuesNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Values scanner")
+
 	i := 0
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Values")
+
 		if i >= len(n.expressions) {
 			return rows.Row{}, scan.ErrNoRows
 		}

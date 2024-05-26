@@ -69,6 +69,8 @@ func (n *insertNode) Ordering() impls.OrderExpression { return nil }
 func (n *insertNode) SupportsMarkRestore() bool       { return false }
 
 func (n *insertNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Insert scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -87,6 +89,8 @@ func (n *insertNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	}
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Insert")
+
 		row, err := scanner.Scan()
 		if err != nil {
 			return rows.Row{}, err

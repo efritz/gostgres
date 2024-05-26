@@ -83,6 +83,8 @@ func (n *unionNode) Ordering() impls.OrderExpression { return nil }
 func (n *unionNode) SupportsMarkRestore() bool       { return false }
 
 func (n *unionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Union scanner")
+
 	hash := map[string]struct{}{}
 	mark := func(row rows.Row) bool {
 		key := utils.HashSlice(row.Values)
@@ -102,6 +104,8 @@ func (n *unionNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	var rightScanner scan.Scanner
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Union")
+
 		for leftScanner != nil {
 			row, err := leftScanner.Scan()
 			if err != nil {

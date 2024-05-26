@@ -9,6 +9,8 @@ import (
 )
 
 func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (impls.TIDScanner, error) {
+	ctx.Log("Building Hash Index scanner")
+
 	value, err := queries.Evaluate(ctx, opts.expression, rows.Row{})
 	if err != nil {
 		return nil, err
@@ -19,6 +21,8 @@ func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (impls
 	j := 0
 
 	return tidScannerFunc(func() (int64, error) {
+		ctx.Log("Scanning Hash Index")
+
 		if j < len(items) {
 			tid := items[j].tid
 			j++

@@ -20,7 +20,7 @@ func LoadPagilaSampleSchemaAndData(engine *engine.Engine) error {
 	}
 
 	for _, statement := range append(schema, data...) {
-		if _, err := engine.Query(statement); err != nil {
+		if _, err := engine.Query(statement, false); err != nil {
 			return err
 		}
 	}

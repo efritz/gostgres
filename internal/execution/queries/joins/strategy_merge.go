@@ -24,6 +24,8 @@ func (s *mergeJoinStrategy) Ordering() impls.OrderExpression {
 }
 
 func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Merge Join Strategy scanner")
+
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -63,6 +65,7 @@ type mergeJoinScanner struct {
 }
 
 func (s *mergeJoinScanner) Scan() (rows.Row, error) {
+	s.ctx.Log("Scanning Merge Join Strategy")
 	if s.leftRow == nil {
 		// Get next row from left relation. This is necessary only on the first
 		// iteration of the scan. After that, the left row is always non-nil.

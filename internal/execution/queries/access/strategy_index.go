@@ -53,12 +53,16 @@ func (s *indexAccessStrategy[ScanOptions]) Ordering() impls.OrderExpression {
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Index Access scanner Strategy")
+
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err
 	}
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Index Access Strategy")
+
 		tid, err := tidScanner.Scan()
 		if err != nil {
 			return rows.Row{}, err

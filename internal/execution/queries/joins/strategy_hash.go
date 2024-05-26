@@ -24,6 +24,8 @@ func (s *hashJoinStrategy) Ordering() impls.OrderExpression {
 }
 
 func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Hash Join Strategy scanner")
+
 	rightScanner, err := s.n.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -52,6 +54,8 @@ func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	var rightRows []rows.Row
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Hash Join Strategy")
+
 		for {
 			for len(rightRows) > 0 {
 				rightRow := rightRows[0]

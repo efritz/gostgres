@@ -87,6 +87,8 @@ func (n *accessNode) SupportsMarkRestore() bool {
 }
 
 func (n *accessNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Access Node scanner")
+
 	scanner, err := n.strategy.Scanner(ctx)
 	if err != nil {
 		return nil, err

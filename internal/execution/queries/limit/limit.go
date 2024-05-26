@@ -35,6 +35,8 @@ func (n *limitNode) Ordering() impls.OrderExpression      { return n.Node.Orderi
 func (n *limitNode) SupportsMarkRestore() bool            { return false }
 
 func (n *limitNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Limit scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -43,6 +45,8 @@ func (n *limitNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	remaining := n.limit
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Limit")
+
 		if remaining <= 0 {
 			return rows.Row{}, scan.ErrNoRows
 		}

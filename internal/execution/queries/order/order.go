@@ -69,6 +69,8 @@ func (n *orderNode) SupportsMarkRestore() bool {
 }
 
 func (n *orderNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Order Node scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

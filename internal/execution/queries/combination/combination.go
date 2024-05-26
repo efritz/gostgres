@@ -99,6 +99,8 @@ func (n *combinationNode) Ordering() impls.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
 func (n *combinationNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Combination scanner")
+
 	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -119,6 +121,8 @@ func (n *combinationNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	var selection []sourcedRow
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Combination")
+
 	outer:
 		for {
 			if len(selection) > 0 {

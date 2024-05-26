@@ -39,6 +39,8 @@ func (n *offsetNode) Ordering() impls.OrderExpression      { return n.Node.Order
 func (n *offsetNode) SupportsMarkRestore() bool            { return false }
 
 func (n *offsetNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	ctx.Log("Building Offset scanner")
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -50,6 +52,8 @@ func (n *offsetNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	}
 
 	return scan.ScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Offset")
+
 		for {
 			row, err := scanner.Scan()
 			if err != nil {

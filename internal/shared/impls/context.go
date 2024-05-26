@@ -49,10 +49,9 @@ func (c Context) Log(format string, args ...interface{}) {
 	}
 
 	_, file, line, _ := runtime.Caller(1)
-	parts := strings.Split(file, "/gostgres/internal/execution/queries/")
-	caller := fmt.Sprintf("[%s:%d]", parts[1], line)
+	parts := strings.Split(file, "/gostgres/internal/")
 
-	fmt.Printf("%% [%s] ", caller)
+	fmt.Printf("%% [%s:%d] ", parts[1], line)
 	fmt.Printf(format, args...)
 	fmt.Printf("\n")
 }

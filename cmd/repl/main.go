@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -99,7 +100,7 @@ loop:
 func handleQuery(engine *engine.Engine, opts options, input string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("query execution panic: %v", r)
+			err = fmt.Errorf("query execution panic: %v\n%s", r, string(debug.Stack()))
 		}
 	}()
 

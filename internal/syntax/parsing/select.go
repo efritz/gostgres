@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/queries/aggregate"
-	"github.com/efritz/gostgres/internal/queries/combination"
-	"github.com/efritz/gostgres/internal/queries/filter"
-	"github.com/efritz/gostgres/internal/queries/limit"
-	"github.com/efritz/gostgres/internal/queries/order"
-	"github.com/efritz/gostgres/internal/queries/projection"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/aggregate"
+	"github.com/efritz/gostgres/internal/execution/queries/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/filter"
+	"github.com/efritz/gostgres/internal/execution/queries/limit"
+	"github.com/efritz/gostgres/internal/execution/queries/order"
+	"github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -74,9 +76,9 @@ func (p *parser) parseSimpleSelect() (queries.Node, []projection.ProjectionExpre
 				return nil, nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 			}
 
-			if fields := expressions.Fields(expression); len(fields) > 0 {
+			if len(expressions.Fields(expression)) > 0 {
 				for _, grouping := range groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(shared.NewField("", alias, shared.TypeAny))) {
+					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
 						continue selectLoop
 					}
 				}
@@ -132,7 +134,7 @@ func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]
-func (p *parser) parseGroupBy() ([]expressions.Expression, bool, error) {
+func (p *parser) parseGroupBy() ([]impls.Expression, bool, error) {
 	// TODO - make this a combined token?
 	if !p.advanceIf(isType(tokens.TokenTypeGroup), isType(tokens.TokenTypeBy)) {
 		return nil, false, nil
@@ -229,7 +231,7 @@ func (p *parser) parseCombinationTarget() (queries.Node, error) {
 }
 
 // orderBy := [ `ORDER BY` ( expressionWithDirection [, ...] ) ]
-func (p *parser) parseOrderBy() (expressions.OrderExpression, bool, error) {
+func (p *parser) parseOrderBy() (impls.OrderExpression, bool, error) {
 	// TODO - make this a combined token?
 	if !p.advanceIf(isType(tokens.TokenTypeOrder), isType(tokens.TokenTypeBy)) {
 		return nil, false, nil

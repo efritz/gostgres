@@ -1,0 +1,55 @@
+package explain
+
+import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/scan"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
+)
+
+type explain struct {
+	n queries.Node
+}
+
+var _ queries.Node = &explain{}
+
+func NewExplain(n queries.Node) *explain {
+	return &explain{
+		n: n,
+	}
+}
+
+func (n *explain) Name() string {
+	return "EXPLAIN"
+}
+
+func (n *explain) Fields() []fields.Field {
+	return []fields.Field{
+		fields.NewField("", "query plan", types.TypeText),
+	}
+}
+
+func (n *explain) Serialize(w serialization.IndentWriter) {}
+func (n *explain) AddFilter(filter impls.Expression)      {}
+func (n *explain) AddOrder(order impls.OrderExpression)   {}
+func (n *explain) Optimize()                              { n.n.Optimize() }
+func (n *explain) Filter() impls.Expression               { return nil }
+func (n *explain) Ordering() impls.OrderExpression        { return nil }
+func (n *explain) SupportsMarkRestore() bool              { return false }
+
+func (n *explain) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	plan := serialization.SerializePlan(n.n)
+	emitted := false
+
+	return scan.ScannerFunc(func() (rows.Row, error) {
+		if emitted {
+			return rows.Row{}, scan.ErrNoRows
+		}
+
+		emitted = true
+		return rows.NewRow(n.Fields(), []any{plan})
+	}), nil
+}

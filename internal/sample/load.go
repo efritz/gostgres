@@ -4,7 +4,7 @@ import (
 	"embed"
 	"path/filepath"
 
-	"github.com/efritz/gostgres/internal/engine"
+	"github.com/efritz/gostgres/internal/execution/engine"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
 

@@ -1,0 +1,55 @@
+`
+Query:
+
+SELECT c.name, count(1)
+FROM film f
+JOIN film_category fc ON fc.film_id = f.film_id
+JOIN category c ON c.category_id = fc.category_id
+GROUP BY c.name
+-- "c.name" doesn't resolve
+ORDER BY count, name;
+
+Plan:
+
+                                  query plan
+------------------------------------------------------------------------------
+ order by count, name
+    group by c.name, select(name, count)
+        join using nested loop
+            join using nested loop
+                alias as f
+                    table scan of film
+            with
+                alias as fc
+                    btree index scan of film_category via film_category_pkey
+                        index cond: film_category.film_id = f.film_id
+            on fc.film_id = f.film_id
+        with
+            alias as c
+                btree index scan of category via category_pkey
+                    index cond: category.category_id = fc.category_id
+        on c.category_id = fc.category_id
+(1 rows)
+
+Results:
+
+    name     | count
+-------------+-------
+ Music       | 51
+ Horror      | 56
+ Classics    | 57
+ Travel      | 57
+ Comedy      | 58
+ Children    | 60
+ Games       | 61
+ Sci-Fi      | 61
+ Drama       | 62
+ New         | 63
+ Action      | 64
+ Animation   | 66
+ Documentary | 68
+ Family      | 69
+ Foreign     | 73
+ Sports      | 74
+(16 rows)
+`

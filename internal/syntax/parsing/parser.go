@@ -3,10 +3,9 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 type parser struct {
@@ -24,12 +23,12 @@ type parser struct {
 }
 
 type TableGetter interface {
-	GetTable(name string) (*table.Table, bool)
+	Get(name string) (impls.Table, bool)
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
-type prefixParserFunc func(token tokens.Token) (expressions.Expression, error)
-type infixParserFunc func(left expressions.Expression, token tokens.Token) (expressions.Expression, error)
+type prefixParserFunc func(token tokens.Token) (impls.Expression, error)
+type infixParserFunc func(left impls.Expression, token tokens.Token) (impls.Expression, error)
 
 type ddlParsers map[tokens.TokenType]func(token tokens.Token) (queries.Query, error)
 type createParsers map[tokens.TokenType]func() (queries.Query, error)

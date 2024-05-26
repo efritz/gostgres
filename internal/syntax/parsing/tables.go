@@ -3,25 +3,26 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/expressions"
-	"github.com/efritz/gostgres/internal/queries"
-	"github.com/efritz/gostgres/internal/queries/access"
-	"github.com/efritz/gostgres/internal/queries/alias"
-	"github.com/efritz/gostgres/internal/queries/joins"
-	"github.com/efritz/gostgres/internal/queries/projection"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/access"
+	"github.com/efritz/gostgres/internal/execution/queries/alias"
+	"github.com/efritz/gostgres/internal/execution/queries/joins"
+	"github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/table"
 )
 
 // table := ident alias
-func (p *parser) parseTable() (*table.Table, string, string, error) {
+func (p *parser) parseTable() (impls.Table, string, string, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, "", "", err
 	}
 
-	table, ok := p.tables.GetTable(name)
+	table, ok := p.tables.Get(name)
 	if !ok {
 		return nil, "", "", fmt.Errorf("unknown table %s", name)
 	}
@@ -106,7 +107,7 @@ func (p *parser) parseBaseTableExpression() (queries.Node, error) {
 		node = alias.NewAlias(node, aliasName)
 
 		if len(columnNames) > 0 {
-			var fields []shared.Field
+			var fields []fields.Field
 			for _, f := range node.Fields() {
 				if !f.Internal() {
 					fields = append(fields, f)
@@ -141,7 +142,7 @@ func (p *parser) parseTableReference() (queries.Node, error) {
 		return nil, err
 	}
 
-	table, ok := p.tables.GetTable(nameToken)
+	table, ok := p.tables.Get(nameToken)
 	if !ok {
 		return nil, fmt.Errorf("unknown table %s", nameToken)
 	}
@@ -165,20 +166,20 @@ func (p *parser) parseValues() (queries.Node, error) {
 		return nil, err
 	}
 
-	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]expressions.Expression, error) {
+	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]impls.Expression, error) {
 		return parseParenthesizedCommaSeparatedList(p, false, false, p.parseRootExpression)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	fields := make([]shared.Field, 0, len(allRowExpressions[0]))
+	rowFields := make([]fields.Field, 0, len(allRowExpressions[0]))
 	for i := range allRowExpressions[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeAny))
+		rowFields = append(rowFields, fields.NewField("", fmt.Sprintf("column%d", i+1), types.TypeAny))
 	}
 
 	// TODO - support `DEFAULT` expressions
-	return access.NewValues(fields, allRowExpressions), nil
+	return access.NewValues(rowFields, allRowExpressions), nil
 }
 
 // tableAlias := alias [ `(` ident [, ...] `)` ]
@@ -225,7 +226,7 @@ func (p *parser) parseJoin(node queries.Node) (queries.Node, error) {
 		return nil, err
 	}
 
-	var condition expressions.Expression
+	var condition impls.Expression
 	if p.advanceIf(isType(tokens.TokenTypeOn)) {
 		rawCondition, err := p.parseRootExpression()
 		if err != nil {

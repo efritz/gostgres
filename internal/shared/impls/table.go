@@ -1,0 +1,17 @@
+package impls
+
+import "github.com/efritz/gostgres/internal/shared/rows"
+
+type Table interface {
+	Name() string
+	Indexes() []BaseIndex
+	Fields() []TableField
+	Size() int
+	TIDs() []int64
+	Row(tid int64) (rows.Row, bool)
+	SetPrimaryKey(index BaseIndex) error
+	AddIndex(index BaseIndex) error
+	AddConstraint(ctx Context, constraint Constraint) error
+	Insert(ctx Context, row rows.Row) (_ rows.Row, err error)
+	Delete(row rows.Row) (rows.Row, bool, error)
+}

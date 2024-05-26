@@ -16,7 +16,7 @@ func AsAggregate(ctx impls.Context, e impls.Expression) impls.AggregateExpressio
 			return e
 		}
 
-		aggregate, ok := ctx.GetAggregate(f.name)
+		aggregate, ok := ctx.Aggregates.Get(f.name)
 		if !ok {
 			return e
 		}

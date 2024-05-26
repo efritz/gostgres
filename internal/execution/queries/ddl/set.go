@@ -1,7 +1,7 @@
 package ddl
 
 import (
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )

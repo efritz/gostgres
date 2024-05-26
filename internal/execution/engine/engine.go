@@ -6,7 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/catalog/aggregates"
 	"github.com/efritz/gostgres/internal/catalog/functions"
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
@@ -43,10 +43,11 @@ func NewEngine(
 	}
 }
 
-func (e *Engine) Query(input string, debug bool) (rows.Rows, error) {
-	query, err := parsing.Parse(lexing.Lex(input), e.tables)
+func (e *Engine) Query(request protocol.Request, responseWriter protocol.ResponseWriter) {
+	query, err := parsing.Parse(lexing.Lex(request.Query), e.tables)
 	if err != nil {
-		return rows.Rows{}, fmt.Errorf("failed to parse query: %s", err)
+		responseWriter.Error(fmt.Errorf("failed to parse query: %s", err))
+		return
 	}
 
 	ctx := impls.NewContext(
@@ -55,16 +56,27 @@ func (e *Engine) Query(input string, debug bool) (rows.Rows, error) {
 		e.functions,
 		e.aggregates,
 	)
-	if debug {
+	if request.Debug {
 		ctx = ctx.WithDebug()
 	}
 
+	query.Execute(ctx, responseWriter)
+}
+
+func (e *Engine) QueryRows(request protocol.Request) (rows.Rows, error) {
 	collector := protocol.NewRowCollector()
-	query.Execute(ctx, collector)
+	e.Query(request, collector)
 	collectedRows, err := collector.Rows()
 	if err != nil {
-		return rows.Rows{}, fmt.Errorf("failed to execute query %q: %s", input, err)
+		return rows.Rows{}, fmt.Errorf("failed to execute query %q: %s", request.Query, err)
 	}
 
 	return collectedRows, nil
+}
+
+func (e *Engine) QueryError(request protocol.Request) error {
+	collector := protocol.NewRowCollector()
+	e.Query(request, collector)
+	_, err := collector.Rows()
+	return err
 }

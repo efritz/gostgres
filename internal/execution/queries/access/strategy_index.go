@@ -3,9 +3,9 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
+	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )

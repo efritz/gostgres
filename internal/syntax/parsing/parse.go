@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )

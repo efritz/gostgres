@@ -2,7 +2,7 @@ package ddl
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/sequence"
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
@@ -33,6 +33,6 @@ func (q *createSequence) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 }
 
 func (q *createSequence) ExecuteDDL(ctx impls.Context) error {
-	ctx.SetSequence(q.name, sequence.NewSequence(q.name, q.typ))
+	ctx.Sequences.Set(q.name, sequence.NewSequence(q.name, q.typ))
 	return nil
 }

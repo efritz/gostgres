@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/efritz/gostgres/internal/execution/engine"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
 
@@ -20,7 +21,10 @@ func LoadPagilaSampleSchemaAndData(engine *engine.Engine) error {
 	}
 
 	for _, statement := range append(schema, data...) {
-		if _, err := engine.Query(statement, false); err != nil {
+		if err := engine.QueryError(protocol.Request{
+			Query: statement,
+			Debug: false,
+		}); err != nil {
 			return err
 		}
 	}

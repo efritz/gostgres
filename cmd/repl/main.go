@@ -9,7 +9,8 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/efritz/gostgres/internal/execution/engine"
-	"github.com/efritz/gostgres/internal/execution/engine/serialization"
+	"github.com/efritz/gostgres/internal/execution/protocol"
+	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
@@ -109,7 +110,10 @@ func handleQuery(engine *engine.Engine, opts options, input string) (err error) 
 		}
 	}()
 
-	rows, err := engine.Query(input, opts.debug)
+	rows, err := engine.QueryRows(protocol.Request{
+		Query: input,
+		Debug: opts.debug,
+	})
 	if err != nil {
 		return err
 	}

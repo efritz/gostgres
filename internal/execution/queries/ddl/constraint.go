@@ -6,8 +6,8 @@ import (
 
 	"github.com/efritz/gostgres/internal/catalog/table/constraints"
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -39,7 +39,7 @@ func (q *createPrimaryKeyConstraint) Execute(ctx impls.Context, w protocol.Respo
 }
 
 func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx impls.Context) error {
-	t, ok := ctx.GetTable(q.tableName)
+	t, ok := ctx.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -100,7 +100,7 @@ func (q *createCheckConstraint) Execute(ctx impls.Context, w protocol.ResponseWr
 }
 
 func (q *createCheckConstraint) ExecuteDDL(ctx impls.Context) error {
-	table, ok := ctx.GetTable(q.tableName)
+	table, ok := ctx.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -140,7 +140,7 @@ func (q *createForeignKeyConstraint) Execute(ctx impls.Context, w protocol.Respo
 }
 
 func (q *createForeignKeyConstraint) ExecuteDDL(ctx impls.Context) error {
-	t, ok := ctx.GetTable(q.tableName)
+	t, ok := ctx.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -156,7 +156,7 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx impls.Context) error {
 		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
 	}
 
-	refTable, ok := ctx.GetTable(q.refTableName)
+	refTable, ok := ctx.Tables.Get(q.refTableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.refTableName)
 	}

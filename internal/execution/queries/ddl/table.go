@@ -2,7 +2,7 @@ package ddl
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/table"
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -32,6 +32,6 @@ func (q *createTable) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 }
 
 func (q *createTable) ExecuteDDL(ctx impls.Context) error {
-	ctx.SetTable(q.name, table.NewTable(q.name, q.fields))
+	ctx.Tables.Set(q.name, table.NewTable(q.name, q.fields))
 	return nil
 }

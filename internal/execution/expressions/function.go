@@ -75,7 +75,7 @@ func (e functionExpression) Map(f func(impls.Expression) impls.Expression) impls
 }
 
 func (e functionExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
-	f, ok := ctx.GetFunction(e.name)
+	f, ok := ctx.Functions.Get(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %s", e.name)
 	}

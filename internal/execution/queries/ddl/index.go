@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
-	"github.com/efritz/gostgres/internal/execution/engine/protocol"
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -58,7 +58,7 @@ func (q *createIndex) ExecuteDDL(ctx impls.Context) error {
 		return err
 	}
 
-	table, ok := ctx.GetTable(q.tableName)
+	table, ok := ctx.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}

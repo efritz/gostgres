@@ -1,10 +1,10 @@
 package filter
 
 import (
-	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
+	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 

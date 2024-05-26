@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	"github.com/efritz/gostgres/internal/execution/engine"
-	"github.com/efritz/gostgres/internal/execution/engine/serialization"
+	"github.com/efritz/gostgres/internal/execution/protocol"
+	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/sample"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/hexops/autogold/v2"
@@ -42,12 +43,18 @@ func runTestQuery(engine *engine.Engine, input string) (string, error) {
 		return "", fmt.Errorf("expected exactly one statement")
 	}
 
-	planRows, err := engine.Query(fmt.Sprintf("EXPLAIN %s", statements[0]), false)
+	planRows, err := engine.QueryRows(protocol.Request{
+		Query: fmt.Sprintf("EXPLAIN %s", statements[0]),
+		Debug: false,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	resultRows, err := engine.Query(statements[0], false)
+	resultRows, err := engine.QueryRows(protocol.Request{
+		Query: statements[0],
+		Debug: false,
+	})
 	if err != nil {
 		return "", err
 	}

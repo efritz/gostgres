@@ -1,12 +1,13 @@
 package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-func NewIsNull(expression types.Expression) types.Expression {
-	return newUnaryExpression(expression, "is null", func(ctx types.Context, expression types.Expression, row shared.Row) (any, error) {
+func NewIsNull(expression impls.Expression) impls.Expression {
+	return newUnaryExpression(expression, "is null", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := expression.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
@@ -15,9 +16,9 @@ func NewIsNull(expression types.Expression) types.Expression {
 	})
 }
 
-func NewIsTrue(expression types.Expression) types.Expression {
-	return newUnaryExpression(expression, "is true", func(ctx types.Context, expression types.Expression, row shared.Row) (any, error) {
-		val, err := shared.ValueAs[bool](expression.ValueFrom(ctx, row))
+func NewIsTrue(expression impls.Expression) impls.Expression {
+	return newUnaryExpression(expression, "is true", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
 		}
@@ -25,9 +26,9 @@ func NewIsTrue(expression types.Expression) types.Expression {
 	})
 }
 
-func NewIsFalse(expression types.Expression) types.Expression {
-	return newUnaryExpression(expression, "is false", func(ctx types.Context, expression types.Expression, row shared.Row) (any, error) {
-		val, err := shared.ValueAs[bool](expression.ValueFrom(ctx, row))
+func NewIsFalse(expression impls.Expression) impls.Expression {
+	return newUnaryExpression(expression, "is false", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
 		}
@@ -35,9 +36,9 @@ func NewIsFalse(expression types.Expression) types.Expression {
 	})
 }
 
-func NewIsUnknown(expression types.Expression) types.Expression {
-	return newUnaryExpression(expression, "is unknown", func(ctx types.Context, expression types.Expression, row shared.Row) (any, error) {
-		val, err := shared.ValueAs[bool](expression.ValueFrom(ctx, row))
+func NewIsUnknown(expression impls.Expression) impls.Expression {
+	return newUnaryExpression(expression, "is unknown", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
 		}

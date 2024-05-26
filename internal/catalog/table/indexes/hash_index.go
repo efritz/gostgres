@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
 type hashIndex struct {
 	name       string
 	tableName  string
-	expression types.Expression
+	expression impls.Expression
 	entries    map[uint64][]hashItem
 }
 
@@ -21,12 +23,12 @@ type hashItem struct {
 }
 
 type HashIndexScanOptions struct {
-	expression types.Expression
+	expression impls.Expression
 }
 
-var _ types.Index[HashIndexScanOptions] = &hashIndex{}
+var _ impls.Index[HashIndexScanOptions] = &hashIndex{}
 
-func NewHashIndex(name, tableName string, expression types.Expression) types.Index[HashIndexScanOptions] {
+func NewHashIndex(name, tableName string, expression impls.Expression) impls.Index[HashIndexScanOptions] {
 	return &hashIndex{
 		name:       name,
 		tableName:  tableName,
@@ -35,15 +37,15 @@ func NewHashIndex(name, tableName string, expression types.Expression) types.Ind
 	}
 }
 
-func (i *hashIndex) Unwrap() types.BaseIndex {
+func (i *hashIndex) Unwrap() impls.BaseIndex {
 	return i
 }
 
-func (i *hashIndex) UniqueOn() []shared.Field {
+func (i *hashIndex) UniqueOn() []fields.Field {
 	return nil
 }
 
-func (i *hashIndex) Filter() types.Expression {
+func (i *hashIndex) Filter() impls.Expression {
 	return nil
 }
 
@@ -55,7 +57,7 @@ func (i *hashIndex) Description(opts HashIndexScanOptions) string {
 	return fmt.Sprintf("hash index scan of %s via %s", i.tableName, i.name)
 }
 
-func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr types.Expression) {
+func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr impls.Expression) {
 	if i.expression == nil {
 		return nil
 	}
@@ -63,28 +65,28 @@ func (i *hashIndex) Condition(opts HashIndexScanOptions) (expr types.Expression)
 	return expressions.NewEquals(i.expression, opts.expression)
 }
 
-func (i *hashIndex) Ordering(opts HashIndexScanOptions) types.OrderExpression {
+func (i *hashIndex) Ordering(opts HashIndexScanOptions) impls.OrderExpression {
 	return nil
 }
 
-func (i *hashIndex) Insert(row shared.Row) error {
+func (i *hashIndex) Insert(row rows.Row) error {
 	tid, value, err := i.extractTIDAndValueFromRow(row)
 	if err != nil {
 		return err
 	}
 
-	hash := shared.Hash(value)
+	hash := utils.Hash(value)
 	i.entries[hash] = append(i.entries[hash], hashItem{tid, value})
 	return nil
 }
 
-func (i *hashIndex) Delete(row shared.Row) error {
+func (i *hashIndex) Delete(row rows.Row) error {
 	tid, value, err := i.extractTIDAndValueFromRow(row)
 	if err != nil {
 		return err
 	}
 
-	hash := shared.Hash(value)
+	hash := utils.Hash(value)
 	items := i.entries[hash]
 
 	for j, item := range items {
@@ -98,13 +100,13 @@ func (i *hashIndex) Delete(row shared.Row) error {
 	return nil
 }
 
-func (i *hashIndex) extractTIDAndValueFromRow(row shared.Row) (int64, any, error) {
+func (i *hashIndex) extractTIDAndValueFromRow(row rows.Row) (int64, any, error) {
 	tid, err := row.TID()
 	if err != nil {
 		return 0, nil, err
 	}
 
-	value, err := i.expression.ValueFrom(types.EmptyContext, row)
+	value, err := i.expression.ValueFrom(impls.EmptyContext, row)
 	if err != nil {
 		return 0, nil, err
 	}

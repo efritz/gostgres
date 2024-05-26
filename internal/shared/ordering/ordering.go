@@ -1,8 +1,9 @@
-package shared
+package ordering
 
 import (
 	"math/big"
 
+	"github.com/efritz/gostgres/internal/shared/types"
 	"golang.org/x/exp/constraints"
 )
 
@@ -51,7 +52,7 @@ func CompareValues(left, right any) OrderType {
 		}
 	}
 
-	if a, b, err := PromoteToCommonNumericValues(left, right); err == nil {
+	if a, b, err := types.PromoteToCommonNumericValues(left, right); err == nil {
 		switch v := a.(type) {
 		case int16:
 			return compareNumbers(v, b.(int16))

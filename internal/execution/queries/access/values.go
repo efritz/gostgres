@@ -1,21 +1,22 @@
 package access
 
 import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type valuesNode struct {
-	fields      []shared.Field
-	expressions [][]types.Expression
+	fields      []fields.Field
+	expressions [][]impls.Expression
 }
 
 var _ queries.Node = &valuesNode{}
 
-func NewValues(fields []shared.Field, expressions [][]types.Expression) queries.Node {
+func NewValues(fields []fields.Field, expressions [][]impls.Expression) queries.Node {
 	return &valuesNode{
 		fields:      fields,
 		expressions: expressions,
@@ -26,7 +27,7 @@ func (n *valuesNode) Name() string {
 	return "values"
 }
 
-func (n *valuesNode) Fields() []shared.Field {
+func (n *valuesNode) Fields() []fields.Field {
 	return n.fields
 }
 
@@ -34,19 +35,19 @@ func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")
 }
 
-func (n *valuesNode) AddFilter(filter types.Expression)    {}
-func (n *valuesNode) AddOrder(order types.OrderExpression) {}
+func (n *valuesNode) AddFilter(filter impls.Expression)    {}
+func (n *valuesNode) AddOrder(order impls.OrderExpression) {}
 func (n *valuesNode) Optimize()                            {}
-func (n *valuesNode) Filter() types.Expression             { return nil }
-func (n *valuesNode) Ordering() types.OrderExpression      { return nil }
+func (n *valuesNode) Filter() impls.Expression             { return nil }
+func (n *valuesNode) Ordering() impls.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool            { return false }
 
-func (n *valuesNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *valuesNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	i := 0
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		if i >= len(n.expressions) {
-			return shared.Row{}, scan.ErrNoRows
+			return rows.Row{}, scan.ErrNoRows
 		}
 
 		exprs := n.expressions[i]
@@ -54,14 +55,14 @@ func (n *valuesNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 
 		var values []any
 		for _, expr := range exprs {
-			value, err := queries.Evaluate(ctx, expr, shared.Row{})
+			value, err := queries.Evaluate(ctx, expr, rows.Row{})
 			if err != nil {
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
 			values = append(values, value)
 		}
 
-		return shared.NewRow(n.fields, values)
+		return rows.NewRow(n.fields, values)
 	}), nil
 }

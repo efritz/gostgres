@@ -1,17 +1,17 @@
 package sequence
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type sequence struct {
 	name  string
-	typ   shared.Type // TODO - actually store as this type
+	typ   types.Type // TODO - actually store as this type
 	value int64
 }
 
-func NewSequence(name string, typ shared.Type) types.Sequence {
+func NewSequence(name string, typ types.Type) impls.Sequence {
 	return &sequence{
 		name: name,
 		typ:  typ,

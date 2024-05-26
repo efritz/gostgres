@@ -3,27 +3,27 @@ package joins
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type joinNode struct {
 	left     queries.Node
 	right    queries.Node
-	filter   types.Expression
-	fields   []shared.Field
+	filter   impls.Expression
+	fields   []fields.Field
 	strategy joinStrategy
 }
 
 var _ queries.Node = &joinNode{}
 
-func NewJoin(left queries.Node, right queries.Node, condition types.Expression) queries.Node {
+func NewJoin(left queries.Node, right queries.Node, condition impls.Expression) queries.Node {
 	return &joinNode{
 		left:     left,
 		right:    right,
@@ -37,7 +37,7 @@ func (n *joinNode) Name() string {
 	return ""
 }
 
-func (n *joinNode) Fields() []shared.Field {
+func (n *joinNode) Fields() []fields.Field {
 	return slices.Clone(n.fields)
 }
 
@@ -52,11 +52,11 @@ func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *joinNode) AddFilter(filterExpression types.Expression) {
+func (n *joinNode) AddFilter(filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *joinNode) AddOrder(orderExpression types.OrderExpression) {
+func (n *joinNode) AddOrder(orderExpression impls.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
@@ -72,11 +72,11 @@ func (n *joinNode) Optimize() {
 	n.strategy = selectJoinStrategy(n)
 }
 
-func (n *joinNode) Filter() types.Expression {
+func (n *joinNode) Filter() impls.Expression {
 	return expressions.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
-func (n *joinNode) Ordering() types.OrderExpression {
+func (n *joinNode) Ordering() impls.OrderExpression {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before ordering can be determined")
 	}
@@ -88,7 +88,7 @@ func (n *joinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *joinNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *joinNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}

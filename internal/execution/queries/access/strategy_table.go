@@ -3,19 +3,19 @@ package access
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type tableAccessStrategy struct {
-	table types.Table
+	table impls.Table
 }
 
 var _ accessStrategy = &tableAccessStrategy{}
 
-func NewTableAccessStrategy(table types.Table) accessStrategy {
+func NewTableAccessStrategy(table impls.Table) accessStrategy {
 	return &tableAccessStrategy{table: table}
 }
 
@@ -23,22 +23,22 @@ func (s *tableAccessStrategy) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("table scan of %s", s.table.Name())
 }
 
-func (s *tableAccessStrategy) Filter() types.Expression {
+func (s *tableAccessStrategy) Filter() impls.Expression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Ordering() types.OrderExpression {
+func (s *tableAccessStrategy) Ordering() impls.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	tids := s.table.TIDs()
 
 	i := 0
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		if i >= len(tids) {
-			return shared.Row{}, scan.ErrNoRows
+			return rows.Row{}, scan.ErrNoRows
 		}
 
 		tid := tids[i]
@@ -46,7 +46,7 @@ func (s *tableAccessStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
 
 		row, ok := s.table.Row(tid)
 		if !ok {
-			return shared.Row{}, fmt.Errorf("missing row %d", tid)
+			return rows.Row{}, fmt.Errorf("missing row %d", tid)
 		}
 
 		return row, nil

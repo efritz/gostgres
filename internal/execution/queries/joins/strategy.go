@@ -5,14 +5,15 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type joinStrategy interface {
 	Name() string
-	Ordering() types.OrderExpression
-	Scanner(ctx types.Context) (scan.Scanner, error)
+	Ordering() impls.OrderExpression
+	Scanner(ctx impls.Context) (scan.Scanner, error)
 }
 
 const (
@@ -27,10 +28,10 @@ func selectJoinStrategy(n *joinNode) joinStrategy {
 			// if n.right.SupportsMarkRestore()
 
 			// TODO - HACK!
-			var lefts, rights []types.ExpressionWithDirection
+			var lefts, rights []impls.ExpressionWithDirection
 			for _, p := range pairs {
-				lefts = append(lefts, types.ExpressionWithDirection{Expression: p.left})
-				rights = append(rights, types.ExpressionWithDirection{Expression: p.right})
+				lefts = append(lefts, impls.ExpressionWithDirection{Expression: p.left})
+				rights = append(rights, impls.ExpressionWithDirection{Expression: p.right})
 			}
 			n.left = order.NewOrder(n.left, expressions.NewOrderExpression(lefts))
 			n.left.Optimize()
@@ -83,9 +84,9 @@ func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 	return pairs, len(pairs) > 0
 }
 
-func bindsAllFields(n queries.Node, expr types.Expression) bool {
+func bindsAllFields(n queries.Node, expr impls.Expression) bool {
 	for _, field := range expressions.Fields(expr) {
-		if _, err := shared.FindMatchingFieldIndex(field, n.Fields()); err != nil {
+		if _, err := fields.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false
 		}
 	}
@@ -94,14 +95,14 @@ func bindsAllFields(n queries.Node, expr types.Expression) bool {
 }
 
 type equalityPair struct {
-	left  types.Expression
-	right types.Expression
+	left  impls.Expression
+	right impls.Expression
 }
 
-var leftOfPair = func(pair equalityPair) types.Expression { return pair.left }
-var rightOfPair = func(pair equalityPair) types.Expression { return pair.right }
+var leftOfPair = func(pair equalityPair) impls.Expression { return pair.left }
+var rightOfPair = func(pair equalityPair) impls.Expression { return pair.right }
 
-func evaluatePair(ctx types.Context, pairs []equalityPair, expression func(equalityPair) types.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx impls.Context, pairs []equalityPair, expression func(equalityPair) impls.Expression, row rows.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := queries.Evaluate(ctx, expression(pair), row)
 		if err != nil {

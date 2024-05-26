@@ -1,24 +1,26 @@
-package types
+package impls
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type TableField struct {
-	shared.Field
+	fields.Field
 	nullable          bool
 	defaultExpression Expression
 }
 
-func NewTableField(relationName, name string, typ shared.Type) TableField {
-	return newTableField(shared.NewField(relationName, name, typ), true, nil)
+func NewTableField(relationName, name string, typ types.Type) TableField {
+	return newTableField(fields.NewField(relationName, name, typ), true, nil)
 }
 
-func NewInternalTableField(relationName, name string, typ shared.Type) TableField {
-	return newTableField(shared.NewInternalField(relationName, name, typ), true, nil)
+func NewInternalTableField(relationName, name string, typ types.Type) TableField {
+	return newTableField(fields.NewInternalField(relationName, name, typ), true, nil)
 }
 
-func newTableField(field shared.Field, nullable bool, defaultExpression Expression) TableField {
+func newTableField(field fields.Field, nullable bool, defaultExpression Expression) TableField {
 	return TableField{
 		Field:             field,
 		nullable:          nullable,
@@ -35,14 +37,14 @@ func (f TableField) Default(ctx Context) (any, error) {
 		return nil, nil
 	}
 
-	return f.defaultExpression.ValueFrom(ctx, shared.Row{})
+	return f.defaultExpression.ValueFrom(ctx, rows.Row{})
 }
 
 func (f TableField) WithRelationName(relationName string) TableField {
 	return newTableField(f.Field.WithRelationName(relationName), f.nullable, f.defaultExpression)
 }
 
-func (f TableField) WithType(typ shared.Type) TableField {
+func (f TableField) WithType(typ types.Type) TableField {
 	return newTableField(f.Field.WithType(typ), f.nullable, f.defaultExpression)
 }
 

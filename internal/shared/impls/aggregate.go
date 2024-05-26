@@ -1,4 +1,4 @@
-package types
+package impls
 
 type Aggregate interface {
 	Step(state any, args []any) (any, error)

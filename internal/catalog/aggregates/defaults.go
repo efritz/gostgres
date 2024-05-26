@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"golang.org/x/exp/constraints"
 )
 
-func DefaultAggregates() map[string]types.Aggregate {
-	return map[string]types.Aggregate{
+func DefaultAggregates() map[string]impls.Aggregate {
+	return map[string]impls.Aggregate{
 		"count": aggregatorFuncPair{countStep, countDone},
 		"sum":   simpleAggregateFunc(sum),
 		"min":   simpleAggregateFunc(min),
@@ -44,7 +45,7 @@ func sum(state any, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("sum() takes one argument")
 	}
-	if !shared.IsNumeric(args[0]) {
+	if !types.IsNumeric(args[0]) {
 		return nil, fmt.Errorf("sum() takes one argument of a numeric type")
 	}
 
@@ -52,7 +53,7 @@ func sum(state any, args []any) (any, error) {
 		return args[0], nil
 	}
 
-	a, b, err := shared.PromoteToCommonNumericValues(state, args[0])
+	a, b, err := types.PromoteToCommonNumericValues(state, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +87,7 @@ func min(state any, args []any) (any, error) {
 	}
 
 	// TODO - test OrderTypeIncomparable
-	if state == nil || shared.CompareValues(args[0], state) == shared.OrderTypeBefore {
+	if state == nil || ordering.CompareValues(args[0], state) == ordering.OrderTypeBefore {
 		state = args[0]
 	}
 
@@ -99,7 +100,7 @@ func max(state any, args []any) (any, error) {
 	}
 
 	// TODO - test OrderTypeIncomparable
-	if state == nil || shared.CompareValues(args[0], state) == shared.OrderTypeAfter {
+	if state == nil || ordering.CompareValues(args[0], state) == ordering.OrderTypeAfter {
 		state = args[0]
 	}
 

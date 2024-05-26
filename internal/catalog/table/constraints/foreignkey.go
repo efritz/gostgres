@@ -5,19 +5,19 @@ import (
 
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type foreignKeyConstraint struct {
 	name        string
-	expressions []types.Expression
-	refIndex    types.Index[indexes.BtreeIndexScanOptions]
+	expressions []impls.Expression
+	refIndex    impls.Index[indexes.BtreeIndexScanOptions]
 }
 
-var _ types.Constraint = &foreignKeyConstraint{}
+var _ impls.Constraint = &foreignKeyConstraint{}
 
-func NewForeignKeyConstraint(name string, expressions []types.Expression, refIndex types.Index[indexes.BtreeIndexScanOptions]) types.Constraint {
+func NewForeignKeyConstraint(name string, expressions []impls.Expression, refIndex impls.Index[indexes.BtreeIndexScanOptions]) impls.Constraint {
 	return &foreignKeyConstraint{
 		name:        name,
 		expressions: expressions,
@@ -29,7 +29,7 @@ func (c *foreignKeyConstraint) Name() string {
 	return c.name
 }
 
-func (c *foreignKeyConstraint) Check(ctx types.Context, row shared.Row) error {
+func (c *foreignKeyConstraint) Check(ctx impls.Context, row rows.Row) error {
 	var values []any
 	for _, expression := range c.expressions {
 		val, err := expression.ValueFrom(ctx, row)
@@ -45,7 +45,7 @@ func (c *foreignKeyConstraint) Check(ctx types.Context, row shared.Row) error {
 		values = append(values, val)
 	}
 
-	scanner, err := c.refIndex.Scanner(types.EmptyContext, indexes.NewBtreeSearchOptions(values))
+	scanner, err := c.refIndex.Scanner(impls.EmptyContext, indexes.NewBtreeSearchOptions(values))
 	if err != nil {
 		return err
 	}

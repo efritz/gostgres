@@ -1,23 +1,23 @@
 package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type NamedExpression interface {
-	Field() shared.Field
+	Field() fields.Field
 }
 
 type CompositeExpression interface {
-	Children() []types.Expression
+	Children() []impls.Expression
 }
 
-func Fields(expr types.Expression) []shared.Field {
+func Fields(expr impls.Expression) []fields.Field {
 	return gatherFields(expr, nil)
 }
 
-func gatherFields(expr types.Expression, fields []shared.Field) []shared.Field {
+func gatherFields(expr impls.Expression, fields []fields.Field) []fields.Field {
 	if named, ok := expr.(NamedExpression); ok {
 		fields = append(fields, named.Field())
 	}

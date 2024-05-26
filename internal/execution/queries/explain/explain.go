@@ -1,11 +1,13 @@
 package explain
 
 import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type explain struct {
@@ -24,30 +26,30 @@ func (n *explain) Name() string {
 	return "EXPLAIN"
 }
 
-func (n *explain) Fields() []shared.Field {
-	return []shared.Field{
-		shared.NewField("", "query plan", shared.TypeText),
+func (n *explain) Fields() []fields.Field {
+	return []fields.Field{
+		fields.NewField("", "query plan", types.TypeText),
 	}
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter) {}
-func (n *explain) AddFilter(filter types.Expression)      {}
-func (n *explain) AddOrder(order types.OrderExpression)   {}
+func (n *explain) AddFilter(filter impls.Expression)      {}
+func (n *explain) AddOrder(order impls.OrderExpression)   {}
 func (n *explain) Optimize()                              { n.n.Optimize() }
-func (n *explain) Filter() types.Expression               { return nil }
-func (n *explain) Ordering() types.OrderExpression        { return nil }
+func (n *explain) Filter() impls.Expression               { return nil }
+func (n *explain) Ordering() impls.OrderExpression        { return nil }
 func (n *explain) SupportsMarkRestore() bool              { return false }
 
-func (n *explain) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *explain) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	plan := serialization.SerializePlan(n.n)
 	emitted := false
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		if emitted {
-			return shared.Row{}, scan.ErrNoRows
+			return rows.Row{}, scan.ErrNoRows
 		}
 
 		emitted = true
-		return shared.NewRow(n.Fields(), []any{plan})
+		return rows.NewRow(n.Fields(), []any{plan})
 	}), nil
 }

@@ -1,8 +1,8 @@
-package types
+package impls
 
 import (
 	"github.com/efritz/gostgres/internal/catalog"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type Context struct {
@@ -10,7 +10,7 @@ type Context struct {
 	sequences  *catalog.Catalog[Sequence]
 	functions  *catalog.Catalog[Function]
 	aggregates *catalog.Catalog[Aggregate]
-	outerRow   shared.Row
+	outerRow   rows.Row
 }
 
 var EmptyContext = NewContext(
@@ -34,11 +34,11 @@ func NewContext(
 	}
 }
 
-func (c Context) OuterRow() shared.Row {
+func (c Context) OuterRow() rows.Row {
 	return c.outerRow
 }
 
-func (c Context) WithOuterRow(row shared.Row) Context {
+func (c Context) WithOuterRow(row rows.Row) Context {
 	return Context{
 		tables:     c.tables,
 		sequences:  c.sequences,

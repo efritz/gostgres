@@ -1,8 +1,9 @@
-package shared
+package fields
 
 import (
 	"testing"
 
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -10,11 +11,11 @@ import (
 func TestFindMatchingFieldIndex(t *testing.T) {
 	t.Run("matching qualified field", func(t *testing.T) {
 		index, err := FindMatchingFieldIndex(
-			NewField("t", "b", TypeText),
+			NewField("t", "b", types.TypeText),
 			[]Field{
-				NewField("t", "a", TypeText),
-				NewField("t", "b", TypeText),
-				NewField("t", "c", TypeText),
+				NewField("t", "a", types.TypeText),
+				NewField("t", "b", types.TypeText),
+				NewField("t", "c", types.TypeText),
 			},
 		)
 		require.NoError(t, err)
@@ -23,11 +24,11 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("matching unqualified field", func(t *testing.T) {
 		index, err := FindMatchingFieldIndex(
-			NewField("", "b", TypeText),
+			NewField("", "b", types.TypeText),
 			[]Field{
-				NewField("t", "a", TypeText),
-				NewField("t", "b", TypeText),
-				NewField("t", "c", TypeText),
+				NewField("t", "a", types.TypeText),
+				NewField("t", "b", types.TypeText),
+				NewField("t", "c", types.TypeText),
 			},
 		)
 		require.NoError(t, err)
@@ -36,12 +37,12 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("ambiguous field", func(t *testing.T) {
 		_, err := FindMatchingFieldIndex(
-			NewField("", "b", TypeText),
+			NewField("", "b", types.TypeText),
 			[]Field{
-				NewField("t1", "a", TypeText),
-				NewField("t1", "b", TypeText),
-				NewField("t2", "b", TypeText),
-				NewField("t2", "c", TypeText),
+				NewField("t1", "a", types.TypeText),
+				NewField("t1", "b", types.TypeText),
+				NewField("t2", "b", types.TypeText),
+				NewField("t2", "c", types.TypeText),
 			},
 		)
 		require.ErrorContains(t, err, `ambiguous field "b"`)
@@ -49,11 +50,11 @@ func TestFindMatchingFieldIndex(t *testing.T) {
 
 	t.Run("unknown field", func(t *testing.T) {
 		_, err := FindMatchingFieldIndex(
-			NewField("t", "d", TypeText),
+			NewField("t", "d", types.TypeText),
 			[]Field{
-				NewField("t", "a", TypeText),
-				NewField("t", "b", TypeText),
-				NewField("t", "c", TypeText),
+				NewField("t", "a", types.TypeText),
+				NewField("t", "b", types.TypeText),
+				NewField("t", "c", types.TypeText),
 			},
 		)
 		require.ErrorContains(t, err, `unknown field "t"."d"`)

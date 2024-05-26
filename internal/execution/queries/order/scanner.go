@@ -6,19 +6,21 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type orderScanner struct {
-	rows    shared.Rows
+	rows    rows.Rows
 	indexes []int
 	next    int
 	mark    int
 }
 
-func NewOrderScanner(ctx types.Context, scanner scan.Scanner, fields []shared.Field, order types.OrderExpression) (scan.Scanner, error) {
-	rows, err := shared.NewRows(fields)
+func NewOrderScanner(ctx impls.Context, scanner scan.Scanner, fields []fields.Field, order impls.OrderExpression) (scan.Scanner, error) {
+	rows, err := rows.NewRows(fields)
 	if err != nil {
 		return nil, err
 	}
@@ -40,14 +42,14 @@ func NewOrderScanner(ctx types.Context, scanner scan.Scanner, fields []shared.Fi
 	}, nil
 }
 
-func (s *orderScanner) Scan() (shared.Row, error) {
+func (s *orderScanner) Scan() (rows.Row, error) {
 	if s.next < len(s.indexes) {
 		row := s.rows.Row(s.indexes[s.next])
 		s.next++
 		return row, nil
 	}
 
-	return shared.Row{}, scan.ErrNoRows
+	return rows.Row{}, scan.ErrNoRows
 }
 
 func (s *orderScanner) Mark() {
@@ -62,8 +64,8 @@ func (s *orderScanner) Restore() {
 	s.next = s.mark
 }
 
-func findIndexIterationOrder(ctx types.Context, order types.OrderExpression, rows shared.Rows) ([]int, error) {
-	var expressions []types.ExpressionWithDirection
+func findIndexIterationOrder(ctx impls.Context, order impls.OrderExpression, rows rows.Rows) ([]int, error) {
+	var expressions []impls.ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
 	}
@@ -78,13 +80,13 @@ func findIndexIterationOrder(ctx types.Context, order types.OrderExpression, row
 		for k, value := range indexValues[i].values {
 			reverse := expressions[k].Reverse
 
-			switch shared.CompareValues(value, indexValues[j].values[k]) {
-			case shared.OrderTypeIncomparable:
+			switch ordering.CompareValues(value, indexValues[j].values[k]) {
+			case ordering.OrderTypeIncomparable:
 				incomparable = true
 				return false
-			case shared.OrderTypeBefore:
+			case ordering.OrderTypeBefore:
 				return !reverse
-			case shared.OrderTypeAfter:
+			case ordering.OrderTypeAfter:
 				return reverse
 			}
 		}
@@ -108,7 +110,7 @@ type indexValue struct {
 	values []any
 }
 
-func makeIndexValues(ctx types.Context, expressions []types.ExpressionWithDirection, rows shared.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx impls.Context, expressions []impls.ExpressionWithDirection, rows rows.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]any, 0, len(expressions))

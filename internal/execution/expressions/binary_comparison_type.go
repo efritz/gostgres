@@ -3,7 +3,7 @@ package expressions
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/ordering"
 )
 
 type ComparisonType int
@@ -65,11 +65,11 @@ func (ct ComparisonType) Flip() ComparisonType {
 }
 
 func (ct ComparisonType) MatchesOrderType(lVal, rVal any) (bool, error) {
-	ot := shared.CompareValues(lVal, rVal)
+	ot := ordering.CompareValues(lVal, rVal)
 
 	switch ct {
 	case ComparisonTypeEquals:
-		return ot == shared.OrderTypeEqual, nil
+		return ot == ordering.OrderTypeEqual, nil
 	case ComparisonTypeDistinctFrom:
 		if lVal == nil && rVal == nil {
 			return false, nil
@@ -77,15 +77,15 @@ func (ct ComparisonType) MatchesOrderType(lVal, rVal any) (bool, error) {
 		if lVal == nil || rVal == nil {
 			return true, nil
 		}
-		return ot != shared.OrderTypeEqual, nil
+		return ot != ordering.OrderTypeEqual, nil
 	case ComparisonTypeLessThanEquals:
-		return ot == shared.OrderTypeEqual || ot == shared.OrderTypeBefore, nil
+		return ot == ordering.OrderTypeEqual || ot == ordering.OrderTypeBefore, nil
 	case ComparisonTypeLessThan:
-		return ot == shared.OrderTypeBefore, nil
+		return ot == ordering.OrderTypeBefore, nil
 	case ComparisonTypeGreaterThanEquals:
-		return ot == shared.OrderTypeEqual || ot == shared.OrderTypeAfter, nil
+		return ot == ordering.OrderTypeEqual || ot == ordering.OrderTypeAfter, nil
 	case ComparisonTypeGreaterThan:
-		return ot == shared.OrderTypeAfter, nil
+		return ot == ordering.OrderTypeAfter, nil
 	}
 
 	return false, fmt.Errorf("incomparable types")

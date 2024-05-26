@@ -3,20 +3,20 @@ package expressions
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type binaryExpression struct {
-	left         types.Expression
-	right        types.Expression
+	left         impls.Expression
+	right        impls.Expression
 	operatorText string
 	valueFrom    binaryValueFromFunc
 }
 
-type binaryValueFromFunc func(ctx types.Context, left, right types.Expression, row shared.Row) (any, error)
+type binaryValueFromFunc func(ctx impls.Context, left, right impls.Expression, row rows.Row) (any, error)
 
-func newBinaryExpression(left, right types.Expression, operatorText string, valueFrom binaryValueFromFunc) types.Expression {
+func newBinaryExpression(left, right impls.Expression, operatorText string, valueFrom binaryValueFromFunc) impls.Expression {
 	return binaryExpression{
 		left:         left,
 		right:        right,
@@ -29,7 +29,7 @@ func (e binaryExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
-func (e binaryExpression) Equal(other types.Expression) bool {
+func (e binaryExpression) Equal(other impls.Expression) bool {
 	o, ok := other.(binaryExpression)
 	if !ok {
 		return false
@@ -53,18 +53,18 @@ func (e binaryExpression) Equal(other types.Expression) bool {
 	return e.operatorText == o.operatorText && e.left.Equal(o.left) && e.right.Equal(o.right)
 }
 
-func (e binaryExpression) Children() []types.Expression {
-	return []types.Expression{e.left, e.right}
+func (e binaryExpression) Children() []impls.Expression {
+	return []impls.Expression{e.left, e.right}
 }
 
-func (e binaryExpression) Fold() types.Expression {
+func (e binaryExpression) Fold() impls.Expression {
 	return tryEvaluate(newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom))
 }
 
-func (e binaryExpression) Map(f func(types.Expression) types.Expression) types.Expression {
+func (e binaryExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
 	return f(newBinaryExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom))
 }
 
-func (e binaryExpression) ValueFrom(ctx types.Context, row shared.Row) (any, error) {
+func (e binaryExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
 	return e.valueFrom(ctx, e.left, e.right, row)
 }

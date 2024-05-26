@@ -3,17 +3,18 @@ package indexes
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-func (i *hashIndex) Scanner(ctx types.Context, opts HashIndexScanOptions) (types.TIDScanner, error) {
-	value, err := queries.Evaluate(ctx, opts.expression, shared.Row{})
+func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (impls.TIDScanner, error) {
+	value, err := queries.Evaluate(ctx, opts.expression, rows.Row{})
 	if err != nil {
 		return nil, err
 	}
 
-	items := i.entries[shared.Hash(value)]
+	items := i.entries[utils.Hash(value)]
 
 	j := 0
 

@@ -1,15 +1,19 @@
-package shared
+package rows
+
+import (
+	"github.com/efritz/gostgres/internal/shared/fields"
+)
 
 type Rows struct {
-	Fields []Field
+	Fields []fields.Field
 	Values [][]any
 }
 
-func NewRows(fields []Field) (Rows, error) {
+func NewRows(fields []fields.Field) (Rows, error) {
 	return NewRowsWithValues(fields, nil)
 }
 
-func NewRowsWithValues(fields []Field, values [][]any) (_ Rows, err error) {
+func NewRowsWithValues(fields []fields.Field, values [][]any) (_ Rows, err error) {
 	for i, rowValues := range values {
 		fields, rowValues, err = refineTypes(fields, rowValues)
 		if err != nil {

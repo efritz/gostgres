@@ -1,25 +1,27 @@
-package shared
+package fields
 
 import (
 	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type Field struct {
 	relationName string
 	name         string
-	typ          Type
+	typ          types.Type
 	internal     bool
 }
 
-func NewField(relationName, name string, typ Type) Field {
+func NewField(relationName, name string, typ types.Type) Field {
 	return newField(relationName, name, typ, false)
 }
 
-func NewInternalField(relationName, name string, typ Type) Field {
+func NewInternalField(relationName, name string, typ types.Type) Field {
 	return newField(relationName, name, typ, true)
 }
 
-func newField(relationName, name string, typ Type, internal bool) Field {
+func newField(relationName, name string, typ types.Type, internal bool) Field {
 	return Field{
 		relationName: relationName,
 		name:         name,
@@ -30,7 +32,7 @@ func newField(relationName, name string, typ Type, internal bool) Field {
 
 func (f Field) RelationName() string { return f.relationName }
 func (f Field) Name() string         { return f.name }
-func (f Field) Type() Type           { return f.typ }
+func (f Field) Type() types.Type     { return f.typ }
 func (f Field) Internal() bool       { return f.internal }
 
 func (f Field) String() string {
@@ -45,7 +47,7 @@ func (f Field) WithRelationName(relationName string) Field {
 	return newField(relationName, f.name, f.typ, f.internal)
 }
 
-func (f Field) WithType(typ Type) Field {
+func (f Field) WithType(typ types.Type) Field {
 	return newField(f.relationName, f.name, typ, f.internal)
 }
 

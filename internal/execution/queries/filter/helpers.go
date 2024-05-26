@@ -3,16 +3,16 @@ package filter
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func LowerFilter(filter types.Expression, nodes ...queries.Node) {
+func LowerFilter(filter impls.Expression, nodes ...queries.Node) {
 	for _, expression := range expressions.Conjunctions(filter) {
 		missing := make([]bool, len(nodes))
 		for _, field := range expressions.Fields(expression) {
 			for i, node := range nodes {
-				if _, err := shared.FindMatchingFieldIndex(field, node.Fields()); err != nil {
+				if _, err := fields.FindMatchingFieldIndex(field, node.Fields()); err != nil {
 					missing[i] = true
 				}
 			}

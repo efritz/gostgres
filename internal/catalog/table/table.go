@@ -3,25 +3,27 @@ package table
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"golang.org/x/exp/slices"
 )
 
 type table struct {
 	name        string
-	fields      []types.TableField
-	rows        map[int64]shared.Row
-	primaryKey  types.BaseIndex
-	indexes     []types.BaseIndex
-	constraints []types.Constraint
+	fields      []impls.TableField
+	rows        map[int64]rows.Row
+	primaryKey  impls.BaseIndex
+	indexes     []impls.BaseIndex
+	constraints []impls.Constraint
 }
 
-var _ types.Table = &table{}
+var _ impls.Table = &table{}
 
-func NewTable(name string, fields []types.TableField) types.Table {
-	tableFields := []types.TableField{
-		types.NewInternalTableField(name, shared.TIDName, shared.TypeBigInteger),
+func NewTable(name string, fields []impls.TableField) impls.Table {
+	tableFields := []impls.TableField{
+		impls.NewInternalTableField(name, rows.TIDName, types.TypeBigInteger),
 	}
 	for _, field := range fields {
 		tableFields = append(tableFields, field.WithRelationName(name))
@@ -30,7 +32,7 @@ func NewTable(name string, fields []types.TableField) types.Table {
 	return &table{
 		name:   name,
 		fields: tableFields,
-		rows:   map[int64]shared.Row{},
+		rows:   map[int64]rows.Row{},
 	}
 }
 
@@ -38,15 +40,15 @@ func (t *table) Name() string {
 	return t.name
 }
 
-func (t *table) Indexes() []types.BaseIndex {
+func (t *table) Indexes() []impls.BaseIndex {
 	if t.primaryKey != nil {
-		return append([]types.BaseIndex{t.primaryKey}, t.indexes...)
+		return append([]impls.BaseIndex{t.primaryKey}, t.indexes...)
 	}
 
 	return t.indexes
 }
 
-func (t *table) Fields() []types.TableField {
+func (t *table) Fields() []impls.TableField {
 	return slices.Clone(t.fields)
 }
 
@@ -64,12 +66,12 @@ func (t *table) TIDs() []int64 {
 	return tids
 }
 
-func (t *table) Row(tid int64) (shared.Row, bool) {
+func (t *table) Row(tid int64) (rows.Row, bool) {
 	row, ok := t.rows[tid]
 	return row, ok
 }
 
-func (t *table) SetPrimaryKey(index types.BaseIndex) error {
+func (t *table) SetPrimaryKey(index impls.BaseIndex) error {
 	if t.primaryKey != nil {
 		return fmt.Errorf("primary key already set")
 	}
@@ -84,7 +86,7 @@ func (t *table) SetPrimaryKey(index types.BaseIndex) error {
 	return nil
 }
 
-func (t *table) AddIndex(index types.BaseIndex) error {
+func (t *table) AddIndex(index impls.BaseIndex) error {
 	for _, row := range t.rows {
 		if err := index.Insert(row); err != nil {
 			return err
@@ -95,7 +97,7 @@ func (t *table) AddIndex(index types.BaseIndex) error {
 	return nil
 }
 
-func (t *table) AddConstraint(ctx types.Context, constraint types.Constraint) error {
+func (t *table) AddConstraint(ctx impls.Context, constraint impls.Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(ctx, row); err != nil {
 			return err
@@ -108,29 +110,29 @@ func (t *table) AddConstraint(ctx types.Context, constraint types.Constraint) er
 
 var tid = int64(0)
 
-func (t *table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err error) {
+func (t *table) Insert(ctx impls.Context, row rows.Row) (_ rows.Row, err error) {
 	tid++
 	id := tid
 
-	var fields []shared.Field
+	var fields []fields.Field
 	for _, field := range t.fields {
 		fields = append(fields, field.Field)
 	}
 
-	newRow, err := shared.NewRow(fields, append([]any{id}, row.Values...))
+	newRow, err := rows.NewRow(fields, append([]any{id}, row.Values...))
 	if err != nil {
-		return shared.Row{}, err
+		return rows.Row{}, err
 	}
 
 	for _, constraint := range t.constraints {
 		if err := constraint.Check(ctx, newRow); err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 	}
 
 	for _, index := range t.Indexes() {
 		if err := index.Insert(newRow); err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 	}
 
@@ -138,20 +140,20 @@ func (t *table) Insert(ctx types.Context, row shared.Row) (_ shared.Row, err err
 	return newRow, nil
 }
 
-func (t *table) Delete(row shared.Row) (shared.Row, bool, error) {
+func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 	tid, err := row.TID()
 	if err != nil {
-		return shared.Row{}, false, err
+		return rows.Row{}, false, err
 	}
 
 	fullRow, ok := t.rows[tid]
 	if !ok {
-		return shared.Row{}, false, nil
+		return rows.Row{}, false, nil
 	}
 
 	for _, index := range t.indexes {
 		if err := index.Delete(fullRow); err != nil {
-			return shared.Row{}, false, err
+			return rows.Row{}, false, err
 		}
 	}
 

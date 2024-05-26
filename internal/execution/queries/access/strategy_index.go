@@ -3,22 +3,22 @@ package access
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-type indexAccessStrategy[O types.ScanOptions] struct {
-	table types.Table
-	index types.Index[O]
+type indexAccessStrategy[O impls.ScanOptions] struct {
+	table impls.Table
+	index impls.Index[O]
 	opts  O
 }
 
-var _ accessStrategy = &indexAccessStrategy[types.ScanOptions]{}
+var _ accessStrategy = &indexAccessStrategy[impls.ScanOptions]{}
 
-func NewIndexAccessStrategy[O types.ScanOptions](table types.Table, index types.Index[O], opts O) accessStrategy {
+func NewIndexAccessStrategy[O impls.ScanOptions](table impls.Table, index impls.Index[O], opts O) accessStrategy {
 	return &indexAccessStrategy[O]{
 		table: table,
 		index: index,
@@ -34,7 +34,7 @@ func (s *indexAccessStrategy[ScanOptions]) Serialize(w serialization.IndentWrite
 	}
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Filter() types.Expression {
+func (s *indexAccessStrategy[ScanOptions]) Filter() impls.Expression {
 	filterExpression := s.index.Filter()
 	condition := s.index.Condition(s.opts)
 
@@ -48,25 +48,25 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() types.Expression {
 	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Ordering() types.OrderExpression {
+func (s *indexAccessStrategy[ScanOptions]) Ordering() impls.OrderExpression {
 	return s.index.Ordering(s.opts)
 }
 
-func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	tidScanner, err := s.index.Scanner(ctx, s.opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		tid, err := tidScanner.Scan()
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
 		row, ok := s.table.Row(tid)
 		if !ok {
-			return shared.Row{}, fmt.Errorf("row not found for tid %d", tid)
+			return rows.Row{}, fmt.Errorf("row not found for tid %d", tid)
 		}
 
 		return row, nil

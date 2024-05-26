@@ -4,8 +4,9 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type mergeJoinStrategy struct {
@@ -17,12 +18,12 @@ func (s *mergeJoinStrategy) Name() string {
 	return "merge"
 }
 
-func (s *mergeJoinStrategy) Ordering() types.OrderExpression {
+func (s *mergeJoinStrategy) Ordering() impls.OrderExpression {
 	// TODO - can add right fields as well?
 	return s.n.left.Ordering()
 }
 
-func (s *mergeJoinStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -48,25 +49,25 @@ func (s *mergeJoinStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
 }
 
 type mergeJoinScanner struct {
-	ctx          types.Context
+	ctx          impls.Context
 	strategy     *mergeJoinStrategy
 	leftScanner  scan.Scanner
 	rightScanner scan.Scanner
 	markRestorer scan.MarkRestorer
 
 	// state
-	leftRow  *shared.Row
-	rightRow *shared.Row
-	mark     *shared.Row
+	leftRow  *rows.Row
+	rightRow *rows.Row
+	mark     *rows.Row
 	matching bool
 }
 
-func (s *mergeJoinScanner) Scan() (shared.Row, error) {
+func (s *mergeJoinScanner) Scan() (rows.Row, error) {
 	if s.leftRow == nil {
 		// Get next row from left relation. This is necessary only on the first
 		// iteration of the scan. After that, the left row is always non-nil.
 		if err := s.advanceLeft(); err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 	}
 
@@ -77,13 +78,13 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 			// a matching pair of rows and need to find the next one.
 			if err := s.advanceRight(); err != nil {
 				if err != scan.ErrNoRows {
-					return shared.Row{}, err
+					return rows.Row{}, err
 				}
 
 				if !s.matching {
 					// When we exhaust the right relation, we only want to halt
 					// when we will no longer restore a previous mark position.
-					return shared.Row{}, err
+					return rows.Row{}, err
 				}
 			}
 		}
@@ -94,7 +95,7 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 		// to the next phase of the join logic.
 		if !s.matching {
 			if err := s.findNextMatch(); err != nil {
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
 			s.matching = true
@@ -107,11 +108,11 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 			// pair and note that we need to advance the right relation on the next
 			// iteration of the scan.
 			if ot, err := s.compareRows(*s.leftRow, *s.rightRow); err != nil {
-				return shared.Row{}, err
-			} else if ot == shared.OrderTypeEqual {
-				row, err := shared.NewRow(s.strategy.n.Fields(), append(slices.Clone(s.leftRow.Values), s.rightRow.Values...))
+				return rows.Row{}, err
+			} else if ot == ordering.OrderTypeEqual {
+				row, err := rows.NewRow(s.strategy.n.Fields(), append(slices.Clone(s.leftRow.Values), s.rightRow.Values...))
 				if err != nil {
-					return shared.Row{}, err
+					return rows.Row{}, err
 				}
 
 				s.rightRow = nil
@@ -125,12 +126,12 @@ func (s *mergeJoinScanner) Scan() (shared.Row, error) {
 		// necessary in the presence of duplicate values in the left relation.
 
 		if err := s.advanceLeft(); err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
 		if ot, err := s.compareRows(*s.leftRow, *s.mark); err != nil {
-			return shared.Row{}, err
-		} else if ot == shared.OrderTypeEqual {
+			return rows.Row{}, err
+		} else if ot == ordering.OrderTypeEqual {
 			s.rightRow = nil
 			s.markRestorer.Restore()
 		} else {
@@ -147,15 +148,15 @@ func (s *mergeJoinScanner) findNextMatch() error {
 		}
 
 		switch ot {
-		case shared.OrderTypeEqual:
+		case ordering.OrderTypeEqual:
 			return nil
 
-		case shared.OrderTypeBefore:
+		case ordering.OrderTypeBefore:
 			if err := s.advanceLeft(); err != nil {
 				return err
 			}
 
-		case shared.OrderTypeAfter:
+		case ordering.OrderTypeAfter:
 			if err := s.advanceRight(); err != nil {
 				return err
 			}
@@ -171,7 +172,7 @@ func (s *mergeJoinScanner) advanceRight() error {
 	return scanIntoTarget(s.rightScanner, &s.rightRow)
 }
 
-func scanIntoTarget(scanner scan.Scanner, target **shared.Row) error {
+func scanIntoTarget(scanner scan.Scanner, target **rows.Row) error {
 	row, err := scanner.Scan()
 	if err != nil {
 		*target = nil
@@ -182,16 +183,16 @@ func scanIntoTarget(scanner scan.Scanner, target **shared.Row) error {
 	return nil
 }
 
-func (s *mergeJoinScanner) compareRows(leftRow, rightRow shared.Row) (shared.OrderType, error) {
+func (s *mergeJoinScanner) compareRows(leftRow, rightRow rows.Row) (ordering.OrderType, error) {
 	lValues, err := evaluatePair(s.ctx, s.strategy.pairs, leftOfPair, leftRow)
 	if err != nil {
-		return shared.OrderTypeIncomparable, err
+		return ordering.OrderTypeIncomparable, err
 	}
 
 	rValues, err := evaluatePair(s.ctx, s.strategy.pairs, rightOfPair, rightRow)
 	if err != nil {
-		return shared.OrderTypeIncomparable, err
+		return ordering.OrderTypeIncomparable, err
 	}
 
-	return shared.CompareValueSlices(lValues, rValues), nil
+	return ordering.CompareValueSlices(lValues, rValues), nil
 }

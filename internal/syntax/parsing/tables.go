@@ -9,13 +9,14 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/alias"
 	"github.com/efritz/gostgres/internal/execution/queries/joins"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/types"
 )
 
 // table := ident alias
-func (p *parser) parseTable() (types.Table, string, string, error) {
+func (p *parser) parseTable() (impls.Table, string, string, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, "", "", err
@@ -106,7 +107,7 @@ func (p *parser) parseBaseTableExpression() (queries.Node, error) {
 		node = alias.NewAlias(node, aliasName)
 
 		if len(columnNames) > 0 {
-			var fields []shared.Field
+			var fields []fields.Field
 			for _, f := range node.Fields() {
 				if !f.Internal() {
 					fields = append(fields, f)
@@ -165,20 +166,20 @@ func (p *parser) parseValues() (queries.Node, error) {
 		return nil, err
 	}
 
-	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]types.Expression, error) {
+	allRowExpressions, err := parseCommaSeparatedList(p, func() ([]impls.Expression, error) {
 		return parseParenthesizedCommaSeparatedList(p, false, false, p.parseRootExpression)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	fields := make([]shared.Field, 0, len(allRowExpressions[0]))
+	rowFields := make([]fields.Field, 0, len(allRowExpressions[0]))
 	for i := range allRowExpressions[0] {
-		fields = append(fields, shared.NewField("", fmt.Sprintf("column%d", i+1), shared.TypeAny))
+		rowFields = append(rowFields, fields.NewField("", fmt.Sprintf("column%d", i+1), types.TypeAny))
 	}
 
 	// TODO - support `DEFAULT` expressions
-	return access.NewValues(fields, allRowExpressions), nil
+	return access.NewValues(rowFields, allRowExpressions), nil
 }
 
 // tableAlias := alias [ `(` ident [, ...] `)` ]
@@ -225,7 +226,7 @@ func (p *parser) parseJoin(node queries.Node) (queries.Node, error) {
 		return nil, err
 	}
 
-	var condition types.Expression
+	var condition impls.Expression
 	if p.advanceIf(isType(tokens.TokenTypeOn)) {
 		rawCondition, err := p.parseRootExpression()
 		if err != nil {

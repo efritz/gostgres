@@ -1,4 +1,4 @@
-package shared
+package ordering
 
 import (
 	"math/big"

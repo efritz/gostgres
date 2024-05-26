@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution/engine/protocol"
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type createIndex struct {
@@ -15,14 +15,14 @@ type createIndex struct {
 	tableName         string
 	method            string
 	unique            bool
-	columnExpressions []types.ExpressionWithDirection
-	where             types.Expression
+	columnExpressions []impls.ExpressionWithDirection
+	where             impls.Expression
 }
 
 var _ queries.Query = &createIndex{}
 var _ DDLQuery = &createIndex{}
 
-func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []types.ExpressionWithDirection, where types.Expression) *createIndex {
+func NewCreateIndex(name, tableName, method string, unique bool, columnExpressions []impls.ExpressionWithDirection, where impls.Expression) *createIndex {
 	return &createIndex{
 		name:              name,
 		tableName:         tableName,
@@ -33,7 +33,7 @@ func NewCreateIndex(name, tableName, method string, unique bool, columnExpressio
 	}
 }
 
-func (q *createIndex) Execute(ctx types.Context, w protocol.ResponseWriter) {
+func (q *createIndex) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -42,8 +42,8 @@ func (q *createIndex) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createIndex) ExecuteDDL(ctx types.Context) error {
-	factories := map[string]func(ctx types.Context) (types.BaseIndex, error){
+func (q *createIndex) ExecuteDDL(ctx impls.Context) error {
+	factories := map[string]func(ctx impls.Context) (impls.BaseIndex, error){
 		"btree": q.createBtreeIndex,
 		"hash":  q.createHashIndex,
 	}
@@ -70,16 +70,16 @@ func (q *createIndex) ExecuteDDL(ctx types.Context) error {
 	return nil
 }
 
-func (q *createIndex) createBtreeIndex(ctx types.Context) (types.BaseIndex, error) {
-	var columnExpressions []types.ExpressionWithDirection
+func (q *createIndex) createBtreeIndex(ctx impls.Context) (impls.BaseIndex, error) {
+	var columnExpressions []impls.ExpressionWithDirection
 	for _, column := range q.columnExpressions {
-		columnExpressions = append(columnExpressions, types.ExpressionWithDirection{
+		columnExpressions = append(columnExpressions, impls.ExpressionWithDirection{
 			Expression: setRelationName(column.Expression, q.tableName),
 			Reverse:    column.Reverse,
 		})
 	}
 
-	var index types.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
+	var index impls.Index[indexes.BtreeIndexScanOptions] = indexes.NewBTreeIndex(
 		q.name,
 		q.tableName,
 		q.unique,
@@ -92,7 +92,7 @@ func (q *createIndex) createBtreeIndex(ctx types.Context) (types.BaseIndex, erro
 	return index, nil
 }
 
-func (q *createIndex) createHashIndex(ctx types.Context) (types.BaseIndex, error) {
+func (q *createIndex) createHashIndex(ctx impls.Context) (impls.BaseIndex, error) {
 	if len(q.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}
@@ -103,7 +103,7 @@ func (q *createIndex) createHashIndex(ctx types.Context) (types.BaseIndex, error
 		return nil, fmt.Errorf("hash index do not support uniqueness")
 	}
 
-	var index types.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
+	var index impls.Index[indexes.HashIndexScanOptions] = indexes.NewHashIndex(
 		q.name,
 		q.tableName,
 		setRelationName(q.columnExpressions[0].Expression, q.tableName),
@@ -116,8 +116,8 @@ func (q *createIndex) createHashIndex(ctx types.Context) (types.BaseIndex, error
 	return index, nil
 }
 
-func setRelationName(e types.Expression, name string) types.Expression {
-	return e.Map(func(e types.Expression) types.Expression {
+func setRelationName(e impls.Expression, name string) impls.Expression {
+	return e.Map(func(e impls.Expression) impls.Expression {
 		if named, ok := e.(expressions.NamedExpression); ok {
 			return expressions.NewNamed(named.Field().WithRelationName(name))
 		}

@@ -3,19 +3,20 @@ package expressions
 import (
 	"testing"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBinaryEqual(t *testing.T) {
-	a := NewNamed(shared.NewField("t", "a", shared.TypeText))
-	b := NewNamed(shared.NewField("t", "b", shared.TypeText))
+	a := NewNamed(fields.NewField("t", "a", types.TypeText))
+	b := NewNamed(fields.NewField("t", "b", types.TypeText))
 
 	for _, testCase := range []struct {
 		name     string
-		left     types.Expression
-		right    types.Expression
+		left     impls.Expression
+		right    impls.Expression
 		expected bool
 	}{
 		{

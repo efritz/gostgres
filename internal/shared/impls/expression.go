@@ -1,9 +1,9 @@
-package types
+package impls
 
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type Expression interface {
@@ -12,11 +12,11 @@ type Expression interface {
 	Equal(other Expression) bool
 	Fold() Expression
 	Map(f func(Expression) Expression) Expression
-	ValueFrom(cts Context, row shared.Row) (any, error)
+	ValueFrom(cts Context, row rows.Row) (any, error)
 }
 
 type AggregateExpression interface {
-	Step(ctx Context, row shared.Row) error
+	Step(ctx Context, row rows.Row) error
 	Done(ctx Context) (any, error)
 }
 

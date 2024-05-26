@@ -4,19 +4,22 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/shared/utils"
 	"golang.org/x/exp/maps"
 )
 
 type hashAggregate struct {
 	queries.Node
-	groupExpressions  []types.Expression
+	groupExpressions  []impls.Expression
 	selectExpressions []projection.ProjectionExpression
 	projector         *projection.Projector
 }
@@ -25,7 +28,7 @@ var _ queries.Node = &hashAggregate{}
 
 func NewHashAggregate(
 	node queries.Node,
-	groupExpressions []types.Expression,
+	groupExpressions []impls.Expression,
 	selectExpressions []projection.ProjectionExpression,
 ) queries.Node {
 	projector, err := projection.NewProjector(node.Name(), node.Fields(), selectExpressions)
@@ -45,7 +48,7 @@ func (n *hashAggregate) Name() string {
 	return "" // TODO
 }
 
-func (n *hashAggregate) Fields() []shared.Field {
+func (n *hashAggregate) Fields() []fields.Field {
 	return n.projector.Fields()
 }
 
@@ -59,11 +62,11 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *hashAggregate) AddFilter(filter types.Expression) {
+func (n *hashAggregate) AddFilter(filter impls.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *hashAggregate) AddOrder(order types.OrderExpression) {
+func (n *hashAggregate) AddOrder(order impls.OrderExpression) {
 	// TODO
 }
 
@@ -71,11 +74,11 @@ func (n *hashAggregate) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *hashAggregate) Filter() types.Expression {
+func (n *hashAggregate) Filter() impls.Expression {
 	return n.Node.Filter()
 }
 
-func (n *hashAggregate) Ordering() types.OrderExpression {
+func (n *hashAggregate) Ordering() impls.OrderExpression {
 	return nil // TODO
 }
 
@@ -83,31 +86,31 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *hashAggregate) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *hashAggregate) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var fields []shared.Field
-	var exprs []types.Expression
+	var groupedFields []fields.Field
+	var exprs []impls.Expression
 	for _, selectExpression := range n.selectExpressions {
 		expr, alias, ok := projection.UnwrapAlias(selectExpression)
 		if !ok {
 			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 		}
 
-		fields = append(fields, shared.NewField("", alias, shared.TypeAny))
+		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny))
 		exprs = append(exprs, expr)
 	}
 
-	h := map[uint64][]types.AggregateExpression{}
-	if err := scan.VisitRows(scanner, func(row shared.Row) (bool, error) {
+	h := map[uint64][]impls.AggregateExpression{}
+	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
 		keys, err := evaluatePair(ctx, n.groupExpressions, row)
 		if err != nil {
 			return false, err
 		}
-		key := shared.Hash(keys)
+		key := utils.Hash(keys)
 
 		aggregateExpressions, ok := h[key]
 		if !ok {
@@ -131,9 +134,9 @@ func (n *hashAggregate) Scanner(ctx types.Context) (scan.Scanner, error) {
 	i := 0
 	keys := maps.Keys(h)
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		if i >= len(keys) {
-			return shared.Row{}, scan.ErrNoRows
+			return rows.Row{}, scan.ErrNoRows
 		}
 
 		aggregateExpressions := h[keys[i]]
@@ -143,17 +146,17 @@ func (n *hashAggregate) Scanner(ctx types.Context) (scan.Scanner, error) {
 		for _, aggregateExpression := range aggregateExpressions {
 			value, err := aggregateExpression.Done(ctx)
 			if err != nil {
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
 			values = append(values, value)
 		}
 
-		return shared.Row{Fields: fields, Values: values}, nil
+		return rows.Row{Fields: groupedFields, Values: values}, nil
 	}), nil
 }
 
-func evaluatePair(ctx types.Context, expressions []types.Expression, row shared.Row) (values []any, _ error) {
+func evaluatePair(ctx impls.Context, expressions []impls.Expression, row rows.Row) (values []any, _ error) {
 	for _, expression := range expressions {
 		value, err := queries.Evaluate(ctx, expression, row)
 		if err != nil {

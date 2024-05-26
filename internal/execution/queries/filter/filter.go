@@ -1,21 +1,21 @@
 package filter
 
 import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type filterNode struct {
 	queries.Node
-	filter types.Expression
+	filter impls.Expression
 }
 
 var _ queries.Node = &filterNode{}
 
-func NewFilter(node queries.Node, filter types.Expression) queries.Node {
+func NewFilter(node queries.Node, filter impls.Expression) queries.Node {
 	return &filterNode{
 		Node:   node,
 		filter: filter,
@@ -31,11 +31,11 @@ func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *filterNode) AddFilter(filter types.Expression) {
+func (n *filterNode) AddFilter(filter impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filter)
 }
 
-func (n *filterNode) AddOrder(order types.OrderExpression) {
+func (n *filterNode) AddOrder(order impls.OrderExpression) {
 	n.Node.AddOrder(order)
 }
 
@@ -49,11 +49,11 @@ func (n *filterNode) Optimize() {
 	n.filter = expressions.FilterDifference(n.filter, n.Node.Filter())
 }
 
-func (n *filterNode) Filter() types.Expression {
+func (n *filterNode) Filter() impls.Expression {
 	return expressions.UnionFilters(n.filter, n.Node.Filter())
 }
 
-func (n *filterNode) Ordering() types.OrderExpression {
+func (n *filterNode) Ordering() impls.OrderExpression {
 	return n.Node.Ordering()
 }
 
@@ -61,7 +61,7 @@ func (n *filterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *filterNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *filterNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

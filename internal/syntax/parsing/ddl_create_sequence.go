@@ -3,7 +3,7 @@ package parsing
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -14,7 +14,7 @@ func (p *parser) parseCreateSequence() (queries.Query, error) {
 		return nil, err
 	}
 
-	typ := shared.TypeBigInteger
+	typ := types.TypeBigInteger
 	if p.advanceIf(isType(tokens.TokenTypeAs)) {
 		typ, err = p.parseBasicType()
 		if err != nil {

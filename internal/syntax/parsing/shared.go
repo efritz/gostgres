@@ -2,12 +2,12 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/types"
 )
 
 // where := [ `WHERE` expression ]
-func (p *parser) parseWhere() (types.Expression, bool, error) {
+func (p *parser) parseWhere() (impls.Expression, bool, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeWhere)) {
 		return nil, false, nil
 	}

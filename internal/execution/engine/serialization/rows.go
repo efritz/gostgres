@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func SerializeRows(rows shared.Rows) string {
+func SerializeRows(rows rows.Rows) string {
 	var b strings.Builder
 	serialized := serializeRows(rows)
 	spacesBuffer := strings.Repeat(" ", max(serialized.maxFieldWidth, serialized.maxValueWidth))
@@ -72,7 +73,7 @@ func SerializeRows(rows shared.Rows) string {
 	return b.String()
 }
 
-func SerializeRowsExpanded(rows shared.Rows) string {
+func SerializeRowsExpanded(rows rows.Rows) string {
 	var b strings.Builder
 	serialized := serializeRows(rows)
 	maxLineWidth := serialized.maxFieldWidth + serialized.maxValueWidth + 3
@@ -117,13 +118,13 @@ type serializedRows struct {
 }
 
 type serializedColumn struct {
-	field                 shared.Field
+	field                 fields.Field
 	values                []string
 	maxValueWidth         int // maximum length of serialized value in this column
 	maxWidthWithFieldName int // max(maxValueWidth, len(field.Name()))
 }
 
-func serializeRows(rows shared.Rows) serializedRows {
+func serializeRows(rows rows.Rows) serializedRows {
 	var columns []serializedColumn
 	for _, field := range rows.Fields {
 		columns = append(columns, serializedColumn{field: field})

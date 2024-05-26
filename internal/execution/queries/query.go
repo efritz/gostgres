@@ -1,14 +1,14 @@
 package queries
 
 import (
-	"github.com/efritz/gostgres/internal/execution/protocol"
+	"github.com/efritz/gostgres/internal/execution/engine/protocol"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type Query interface {
-	Execute(ctx types.Context, w protocol.ResponseWriter)
+	Execute(ctx impls.Context, w protocol.ResponseWriter)
 }
 
 type NodeQuery struct {
@@ -23,7 +23,7 @@ func NewQuery(n Node) *NodeQuery {
 	}
 }
 
-func (q *NodeQuery) Execute(ctx types.Context, w protocol.ResponseWriter) {
+func (q *NodeQuery) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	q.Node.Optimize()
 
 	scanner, err := q.Node.Scanner(ctx)
@@ -32,7 +32,7 @@ func (q *NodeQuery) Execute(ctx types.Context, w protocol.ResponseWriter) {
 		return
 	}
 
-	if err := scan.VisitRows(scanner, func(row shared.Row) (bool, error) {
+	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
 		w.SendRow(row)
 		return true, nil
 	}); err != nil {
@@ -43,6 +43,6 @@ func (q *NodeQuery) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func Evaluate(ctx types.Context, expr types.Expression, row shared.Row) (any, error) {
-	return expr.ValueFrom(ctx, shared.CombineRows(row, ctx.OuterRow()))
+func Evaluate(ctx impls.Context, expr impls.Expression, row rows.Row) (any, error) {
+	return expr.ValueFrom(ctx, rows.CombineRows(row, ctx.OuterRow()))
 }

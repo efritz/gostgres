@@ -1,9 +1,9 @@
 package scan
 
-import "github.com/efritz/gostgres/internal/shared"
+import "github.com/efritz/gostgres/internal/shared/rows"
 
 type Scanner interface {
-	Scan() (shared.Row, error)
+	Scan() (rows.Row, error)
 }
 
 type MarkRestorer interface {
@@ -11,8 +11,8 @@ type MarkRestorer interface {
 	Restore()
 }
 
-type ScannerFunc func() (shared.Row, error)
+type ScannerFunc func() (rows.Row, error)
 
-func (f ScannerFunc) Scan() (shared.Row, error) {
+func (f ScannerFunc) Scan() (rows.Row, error) {
 	return f()
 }

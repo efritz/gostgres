@@ -2,23 +2,23 @@ package access
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type accessStrategy interface {
 	Serialize(w serialization.IndentWriter)
-	Filter() types.Expression
-	Ordering() types.OrderExpression
-	Scanner(ctx types.Context) (scan.Scanner, error)
+	Filter() impls.Expression
+	Ordering() impls.OrderExpression
+	Scanner(ctx impls.Context) (scan.Scanner, error)
 }
 
 func selectAccessStrategy(
-	table types.Table,
-	filterExpression types.Expression,
-	orderExpression types.OrderExpression,
+	table impls.Table,
+	filterExpression impls.Expression,
+	orderExpression impls.OrderExpression,
 ) accessStrategy {
 	var candidates []accessStrategy
 	for _, index := range table.Indexes() {

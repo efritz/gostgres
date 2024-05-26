@@ -1,16 +1,16 @@
 package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func AsAggregate(ctx types.Context, e types.Expression) types.AggregateExpression {
+func AsAggregate(ctx impls.Context, e impls.Expression) impls.AggregateExpression {
 	var (
 		results        []*constantExpression
-		subExpressions []types.AggregateExpression
+		subExpressions []impls.AggregateExpression
 	)
-	outerExpression := e.Map(func(e types.Expression) types.Expression {
+	outerExpression := e.Map(func(e impls.Expression) impls.Expression {
 		f, ok := e.(functionExpression)
 		if !ok {
 			return e
@@ -42,13 +42,13 @@ func AsAggregate(ctx types.Context, e types.Expression) types.AggregateExpressio
 
 type explodedAggregateExpression struct {
 	results         []*constantExpression
-	subExpressions  []types.AggregateExpression
-	outerExpression types.Expression
+	subExpressions  []impls.AggregateExpression
+	outerExpression impls.Expression
 }
 
-var _ types.AggregateExpression = &explodedAggregateExpression{}
+var _ impls.AggregateExpression = &explodedAggregateExpression{}
 
-func (e *explodedAggregateExpression) Step(ctx types.Context, row shared.Row) error {
+func (e *explodedAggregateExpression) Step(ctx impls.Context, row rows.Row) error {
 	for _, subexpression := range e.subExpressions {
 		if err := subexpression.Step(ctx, row); err != nil {
 			return err
@@ -58,7 +58,7 @@ func (e *explodedAggregateExpression) Step(ctx types.Context, row shared.Row) er
 	return nil
 }
 
-func (e *explodedAggregateExpression) Done(ctx types.Context) (any, error) {
+func (e *explodedAggregateExpression) Done(ctx impls.Context) (any, error) {
 	for i, subExpression := range e.subExpressions {
 		value, err := subExpression.Done(ctx)
 		if err != nil {
@@ -68,18 +68,18 @@ func (e *explodedAggregateExpression) Done(ctx types.Context) (any, error) {
 		e.results[i].value = value
 	}
 
-	return e.outerExpression.ValueFrom(ctx, shared.Row{})
+	return e.outerExpression.ValueFrom(ctx, rows.Row{})
 }
 
 type aggregateSubExpression struct {
-	aggregate types.Aggregate
-	args      []types.Expression
+	aggregate impls.Aggregate
+	args      []impls.Expression
 	state     any
 }
 
-var _ types.AggregateExpression = &aggregateSubExpression{}
+var _ impls.AggregateExpression = &aggregateSubExpression{}
 
-func (e *aggregateSubExpression) Step(ctx types.Context, row shared.Row) error {
+func (e *aggregateSubExpression) Step(ctx impls.Context, row rows.Row) error {
 	var values []any
 	for _, arg := range e.args {
 		value, err := arg.ValueFrom(ctx, row)
@@ -99,18 +99,18 @@ func (e *aggregateSubExpression) Step(ctx types.Context, row shared.Row) error {
 	return nil
 }
 
-func (e *aggregateSubExpression) Done(ctx types.Context) (any, error) {
+func (e *aggregateSubExpression) Done(ctx impls.Context) (any, error) {
 	return e.aggregate.Done(e.state)
 }
 
 type nonAggregateExpression struct {
-	expression types.Expression
+	expression impls.Expression
 	state      any
 }
 
-var _ types.AggregateExpression = &nonAggregateExpression{}
+var _ impls.AggregateExpression = &nonAggregateExpression{}
 
-func (e *nonAggregateExpression) Step(ctx types.Context, row shared.Row) error {
+func (e *nonAggregateExpression) Step(ctx impls.Context, row rows.Row) error {
 	value, err := e.expression.ValueFrom(ctx, row)
 	if err != nil {
 		return err
@@ -120,6 +120,6 @@ func (e *nonAggregateExpression) Step(ctx types.Context, row shared.Row) error {
 	return nil
 }
 
-func (e *nonAggregateExpression) Done(ctx types.Context) (any, error) {
+func (e *nonAggregateExpression) Done(ctx impls.Context) (any, error) {
 	return e.state, nil
 }

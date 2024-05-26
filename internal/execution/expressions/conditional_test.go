@@ -3,8 +3,10 @@ package expressions
 import (
 	"testing"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +14,7 @@ import (
 func TestEvaluateNot(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
-		expr     types.Expression
+		expr     impls.Expression
 		expected any
 	}{
 		{
@@ -33,7 +35,7 @@ func TestEvaluateNot(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewNot(testCase.expr)
-			val, err := e.ValueFrom(types.EmptyContext, shared.Row{})
+			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
@@ -43,8 +45,8 @@ func TestEvaluateNot(t *testing.T) {
 func TestEvaluateAnd(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
-		left     types.Expression
-		right    types.Expression
+		left     impls.Expression
+		right    impls.Expression
 		expected any
 	}{
 		{
@@ -68,7 +70,7 @@ func TestEvaluateAnd(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewAnd(testCase.left, testCase.right)
-			val, err := e.ValueFrom(types.EmptyContext, shared.Row{})
+			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
@@ -78,8 +80,8 @@ func TestEvaluateAnd(t *testing.T) {
 func TestEvaluateOr(t *testing.T) {
 	for _, testCase := range []struct {
 		name     string
-		left     types.Expression
-		right    types.Expression
+		left     impls.Expression
+		right    impls.Expression
 		expected any
 	}{
 		{
@@ -115,7 +117,7 @@ func TestEvaluateOr(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewOr(testCase.left, testCase.right)
-			val, err := e.ValueFrom(types.EmptyContext, shared.Row{})
+			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
@@ -123,10 +125,10 @@ func TestEvaluateOr(t *testing.T) {
 }
 
 func TestConditionalEqual(t *testing.T) {
-	a := NewNamed(shared.NewField("t", "a", shared.TypeText))
-	b := NewNamed(shared.NewField("t", "b", shared.TypeText))
-	c := NewNamed(shared.NewField("t", "c", shared.TypeText))
-	d := NewNamed(shared.NewField("t", "d", shared.TypeText))
+	a := NewNamed(fields.NewField("t", "a", types.TypeText))
+	b := NewNamed(fields.NewField("t", "b", types.TypeText))
+	c := NewNamed(fields.NewField("t", "c", types.TypeText))
+	d := NewNamed(fields.NewField("t", "d", types.TypeText))
 
 	e1 := NewEquals(a, b)
 	e2 := NewLessThanEquals(b, c)
@@ -135,13 +137,13 @@ func TestConditionalEqual(t *testing.T) {
 
 	for _, testCase := range []struct {
 		name    string
-		factory func(types.Expression, types.Expression) types.Expression
+		factory func(impls.Expression, impls.Expression) impls.Expression
 	}{
 		{name: "and", factory: NewAnd},
 		{name: "or", factory: NewOr},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			equivalences := map[string]types.Expression{
+			equivalences := map[string]impls.Expression{
 				"chain":     testCase.factory(e1, testCase.factory(e2, testCase.factory(e3, e4))), // e1 . (e2 . (e3 . e4))
 				"reordered": testCase.factory(e4, testCase.factory(testCase.factory(e3, e2), e1)), // e4 . ((e3 . e2) . e1)
 				"balanced":  testCase.factory(testCase.factory(e1, e2), testCase.factory(e3, e4)), // (e1 . e2) . (e3 . e4)

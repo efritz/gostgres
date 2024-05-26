@@ -2,28 +2,28 @@ package ddl
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/sequence"
-	"github.com/efritz/gostgres/internal/execution/protocol"
+	"github.com/efritz/gostgres/internal/execution/engine/protocol"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type createSequence struct {
 	name string
-	typ  shared.Type
+	typ  types.Type
 }
 
 var _ queries.Query = &createSequence{}
 var _ DDLQuery = &createSequence{}
 
-func NewCreateSequence(name string, typ shared.Type) *createSequence {
+func NewCreateSequence(name string, typ types.Type) *createSequence {
 	return &createSequence{
 		name: name,
 		typ:  typ,
 	}
 }
 
-func (q *createSequence) Execute(ctx types.Context, w protocol.ResponseWriter) {
+func (q *createSequence) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -32,7 +32,7 @@ func (q *createSequence) Execute(ctx types.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createSequence) ExecuteDDL(ctx types.Context) error {
+func (q *createSequence) ExecuteDDL(ctx impls.Context) error {
 	ctx.SetSequence(q.name, sequence.NewSequence(q.name, q.typ))
 	return nil
 }

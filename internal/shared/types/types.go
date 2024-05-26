@@ -1,4 +1,4 @@
-package shared
+package types
 
 import (
 	"fmt"
@@ -98,25 +98,4 @@ func ValueAs[T any](untypedValue any, err error) (*T, error) {
 	}
 
 	return &typedValue, nil
-}
-
-func refineTypes(fields []Field, values []any) ([]Field, []any, error) {
-	if len(fields) != len(values) {
-		return nil, nil, fmt.Errorf("unexpected number of columns")
-	}
-
-	refinedFields := make([]Field, 0, len(fields))
-	refinedValues := make([]any, 0, len(values))
-
-	for i, field := range fields {
-		refinedType, refinedValue, ok := field.typ.Refine(values[i])
-		if !ok {
-			return nil, nil, fmt.Errorf("type error (%v is not %s)", values[i], field.Type())
-		}
-
-		refinedFields = append(refinedFields, field.WithType(refinedType))
-		refinedValues = append(refinedValues, refinedValue)
-	}
-
-	return refinedFields, refinedValues, nil
 }

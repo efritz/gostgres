@@ -1,11 +1,11 @@
 package functions
 
-import "github.com/efritz/gostgres/internal/types"
+import "github.com/efritz/gostgres/internal/shared/impls"
 
-type simpleFunction func(ctx types.Context, args []any) (any, error)
+type simpleFunction func(ctx impls.Context, args []any) (any, error)
 
-var _ types.Function = simpleFunction(nil)
+var _ impls.Function = simpleFunction(nil)
 
-func (f simpleFunction) Invoke(ctx types.Context, args []any) (any, error) {
+func (f simpleFunction) Invoke(ctx impls.Context, args []any) (any, error) {
 	return f(ctx, args)
 }

@@ -3,14 +3,14 @@ package expressions
 import (
 	"strings"
 
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type orderExpression struct {
-	expressions []types.ExpressionWithDirection
+	expressions []impls.ExpressionWithDirection
 }
 
-func NewOrderExpression(expressions []types.ExpressionWithDirection) types.OrderExpression {
+func NewOrderExpression(expressions []impls.ExpressionWithDirection) impls.OrderExpression {
 	return orderExpression{
 		expressions: expressions,
 	}
@@ -30,12 +30,12 @@ func (e orderExpression) String() string {
 	return strings.Join(parts, ", ")
 }
 
-func (e orderExpression) Expressions() []types.ExpressionWithDirection {
+func (e orderExpression) Expressions() []impls.ExpressionWithDirection {
 	return e.expressions
 }
 
-func (e orderExpression) Fold() types.OrderExpression {
-	expressions := make([]types.ExpressionWithDirection, 0, len(e.expressions))
+func (e orderExpression) Fold() impls.OrderExpression {
+	expressions := make([]impls.ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
 		expressions = append(expressions, expression.Fold())
 	}
@@ -43,10 +43,10 @@ func (e orderExpression) Fold() types.OrderExpression {
 	return orderExpression{expressions: expressions}
 }
 
-func (e orderExpression) Map(f func(types.Expression) types.Expression) types.OrderExpression {
-	expressions := make([]types.ExpressionWithDirection, 0, len(e.expressions))
+func (e orderExpression) Map(f func(impls.Expression) impls.Expression) impls.OrderExpression {
+	expressions := make([]impls.ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
-		expressions = append(expressions, types.ExpressionWithDirection{
+		expressions = append(expressions, impls.ExpressionWithDirection{
 			Expression: f(expression.Expression),
 			Reverse:    expression.Reverse,
 		})

@@ -4,15 +4,17 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type btreeIndex struct {
 	name        string
 	tableName   string
 	unique      bool
-	expressions []types.ExpressionWithDirection
+	expressions []impls.ExpressionWithDirection
 	root        *btreeNode
 }
 
@@ -30,7 +32,7 @@ type BtreeIndexScanOptions struct {
 }
 
 type scanBound struct {
-	expression types.Expression
+	expression impls.Expression
 	inclusive  bool
 }
 
@@ -54,9 +56,9 @@ func NewBtreeSearchOptions(values []any) BtreeIndexScanOptions {
 	}
 }
 
-var _ types.Index[BtreeIndexScanOptions] = &btreeIndex{}
+var _ impls.Index[BtreeIndexScanOptions] = &btreeIndex{}
 
-func NewBTreeIndex(name, tableName string, unique bool, expressions []types.ExpressionWithDirection) types.Index[BtreeIndexScanOptions] {
+func NewBTreeIndex(name, tableName string, unique bool, expressions []impls.ExpressionWithDirection) impls.Index[BtreeIndexScanOptions] {
 	return &btreeIndex{
 		name:        name,
 		tableName:   tableName,
@@ -65,16 +67,16 @@ func NewBTreeIndex(name, tableName string, unique bool, expressions []types.Expr
 	}
 }
 
-func (i *btreeIndex) Unwrap() types.BaseIndex {
+func (i *btreeIndex) Unwrap() impls.BaseIndex {
 	return i
 }
 
-func (i *btreeIndex) UniqueOn() []shared.Field {
+func (i *btreeIndex) UniqueOn() []fields.Field {
 	if !i.unique {
 		return nil
 	}
 
-	var fields []shared.Field
+	var fields []fields.Field
 	for _, e := range i.expressions {
 		named, ok := e.Expression.(expressions.NamedExpression)
 		if !ok {
@@ -87,7 +89,7 @@ func (i *btreeIndex) UniqueOn() []shared.Field {
 	return fields
 }
 
-func (i *btreeIndex) Filter() types.Expression {
+func (i *btreeIndex) Filter() impls.Expression {
 	return nil
 }
 
@@ -104,8 +106,8 @@ func (i *btreeIndex) Description(opts BtreeIndexScanOptions) string {
 	return fmt.Sprintf("%sbtree index scan of %s via %s", direction, i.tableName, i.name)
 }
 
-func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) types.Expression {
-	var allExpressions []types.Expression
+func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) impls.Expression {
+	var allExpressions []impls.Expression
 
 	for j := range i.expressions {
 		lowers, uppers, equals := i.conditionsForIndex(opts, j)
@@ -115,7 +117,7 @@ func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) types.Expression {
 		allExpressions = append(allExpressions, equals...)
 	}
 
-	var expr types.Expression
+	var expr impls.Expression
 	for _, expression := range allExpressions {
 		if expr == nil {
 			expr = expression
@@ -127,7 +129,7 @@ func (i *btreeIndex) Condition(opts BtreeIndexScanOptions) types.Expression {
 	return expr
 }
 
-func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (lowers, uppers, equals []types.Expression) {
+func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (lowers, uppers, equals []impls.Expression) {
 	var lowerBounds []scanBound
 	if index < len(opts.lowerBounds) {
 		lowerBounds = opts.lowerBounds[index]
@@ -185,11 +187,11 @@ func (i *btreeIndex) conditionsForIndex(opts BtreeIndexScanOptions, index int) (
 	return lowers, uppers, equals
 }
 
-func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) types.OrderExpression {
+func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) impls.OrderExpression {
 	if opts.scanDirection == ScanDirectionBackward {
-		var reversed []types.ExpressionWithDirection
+		var reversed []impls.ExpressionWithDirection
 		for _, expression := range i.expressions {
-			reversed = append(reversed, types.ExpressionWithDirection{
+			reversed = append(reversed, impls.ExpressionWithDirection{
 				Expression: expression.Expression,
 				Reverse:    !expression.Reverse,
 			})
@@ -201,7 +203,7 @@ func (i *btreeIndex) Ordering(opts BtreeIndexScanOptions) types.OrderExpression 
 	return expressions.NewOrderExpression(i.expressions)
 }
 
-func (i *btreeIndex) Insert(row shared.Row) error {
+func (i *btreeIndex) Insert(row rows.Row) error {
 	tid, values, err := i.extractTIDAndValuesFromRow(row)
 	if err != nil {
 		return err
@@ -216,21 +218,21 @@ func (n *btreeNode) insert(values []any, tid int64, unique bool) (*btreeNode, er
 		return &btreeNode{tid: tid, values: values}, nil
 	}
 
-	switch shared.CompareValueSlices(values, n.values) {
-	case shared.OrderTypeEqual:
+	switch ordering.CompareValueSlices(values, n.values) {
+	case ordering.OrderTypeEqual:
 		if unique {
 			return nil, fmt.Errorf("unique constraint violation")
 		}
 		fallthrough
 
-	case shared.OrderTypeBefore:
+	case ordering.OrderTypeBefore:
 		newLeft, err := n.left.insert(values, tid, unique)
 		if err != nil {
 			return nil, err
 		}
 		n.left = newLeft
 
-	case shared.OrderTypeAfter:
+	case ordering.OrderTypeAfter:
 		newRight, err := n.right.insert(values, tid, unique)
 		if err != nil {
 			return nil, err
@@ -241,7 +243,7 @@ func (n *btreeNode) insert(values []any, tid int64, unique bool) (*btreeNode, er
 	return n, nil
 }
 
-func (i *btreeIndex) Delete(row shared.Row) error {
+func (i *btreeIndex) Delete(row rows.Row) error {
 	tid, values, err := i.extractTIDAndValuesFromRow(row)
 	if err != nil {
 		return err
@@ -268,17 +270,17 @@ func (n *btreeNode) delete(values []any, tid int64) *btreeNode {
 		return n
 	}
 
-	switch shared.CompareValueSlices(values, n.values) {
-	case shared.OrderTypeBefore, shared.OrderTypeEqual:
+	switch ordering.CompareValueSlices(values, n.values) {
+	case ordering.OrderTypeBefore, ordering.OrderTypeEqual:
 		n.left = n.left.delete(values, tid)
-	case shared.OrderTypeAfter:
+	case ordering.OrderTypeAfter:
 		n.right = n.right.delete(values, tid)
 	}
 
 	return n
 }
 
-func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, error) {
+func (i *btreeIndex) extractTIDAndValuesFromRow(row rows.Row) (int64, []any, error) {
 	tid, err := row.TID()
 	if err != nil {
 		return 0, nil, err
@@ -286,7 +288,7 @@ func (i *btreeIndex) extractTIDAndValuesFromRow(row shared.Row) (int64, []any, e
 
 	values := []any{}
 	for _, expression := range i.expressions {
-		value, err := expression.Expression.ValueFrom(types.EmptyContext, row)
+		value, err := expression.Expression.ValueFrom(impls.EmptyContext, row)
 		if err != nil {
 			return 0, nil, err
 		}

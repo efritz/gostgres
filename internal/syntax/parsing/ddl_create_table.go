@@ -7,9 +7,9 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/types"
 )
 
 // createTableTail := ident `(` [ columnDescription [, ...] ] `)`
@@ -32,7 +32,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 		queries = append(queries, column.sequences...)
 	}
 
-	var fields []types.TableField
+	var fields []impls.TableField
 	for _, column := range columns {
 		fields = append(fields, column.field)
 	}
@@ -49,7 +49,7 @@ func (p *parser) parseCreateTable() (queries.Query, error) {
 }
 
 type columnDescription struct {
-	field       types.TableField
+	field       impls.TableField
 	sequences   []ddl.DDLQuery
 	constraints []ddl.DDLQuery
 }
@@ -62,7 +62,7 @@ func (p *parser) parseColumnDescription(tableName string) (columnDescription, er
 	}
 
 	description := columnDescription{
-		field:       types.NewTableField("", name, shared.TypeAny),
+		field:       impls.NewTableField("", name, types.TypeAny),
 		sequences:   nil,
 		constraints: nil,
 	}
@@ -84,22 +84,22 @@ func (p *parser) parseColumnDescription(tableName string) (columnDescription, er
 
 // columnType := basicType | `smallserial` | `serial` | `bigserial`
 func (p *parser) parseColumnType(name string, tableName string, description *columnDescription) error {
-	parseSequenceType := func() (shared.Type, bool) {
+	parseSequenceType := func() (types.Type, bool) {
 		if p.peek(0).Type == tokens.TokenTypeIdent {
 			switch strings.ToLower(p.peek(0).Text) {
 			case "smallserial":
 				p.advance()
-				return shared.TypeSmallInteger, true
+				return types.TypeSmallInteger, true
 			case "serial":
 				p.advance()
-				return shared.TypeInteger, true
+				return types.TypeInteger, true
 			case "bigserial":
 				p.advance()
-				return shared.TypeBigInteger, true
+				return types.TypeBigInteger, true
 			}
 		}
 
-		return shared.TypeUnknown, false
+		return types.TypeUnknown, false
 	}
 
 	if typ, ok := parseSequenceType(); ok {
@@ -107,7 +107,7 @@ func (p *parser) parseColumnType(name string, tableName string, description *col
 		description.sequences = append(description.sequences, ddl.NewCreateSequence(sequenceName, typ))
 		description.field = description.field.WithType(typ)
 		description.field = description.field.WithNonNullable()
-		nextValue := expressions.NewFunction("nextval", []types.Expression{expressions.NewConstant(sequenceName)})
+		nextValue := expressions.NewFunction("nextval", []impls.Expression{expressions.NewConstant(sequenceName)})
 		description.field = description.field.WithDefault(nextValue)
 	} else {
 		typ, err := p.parseBasicType()

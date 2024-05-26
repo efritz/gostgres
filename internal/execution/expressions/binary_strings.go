@@ -1,18 +1,19 @@
 package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-func NewConcat(left, right types.Expression) types.Expression {
-	return newBinaryExpression(left, right, "||", func(ctx types.Context, left, right types.Expression, row shared.Row) (any, error) {
-		lVal, err := shared.ValueAs[string](left.ValueFrom(ctx, row))
+func NewConcat(left, right impls.Expression) impls.Expression {
+	return newBinaryExpression(left, right, "||", func(ctx impls.Context, left, right impls.Expression, row rows.Row) (any, error) {
+		lVal, err := types.ValueAs[string](left.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
 		}
 
-		rVal, err := shared.ValueAs[string](right.ValueFrom(ctx, row))
+		rVal, err := types.ValueAs[string](right.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
 		}
@@ -25,10 +26,10 @@ func NewConcat(left, right types.Expression) types.Expression {
 	})
 }
 
-func NewLike(left, right types.Expression) types.Expression {
+func NewLike(left, right impls.Expression) impls.Expression {
 	panic("NewLike unimplemented") // TODO
 }
 
-func NewILike(left, right types.Expression) types.Expression {
+func NewILike(left, right impls.Expression) impls.Expression {
 	panic("NewILike unimplemented") // TODO
 }

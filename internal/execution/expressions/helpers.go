@@ -1,28 +1,28 @@
 package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func Conjunctions(e types.Expression) []types.Expression {
+func Conjunctions(e impls.Expression) []impls.Expression {
 	if c, ok := e.(conditionalExpression); ok && c.conjunctions {
 		return append(Conjunctions(c.left), Conjunctions(c.right)...)
 	}
 
-	return []types.Expression{e}
+	return []impls.Expression{e}
 }
 
-func Disjunctions(e types.Expression) []types.Expression {
+func Disjunctions(e impls.Expression) []impls.Expression {
 	if c, ok := e.(conditionalExpression); ok && !c.conjunctions {
 		return append(Disjunctions(c.left), Disjunctions(c.right)...)
 	}
 
-	return []types.Expression{e}
+	return []impls.Expression{e}
 }
 
-func FilterDifference(filter, childFilter types.Expression) types.Expression {
-	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []types.Expression) {
+func FilterDifference(filter, childFilter impls.Expression) impls.Expression {
+	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []impls.Expression) {
 		for i, f1 := range conjunctions {
 			for _, f2 := range childConjunctions {
 				if f1.Equal(f2) {
@@ -34,8 +34,8 @@ func FilterDifference(filter, childFilter types.Expression) types.Expression {
 	})
 }
 
-func FilterIntersection(filter, childFilter types.Expression) types.Expression {
-	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []types.Expression) {
+func FilterIntersection(filter, childFilter impls.Expression) impls.Expression {
+	return combineFilters(filter, childFilter, func(conjunctions, childConjunctions []impls.Expression) {
 	outer:
 		for i, f1 := range conjunctions {
 			for _, f2 := range childConjunctions {
@@ -49,7 +49,7 @@ func FilterIntersection(filter, childFilter types.Expression) types.Expression {
 	})
 }
 
-func combineFilters(filter, childFilter types.Expression, filterConjunctions func(conjunctions, childConjunctions []types.Expression)) types.Expression {
+func combineFilters(filter, childFilter impls.Expression, filterConjunctions func(conjunctions, childConjunctions []impls.Expression)) impls.Expression {
 	if filter == nil {
 		return nil
 	}
@@ -62,8 +62,8 @@ func combineFilters(filter, childFilter types.Expression, filterConjunctions fun
 	return UnionFilters(conjunctions...)
 }
 
-func UnionFilters(filters ...types.Expression) types.Expression {
-	var conjunctions []types.Expression
+func UnionFilters(filters ...impls.Expression) impls.Expression {
+	var conjunctions []impls.Expression
 	for _, expression := range filters {
 		if expression == nil {
 			continue
@@ -99,7 +99,7 @@ func UnionFilters(filters ...types.Expression) types.Expression {
 	return filter
 }
 
-func SubsumesOrder(a, b types.OrderExpression) bool {
+func SubsumesOrder(a, b impls.OrderExpression) bool {
 	if a == nil || b == nil {
 		return false
 	}
@@ -123,8 +123,8 @@ func SubsumesOrder(a, b types.OrderExpression) bool {
 	return true
 }
 
-func tryEvaluate(expression types.Expression) types.Expression {
-	if value, err := expression.ValueFrom(types.EmptyContext, shared.Row{}); err == nil {
+func tryEvaluate(expression impls.Expression) impls.Expression {
+	if value, err := expression.ValueFrom(impls.EmptyContext, rows.Row{}); err == nil {
 		return NewConstant(value)
 	}
 

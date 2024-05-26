@@ -1,4 +1,4 @@
-package types
+package impls
 
 type Sequence interface {
 	Name() string

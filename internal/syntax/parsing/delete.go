@@ -8,7 +8,9 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -52,10 +54,10 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	if aliasName != "" {
 		relationName = aliasName
 	}
-	tidField := shared.NewField(relationName, shared.TIDName, shared.TypeBigInteger)
+	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
 	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
-		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), shared.TIDName),
+		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
 	})
 	if err != nil {
 		return nil, err

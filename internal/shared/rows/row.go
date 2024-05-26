@@ -1,13 +1,17 @@
-package shared
+package rows
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/efritz/gostgres/internal/shared/fields"
+)
 
 type Row struct {
-	Fields []Field
+	Fields []fields.Field
 	Values []any
 }
 
-func NewRow(fields []Field, values []any) (_ Row, err error) {
+func NewRow(fields []fields.Field, values []any) (_ Row, err error) {
 	fields, values, err = refineTypes(fields, values)
 	if err != nil {
 		return Row{}, err
@@ -32,7 +36,7 @@ func (r Row) TID() (int64, error) {
 }
 
 func CombineRows(rows ...Row) Row {
-	var fields []Field
+	var fields []fields.Field
 	for _, row := range rows {
 		fields = append(fields, row.Fields...)
 	}

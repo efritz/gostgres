@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/types"
 )
 
 type parser struct {
@@ -23,12 +23,12 @@ type parser struct {
 }
 
 type TableGetter interface {
-	Get(name string) (types.Table, bool)
+	Get(name string) (impls.Table, bool)
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
-type prefixParserFunc func(token tokens.Token) (types.Expression, error)
-type infixParserFunc func(left types.Expression, token tokens.Token) (types.Expression, error)
+type prefixParserFunc func(token tokens.Token) (impls.Expression, error)
+type infixParserFunc func(left impls.Expression, token tokens.Token) (impls.Expression, error)
 
 type ddlParsers map[tokens.TokenType]func(token tokens.Token) (queries.Query, error)
 type createParsers map[tokens.TokenType]func() (queries.Query, error)

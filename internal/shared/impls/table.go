@@ -1,6 +1,6 @@
-package types
+package impls
 
-import "github.com/efritz/gostgres/internal/shared"
+import "github.com/efritz/gostgres/internal/shared/rows"
 
 type Table interface {
 	Name() string
@@ -8,10 +8,10 @@ type Table interface {
 	Fields() []TableField
 	Size() int
 	TIDs() []int64
-	Row(tid int64) (shared.Row, bool)
+	Row(tid int64) (rows.Row, bool)
 	SetPrimaryKey(index BaseIndex) error
 	AddIndex(index BaseIndex) error
 	AddConstraint(ctx Context, constraint Constraint) error
-	Insert(ctx Context, row shared.Row) (_ shared.Row, err error)
-	Delete(row shared.Row) (shared.Row, bool, error)
+	Insert(ctx Context, row rows.Row) (_ rows.Row, err error)
+	Delete(row rows.Row) (rows.Row, bool, error)
 }

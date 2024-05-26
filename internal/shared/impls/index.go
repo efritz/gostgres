@@ -1,14 +1,17 @@
-package types
+package impls
 
-import "github.com/efritz/gostgres/internal/shared"
+import (
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/rows"
+)
 
 type BaseIndex interface {
 	Name() string
 	Unwrap() BaseIndex
-	UniqueOn() []shared.Field
+	UniqueOn() []fields.Field
 	Filter() Expression
-	Insert(row shared.Row) error
-	Delete(row shared.Row) error
+	Insert(row rows.Row) error
+	Delete(row rows.Row) error
 }
 
 type ScanOptions any

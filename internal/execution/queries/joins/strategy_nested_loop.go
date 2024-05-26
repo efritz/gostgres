@@ -6,8 +6,9 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type nestedLoopJoinStrategy struct {
@@ -18,7 +19,7 @@ func (s *nestedLoopJoinStrategy) Name() string {
 	return "nested loop"
 }
 
-func (s *nestedLoopJoinStrategy) Ordering() types.OrderExpression {
+func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	leftOrdering := s.n.left.Ordering()
 	if leftOrdering == nil {
 		return nil
@@ -32,29 +33,29 @@ func (s *nestedLoopJoinStrategy) Ordering() types.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	leftScanner, err := s.n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
-		leftRow      *shared.Row
+		leftRow      *rows.Row
 		rightScanner scan.Scanner
 	)
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		for {
 			if leftRow == nil {
 				row, err := leftScanner.Scan()
 				if err != nil {
-					return shared.Row{}, err
+					return rows.Row{}, err
 				}
 				leftRow = &row
 
 				scanner, err := s.n.right.Scanner(ctx.WithOuterRow(row))
 				if err != nil {
-					return shared.Row{}, nil
+					return rows.Row{}, nil
 				}
 				rightScanner = scanner
 			}
@@ -67,17 +68,17 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx types.Context) (scan.Scanner, error
 					continue
 				}
 
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
-			row, err := shared.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
+			row, err := rows.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
 			if err != nil {
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
 			if s.n.filter != nil {
-				if ok, err := shared.ValueAs[bool](queries.Evaluate(ctx, s.n.filter, row)); err != nil {
-					return shared.Row{}, err
+				if ok, err := types.ValueAs[bool](queries.Evaluate(ctx, s.n.filter, row)); err != nil {
+					return rows.Row{}, err
 				} else if ok == nil || !*ok {
 					continue
 				}

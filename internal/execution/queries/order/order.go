@@ -1,21 +1,21 @@
 package order
 
 import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type orderNode struct {
 	queries.Node
-	order types.OrderExpression
+	order impls.OrderExpression
 }
 
 var _ queries.Node = &orderNode{}
 
-func NewOrder(node queries.Node, order types.OrderExpression) queries.Node {
+func NewOrder(node queries.Node, order impls.OrderExpression) queries.Node {
 	return &orderNode{
 		Node:  node,
 		order: order,
@@ -31,11 +31,11 @@ func (n *orderNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *orderNode) AddFilter(filter types.Expression) {
+func (n *orderNode) AddFilter(filter impls.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *orderNode) AddOrder(order types.OrderExpression) {
+func (n *orderNode) AddOrder(order impls.OrderExpression) {
 	// We are nested in a parent sort and un-separated by an ordering boundary
 	// (such as limit or offset). We'll ignore our old sort criteria and adopt
 	// our parent since the ordering of rows at this point in the query should
@@ -56,7 +56,7 @@ func (n *orderNode) Optimize() {
 	}
 }
 
-func (n *orderNode) Ordering() types.OrderExpression {
+func (n *orderNode) Ordering() impls.OrderExpression {
 	if n.order == nil {
 		return n.Node.Ordering()
 	}
@@ -68,7 +68,7 @@ func (n *orderNode) SupportsMarkRestore() bool {
 	return true
 }
 
-func (n *orderNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *orderNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err

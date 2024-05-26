@@ -5,21 +5,22 @@ import (
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
-	"github.com/efritz/gostgres/internal/types"
 )
 
 // expression := ...
-func (p *parser) parseRootExpression() (types.Expression, error) {
+func (p *parser) parseRootExpression() (impls.Expression, error) {
 	return p.parseExpression(0)
 }
 
 // expressionWithDirection := expression [ `ASC` | `DESC` ]
-func (p *parser) parseExpressionWithDirection() (types.ExpressionWithDirection, error) {
+func (p *parser) parseExpressionWithDirection() (impls.ExpressionWithDirection, error) {
 	expression, err := p.parseRootExpression()
 	if err != nil {
-		return types.ExpressionWithDirection{}, err
+		return impls.ExpressionWithDirection{}, err
 	}
 
 	reverse := false
@@ -29,13 +30,13 @@ func (p *parser) parseExpressionWithDirection() (types.ExpressionWithDirection, 
 		reverse = true
 	}
 
-	return types.ExpressionWithDirection{
+	return impls.ExpressionWithDirection{
 		Expression: expression,
 		Reverse:    reverse,
 	}, nil
 }
 
-func (p *parser) parseExpression(precedence Precedence) (types.Expression, error) {
+func (p *parser) parseExpression(precedence Precedence) (impls.Expression, error) {
 	expression, err := p.parseExpressionPrefix()
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func (p *parser) initExpressionPrefixParsers() {
 	}
 }
 
-func (p *parser) parseExpressionPrefix() (types.Expression, error) {
+func (p *parser) parseExpressionPrefix() (impls.Expression, error) {
 	current := p.advance()
 	parseFunc, ok := p.prefixParsers[current.Type]
 	if !ok {
@@ -105,7 +106,7 @@ func (p *parser) initExpressionInfixParsers() {
 	}
 }
 
-func (p *parser) parseExpressionSuffix(expression types.Expression, precedence Precedence) (_ types.Expression, err error) {
+func (p *parser) parseExpressionSuffix(expression impls.Expression, precedence Precedence) (_ impls.Expression, err error) {
 	for {
 		tokenType := p.current().Type
 		parseFunc, ok := p.infixParsers[tokenType]
@@ -126,19 +127,19 @@ func (p *parser) parseExpressionSuffix(expression types.Expression, precedence P
 	return expression, nil
 }
 
-func (p *parser) parseStringLiteralExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseStringLiteralExpression(token tokens.Token) (impls.Expression, error) {
 	return expressions.NewConstant(token.Text), nil
 }
 
-func (p *parser) parseBooleanLiteralExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseBooleanLiteralExpression(token tokens.Token) (impls.Expression, error) {
 	return expressions.NewConstant(token.Type == tokens.TokenTypeTrue), nil
 }
 
-func (p *parser) parseNullLiteralExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseNullLiteralExpression(token tokens.Token) (impls.Expression, error) {
 	return expressions.NewConstant(nil), nil
 }
 
-func (p *parser) parseNumericLiteralExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseNumericLiteralExpression(token tokens.Token) (impls.Expression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeDot)) {
 		fractionalPart, err := p.mustAdvance(isType(tokens.TokenTypeNumber))
 		if err != nil {
@@ -162,7 +163,7 @@ func (p *parser) parseNumericLiteralExpression(token tokens.Token) (types.Expres
 }
 
 // parenthesizedExpressionTail := expression `)`
-func (p *parser) parseParenthesizedExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseParenthesizedExpression(token tokens.Token) (impls.Expression, error) {
 	inner, err := p.parseRootExpression()
 	if err != nil {
 		return nil, err
@@ -176,14 +177,14 @@ func (p *parser) parseParenthesizedExpression(token tokens.Token) (types.Express
 }
 
 // namedExpressionTail := ( `.` ident ) | ( `(` [ expression [, ...] ] `)` ) | <empty>
-func (p *parser) parseNamedExpression(token tokens.Token) (types.Expression, error) {
+func (p *parser) parseNamedExpression(token tokens.Token) (impls.Expression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeDot)) {
 		qualifiedNameToken, err := p.parseIdent()
 		if err != nil {
 			return nil, err
 		}
 
-		return expressions.NewNamed(shared.NewField(token.Text, qualifiedNameToken, shared.TypeAny)), nil
+		return expressions.NewNamed(fields.NewField(token.Text, qualifiedNameToken, types.TypeAny)), nil
 	}
 
 	if p.peek(0).Type == tokens.TokenTypeLeftParen {
@@ -195,15 +196,15 @@ func (p *parser) parseNamedExpression(token tokens.Token) (types.Expression, err
 		return expressions.NewFunction(token.Text, args), nil
 	}
 
-	return expressions.NewNamed(shared.NewField("", token.Text, shared.TypeAny)), nil
+	return expressions.NewNamed(fields.NewField("", token.Text, types.TypeAny)), nil
 }
 
-type unaryExpressionParserFunc func(expression types.Expression) types.Expression
-type binaryExpressionParserFunc func(left, right types.Expression) types.Expression
-type ternaryExpressionParserFunc func(left, middle, right types.Expression) types.Expression
+type unaryExpressionParserFunc func(expression impls.Expression) impls.Expression
+type binaryExpressionParserFunc func(left, right impls.Expression) impls.Expression
+type ternaryExpressionParserFunc func(left, middle, right impls.Expression) impls.Expression
 
 func (p *parser) parseUnary(factory unaryExpressionParserFunc) prefixParserFunc {
-	return func(token tokens.Token) (types.Expression, error) {
+	return func(token tokens.Token) (impls.Expression, error) {
 		expression, err := p.parseExpression(PrecedenceUnary)
 		if err != nil {
 			return nil, err
@@ -214,7 +215,7 @@ func (p *parser) parseUnary(factory unaryExpressionParserFunc) prefixParserFunc 
 }
 
 func (p *parser) parseBinary(precedence Precedence, factory binaryExpressionParserFunc) infixParserFunc {
-	return func(left types.Expression, token tokens.Token) (types.Expression, error) {
+	return func(left impls.Expression, token tokens.Token) (impls.Expression, error) {
 		right, err := p.parseExpression(precedence)
 		if err != nil {
 			return nil, err
@@ -225,13 +226,13 @@ func (p *parser) parseBinary(precedence Precedence, factory binaryExpressionPars
 }
 
 func (p *parser) parsePostfix(_ Precedence, factory unaryExpressionParserFunc) infixParserFunc {
-	return func(left types.Expression, token tokens.Token) (types.Expression, error) {
+	return func(left impls.Expression, token tokens.Token) (impls.Expression, error) {
 		return factory(left), nil
 	}
 }
 
 func (p *parser) parseBetween(factory ternaryExpressionParserFunc) infixParserFunc {
-	return func(left types.Expression, token tokens.Token) (types.Expression, error) {
+	return func(left impls.Expression, token tokens.Token) (impls.Expression, error) {
 		middle, err := p.parseExpressionPrefix()
 		if err != nil {
 			return nil, err
@@ -251,7 +252,7 @@ func (p *parser) parseBetween(factory ternaryExpressionParserFunc) infixParserFu
 }
 
 func negate(parserFunc infixParserFunc) infixParserFunc {
-	return func(left types.Expression, token tokens.Token) (types.Expression, error) {
+	return func(left impls.Expression, token tokens.Token) (impls.Expression, error) {
 		expression, err := parserFunc(left, token)
 		if err != nil {
 			return nil, err

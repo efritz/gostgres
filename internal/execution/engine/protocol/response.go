@@ -3,18 +3,18 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type ResponseWriter interface {
-	SendRow(row shared.Row)
+	SendRow(row rows.Row)
 	Done()
 	Error(err error)
 }
 
 type rowCollector struct {
 	done bool
-	rows shared.Rows
+	rows rows.Rows
 	err  error
 }
 
@@ -24,15 +24,15 @@ func NewRowCollector() *rowCollector {
 	return &rowCollector{}
 }
 
-func (w *rowCollector) Rows() (shared.Rows, error) {
+func (w *rowCollector) Rows() (rows.Rows, error) {
 	if !w.done {
-		return shared.Rows{}, fmt.Errorf("not done")
+		return rows.Rows{}, fmt.Errorf("not done")
 	}
 
 	return w.rows, w.err
 }
 
-func (w *rowCollector) SendRow(row shared.Row) {
+func (w *rowCollector) SendRow(row rows.Row) {
 	if len(w.rows.Fields) == 0 {
 		w.rows.Fields = row.Fields
 		w.rows.Values = [][]any{row.Values}

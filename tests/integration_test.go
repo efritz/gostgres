@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/efritz/gostgres/internal/execution/engine"
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/sample"
-	"github.com/efritz/gostgres/internal/serialization"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 	"github.com/hexops/autogold/v2"
 	"github.com/stretchr/testify/require"

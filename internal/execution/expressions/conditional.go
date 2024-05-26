@@ -3,11 +3,12 @@ package expressions
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-func NewAnd(left, right types.Expression) types.Expression {
+func NewAnd(left, right impls.Expression) impls.Expression {
 	return newConditionalExpression(left, right, "and", func(a, b *bool) (any, error) {
 		if (a != nil && !*a) || (b != nil && !*b) {
 			return false, nil
@@ -16,7 +17,7 @@ func NewAnd(left, right types.Expression) types.Expression {
 			return true, nil
 		}
 		return nil, nil
-	}, simplifyConditional(NewAnd, func(value *bool) (types.Expression, bool) {
+	}, simplifyConditional(NewAnd, func(value *bool) (impls.Expression, bool) {
 		if value != nil && !*value {
 			return NewConstant(false), true
 		}
@@ -25,7 +26,7 @@ func NewAnd(left, right types.Expression) types.Expression {
 	}), true)
 }
 
-func NewOr(left, right types.Expression) types.Expression {
+func NewOr(left, right impls.Expression) impls.Expression {
 	return newConditionalExpression(left, right, "or", func(a, b *bool) (any, error) {
 		if (a != nil && *a) || (b != nil && *b) {
 			return true, nil
@@ -34,7 +35,7 @@ func NewOr(left, right types.Expression) types.Expression {
 			return false, nil
 		}
 		return nil, nil
-	}, simplifyConditional(NewOr, func(value *bool) (types.Expression, bool) {
+	}, simplifyConditional(NewOr, func(value *bool) (impls.Expression, bool) {
 		if value != nil && *value {
 			return NewConstant(true), true
 		}
@@ -44,18 +45,18 @@ func NewOr(left, right types.Expression) types.Expression {
 }
 
 type conditionalExpression struct {
-	left         types.Expression
-	right        types.Expression
+	left         impls.Expression
+	right        impls.Expression
 	operatorText string
 	foldFunc     foldFunc
 	valueFrom    conditionalValueFromFunc
 	conjunctions bool
 }
 
-type foldFunc func(left, right types.Expression) types.Expression
+type foldFunc func(left, right impls.Expression) impls.Expression
 type conditionalValueFromFunc func(a, b *bool) (any, error)
 
-func newConditionalExpression(left, right types.Expression, operatorText string, valueFrom conditionalValueFromFunc, foldFunc foldFunc, conjunctions bool) types.Expression {
+func newConditionalExpression(left, right impls.Expression, operatorText string, valueFrom conditionalValueFromFunc, foldFunc foldFunc, conjunctions bool) impls.Expression {
 	return conditionalExpression{
 		left:         left,
 		right:        right,
@@ -70,7 +71,7 @@ func (e conditionalExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
-func (e conditionalExpression) Equal(other types.Expression) bool {
+func (e conditionalExpression) Equal(other impls.Expression) bool {
 	if o, ok := other.(conditionalExpression); ok {
 		if e.conjunctions && o.conjunctions {
 			return compareExpressionBags(Conjunctions(e), Conjunctions(o))
@@ -84,7 +85,7 @@ func (e conditionalExpression) Equal(other types.Expression) bool {
 	return false
 }
 
-func compareExpressionBags(as, bs []types.Expression) bool {
+func compareExpressionBags(as, bs []impls.Expression) bool {
 outer:
 	for _, a := range as {
 		for i, b := range bs {
@@ -104,25 +105,25 @@ outer:
 	return len(bs) == 0
 }
 
-func (e conditionalExpression) Children() []types.Expression {
-	return []types.Expression{e.left, e.right}
+func (e conditionalExpression) Children() []impls.Expression {
+	return []impls.Expression{e.left, e.right}
 }
 
-func (e conditionalExpression) Fold() types.Expression {
+func (e conditionalExpression) Fold() impls.Expression {
 	return tryEvaluate(e.foldFunc(e.left.Fold(), e.right.Fold()))
 }
 
-func (e conditionalExpression) Map(f func(types.Expression) types.Expression) types.Expression {
+func (e conditionalExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
 	return f(newConditionalExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
 }
 
-func (e conditionalExpression) ValueFrom(ctx types.Context, row shared.Row) (any, error) {
-	lVal, err := shared.ValueAs[bool](e.left.ValueFrom(ctx, row))
+func (e conditionalExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+	lVal, err := types.ValueAs[bool](e.left.ValueFrom(ctx, row))
 	if err != nil {
 		return nil, err
 	}
 
-	rVal, err := shared.ValueAs[bool](e.right.ValueFrom(ctx, row))
+	rVal, err := types.ValueAs[bool](e.right.ValueFrom(ctx, row))
 	if err != nil {
 		return nil, err
 	}
@@ -130,9 +131,9 @@ func (e conditionalExpression) ValueFrom(ctx types.Context, row shared.Row) (any
 	return e.valueFrom(lVal, rVal)
 }
 
-func simplifyConditional(factory foldFunc, f func(value *bool) (types.Expression, bool)) foldFunc {
-	return func(left, right types.Expression) types.Expression {
-		if value, err := shared.ValueAs[bool](left.ValueFrom(types.EmptyContext, shared.Row{})); err == nil {
+func simplifyConditional(factory foldFunc, f func(value *bool) (impls.Expression, bool)) foldFunc {
+	return func(left, right impls.Expression) impls.Expression {
+		if value, err := types.ValueAs[bool](left.ValueFrom(impls.EmptyContext, rows.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}
@@ -140,7 +141,7 @@ func simplifyConditional(factory foldFunc, f func(value *bool) (types.Expression
 			return right
 		}
 
-		if value, err := shared.ValueAs[bool](right.ValueFrom(types.EmptyContext, shared.Row{})); err == nil {
+		if value, err := types.ValueAs[bool](right.ValueFrom(impls.EmptyContext, rows.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}

@@ -1,22 +1,22 @@
 package scan
 
 import (
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func ScanIntoRows(scanner Scanner, rows shared.Rows) (shared.Rows, error) {
-	if err := VisitRows(scanner, func(row shared.Row) (bool, error) {
+func ScanIntoRows(scanner Scanner, target rows.Rows) (rows.Rows, error) {
+	if err := VisitRows(scanner, func(row rows.Row) (bool, error) {
 		var err error
-		rows, err = rows.AddValues(row.Values)
+		target, err = target.AddValues(row.Values)
 		return true, err
 	}); err != nil {
-		return shared.Rows{}, err
+		return rows.Rows{}, err
 	}
 
-	return rows, nil
+	return target, nil
 }
 
-type VisitorFunc func(row shared.Row) (bool, error)
+type VisitorFunc func(row rows.Row) (bool, error)
 
 func VisitRows(scanner Scanner, visitor VisitorFunc) error {
 	for {

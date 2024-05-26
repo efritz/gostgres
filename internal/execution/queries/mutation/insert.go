@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type insertNode struct {
 	queries.Node
-	table       types.Table
+	table       impls.Table
 	columnNames []string
 	projector   *projection.Projector
 }
 
 var _ queries.Node = &insertNode{}
 
-func NewInsert(node queries.Node, table types.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (queries.Node, error) {
-	var fields []shared.Field
+func NewInsert(node queries.Node, table impls.Table, name, alias string, columnNames []string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
 	}
@@ -46,7 +47,7 @@ func NewInsert(node queries.Node, table types.Table, name, alias string, columnN
 	}, nil
 }
 
-func (n *insertNode) Fields() []shared.Field {
+func (n *insertNode) Fields() []fields.Field {
 	return slices.Clone(n.projector.Fields())
 }
 
@@ -55,62 +56,62 @@ func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *insertNode) AddFilter(filter types.Expression)    {}
-func (n *insertNode) AddOrder(order types.OrderExpression) {}
+func (n *insertNode) AddFilter(filter impls.Expression)    {}
+func (n *insertNode) AddOrder(order impls.OrderExpression) {}
 
 func (n *insertNode) Optimize() {
 	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
-func (n *insertNode) Filter() types.Expression        { return nil }
-func (n *insertNode) Ordering() types.OrderExpression { return nil }
+func (n *insertNode) Filter() impls.Expression        { return nil }
+func (n *insertNode) Ordering() impls.OrderExpression { return nil }
 func (n *insertNode) SupportsMarkRestore() bool       { return false }
 
-func (n *insertNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *insertNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var nonInternalFields []types.TableField
+	var nonInternalFields []impls.TableField
 	for _, field := range n.table.Fields() {
 		if !field.Internal() {
 			nonInternalFields = append(nonInternalFields, field)
 		}
 	}
 
-	var fields []shared.Field
+	var fields []fields.Field
 	for _, field := range nonInternalFields {
 		fields = append(fields, field.Field)
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		row, err := scanner.Scan()
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
 		values, err := n.prepareValuesForRow(ctx, row, nonInternalFields)
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
-		insertedRow, err := shared.NewRow(fields, values)
+		insertedRow, err := rows.NewRow(fields, values)
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
 		insertedRow, err = n.table.Insert(ctx, insertedRow)
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
 		return n.projector.ProjectRow(ctx, insertedRow)
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(ctx types.Context, row shared.Row, fields []types.TableField) ([]any, error) {
+func (n *insertNode) prepareValuesForRow(ctx impls.Context, row rows.Row, fields []impls.TableField) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {

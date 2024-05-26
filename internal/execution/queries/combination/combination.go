@@ -4,19 +4,21 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
 type combinationNode struct {
 	left             queries.Node
 	right            queries.Node
-	fields           []shared.Field
+	fields           []fields.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
@@ -25,7 +27,7 @@ var _ queries.Node = &combinationNode{}
 
 type sourcedRow struct {
 	index int
-	row   shared.Row
+	row   rows.Row
 }
 
 type groupedRowFilterFunc func(rows []sourcedRow) bool
@@ -65,7 +67,7 @@ func (n *combinationNode) Name() string {
 	return ""
 }
 
-func (n *combinationNode) Fields() []shared.Field {
+func (n *combinationNode) Fields() []fields.Field {
 	return slices.Clone(n.fields)
 }
 
@@ -76,11 +78,11 @@ func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *combinationNode) AddFilter(filterExpression types.Expression) {
+func (n *combinationNode) AddFilter(filterExpression impls.Expression) {
 	filter.LowerFilter(filterExpression, n.left, n.right)
 }
 
-func (n *combinationNode) AddOrder(orderExpression types.OrderExpression) {
+func (n *combinationNode) AddOrder(orderExpression impls.OrderExpression) {
 	order.LowerOrder(orderExpression, n.left, n.right)
 }
 
@@ -89,14 +91,14 @@ func (n *combinationNode) Optimize() {
 	n.right.Optimize()
 }
 
-func (n *combinationNode) Filter() types.Expression {
+func (n *combinationNode) Filter() impls.Expression {
 	return n.left.Filter()
 }
 
-func (n *combinationNode) Ordering() types.OrderExpression { return nil }
+func (n *combinationNode) Ordering() impls.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
-func (n *combinationNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *combinationNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	leftScanner, err := n.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -116,13 +118,13 @@ func (n *combinationNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 
 	var selection []sourcedRow
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 	outer:
 		for {
 			if len(selection) > 0 {
 				row := selection[0]
 				selection = selection[1:]
-				return shared.NewRow(n.Fields(), row.row.Values)
+				return rows.NewRow(n.Fields(), row.row.Values)
 			}
 
 			for key, rows := range hash {
@@ -141,13 +143,13 @@ func (n *combinationNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 			break
 		}
 
-		return shared.Row{}, scan.ErrNoRows
+		return rows.Row{}, scan.ErrNoRows
 	}), nil
 }
 
 func hashVisitor(hash map[string][]sourcedRow, index int) scan.VisitorFunc {
-	return func(row shared.Row) (bool, error) {
-		key := shared.HashSlice(row.Values)
+	return func(row rows.Row) (bool, error) {
+		key := utils.HashSlice(row.Values)
 
 		hash[key] = append(hash[key], sourcedRow{
 			index: index,

@@ -1,11 +1,11 @@
 package limit
 
 import (
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type offsetNode struct {
@@ -31,14 +31,14 @@ func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *offsetNode) AddFilter(filter types.Expression)    {}
-func (n *offsetNode) AddOrder(order types.OrderExpression) {}
+func (n *offsetNode) AddFilter(filter impls.Expression)    {}
+func (n *offsetNode) AddOrder(order impls.OrderExpression) {}
 func (n *offsetNode) Optimize()                            { n.Node.Optimize() }
-func (n *offsetNode) Filter() types.Expression             { return n.Node.Filter() }
-func (n *offsetNode) Ordering() types.OrderExpression      { return n.Node.Ordering() }
+func (n *offsetNode) Filter() impls.Expression             { return n.Node.Filter() }
+func (n *offsetNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
 func (n *offsetNode) SupportsMarkRestore() bool            { return false }
 
-func (n *offsetNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *offsetNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -49,11 +49,11 @@ func (n *offsetNode) Scanner(ctx types.Context) (scan.Scanner, error) {
 		return scanner, nil
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		for {
 			row, err := scanner.Scan()
 			if err != nil {
-				return shared.Row{}, err
+				return rows.Row{}, err
 			}
 
 			offset--

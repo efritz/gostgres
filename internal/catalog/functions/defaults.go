@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func DefaultFunctions() map[string]types.Function {
-	return map[string]types.Function{
+func DefaultFunctions() map[string]impls.Function {
+	return map[string]impls.Function{
 		"now":     simpleFunction(now),
 		"nextval": simpleFunction(nextval),
 		"setval":  simpleFunction(setval),
@@ -16,7 +16,7 @@ func DefaultFunctions() map[string]types.Function {
 	}
 }
 
-func now(ctx types.Context, args []any) (any, error) {
+func now(ctx impls.Context, args []any) (any, error) {
 	if len(args) != 0 {
 		return nil, fmt.Errorf("now() takes no arguments")
 	}
@@ -24,7 +24,7 @@ func now(ctx types.Context, args []any) (any, error) {
 	return time.Now(), nil
 }
 
-func nextval(ctx types.Context, args []any) (any, error) {
+func nextval(ctx impls.Context, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("nextval() takes one argument")
 	}
@@ -41,7 +41,7 @@ func nextval(ctx types.Context, args []any) (any, error) {
 	return sequence.Next()
 }
 
-func setval(ctx types.Context, args []any) (any, error) {
+func setval(ctx impls.Context, args []any) (any, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("setval() takes two arguments")
 	}
@@ -62,7 +62,7 @@ func setval(ctx types.Context, args []any) (any, error) {
 	return nil, sequence.Set(value)
 }
 
-func currval(ctx types.Context, args []any) (any, error) {
+func currval(ctx impls.Context, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("currval() takes one argument")
 	}

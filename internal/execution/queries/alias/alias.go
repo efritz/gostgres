@@ -3,19 +3,20 @@ package alias
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/scan"
-	"github.com/efritz/gostgres/internal/serialization"
-	"github.com/efritz/gostgres/internal/shared"
-	"github.com/efritz/gostgres/internal/types"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type aliasNode struct {
 	queries.Node
 	name   string
-	fields []shared.Field
+	fields []fields.Field
 }
 
 var _ queries.Node = &aliasNode{}
@@ -37,7 +38,7 @@ func (n *aliasNode) Name() string {
 	return n.name
 }
 
-func (n *aliasNode) Fields() []shared.Field {
+func (n *aliasNode) Fields() []fields.Field {
 	return slices.Clone(n.fields)
 }
 
@@ -46,7 +47,7 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *aliasNode) AddFilter(filter types.Expression) {
+func (n *aliasNode) AddFilter(filter impls.Expression) {
 	for _, field := range n.fields {
 		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
 	}
@@ -54,8 +55,8 @@ func (n *aliasNode) AddFilter(filter types.Expression) {
 	n.Node.AddFilter(filter)
 }
 
-func (n *aliasNode) AddOrder(order types.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression types.Expression) types.Expression {
+func (n *aliasNode) AddOrder(order impls.OrderExpression) {
+	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
 		for _, field := range n.fields {
 			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
@@ -68,7 +69,7 @@ func (n *aliasNode) Optimize() {
 	n.Node.Optimize()
 }
 
-func (n *aliasNode) Filter() types.Expression {
+func (n *aliasNode) Filter() impls.Expression {
 	filter := n.Node.Filter()
 	if filter == nil {
 		return nil
@@ -81,13 +82,13 @@ func (n *aliasNode) Filter() types.Expression {
 	return filter
 }
 
-func (n *aliasNode) Ordering() types.OrderExpression {
+func (n *aliasNode) Ordering() impls.OrderExpression {
 	ordering := n.Node.Ordering()
 	if ordering == nil {
 		return nil
 	}
 
-	return ordering.Map(func(expression types.Expression) types.Expression {
+	return ordering.Map(func(expression impls.Expression) impls.Expression {
 		for _, field := range expressions.Fields(expression) {
 			expression = projection.Alias(expression, field, namedFromField(field, n.name))
 		}
@@ -100,22 +101,22 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner(ctx types.Context) (scan.Scanner, error) {
+func (n *aliasNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return scan.ScannerFunc(func() (shared.Row, error) {
+	return scan.ScannerFunc(func() (rows.Row, error) {
 		row, err := scanner.Scan()
 		if err != nil {
-			return shared.Row{}, err
+			return rows.Row{}, err
 		}
 
-		return shared.NewRow(n.fields, row.Values)
+		return rows.NewRow(n.fields, row.Values)
 	}), nil
 }
 
-func namedFromField(field shared.Field, relationName string) types.Expression {
+func namedFromField(field fields.Field, relationName string) impls.Expression {
 	return expressions.NewNamed(field.WithRelationName(relationName))
 }

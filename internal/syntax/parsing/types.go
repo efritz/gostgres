@@ -4,46 +4,46 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/shared"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 // basicType := ident
-func (p *parser) parseBasicType() (shared.Type, error) {
+func (p *parser) parseBasicType() (types.Type, error) {
 	dataType, err := p.parseIdent()
 	if err != nil {
-		return shared.TypeUnknown, err
+		return types.TypeUnknown, err
 	}
 
-	var typ shared.Type
+	var typ types.Type
 	switch strings.ToLower(dataType) {
 	case "text":
-		typ = shared.TypeText
+		typ = types.TypeText
 	case "smallint":
-		typ = shared.TypeSmallInteger
+		typ = types.TypeSmallInteger
 	case "integer":
-		typ = shared.TypeInteger
+		typ = types.TypeInteger
 	case "bigint":
-		typ = shared.TypeBigInteger
+		typ = types.TypeBigInteger
 	case "real":
-		typ = shared.TypeReal
+		typ = types.TypeReal
 		// TODO - use multi-phrase keyword
 	case "double":
 		if !p.advanceIf(isIdent("precision")) {
-			return shared.TypeUnknown, fmt.Errorf("unknown type %q", "double")
+			return types.TypeUnknown, fmt.Errorf("unknown type %q", "double")
 		}
-		typ = shared.TypeDoublePrecision
+		typ = types.TypeDoublePrecision
 	case "numeric":
-		typ = shared.TypeNumeric
+		typ = types.TypeNumeric
 	case "boolean":
-		typ = shared.TypeBool
+		typ = types.TypeBool
 		// TODO - use multi-phrase keyword(s)
 	case "timestamp":
 		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
-			return shared.TypeUnknown, fmt.Errorf("unknown type %q", "timestamp")
+			return types.TypeUnknown, fmt.Errorf("unknown type %q", "timestamp")
 		}
-		typ = shared.TypeTimestampTz
+		typ = types.TypeTimestampTz
 	default:
-		return shared.TypeUnknown, fmt.Errorf("unknown type %s", dataType)
+		return types.TypeUnknown, fmt.Errorf("unknown type %s", dataType)
 	}
 
 	return typ, nil

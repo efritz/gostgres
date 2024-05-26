@@ -3,7 +3,7 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/queries"
+	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 

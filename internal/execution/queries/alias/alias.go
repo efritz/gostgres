@@ -1,0 +1,122 @@
+package alias
+
+import (
+	"slices"
+
+	"github.com/efritz/gostgres/internal/execution/engine/serialization"
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/scan"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
+)
+
+type aliasNode struct {
+	queries.Node
+	name   string
+	fields []fields.Field
+}
+
+var _ queries.Node = &aliasNode{}
+
+func NewAlias(node queries.Node, name string) queries.Node {
+	fields := slices.Clone(node.Fields())
+	for i := range fields {
+		fields[i] = fields[i].WithRelationName(name)
+	}
+
+	return &aliasNode{
+		Node:   node,
+		name:   name,
+		fields: fields,
+	}
+}
+
+func (n *aliasNode) Name() string {
+	return n.name
+}
+
+func (n *aliasNode) Fields() []fields.Field {
+	return slices.Clone(n.fields)
+}
+
+func (n *aliasNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("alias as %s", n.name)
+	n.Node.Serialize(w.Indent())
+}
+
+func (n *aliasNode) AddFilter(filter impls.Expression) {
+	for _, field := range n.fields {
+		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
+	}
+
+	n.Node.AddFilter(filter)
+}
+
+func (n *aliasNode) AddOrder(order impls.OrderExpression) {
+	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
+		for _, field := range n.fields {
+			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
+		}
+
+		return expression
+	}))
+}
+
+func (n *aliasNode) Optimize() {
+	n.Node.Optimize()
+}
+
+func (n *aliasNode) Filter() impls.Expression {
+	filter := n.Node.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	for _, field := range expressions.Fields(filter) {
+		filter = projection.Alias(filter, field, namedFromField(field, n.name))
+	}
+
+	return filter
+}
+
+func (n *aliasNode) Ordering() impls.OrderExpression {
+	ordering := n.Node.Ordering()
+	if ordering == nil {
+		return nil
+	}
+
+	return ordering.Map(func(expression impls.Expression) impls.Expression {
+		for _, field := range expressions.Fields(expression) {
+			expression = projection.Alias(expression, field, namedFromField(field, n.name))
+		}
+
+		return expression
+	})
+}
+
+func (n *aliasNode) SupportsMarkRestore() bool {
+	return false
+}
+
+func (n *aliasNode) Scanner(ctx impls.Context) (scan.Scanner, error) {
+	scanner, err := n.Node.Scanner(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return scan.ScannerFunc(func() (rows.Row, error) {
+		row, err := scanner.Scan()
+		if err != nil {
+			return rows.Row{}, err
+		}
+
+		return rows.NewRow(n.fields, row.Values)
+	}), nil
+}
+
+func namedFromField(field fields.Field, relationName string) impls.Expression {
+	return expressions.NewNamed(field.WithRelationName(relationName))
+}

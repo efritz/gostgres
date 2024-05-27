@@ -259,6 +259,10 @@ func (n *btreeNode) delete(values []any, tid int64) *btreeNode {
 	}
 
 	if n.tid == tid {
+		if n.right == nil {
+			return n.left
+		}
+
 		min := n.right
 		for min.left != nil {
 			min = min.left

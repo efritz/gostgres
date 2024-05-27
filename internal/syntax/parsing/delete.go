@@ -1,16 +1,7 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/alias"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/mutation"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
-	"github.com/efritz/gostgres/internal/shared/rows"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -24,25 +15,15 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	node := access.NewAccess(table)
-	if aliasName != "" {
-		node = alias.NewAlias(node, aliasName)
-	}
 
 	usingExpressions, err := p.parseDeleteUsing()
 	if err != nil {
 		return nil, err
 	}
-	if len(usingExpressions) > 0 {
-		node = joinNodes(append([]queries.Node{node}, usingExpressions...))
-	}
 
-	whereExpression, hasWhere, err := p.parseWhere()
+	whereExpression, _, err := p.parseWhere()
 	if err != nil {
 		return nil, err
-	}
-	if hasWhere {
-		node = filter.NewFilter(node, whereExpression)
 	}
 
 	returningExpressions, err := p.parseReturning(name)
@@ -50,20 +31,18 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	relationName := name
-	if aliasName != "" {
-		relationName = aliasName
-	}
-	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
-
-	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
-		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
-	})
-	if err != nil {
-		return nil, err
+	builder := &DeleteBuilder{
+		tableDescription: TableDescription{
+			table:     table,
+			name:      name,
+			aliasName: aliasName,
+		},
+		usingExpressions:     usingExpressions,
+		whereExpression:      whereExpression,
+		returningExpressions: returningExpressions,
 	}
 
-	return mutation.NewDelete(node, table, aliasName, returningExpressions)
+	return builder.Build()
 }
 
 // deleteUsing := `USING` tableExpressions

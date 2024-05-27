@@ -2,7 +2,6 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -33,5 +32,16 @@ func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	return mutation.NewInsert(node, table, name, alias, columnNames, returningExpressions)
+	builder := &InsertBuilder{
+		tableDescription: TableDescription{
+			table:     table,
+			name:      name,
+			aliasName: alias,
+		},
+		columnNames:          columnNames,
+		node:                 node,
+		returningExpressions: returningExpressions,
+	}
+
+	return builder.Build()
 }

@@ -160,8 +160,25 @@ func (p *parser) parseSelectOrValues() (queries.Node, error) {
 	return p.parseValues()
 }
 
+func (p *parser) parseSelectOrValuesBuilder() (Builder, error) {
+	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
+		return p.parseSelectBuilder()
+	}
+
+	return p.parseValuesBuilder()
+}
+
 // values := `VALUES` ( `(` ( expression [, ... ] ) `)` [, ...] )
 func (p *parser) parseValues() (queries.Node, error) {
+	builder, err := p.parseValuesBuilder()
+	if err != nil {
+		return nil, err
+	}
+
+	return builder.Build()
+}
+
+func (p *parser) parseValuesBuilder() (Builder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeValues)); err != nil {
 		return nil, err
 	}
@@ -179,7 +196,12 @@ func (p *parser) parseValues() (queries.Node, error) {
 	}
 
 	// TODO - support `DEFAULT` expressions
-	return access.NewValues(rowFields, allRowExpressions), nil
+	builder := &ValuesBuilder{
+		rowFields:         rowFields,
+		allRowExpressions: allRowExpressions,
+	}
+
+	return builder, nil
 }
 
 // tableAlias := alias [ `(` ident [, ...] `)` ]

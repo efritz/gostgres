@@ -25,29 +25,8 @@ type Builder interface {
 	Build() (queries.Node, error)
 }
 
-type ValuesBuilder struct {
-	rowFields         []fields.Field
-	allRowExpressions [][]impls.Expression
-}
-
-func (b *ValuesBuilder) Build() (queries.Node, error) {
-	fmt.Printf("BUILDING VALUES\n")
-	return access.NewValues(b.rowFields, b.allRowExpressions), nil
-}
-
-type SimpleSelectDescription struct {
-	selectExpressions []projection.ProjectionExpression
-	from              queries.Node // TODO
-	whereExpression   impls.Expression
-	groupings         []impls.Expression
-	combinations      []*CombinationDescription
-}
-
-type CombinationDescription struct {
-	Type                    tokens.TokenType
-	Distinct                bool
-	SimpleSelectDescription Builder
-}
+//
+//
 
 type SelectBuilder struct {
 	simpleSelect    *SimpleSelectDescription
@@ -138,16 +117,59 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	return node, nil
 }
 
+//
+//
+
+type SimpleSelectDescription struct {
+	selectExpressions []projection.ProjectionExpression
+	from              queries.Node // TODO
+	whereExpression   impls.Expression
+	groupings         []impls.Expression
+	combinations      []*CombinationDescription
+}
+
+type CombinationDescription struct {
+	Type                    tokens.TokenType
+	Distinct                bool
+	SimpleSelectDescription Builder // TODO
+}
+
+type ValuesBuilder struct {
+	rowFields         []fields.Field
+	allRowExpressions [][]impls.Expression
+}
+
+func (b *ValuesBuilder) Build() (queries.Node, error) {
+	fmt.Printf("BUILDING VALUES\n")
+	return access.NewValues(b.rowFields, b.allRowExpressions), nil
+}
+
+//
+//
+
 type TableDescription struct {
 	table     impls.Table
 	name      string
 	aliasName string
 }
 
-type SetExpression struct {
-	Name       string
-	Expression impls.Expression
+//
+//
+
+type InsertBuilder struct {
+	tableDescription     TableDescription
+	columnNames          []string
+	node                 queries.Node // TODO
+	returningExpressions []projection.ProjectionExpression
 }
+
+func (b *InsertBuilder) Build() (queries.Node, error) {
+	fmt.Printf("BUILDING INSERT\n")
+	return mutation.NewInsert(b.node, b.tableDescription.table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
+}
+
+//
+//
 
 type UpdateBuilder struct {
 	tableDescription     TableDescription
@@ -155,6 +177,11 @@ type UpdateBuilder struct {
 	fromExpressions      []queries.Node // TODO
 	whereExpression      impls.Expression
 	returningExpressions []projection.ProjectionExpression
+}
+
+type SetExpression struct {
+	Name       string
+	Expression impls.Expression
 }
 
 func (b *UpdateBuilder) Build() (queries.Node, error) {
@@ -199,17 +226,8 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 	return mutation.NewUpdate(node, b.tableDescription.table, setExpressions, b.tableDescription.aliasName, b.returningExpressions)
 }
 
-type InsertBuilder struct {
-	tableDescription     TableDescription
-	columnNames          []string
-	node                 queries.Node // TODO
-	returningExpressions []projection.ProjectionExpression
-}
-
-func (b *InsertBuilder) Build() (queries.Node, error) {
-	fmt.Printf("BUILDING INSERT\n")
-	return mutation.NewInsert(b.node, b.tableDescription.table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
-}
+//
+//
 
 type DeleteBuilder struct {
 	tableDescription     TableDescription

@@ -11,7 +11,7 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	table, name, aliasName, err := p.parseTable()
+	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
 	}
@@ -26,17 +26,13 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(name)
+	returningExpressions, err := p.parseReturning(tableDescription.name)
 	if err != nil {
 		return nil, err
 	}
 
 	builder := &DeleteBuilder{
-		tableDescription: TableDescription{
-			table:     table,
-			name:      name,
-			aliasName: aliasName,
-		},
+		tableDescription:     tableDescription,
 		usingExpressions:     usingExpressions,
 		whereExpression:      whereExpression,
 		returningExpressions: returningExpressions,

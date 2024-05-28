@@ -7,7 +7,7 @@ import (
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
 func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
-	table, name, aliasName, err := p.parseTable()
+	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
 	}
@@ -34,17 +34,13 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(name)
+	returningExpressions, err := p.parseReturning(tableDescription.name)
 	if err != nil {
 		return nil, err
 	}
 
 	builder := &UpdateBuilder{
-		tableDescription: TableDescription{
-			table:     table,
-			name:      name,
-			aliasName: aliasName,
-		},
+		tableDescription:     tableDescription,
 		setExpressions:       setExpressions,
 		fromExpressions:      fromExpressions,
 		whereExpression:      whereExpression,

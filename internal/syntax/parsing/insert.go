@@ -11,7 +11,7 @@ func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	table, name, alias, err := p.parseTable()
+	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
 	}
@@ -27,17 +27,13 @@ func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(name)
+	returningExpressions, err := p.parseReturning(tableDescription.name)
 	if err != nil {
 		return nil, err
 	}
 
 	builder := &InsertBuilder{
-		tableDescription: TableDescription{
-			table:     table,
-			name:      name,
-			aliasName: alias,
-		},
+		tableDescription:     tableDescription,
 		columnNames:          columnNames,
 		node:                 node,
 		returningExpressions: returningExpressions,

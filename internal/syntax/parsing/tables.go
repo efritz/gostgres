@@ -16,23 +16,27 @@ import (
 )
 
 // table := ident alias
-func (p *parser) parseTable() (impls.Table, string, string, error) {
+func (p *parser) parseTable() (TableDescription, error) {
 	name, err := p.parseIdent()
 	if err != nil {
-		return nil, "", "", err
+		return TableDescription{}, err
 	}
 
 	table, ok := p.tables.Get(name)
 	if !ok {
-		return nil, "", "", fmt.Errorf("unknown table %s", name)
+		return TableDescription{}, fmt.Errorf("unknown table %s", name)
 	}
 
 	alias, _, err := p.parseAlias()
 	if err != nil {
-		return nil, "", "", err
+		return TableDescription{}, err
 	}
 
-	return table, name, alias, nil
+	return TableDescription{
+		table:     table,
+		name:      name,
+		aliasName: alias,
+	}, nil
 }
 
 // from := `FROM` tableExpressions

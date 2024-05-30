@@ -22,7 +22,7 @@ func (p *parser) parseInsert(token tokens.Token) (queries.Node, error) {
 	}
 
 	// TODO - support `DEFAULT` expression and `DEFAULT VALUES`
-	node, err := p.parseSelectOrValues()
+	node, err := p.parseSelectOrValuesBuilder()
 	if err != nil {
 		return nil, err
 	}

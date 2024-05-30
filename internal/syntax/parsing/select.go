@@ -20,7 +20,7 @@ func (p *parser) parseSelect(_ tokens.Token) (queries.Node, error) {
 	return builder.Build()
 }
 
-func (p *parser) parseSelectBuilder() (Builder, error) {
+func (p *parser) parseSelectBuilder() (*SelectBuilder, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
@@ -176,15 +176,15 @@ func (p *parser) parseCombinedQuery() ([]*CombinationDescription, error) {
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )
-func (p *parser) parseCombinationTarget() (Builder, error) {
+func (p *parser) parseCombinationTarget() (SelectOrValuesBuilder, error) {
 	expectParen := false
-	var parseFunc func() (Builder, error)
+	var parseFunc func() (SelectOrValuesBuilder, error)
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
 		parseFunc = p.parseSelectOrValuesBuilder
 	} else {
-		parseFunc = func() (Builder, error) {
+		parseFunc = func() (SelectOrValuesBuilder, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {
 				return nil, err
 			}

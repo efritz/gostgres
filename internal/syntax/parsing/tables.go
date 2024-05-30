@@ -164,7 +164,7 @@ func (p *parser) parseSelectOrValues() (queries.Node, error) {
 	return p.parseValues()
 }
 
-func (p *parser) parseSelectOrValuesBuilder() (Builder, error) {
+func (p *parser) parseSelectOrValuesBuilder() (SelectOrValuesBuilder, error) {
 	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
 		return p.parseSelectBuilder()
 	}
@@ -182,7 +182,7 @@ func (p *parser) parseValues() (queries.Node, error) {
 	return builder.Build()
 }
 
-func (p *parser) parseValuesBuilder() (Builder, error) {
+func (p *parser) parseValuesBuilder() (*ValuesBuilder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeValues)); err != nil {
 		return nil, err
 	}

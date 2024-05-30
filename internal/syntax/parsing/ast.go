@@ -131,7 +131,7 @@ type SimpleSelectDescription struct {
 type CombinationDescription struct {
 	Type                    tokens.TokenType
 	Distinct                bool
-	SimpleSelectDescription Builder // TODO
+	SimpleSelectDescription SelectOrValuesBuilder
 }
 
 type ValuesBuilder struct {
@@ -143,6 +143,24 @@ func (b *ValuesBuilder) Build() (queries.Node, error) {
 	fmt.Printf("BUILDING VALUES\n")
 	return access.NewValues(b.rowFields, b.allRowExpressions), nil
 }
+
+//
+//
+
+type TableExpressionDescription struct {
+	// TODO
+}
+
+//
+//
+
+type SelectOrValuesBuilder interface {
+	Builder
+	selectOrValues()
+}
+
+func (SelectBuilder) selectOrValues() {}
+func (ValuesBuilder) selectOrValues() {}
 
 //
 //
@@ -159,13 +177,18 @@ type TableDescription struct {
 type InsertBuilder struct {
 	tableDescription     TableDescription
 	columnNames          []string
-	node                 queries.Node // TODO
+	node                 SelectOrValuesBuilder
 	returningExpressions []projection.ProjectionExpression
 }
 
 func (b *InsertBuilder) Build() (queries.Node, error) {
+	node, err := b.node.Build()
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Printf("BUILDING INSERT\n")
-	return mutation.NewInsert(b.node, b.tableDescription.table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
+	return mutation.NewInsert(node, b.tableDescription.table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
 }
 
 //

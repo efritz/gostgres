@@ -3,12 +3,7 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/alias"
-	"github.com/efritz/gostgres/internal/execution/queries/joins"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
@@ -40,118 +35,107 @@ func (p *parser) parseTable() (TableDescription, error) {
 }
 
 // from := `FROM` tableExpressions
-func (p *parser) parseFrom() (node queries.Node, _ error) {
+func (p *parser) parseFrom() (node TableExpressionDescription, _ error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
-		return nil, err
+		return TableExpressionDescription{}, err
 	}
 
 	tableExpressions, err := p.parseTableExpressions()
 	if err != nil {
-		return nil, err
+		return TableExpressionDescription{}, err
 	}
 
 	return joinNodes(tableExpressions), nil
 }
 
 // tableExpressions := tableExpression [, ...]
-func (p *parser) parseTableExpressions() ([]queries.Node, error) {
+func (p *parser) parseTableExpressions() ([]TableExpressionDescription, error) {
 	return parseCommaSeparatedList(p, p.parseTableExpression)
 }
 
-// tableExpression := baseTableExpression [ `JOIN` joinTail [...] ]
-func (p *parser) parseTableExpression() (queries.Node, error) {
-	node, err := p.parseBaseTableExpression()
+// tableExpression := aliasedBaseTableExpression [ `JOIN` joinTail [...] ]
+func (p *parser) parseTableExpression() (TableExpressionDescription, error) {
+	node, err := p.parseAliasedBaseTableExpression()
 	if err != nil {
-		return nil, err
+		return TableExpressionDescription{}, err
 	}
 
+	var joins []Join
 	for p.advanceIf(isType(tokens.TokenTypeJoin)) {
-		node, err = p.parseJoin(node)
+		join, err := p.parseJoin()
 		if err != nil {
-			return nil, err
+			return TableExpressionDescription{}, err
 		}
+
+		joins = append(joins, join)
 	}
 
-	return node, nil
+	return TableExpressionDescription{
+		Base:  node,
+		Joins: joins,
+	}, nil
 }
 
-// baseTableExpression := ( tableReference [ tableAlias ] ) | ( `(` selectOrValues `)` tableAlias ) | ( `(` tableExpression `)` [ tableAlias ] )
-func (p *parser) parseBaseTableExpression() (queries.Node, error) {
-	expectParen := false
-	requireAlias := false
-	parseFunc := p.parseTableReference
+// aliasedBaseTableExpression := baseTableExpression [ tableAlias ]
+func (p *parser) parseAliasedBaseTableExpression() (AliasedBaseTableExpressionDescription, error) {
+	baseTableExpression, err := p.parseBaseTableExpression()
+	if err != nil {
+		return AliasedBaseTableExpressionDescription{}, err
+	}
 
+	alias, err := p.parseTableAlias()
+	if err != nil {
+		return AliasedBaseTableExpressionDescription{}, err
+	}
+
+	return AliasedBaseTableExpressionDescription{
+		BaseTableExpression: baseTableExpression,
+		Alias:               alias,
+	}, nil
+}
+
+// baseTableExpression := ( `(` selectOrValues `)` ) | ( `(` tableExpression `)` ) | tableReference
+func (p *parser) parseBaseTableExpression() (BaseTableExpressionDescription, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		if p.current().Type == tokens.TokenTypeSelect || p.current().Type == tokens.TokenTypeValues {
-			requireAlias = true
-			parseFunc = p.parseSelectOrValues
-		} else {
-			parseFunc = p.parseTableExpression
-		}
-
-		expectParen = true
-	}
-
-	node, err := parseFunc()
-	if err != nil {
-		return nil, err
-	}
-
-	if expectParen {
-		if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
-			return nil, err
-		}
-	}
-
-	aliasName, columnNames, hasAlias, err := p.parseTableAlias()
-	if err != nil {
-		return nil, err
-	}
-	if hasAlias {
-		node = alias.NewAlias(node, aliasName)
-
-		if len(columnNames) > 0 {
-			var fields []fields.Field
-			for _, f := range node.Fields() {
-				if !f.Internal() {
-					fields = append(fields, f)
-				}
-			}
-
-			if len(columnNames) != len(fields) {
-				return nil, fmt.Errorf("wrong number of fields in alias")
-			}
-
-			projectionExpressions := make([]projection.ProjectionExpression, 0, len(fields))
-			for i, field := range fields {
-				projectionExpressions = append(projectionExpressions, projection.NewAliasProjectionExpression(expressions.NewNamed(field), columnNames[i]))
-			}
-
-			node, err = projection.NewProjection(node, projectionExpressions)
+			baseTableExpression, err := p.parseSelectOrValuesBuilder()
 			if err != nil {
 				return nil, err
 			}
+
+			if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+				return nil, err
+			}
+
+			return baseTableExpression, nil
 		}
-	} else if requireAlias {
-		return nil, fmt.Errorf("expected subselect alias (near %s)", p.current().Text)
+
+		baseTableExpression, err := p.parseTableExpression()
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+			return nil, err
+		}
+
+		return baseTableExpression, nil
 	}
 
-	return node, nil
+	return p.parseTableReference()
 }
 
 // tableReference := ident
-func (p *parser) parseTableReference() (queries.Node, error) {
+func (p *parser) parseTableReference() (TableReference, error) {
 	nameToken, err := p.parseIdent()
 	if err != nil {
-		return nil, err
+		return TableReference{}, err
 	}
 
-	table, ok := p.tables.Get(nameToken)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %s", nameToken)
-	}
-
-	return access.NewAccess(table), nil
+	return TableReference{
+		tables: p.tables,
+		Name:   nameToken,
+	}, nil
 }
 
 // selectOrValues := ( `SELECT` selectTail ) | values
@@ -209,21 +193,24 @@ func (p *parser) parseValuesBuilder() (*ValuesBuilder, error) {
 }
 
 // tableAlias := alias [ `(` ident [, ...] `)` ]
-func (p *parser) parseTableAlias() (string, []string, bool, error) {
+func (p *parser) parseTableAlias() (*TableAlias, error) {
 	alias, hasAlias, err := p.parseAlias()
 	if err != nil {
-		return "", nil, false, err
+		return nil, err
 	}
 	if !hasAlias {
-		return "", nil, false, nil
+		return nil, nil
 	}
 
 	columnNames, err := parseParenthesizedCommaSeparatedList(p, true, false, p.parseIdent)
 	if err != nil {
-		return "", nil, false, nil
+		return nil, nil
 	}
 
-	return alias, columnNames, true, nil
+	return &TableAlias{
+		TableAlias:    alias,
+		ColumnAliases: columnNames,
+	}, nil
 }
 
 // alias := [ [ `AS` ] ident ]
@@ -246,17 +233,17 @@ func (p *parser) parseAlias() (string, bool, error) {
 }
 
 // joinTail := tableExpression [`ON` expression]
-func (p *parser) parseJoin(node queries.Node) (queries.Node, error) {
-	right, err := p.parseTableExpression()
+func (p *parser) parseJoin() (Join, error) {
+	table, err := p.parseTableExpression()
 	if err != nil {
-		return nil, err
+		return Join{}, err
 	}
 
 	var condition impls.Expression
 	if p.advanceIf(isType(tokens.TokenTypeOn)) {
 		rawCondition, err := p.parseRootExpression()
 		if err != nil {
-			return nil, err
+			return Join{}, err
 		}
 
 		condition = rawCondition
@@ -264,18 +251,32 @@ func (p *parser) parseJoin(node queries.Node) (queries.Node, error) {
 
 	// TODO - support USING
 	// TODO - support multiple join types: (natural, left, outer, full, cross, and combinations)
-	return joins.NewJoin(node, right, condition), nil
+	return Join{
+		table:     table,
+		condition: condition,
+	}, nil
 }
 
-func joinNodes(expressions []queries.Node) queries.Node {
+func joinNodes(expressions []TableExpressionDescription) TableExpressionDescription {
 	if len(expressions) == 0 {
-		return nil
+		return TableExpressionDescription{}
 	}
 
-	left := expressions[0]
+	base := AliasedBaseTableExpressionDescription{
+		BaseTableExpression: expressions[0],
+		Alias:               nil,
+	}
+
+	var joins []Join
 	for _, right := range expressions[1:] {
-		left = joins.NewJoin(left, right, nil)
+		joins = append(joins, Join{
+			table:     right,
+			condition: nil,
+		})
 	}
 
-	return left
+	return TableExpressionDescription{
+		Base:  base,
+		Joins: joins,
+	}
 }

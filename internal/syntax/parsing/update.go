@@ -21,7 +21,7 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	var fromExpressions []queries.Node
+	var fromExpressions []TableExpressionDescription
 	if p.advanceIf(isType(tokens.TokenTypeFrom)) {
 		fromExpressions, err = p.parseTableExpressions()
 		if err != nil {

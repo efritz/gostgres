@@ -42,7 +42,7 @@ func (p *parser) parseDelete(token tokens.Token) (queries.Node, error) {
 }
 
 // deleteUsing := `USING` tableExpressions
-func (p *parser) parseDeleteUsing() ([]queries.Node, error) {
+func (p *parser) parseDeleteUsing() ([]TableExpressionDescription, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

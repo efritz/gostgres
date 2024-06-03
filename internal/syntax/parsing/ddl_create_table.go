@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
@@ -13,7 +12,7 @@ import (
 )
 
 // createTableTail := ident `(` [ columnDescription [, ...] ] `)`
-func (p *parser) parseCreateTable() (queries.Query, error) {
+func (p *parser) parseCreateTable() (Query, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, err

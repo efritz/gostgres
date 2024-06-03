@@ -4,23 +4,13 @@ import (
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect(_ tokens.Token) (queries.Node, error) {
-	builder, err := p.parseSelectBuilder()
-	if err != nil {
-		return nil, err
-	}
-
-	return builder.Build()
-}
-
-func (p *parser) parseSelectBuilder() (*SelectBuilder, error) {
+func (p *parser) parseSelect() (SelectOrValuesBuilder, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
@@ -182,7 +172,7 @@ func (p *parser) parseCombinationTarget() (SelectOrValuesBuilder, error) {
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
-		parseFunc = p.parseSelectOrValuesBuilder
+		parseFunc = p.parseSelectOrValues
 	} else {
 		parseFunc = func() (SelectOrValuesBuilder, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {

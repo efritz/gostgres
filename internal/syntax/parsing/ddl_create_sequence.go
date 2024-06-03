@@ -1,14 +1,13 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
 	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // createSequenceTail := ident [ `AS` basicType ]
-func (p *parser) parseCreateSequence() (queries.Query, error) {
+func (p *parser) parseCreateSequence() (Query, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, err

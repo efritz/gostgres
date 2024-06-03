@@ -1,12 +1,11 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
-func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
+func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
 	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
@@ -39,15 +38,13 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
-	builder := &UpdateBuilder{
+	return &UpdateBuilder{
 		tableDescription:     tableDescription,
 		setExpressions:       setExpressions,
 		fromExpressions:      fromExpressions,
 		whereExpression:      whereExpression,
 		returningExpressions: returningExpressions,
-	}
-
-	return builder.Build()
+	}, nil
 }
 
 // setExpression := ident `=` expression

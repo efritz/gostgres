@@ -261,7 +261,7 @@ func (b ValuesBuilder) TableExpression() (queries.Node, error) {
 //
 
 type TableDescription struct {
-	table     impls.Table
+	tables    TableGetter
 	name      string
 	aliasName string
 }
@@ -282,8 +282,13 @@ func (b *InsertBuilder) Build() (queries.Node, error) {
 		return nil, err
 	}
 
+	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+	}
+
 	fmt.Printf("BUILDING INSERT\n")
-	return mutation.NewInsert(node, b.tableDescription.table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
+	return mutation.NewInsert(node, table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
 }
 
 //
@@ -303,7 +308,12 @@ type SetExpression struct {
 }
 
 func (b *UpdateBuilder) Build() (queries.Node, error) {
-	node := access.NewAccess(b.tableDescription.table)
+	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+	}
+
+	node := access.NewAccess(table)
 	if b.tableDescription.aliasName != "" {
 		node = alias.NewAlias(node, b.tableDescription.aliasName)
 	}
@@ -341,7 +351,7 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 	}
 
 	fmt.Printf("BUILDING UPDATE\n")
-	return mutation.NewUpdate(node, b.tableDescription.table, setExpressions, b.tableDescription.aliasName, b.returningExpressions)
+	return mutation.NewUpdate(node, table, setExpressions, b.tableDescription.aliasName, b.returningExpressions)
 }
 
 //
@@ -355,7 +365,12 @@ type DeleteBuilder struct {
 }
 
 func (b *DeleteBuilder) Build() (queries.Node, error) {
-	node := access.NewAccess(b.tableDescription.table)
+	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+	}
+
+	node := access.NewAccess(table)
 	if b.tableDescription.aliasName != "" {
 		node = alias.NewAlias(node, b.tableDescription.aliasName)
 	}
@@ -380,7 +395,7 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	}
 
 	fmt.Printf("BUILDING DELETE\n")
-	return mutation.NewDelete(node, b.tableDescription.table, b.tableDescription.aliasName, b.returningExpressions)
+	return mutation.NewDelete(node, table, b.tableDescription.aliasName, b.returningExpressions)
 }
 
 //

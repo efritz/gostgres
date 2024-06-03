@@ -1,13 +1,12 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // createIndexTail := ident `ON` ident createIndexUsing `(` ( expressionWithDirection [, ...] ) `)` where
-func (p *parser) parseCreateIndex(unique bool) (queries.Query, error) {
+func (p *parser) parseCreateIndex(unique bool) (Query, error) {
 	name, err := p.parseIdent()
 	if err != nil {
 		return nil, err

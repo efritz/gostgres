@@ -3,7 +3,6 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
@@ -30,12 +29,12 @@ type tokenFilterFunc func(token tokens.Token) bool
 type prefixParserFunc func(token tokens.Token) (impls.Expression, error)
 type infixParserFunc func(left impls.Expression, token tokens.Token) (impls.Expression, error)
 
-type ddlParsers map[tokens.TokenType]func(token tokens.Token) (queries.Query, error)
-type createParsers map[tokens.TokenType]func() (queries.Query, error)
-type alterParsers map[tokens.TokenType]func() (queries.Query, error)
-type addConstraintParsers map[tokens.TokenType]func(name, tableName string) (queries.Query, error)
+type ddlParsers map[tokens.TokenType]func(token tokens.Token) (Query, error)
+type createParsers map[tokens.TokenType]func() (Query, error)
+type alterParsers map[tokens.TokenType]func() (Query, error)
+type addConstraintParsers map[tokens.TokenType]func(name, tableName string) (Query, error)
 type columnConstraintParsers map[tokens.TokenType]func(columnName, tableName string, description *columnDescription) error
-type explainableParsers map[tokens.TokenType]func(token tokens.Token) (queries.Node, error)
+type explainableParsers map[tokens.TokenType]func(token tokens.Token) (Builder, error)
 type prefixParsers map[tokens.TokenType]prefixParserFunc
 type infixParsers map[tokens.TokenType]infixParserFunc
 

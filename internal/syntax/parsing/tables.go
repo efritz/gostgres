@@ -3,7 +3,6 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
@@ -17,18 +16,13 @@ func (p *parser) parseTable() (TableDescription, error) {
 		return TableDescription{}, err
 	}
 
-	table, ok := p.tables.Get(name)
-	if !ok {
-		return TableDescription{}, fmt.Errorf("unknown table %s", name)
-	}
-
 	alias, _, err := p.parseAlias()
 	if err != nil {
 		return TableDescription{}, err
 	}
 
 	return TableDescription{
-		table:     table,
+		tables:    p.tables,
 		name:      name,
 		aliasName: alias,
 	}, nil
@@ -98,7 +92,7 @@ func (p *parser) parseAliasedBaseTableExpression() (AliasedBaseTableExpressionDe
 func (p *parser) parseBaseTableExpression() (BaseTableExpressionDescription, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		if p.current().Type == tokens.TokenTypeSelect || p.current().Type == tokens.TokenTypeValues {
-			baseTableExpression, err := p.parseSelectOrValuesBuilder()
+			baseTableExpression, err := p.parseSelectOrValues()
 			if err != nil {
 				return nil, err
 			}
@@ -139,34 +133,16 @@ func (p *parser) parseTableReference() (TableReference, error) {
 }
 
 // selectOrValues := ( `SELECT` selectTail ) | values
-func (p *parser) parseSelectOrValues() (queries.Node, error) {
-	token := p.current()
+func (p *parser) parseSelectOrValues() (SelectOrValuesBuilder, error) {
 	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
-		return p.parseSelect(token)
+		return p.parseSelect()
 	}
 
 	return p.parseValues()
 }
 
-func (p *parser) parseSelectOrValuesBuilder() (SelectOrValuesBuilder, error) {
-	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
-		return p.parseSelectBuilder()
-	}
-
-	return p.parseValuesBuilder()
-}
-
 // values := `VALUES` ( `(` ( expression [, ... ] ) `)` [, ...] )
-func (p *parser) parseValues() (queries.Node, error) {
-	builder, err := p.parseValuesBuilder()
-	if err != nil {
-		return nil, err
-	}
-
-	return builder.Build()
-}
-
-func (p *parser) parseValuesBuilder() (*ValuesBuilder, error) {
+func (p *parser) parseValues() (*ValuesBuilder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeValues)); err != nil {
 		return nil, err
 	}

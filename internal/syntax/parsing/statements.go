@@ -17,7 +17,7 @@ func (p *parser) initDDLParsers() {
 
 func (p *parser) initStatementParsers() {
 	p.explainableParsers = explainableParsers{
-		tokens.TokenTypeSelect: p.parseSelect,
+		tokens.TokenTypeSelect: func(_ tokens.Token) (Builder, error) { return p.parseSelect() },
 		tokens.TokenTypeInsert: p.parseInsert,
 		tokens.TokenTypeUpdate: p.parseUpdate,
 		tokens.TokenTypeDelete: p.parseDelete,
@@ -43,7 +43,12 @@ func (p *parser) parseStatement() (Query, error) {
 	for tokenType, parser := range p.explainableParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
-			node, err := parser(token)
+			builder, err := parser(token)
+			if err != nil {
+				return nil, err
+			}
+
+			node, err := builder.Build()
 			if err != nil {
 				return nil, err
 			}

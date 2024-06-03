@@ -8,9 +8,10 @@ import (
 )
 
 type Node interface {
+	serialization.Serializable
+
 	Name() string
 	Fields() []fields.Field
-	Serialize(w serialization.IndentWriter)
 	AddFilter(filter impls.Expression)
 	AddOrder(order impls.OrderExpression)
 	Optimize()

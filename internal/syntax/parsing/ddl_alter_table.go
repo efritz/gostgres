@@ -9,7 +9,7 @@ import (
 )
 
 // alterTableTail := ident `ADD CONSTRAINT` addConstraintTail
-func (p *parser) parseAlterTable() (queries.Query, error) {
+func (p *parser) parseAlterTable() (Query, error) {
 	tableName, err := p.parseIdent()
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (p *parser) parseAddConstraint(tableName string) (queries.Query, error) {
 }
 
 // primaryKeyConstraintTail := `(` ident [, ...] `)`
-func (p *parser) parsePrimaryKeyConstraint(name, tableName string) (queries.Query, error) {
+func (p *parser) parsePrimaryKeyConstraint(name, tableName string) (Query, error) {
 	columnNames, err := parseParenthesizedCommaSeparatedList(p, false, false, p.parseIdent)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (p *parser) parsePrimaryKeyConstraint(name, tableName string) (queries.Quer
 }
 
 // foreignKeyConstraintTail := `(` ident [, ...] `)` `REFERENCES` ident `(` ident [, ...] `)`
-func (p *parser) parseForeignKeyConstraint(name, tableName string) (queries.Query, error) {
+func (p *parser) parseForeignKeyConstraint(name, tableName string) (Query, error) {
 	columnNames, err := parseParenthesizedCommaSeparatedList(p, false, false, p.parseIdent)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (p *parser) parseForeignKeyConstraint(name, tableName string) (queries.Quer
 }
 
 // checkConstraintTail := `(` expression `)`
-func (p *parser) parseCheckConstraint(name, tableName string) (queries.Query, error) {
+func (p *parser) parseCheckConstraint(name, tableName string) (Query, error) {
 	expr, err := parseParenthesized(p, p.parseRootExpression)
 	if err != nil {
 		return nil, err

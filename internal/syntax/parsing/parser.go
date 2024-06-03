@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -29,7 +30,7 @@ type createParsers map[tokens.TokenType]func() (Query, error)
 type alterParsers map[tokens.TokenType]func() (Query, error)
 type addConstraintParsers map[tokens.TokenType]func(name, tableName string) (Query, error)
 type columnConstraintParsers map[tokens.TokenType]func(columnName, tableName string, description *columnDescription) error
-type explainableParsers map[tokens.TokenType]func(token tokens.Token) (Builder, error)
+type explainableParsers map[tokens.TokenType]func(token tokens.Token) (ast.Builder, error)
 type prefixParsers map[tokens.TokenType]prefixParserFunc
 type infixParsers map[tokens.TokenType]infixParserFunc
 

@@ -1,11 +1,12 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
-func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
+func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
 	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
@@ -20,7 +21,7 @@ func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	var fromExpressions []TableExpressionDescription
+	var fromExpressions []ast.TableExpressionDescription
 	if p.advanceIf(isType(tokens.TokenTypeFrom)) {
 		fromExpressions, err = p.parseTableExpressions()
 		if err != nil {
@@ -38,7 +39,7 @@ func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	return &UpdateBuilder{
+	return &ast.UpdateBuilder{
 		TableDescription:     tableDescription,
 		SetExpressions:       setExpressions,
 		FromExpressions:      fromExpressions,
@@ -48,7 +49,7 @@ func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
 }
 
 // setExpression := ident `=` expression
-func (p *parser) parseSetExpression() (SetExpression, error) {
+func (p *parser) parseSetExpression() (ast.SetExpression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		// TODO - support sub-select
 		// TODO - support row values
@@ -57,19 +58,19 @@ func (p *parser) parseSetExpression() (SetExpression, error) {
 
 	name, err := p.parseIdent()
 	if err != nil {
-		return SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeEquals)); err != nil {
-		return SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
 	expr, err := p.parseRootExpression()
 	if err != nil {
-		return SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
-	return SetExpression{
+	return ast.SetExpression{
 		Name:       name,
 		Expression: expr,
 	}, nil

@@ -1,11 +1,12 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // deleteTail := `FROM` table deleteUsing where returning
-func (p *parser) parseDelete(token tokens.Token) (Builder, error) {
+func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
 	}
@@ -30,16 +31,16 @@ func (p *parser) parseDelete(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	return &DeleteBuilder{
+	return &ast.DeleteBuilder{
 		TableDescription:     tableDescription,
 		UsingExpressions:     usingExpressions,
 		WhereExpression:      whereExpression,
-		returningExpressions: returningExpressions,
+		ReturningExpressions: returningExpressions,
 	}, nil
 }
 
 // deleteUsing := `USING` tableExpressions
-func (p *parser) parseDeleteUsing() ([]TableExpressionDescription, error) {
+func (p *parser) parseDeleteUsing() ([]ast.TableExpressionDescription, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

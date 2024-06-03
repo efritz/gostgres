@@ -6,11 +6,12 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect() (BaseTableExpressionDescription, error) {
+func (p *parser) parseSelect() (ast.BaseTableExpressionDescription, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
@@ -26,7 +27,7 @@ func (p *parser) parseSelect() (BaseTableExpressionDescription, error) {
 		return nil, err
 	}
 
-	builder := &SelectBuilder{
+	builder := &ast.SelectBuilder{
 		SimpleSelect:    simpleSelect,
 		OrderExpression: orderExpression,
 		Limit:           limit,
@@ -37,7 +38,7 @@ func (p *parser) parseSelect() (BaseTableExpressionDescription, error) {
 }
 
 // simpleSelect := selectExpressions from where groupBy combinedQuery
-func (p *parser) parseSimpleSelect() (*SimpleSelectDescription, error) {
+func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func (p *parser) parseSimpleSelect() (*SimpleSelectDescription, error) {
 		return nil, err
 	}
 
-	description := &SimpleSelectDescription{
+	description := &ast.SimpleSelectDescription{
 		SelectExpressions: selectExpressions,
 		From:              node,
 		WhereExpression:   whereExpression,
@@ -129,8 +130,8 @@ func (p *parser) parseGroupBy() ([]impls.Expression, bool, error) {
 }
 
 // combinedQuery := [ ( ( `UNION` | `INTERSECT` | `EXCEPT` ) [ ( `ALL` | `DISTINCT` ) ] combinationTarget ) [, ...] ]
-func (p *parser) parseCombinedQuery() ([]*CombinationDescription, error) {
-	var combinations []*CombinationDescription
+func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
+	var combinations []*ast.CombinationDescription
 	for {
 		typ := p.current().Type
 
@@ -153,7 +154,7 @@ func (p *parser) parseCombinedQuery() ([]*CombinationDescription, error) {
 			return nil, err
 		}
 
-		description := &CombinationDescription{
+		description := &ast.CombinationDescription{
 			Type:                    typ,
 			Distinct:                distinct,
 			SimpleSelectDescription: unionTarget,
@@ -166,15 +167,15 @@ func (p *parser) parseCombinedQuery() ([]*CombinationDescription, error) {
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )
-func (p *parser) parseCombinationTarget() (BaseTableExpressionDescription, error) {
+func (p *parser) parseCombinationTarget() (ast.BaseTableExpressionDescription, error) {
 	expectParen := false
-	var parseFunc func() (BaseTableExpressionDescription, error)
+	var parseFunc func() (ast.BaseTableExpressionDescription, error)
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
 		parseFunc = p.parseSelectOrValues
 	} else {
-		parseFunc = func() (BaseTableExpressionDescription, error) {
+		parseFunc = func() (ast.BaseTableExpressionDescription, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {
 				return nil, err
 			}
@@ -184,7 +185,7 @@ func (p *parser) parseCombinationTarget() (BaseTableExpressionDescription, error
 				return nil, err
 			}
 
-			builder := &SelectBuilder{
+			builder := &ast.SelectBuilder{
 				SimpleSelect: description,
 			}
 

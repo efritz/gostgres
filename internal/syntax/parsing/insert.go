@@ -1,11 +1,12 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // insertTail := `INTO` table [ `(` ident [, ...] `)` ] selectOrValues returning
-func (p *parser) parseInsert(token tokens.Token) (Builder, error) {
+func (p *parser) parseInsert(token tokens.Token) (ast.Builder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
 	}
@@ -31,7 +32,7 @@ func (p *parser) parseInsert(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	return &InsertBuilder{
+	return &ast.InsertBuilder{
 		TableDescription:     tableDescription,
 		ColumnNames:          columnNames,
 		Node:                 node,

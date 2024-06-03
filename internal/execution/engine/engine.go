@@ -9,6 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/lexing"
 	"github.com/efritz/gostgres/internal/syntax/parsing"
 )
@@ -44,7 +45,7 @@ func NewEngine(
 }
 
 func (e *Engine) Query(request protocol.Request, responseWriter protocol.ResponseWriter) {
-	buildContext := parsing.BuildContext{
+	buildContext := ast.BuildContext{
 		Tables: e.tables,
 	}
 

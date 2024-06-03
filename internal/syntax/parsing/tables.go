@@ -22,9 +22,8 @@ func (p *parser) parseTable() (TableDescription, error) {
 	}
 
 	return TableDescription{
-		tables:    p.tables,
-		name:      name,
-		aliasName: alias,
+		Name:      name,
+		AliasName: alias,
 	}, nil
 }
 
@@ -120,20 +119,19 @@ func (p *parser) parseBaseTableExpression() (BaseTableExpressionDescription, err
 }
 
 // tableReference := ident
-func (p *parser) parseTableReference() (TableReference, error) {
+func (p *parser) parseTableReference() (BaseTableExpressionDescription, error) {
 	nameToken, err := p.parseIdent()
 	if err != nil {
 		return TableReference{}, err
 	}
 
 	return TableReference{
-		tables: p.tables,
-		Name:   nameToken,
+		Name: nameToken,
 	}, nil
 }
 
 // selectOrValues := ( `SELECT` selectTail ) | values
-func (p *parser) parseSelectOrValues() (SelectOrValuesBuilder, error) {
+func (p *parser) parseSelectOrValues() (BaseTableExpressionDescription, error) {
 	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
 		return p.parseSelect()
 	}
@@ -161,8 +159,8 @@ func (p *parser) parseValues() (*ValuesBuilder, error) {
 
 	// TODO - support `DEFAULT` expressions
 	builder := &ValuesBuilder{
-		rowFields:         rowFields,
-		allRowExpressions: allRowExpressions,
+		RowFields:         rowFields,
+		AllRowExpressions: allRowExpressions,
 	}
 
 	return builder, nil
@@ -228,8 +226,8 @@ func (p *parser) parseJoin() (Join, error) {
 	// TODO - support USING
 	// TODO - support multiple join types: (natural, left, outer, full, cross, and combinations)
 	return Join{
-		table:     table,
-		condition: condition,
+		Table:     table,
+		Condition: condition,
 	}, nil
 }
 
@@ -246,8 +244,8 @@ func joinNodes(expressions []TableExpressionDescription) TableExpressionDescript
 	var joins []Join
 	for _, right := range expressions[1:] {
 		joins = append(joins, Join{
-			table:     right,
-			condition: nil,
+			Table:     right,
+			Condition: nil,
 		})
 	}
 

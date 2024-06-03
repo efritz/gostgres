@@ -23,39 +23,51 @@ import (
 )
 
 type Builder interface {
-	Build() (queries.Node, error)
+	Build(ctx BuildContext) (queries.Node, error)
+}
+
+type BuildContext struct {
+	Tables TableGetter
+}
+
+type TableGetter interface {
+	Get(name string) (impls.Table, bool)
 }
 
 //
 //
 
 type SelectBuilder struct {
-	simpleSelect    *SimpleSelectDescription
-	orderExpression impls.OrderExpression
-	limit           *int
-	offset          *int
+	SimpleSelect    *SimpleSelectDescription
+	OrderExpression impls.OrderExpression
+	Limit           *int
+	Offset          *int
 }
 
-func (b *SelectBuilder) Build() (queries.Node, error) {
-	node, err := b.simpleSelect.from.TableExpression()
+func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	return b.TableExpression(ctx)
+}
+
+func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
+	node, err := b.SimpleSelect.From.TableExpression(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if b.simpleSelect.whereExpression != nil {
-		node = filter.NewFilter(node, b.simpleSelect.whereExpression)
+	if b.SimpleSelect.WhereExpression != nil {
+		node = filter.NewFilter(node, b.SimpleSelect.WhereExpression)
 	}
 
-	if b.simpleSelect.groupings != nil {
+	if b.SimpleSelect.Groupings != nil {
 	selectLoop:
-		for _, selectExpression := range b.simpleSelect.selectExpressions {
+		for _, selectExpression := range b.SimpleSelect.SelectExpressions {
 			expression, alias, ok := projection.UnwrapAlias(selectExpression)
 			if !ok {
 				return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 			}
 
 			if len(expressions.Fields(expression)) > 0 {
-				for _, grouping := range b.simpleSelect.groupings {
+				for _, grouping := range b.SimpleSelect.Groupings {
 					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
 						continue selectLoop
 					}
@@ -66,21 +78,21 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 			}
 		}
 
-		node = aggregate.NewHashAggregate(node, b.simpleSelect.groupings, b.simpleSelect.selectExpressions)
-		b.simpleSelect.selectExpressions = nil
+		node = aggregate.NewHashAggregate(node, b.SimpleSelect.Groupings, b.SimpleSelect.SelectExpressions)
+		b.SimpleSelect.SelectExpressions = nil
 	}
 
-	if len(b.simpleSelect.combinations) != 0 {
-		if b.simpleSelect.selectExpressions != nil {
-			newNode, err := projection.NewProjection(node, b.simpleSelect.selectExpressions)
+	if len(b.SimpleSelect.Combinations) != 0 {
+		if b.SimpleSelect.SelectExpressions != nil {
+			newNode, err := projection.NewProjection(node, b.SimpleSelect.SelectExpressions)
 			if err != nil {
 				return nil, err
 			}
 			node = newNode
-			b.simpleSelect.selectExpressions = nil
+			b.SimpleSelect.SelectExpressions = nil
 		}
 
-		for _, c := range b.simpleSelect.combinations {
+		for _, c := range b.SimpleSelect.Combinations {
 			var factory func(left, right queries.Node, distinct bool) (queries.Node, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
@@ -91,7 +103,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.SimpleSelectDescription.Build()
+			right, err := c.SimpleSelectDescription.Build(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -104,19 +116,19 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		}
 	}
 
-	if b.orderExpression != nil {
-		node = order.NewOrder(node, b.orderExpression)
+	if b.OrderExpression != nil {
+		node = order.NewOrder(node, b.OrderExpression)
 	}
-	if b.offset != nil {
-		node = limit.NewOffset(node, *b.offset)
+	if b.Offset != nil {
+		node = limit.NewOffset(node, *b.Offset)
 	}
-	if b.limit != nil {
-		node = limit.NewLimit(node, *b.limit)
+	if b.Limit != nil {
+		node = limit.NewLimit(node, *b.Limit)
 	}
 
 	fmt.Printf("BUILDING SELECT\n")
-	if b.simpleSelect.selectExpressions != nil {
-		return projection.NewProjection(node, b.simpleSelect.selectExpressions)
+	if b.SimpleSelect.SelectExpressions != nil {
+		return projection.NewProjection(node, b.SimpleSelect.SelectExpressions)
 	}
 	return node, nil
 }
@@ -125,27 +137,31 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 //
 
 type SimpleSelectDescription struct {
-	selectExpressions []projection.ProjectionExpression
-	from              TableExpressionDescription
-	whereExpression   impls.Expression
-	groupings         []impls.Expression
-	combinations      []*CombinationDescription
+	SelectExpressions []projection.ProjectionExpression
+	From              TableExpressionDescription
+	WhereExpression   impls.Expression
+	Groupings         []impls.Expression
+	Combinations      []*CombinationDescription
 }
 
 type CombinationDescription struct {
 	Type                    tokens.TokenType
 	Distinct                bool
-	SimpleSelectDescription SelectOrValuesBuilder
+	SimpleSelectDescription BaseTableExpressionDescription
 }
 
 type ValuesBuilder struct {
-	rowFields         []fields.Field
-	allRowExpressions [][]impls.Expression
+	RowFields         []fields.Field
+	AllRowExpressions [][]impls.Expression
 }
 
-func (b *ValuesBuilder) Build() (queries.Node, error) {
+func (b *ValuesBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	return b.TableExpression(ctx)
+}
+
+func (b ValuesBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 	fmt.Printf("BUILDING VALUES\n")
-	return access.NewValues(b.rowFields, b.allRowExpressions), nil
+	return access.NewValues(b.RowFields, b.AllRowExpressions), nil
 }
 
 //
@@ -162,16 +178,20 @@ type AliasedBaseTableExpressionDescription struct {
 }
 
 type BaseTableExpressionDescription interface {
-	TableExpression() (queries.Node, error)
+	Builder
+	TableExpression(ctx BuildContext) (queries.Node, error)
 }
 
 type TableReference struct {
-	tables TableGetter
-	Name   string
+	Name string
 }
 
-func (r TableReference) TableExpression() (queries.Node, error) {
-	table, ok := r.tables.Get(r.Name)
+func (r TableReference) Build(ctx BuildContext) (queries.Node, error) {
+	return r.TableExpression(ctx)
+}
+
+func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {
+	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
 		return nil, fmt.Errorf("unknown table %s", r.Name)
 	}
@@ -179,8 +199,12 @@ func (r TableReference) TableExpression() (queries.Node, error) {
 	return access.NewAccess(table), nil
 }
 
-func (e TableExpressionDescription) TableExpression() (queries.Node, error) {
-	node, err := e.Base.BaseTableExpression.TableExpression()
+func (e TableExpressionDescription) Build(ctx BuildContext) (queries.Node, error) {
+	return e.TableExpression(ctx)
+}
+
+func (e TableExpressionDescription) TableExpression(ctx BuildContext) (queries.Node, error) {
+	node, err := e.Base.BaseTableExpression.TableExpression(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -216,12 +240,12 @@ func (e TableExpressionDescription) TableExpression() (queries.Node, error) {
 	}
 
 	for _, j := range e.Joins {
-		right, err := j.table.TableExpression()
+		right, err := j.Table.TableExpression(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		node = joins.NewJoin(node, right, j.condition)
+		node = joins.NewJoin(node, right, j.Condition)
 	}
 
 	return node, nil
@@ -233,73 +257,52 @@ type TableAlias struct {
 }
 
 type Join struct {
-	table     TableExpressionDescription
-	condition impls.Expression
-}
-
-//
-//
-
-type SelectOrValuesBuilder interface {
-	Builder
-	BaseTableExpressionDescription
-	selectOrValues()
-}
-
-func (SelectBuilder) selectOrValues() {}
-func (ValuesBuilder) selectOrValues() {}
-
-func (b SelectBuilder) TableExpression() (queries.Node, error) {
-	return b.Build()
-}
-
-func (b ValuesBuilder) TableExpression() (queries.Node, error) {
-	return b.Build()
+	Table     TableExpressionDescription
+	Condition impls.Expression
 }
 
 //
 //
 
 type TableDescription struct {
-	tables    TableGetter
-	name      string
-	aliasName string
+	Name      string
+	AliasName string
 }
 
 //
 //
 
 type InsertBuilder struct {
-	tableDescription     TableDescription
-	columnNames          []string
-	node                 SelectOrValuesBuilder
-	returningExpressions []projection.ProjectionExpression
+	TableDescription     TableDescription
+	ColumnNames          []string
+	Node                 BaseTableExpressionDescription
+	ReturningExpressions []projection.ProjectionExpression
 }
 
-func (b *InsertBuilder) Build() (queries.Node, error) {
-	node, err := b.node.Build()
+func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	node, err := b.Node.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+	table, ok := ctx.Tables.Get(b.TableDescription.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
 	}
 
 	fmt.Printf("BUILDING INSERT\n")
-	return mutation.NewInsert(node, table, b.tableDescription.name, b.tableDescription.aliasName, b.columnNames, b.returningExpressions)
+	return mutation.NewInsert(node, table, b.TableDescription.Name, b.TableDescription.AliasName, b.ColumnNames, b.ReturningExpressions)
 }
 
 //
 //
 
 type UpdateBuilder struct {
-	tableDescription     TableDescription
-	setExpressions       []SetExpression
-	fromExpressions      []TableExpressionDescription
-	whereExpression      impls.Expression
-	returningExpressions []projection.ProjectionExpression
+	TableDescription     TableDescription
+	SetExpressions       []SetExpression
+	FromExpressions      []TableExpressionDescription
+	WhereExpression      impls.Expression
+	ReturningExpressions []projection.ProjectionExpression
 }
 
 type SetExpression struct {
@@ -307,28 +310,28 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Build() (queries.Node, error) {
-	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	table, ok := ctx.Tables.Get(b.TableDescription.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
 	}
 
 	node := access.NewAccess(table)
-	if b.tableDescription.aliasName != "" {
-		node = alias.NewAlias(node, b.tableDescription.aliasName)
+	if b.TableDescription.AliasName != "" {
+		node = alias.NewAlias(node, b.TableDescription.AliasName)
 	}
 
-	if b.fromExpressions != nil {
-		node = joinNodes2(node, b.fromExpressions)
+	if b.FromExpressions != nil {
+		node = joinNodes2(ctx, node, b.FromExpressions)
 	}
 
-	if b.whereExpression != nil {
-		node = filter.NewFilter(node, b.whereExpression)
+	if b.WhereExpression != nil {
+		node = filter.NewFilter(node, b.WhereExpression)
 	}
 
-	relationName := b.tableDescription.name
-	if b.tableDescription.aliasName != "" {
-		relationName = b.tableDescription.aliasName
+	relationName := b.TableDescription.Name
+	if b.TableDescription.AliasName != "" {
+		relationName = b.TableDescription.AliasName
 	}
 	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
@@ -340,10 +343,10 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 		return nil, err
 	}
 
-	node = alias.NewAlias(node, b.tableDescription.name)
+	node = alias.NewAlias(node, b.TableDescription.Name)
 
-	setExpressions := make([]mutation.SetExpression, len(b.setExpressions))
-	for i, setExpression := range b.setExpressions {
+	setExpressions := make([]mutation.SetExpression, len(b.SetExpressions))
+	for i, setExpression := range b.SetExpressions {
 		setExpressions[i] = mutation.SetExpression{
 			Name:       setExpression.Name,
 			Expression: setExpression.Expression,
@@ -351,39 +354,39 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 	}
 
 	fmt.Printf("BUILDING UPDATE\n")
-	return mutation.NewUpdate(node, table, setExpressions, b.tableDescription.aliasName, b.returningExpressions)
+	return mutation.NewUpdate(node, table, setExpressions, b.TableDescription.AliasName, b.ReturningExpressions)
 }
 
 //
 //
 
 type DeleteBuilder struct {
-	tableDescription     TableDescription
-	usingExpressions     []TableExpressionDescription
-	whereExpression      impls.Expression
+	TableDescription     TableDescription
+	UsingExpressions     []TableExpressionDescription
+	WhereExpression      impls.Expression
 	returningExpressions []projection.ProjectionExpression
 }
 
-func (b *DeleteBuilder) Build() (queries.Node, error) {
-	table, ok := b.tableDescription.tables.Get(b.tableDescription.name)
+func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	table, ok := ctx.Tables.Get(b.TableDescription.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.tableDescription.name)
+		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
 	}
 
 	node := access.NewAccess(table)
-	if b.tableDescription.aliasName != "" {
-		node = alias.NewAlias(node, b.tableDescription.aliasName)
+	if b.TableDescription.AliasName != "" {
+		node = alias.NewAlias(node, b.TableDescription.AliasName)
 	}
-	if len(b.usingExpressions) > 0 {
-		node = joinNodes2(node, b.usingExpressions)
+	if len(b.UsingExpressions) > 0 {
+		node = joinNodes2(ctx, node, b.UsingExpressions)
 	}
-	if b.whereExpression != nil {
-		node = filter.NewFilter(node, b.whereExpression)
+	if b.WhereExpression != nil {
+		node = filter.NewFilter(node, b.WhereExpression)
 	}
 
-	relationName := b.tableDescription.name
-	if b.tableDescription.aliasName != "" {
-		relationName = b.tableDescription.aliasName
+	relationName := b.TableDescription.Name
+	if b.TableDescription.AliasName != "" {
+		relationName = b.TableDescription.AliasName
 	}
 	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
@@ -395,15 +398,15 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	}
 
 	fmt.Printf("BUILDING DELETE\n")
-	return mutation.NewDelete(node, table, b.tableDescription.aliasName, b.returningExpressions)
+	return mutation.NewDelete(node, table, b.TableDescription.AliasName, b.returningExpressions)
 }
 
 //
 //
 
-func joinNodes2(left queries.Node, expressions []TableExpressionDescription) queries.Node {
+func joinNodes2(ctx BuildContext, left queries.Node, expressions []TableExpressionDescription) queries.Node {
 	for _, expression := range expressions {
-		right, err := expression.TableExpression()
+		right, err := expression.TableExpression(ctx)
 		if err != nil {
 			return nil
 		}

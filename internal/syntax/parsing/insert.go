@@ -26,15 +26,15 @@ func (p *parser) parseInsert(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.name)
+	returningExpressions, err := p.parseReturning(tableDescription.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	return &InsertBuilder{
-		tableDescription:     tableDescription,
-		columnNames:          columnNames,
-		node:                 node,
-		returningExpressions: returningExpressions,
+		TableDescription:     tableDescription,
+		ColumnNames:          columnNames,
+		Node:                 node,
+		ReturningExpressions: returningExpressions,
 	}, nil
 }

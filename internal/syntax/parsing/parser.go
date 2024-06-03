@@ -10,7 +10,6 @@ import (
 type parser struct {
 	tokens                  []tokens.Token
 	cursor                  int
-	tables                  TableGetter
 	ddlParsers              ddlParsers
 	createParsers           createParsers
 	alterParsers            alterParsers
@@ -19,10 +18,6 @@ type parser struct {
 	explainableParsers      explainableParsers
 	prefixParsers           prefixParsers
 	infixParsers            infixParsers
-}
-
-type TableGetter interface {
-	Get(name string) (impls.Table, bool)
 }
 
 type tokenFilterFunc func(token tokens.Token) bool
@@ -38,10 +33,9 @@ type explainableParsers map[tokens.TokenType]func(token tokens.Token) (Builder, 
 type prefixParsers map[tokens.TokenType]prefixParserFunc
 type infixParsers map[tokens.TokenType]infixParserFunc
 
-func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
+func newParser(tokenStream []tokens.Token) *parser {
 	p := &parser{
 		tokens: tokenStream,
-		tables: tables,
 	}
 
 	p.initAlterParsers()

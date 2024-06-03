@@ -25,15 +25,15 @@ func (p *parser) parseDelete(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.name)
+	returningExpressions, err := p.parseReturning(tableDescription.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	return &DeleteBuilder{
-		tableDescription:     tableDescription,
-		usingExpressions:     usingExpressions,
-		whereExpression:      whereExpression,
+		TableDescription:     tableDescription,
+		UsingExpressions:     usingExpressions,
+		WhereExpression:      whereExpression,
 		returningExpressions: returningExpressions,
 	}, nil
 }

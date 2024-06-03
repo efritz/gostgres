@@ -10,7 +10,7 @@ import (
 )
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect() (SelectOrValuesBuilder, error) {
+func (p *parser) parseSelect() (BaseTableExpressionDescription, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
@@ -27,10 +27,10 @@ func (p *parser) parseSelect() (SelectOrValuesBuilder, error) {
 	}
 
 	builder := &SelectBuilder{
-		simpleSelect:    simpleSelect,
-		orderExpression: orderExpression,
-		limit:           limit,
-		offset:          offset,
+		SimpleSelect:    simpleSelect,
+		OrderExpression: orderExpression,
+		Limit:           limit,
+		Offset:          offset,
 	}
 
 	return builder, nil
@@ -65,11 +65,11 @@ func (p *parser) parseSimpleSelect() (*SimpleSelectDescription, error) {
 	}
 
 	description := &SimpleSelectDescription{
-		selectExpressions: selectExpressions,
-		from:              node,
-		whereExpression:   whereExpression,
-		groupings:         groupings,
-		combinations:      combinations,
+		SelectExpressions: selectExpressions,
+		From:              node,
+		WhereExpression:   whereExpression,
+		Groupings:         groupings,
+		Combinations:      combinations,
 	}
 
 	return description, nil
@@ -166,15 +166,15 @@ func (p *parser) parseCombinedQuery() ([]*CombinationDescription, error) {
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )
-func (p *parser) parseCombinationTarget() (SelectOrValuesBuilder, error) {
+func (p *parser) parseCombinationTarget() (BaseTableExpressionDescription, error) {
 	expectParen := false
-	var parseFunc func() (SelectOrValuesBuilder, error)
+	var parseFunc func() (BaseTableExpressionDescription, error)
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
 		parseFunc = p.parseSelectOrValues
 	} else {
-		parseFunc = func() (SelectOrValuesBuilder, error) {
+		parseFunc = func() (BaseTableExpressionDescription, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {
 				return nil, err
 			}
@@ -185,7 +185,7 @@ func (p *parser) parseCombinationTarget() (SelectOrValuesBuilder, error) {
 			}
 
 			builder := &SelectBuilder{
-				simpleSelect: description,
+				SimpleSelect: description,
 			}
 
 			return builder, nil

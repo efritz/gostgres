@@ -33,17 +33,17 @@ func (p *parser) parseUpdate(token tokens.Token) (Builder, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.name)
+	returningExpressions, err := p.parseReturning(tableDescription.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	return &UpdateBuilder{
-		tableDescription:     tableDescription,
-		setExpressions:       setExpressions,
-		fromExpressions:      fromExpressions,
-		whereExpression:      whereExpression,
-		returningExpressions: returningExpressions,
+		TableDescription:     tableDescription,
+		SetExpressions:       setExpressions,
+		FromExpressions:      fromExpressions,
+		WhereExpression:      whereExpression,
+		ReturningExpressions: returningExpressions,
 	}, nil
 }
 

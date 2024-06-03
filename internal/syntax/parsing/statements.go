@@ -27,7 +27,7 @@ func (p *parser) initStatementParsers() {
 // statement := ddlStatement | ( [ `EXPLAIN` ] explainableStatement )
 // ddlStatement := ( `CREATE` createTail ) | ( `ALTER` alterTail )
 // explainableStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
-func (p *parser) parseStatement() (Query, error) {
+func (p *parser) parseStatement(ctx BuildContext) (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
@@ -48,7 +48,7 @@ func (p *parser) parseStatement() (Query, error) {
 				return nil, err
 			}
 
-			node, err := builder.Build()
+			node, err := builder.Build(ctx)
 			if err != nil {
 				return nil, err
 			}

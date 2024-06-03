@@ -44,23 +44,27 @@ func NewEngine(
 }
 
 func (e *Engine) Query(request protocol.Request, responseWriter protocol.ResponseWriter) {
-	query, err := parsing.Parse(lexing.Lex(request.Query), e.tables)
+	buildContext := parsing.BuildContext{
+		Tables: e.tables,
+	}
+
+	query, err := parsing.Parse(buildContext, lexing.Lex(request.Query))
 	if err != nil {
 		responseWriter.Error(fmt.Errorf("failed to parse query: %s", err))
 		return
 	}
 
-	ctx := impls.NewContext(
+	executionContext := impls.NewContext(
 		e.tables,
 		e.sequences,
 		e.functions,
 		e.aggregates,
 	)
 	if request.Debug {
-		ctx = ctx.WithDebug()
+		executionContext = executionContext.WithDebug()
 	}
 
-	query.Execute(ctx, responseWriter)
+	query.Execute(executionContext, responseWriter)
 }
 
 func (e *Engine) QueryRows(request protocol.Request) (rows.Rows, error) {

@@ -9,22 +9,22 @@ import (
 )
 
 type InsertBuilder struct {
-	TableDescription     TableDescription
-	ColumnNames          []string
-	Node                 BaseTableExpressionDescription
-	ReturningExpressions []projection.ProjectionExpression
+	Target      TargetTable
+	ColumnNames []string
+	Source      TableReferenceOrExpression
+	Returning   []projection.ProjectionExpression
 }
 
 func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	node, err := b.Node.Build(ctx)
+	table, ok := ctx.Tables.Get(b.Target.Name)
+	if !ok {
+		return nil, fmt.Errorf("unknown table %s", b.Target.Name)
+	}
+
+	node, err := b.Source.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	table, ok := ctx.Tables.Get(b.TableDescription.Name)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
-	}
-
-	return mutation.NewInsert(node, table, b.TableDescription.Name, b.TableDescription.AliasName, b.ColumnNames, b.ReturningExpressions)
+	return mutation.NewInsert(node, table, b.Target.Name, b.Target.AliasName, b.ColumnNames, b.Returning)
 }

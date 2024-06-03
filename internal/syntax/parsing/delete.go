@@ -32,15 +32,15 @@ func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
 	}
 
 	return &ast.DeleteBuilder{
-		TableDescription:     tableDescription,
-		UsingExpressions:     usingExpressions,
-		WhereExpression:      whereExpression,
-		ReturningExpressions: returningExpressions,
+		Target:    tableDescription,
+		Using:     usingExpressions,
+		Where:     whereExpression,
+		Returning: returningExpressions,
 	}, nil
 }
 
 // deleteUsing := `USING` tableExpressions
-func (p *parser) parseDeleteUsing() ([]ast.TableExpressionDescription, error) {
+func (p *parser) parseDeleteUsing() ([]ast.TableExpression, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

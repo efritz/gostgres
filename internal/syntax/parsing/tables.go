@@ -11,85 +11,85 @@ import (
 )
 
 // table := ident alias
-func (p *parser) parseTable() (ast.TableDescription, error) {
+func (p *parser) parseTable() (ast.TargetTable, error) {
 	name, err := p.parseIdent()
 	if err != nil {
-		return ast.TableDescription{}, err
+		return ast.TargetTable{}, err
 	}
 
 	alias, _, err := p.parseAlias()
 	if err != nil {
-		return ast.TableDescription{}, err
+		return ast.TargetTable{}, err
 	}
 
-	return ast.TableDescription{
+	return ast.TargetTable{
 		Name:      name,
 		AliasName: alias,
 	}, nil
 }
 
 // from := `FROM` tableExpressions
-func (p *parser) parseFrom() (node ast.TableExpressionDescription, _ error) {
+func (p *parser) parseFrom() (node ast.TableExpression, _ error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
-		return ast.TableExpressionDescription{}, err
+		return ast.TableExpression{}, err
 	}
 
 	tableExpressions, err := p.parseTableExpressions()
 	if err != nil {
-		return ast.TableExpressionDescription{}, err
+		return ast.TableExpression{}, err
 	}
 
 	return joinNodes(tableExpressions), nil
 }
 
 // tableExpressions := tableExpression [, ...]
-func (p *parser) parseTableExpressions() ([]ast.TableExpressionDescription, error) {
+func (p *parser) parseTableExpressions() ([]ast.TableExpression, error) {
 	return parseCommaSeparatedList(p, p.parseTableExpression)
 }
 
 // tableExpression := aliasedBaseTableExpression [ `JOIN` joinTail [...] ]
-func (p *parser) parseTableExpression() (ast.TableExpressionDescription, error) {
+func (p *parser) parseTableExpression() (ast.TableExpression, error) {
 	node, err := p.parseAliasedBaseTableExpression()
 	if err != nil {
-		return ast.TableExpressionDescription{}, err
+		return ast.TableExpression{}, err
 	}
 
 	var joins []ast.Join
 	for p.advanceIf(isType(tokens.TokenTypeJoin)) {
 		join, err := p.parseJoin()
 		if err != nil {
-			return ast.TableExpressionDescription{}, err
+			return ast.TableExpression{}, err
 		}
 
 		joins = append(joins, join)
 	}
 
-	return ast.TableExpressionDescription{
+	return ast.TableExpression{
 		Base:  node,
 		Joins: joins,
 	}, nil
 }
 
 // aliasedBaseTableExpression := baseTableExpression [ tableAlias ]
-func (p *parser) parseAliasedBaseTableExpression() (ast.AliasedBaseTableExpressionDescription, error) {
+func (p *parser) parseAliasedBaseTableExpression() (ast.AliasedTableRefrenceOrExpression, error) {
 	baseTableExpression, err := p.parseBaseTableExpression()
 	if err != nil {
-		return ast.AliasedBaseTableExpressionDescription{}, err
+		return ast.AliasedTableRefrenceOrExpression{}, err
 	}
 
 	alias, err := p.parseTableAlias()
 	if err != nil {
-		return ast.AliasedBaseTableExpressionDescription{}, err
+		return ast.AliasedTableRefrenceOrExpression{}, err
 	}
 
-	return ast.AliasedBaseTableExpressionDescription{
+	return ast.AliasedTableRefrenceOrExpression{
 		BaseTableExpression: baseTableExpression,
 		Alias:               alias,
 	}, nil
 }
 
 // baseTableExpression := ( `(` selectOrValues `)` ) | ( `(` tableExpression `)` ) | tableReference
-func (p *parser) parseBaseTableExpression() (ast.BaseTableExpressionDescription, error) {
+func (p *parser) parseBaseTableExpression() (ast.TableReferenceOrExpression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		if p.current().Type == tokens.TokenTypeSelect || p.current().Type == tokens.TokenTypeValues {
 			baseTableExpression, err := p.parseSelectOrValues()
@@ -120,7 +120,7 @@ func (p *parser) parseBaseTableExpression() (ast.BaseTableExpressionDescription,
 }
 
 // tableReference := ident
-func (p *parser) parseTableReference() (ast.BaseTableExpressionDescription, error) {
+func (p *parser) parseTableReference() (ast.TableReferenceOrExpression, error) {
 	nameToken, err := p.parseIdent()
 	if err != nil {
 		return ast.TableReference{}, err
@@ -132,7 +132,7 @@ func (p *parser) parseTableReference() (ast.BaseTableExpressionDescription, erro
 }
 
 // selectOrValues := ( `SELECT` selectTail ) | values
-func (p *parser) parseSelectOrValues() (ast.BaseTableExpressionDescription, error) {
+func (p *parser) parseSelectOrValues() (ast.TableReferenceOrExpression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeSelect)) {
 		return p.parseSelect()
 	}
@@ -160,8 +160,8 @@ func (p *parser) parseValues() (*ast.ValuesBuilder, error) {
 
 	// TODO - support `DEFAULT` expressions
 	builder := &ast.ValuesBuilder{
-		RowFields:         rowFields,
-		AllRowExpressions: allRowExpressions,
+		Fields:      rowFields,
+		Expressions: allRowExpressions,
 	}
 
 	return builder, nil
@@ -232,12 +232,12 @@ func (p *parser) parseJoin() (ast.Join, error) {
 	}, nil
 }
 
-func joinNodes(expressions []ast.TableExpressionDescription) ast.TableExpressionDescription {
+func joinNodes(expressions []ast.TableExpression) ast.TableExpression {
 	if len(expressions) == 0 {
-		return ast.TableExpressionDescription{}
+		return ast.TableExpression{}
 	}
 
-	base := ast.AliasedBaseTableExpressionDescription{
+	base := ast.AliasedTableRefrenceOrExpression{
 		BaseTableExpression: expressions[0],
 		Alias:               nil,
 	}
@@ -250,7 +250,7 @@ func joinNodes(expressions []ast.TableExpressionDescription) ast.TableExpression
 		})
 	}
 
-	return ast.TableExpressionDescription{
+	return ast.TableExpression{
 		Base:  base,
 		Joins: joins,
 	}

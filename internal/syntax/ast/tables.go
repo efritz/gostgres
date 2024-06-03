@@ -13,14 +13,24 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-type TableDescription struct {
+type TargetTable struct {
 	Name      string
 	AliasName string
 }
 
-type BaseTableExpressionDescription interface {
+type TableReferenceOrExpression interface {
 	Builder
 	TableExpression(ctx BuildContext) (queries.Node, error)
+}
+
+type AliasedTableRefrenceOrExpression struct {
+	BaseTableExpression TableReferenceOrExpression
+	Alias               *TableAlias
+}
+
+type TableAlias struct {
+	TableAlias    string
+	ColumnAliases []string
 }
 
 type TableReference struct {
@@ -40,31 +50,21 @@ func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) 
 	return access.NewAccess(table), nil
 }
 
-type TableExpressionDescription struct {
-	Base  AliasedBaseTableExpressionDescription
+type TableExpression struct {
+	Base  AliasedTableRefrenceOrExpression
 	Joins []Join
 }
 
-type AliasedBaseTableExpressionDescription struct {
-	BaseTableExpression BaseTableExpressionDescription
-	Alias               *TableAlias
-}
-
-type TableAlias struct {
-	TableAlias    string
-	ColumnAliases []string
-}
-
 type Join struct {
-	Table     TableExpressionDescription
+	Table     TableExpression
 	Condition impls.Expression
 }
 
-func (e TableExpressionDescription) Build(ctx BuildContext) (queries.Node, error) {
+func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
 	return e.TableExpression(ctx)
 }
 
-func (e TableExpressionDescription) TableExpression(ctx BuildContext) (queries.Node, error) {
+func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error) {
 	node, err := e.Base.BaseTableExpression.TableExpression(ctx)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (e TableExpressionDescription) TableExpression(ctx BuildContext) (queries.N
 	return node, nil
 }
 
-func joinNodes(ctx BuildContext, left queries.Node, expressions []TableExpressionDescription) queries.Node {
+func joinNodes(ctx BuildContext, left queries.Node, expressions []TableExpression) queries.Node {
 	for _, expression := range expressions {
 		right, err := expression.TableExpression(ctx)
 		if err != nil {

@@ -33,9 +33,9 @@ func (p *parser) parseInsert(token tokens.Token) (ast.Builder, error) {
 	}
 
 	return &ast.InsertBuilder{
-		TableDescription:     tableDescription,
-		ColumnNames:          columnNames,
-		Node:                 node,
-		ReturningExpressions: returningExpressions,
+		Target:      tableDescription,
+		ColumnNames: columnNames,
+		Source:      node,
+		Returning:   returningExpressions,
 	}, nil
 }

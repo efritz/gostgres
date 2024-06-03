@@ -17,32 +17,32 @@ import (
 )
 
 type DeleteBuilder struct {
-	TableDescription     TableDescription
-	UsingExpressions     []TableExpressionDescription
-	WhereExpression      impls.Expression
-	ReturningExpressions []projection.ProjectionExpression
+	Target    TargetTable
+	Using     []TableExpression
+	Where     impls.Expression
+	Returning []projection.ProjectionExpression
 }
 
 func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	table, ok := ctx.Tables.Get(b.TableDescription.Name)
+	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
+		return nil, fmt.Errorf("unknown table %s", b.Target.Name)
 	}
 
 	node := access.NewAccess(table)
-	if b.TableDescription.AliasName != "" {
-		node = alias.NewAlias(node, b.TableDescription.AliasName)
+	if b.Target.AliasName != "" {
+		node = alias.NewAlias(node, b.Target.AliasName)
 	}
-	if len(b.UsingExpressions) > 0 {
-		node = joinNodes(ctx, node, b.UsingExpressions)
+	if len(b.Using) > 0 {
+		node = joinNodes(ctx, node, b.Using)
 	}
-	if b.WhereExpression != nil {
-		node = filter.NewFilter(node, b.WhereExpression)
+	if b.Where != nil {
+		node = filter.NewFilter(node, b.Where)
 	}
 
-	relationName := b.TableDescription.Name
-	if b.TableDescription.AliasName != "" {
-		relationName = b.TableDescription.AliasName
+	relationName := b.Target.Name
+	if b.Target.AliasName != "" {
+		relationName = b.Target.AliasName
 	}
 	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
@@ -53,5 +53,5 @@ func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		return nil, err
 	}
 
-	return mutation.NewDelete(node, table, b.TableDescription.AliasName, b.ReturningExpressions)
+	return mutation.NewDelete(node, table, b.Target.AliasName, b.Returning)
 }

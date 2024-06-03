@@ -21,7 +21,7 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
 		return nil, err
 	}
 
-	var fromExpressions []ast.TableExpressionDescription
+	var fromExpressions []ast.TableExpression
 	if p.advanceIf(isType(tokens.TokenTypeFrom)) {
 		fromExpressions, err = p.parseTableExpressions()
 		if err != nil {
@@ -40,11 +40,11 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
 	}
 
 	return &ast.UpdateBuilder{
-		TableDescription:     tableDescription,
-		SetExpressions:       setExpressions,
-		FromExpressions:      fromExpressions,
-		WhereExpression:      whereExpression,
-		ReturningExpressions: returningExpressions,
+		Target:    tableDescription,
+		Updates:   setExpressions,
+		From:      fromExpressions,
+		Where:     whereExpression,
+		Returning: returningExpressions,
 	}, nil
 }
 

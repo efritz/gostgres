@@ -11,7 +11,7 @@ import (
 )
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect() (ast.BaseTableExpressionDescription, error) {
+func (p *parser) parseSelect() (ast.TableReferenceOrExpression, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
@@ -28,10 +28,10 @@ func (p *parser) parseSelect() (ast.BaseTableExpressionDescription, error) {
 	}
 
 	builder := &ast.SelectBuilder{
-		SimpleSelect:    simpleSelect,
-		OrderExpression: orderExpression,
-		Limit:           limit,
-		Offset:          offset,
+		Select: simpleSelect,
+		Order:  orderExpression,
+		Limit:  limit,
+		Offset: offset,
 	}
 
 	return builder, nil
@@ -68,7 +68,7 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 	description := &ast.SimpleSelectDescription{
 		SelectExpressions: selectExpressions,
 		From:              node,
-		WhereExpression:   whereExpression,
+		Where:             whereExpression,
 		Groupings:         groupings,
 		Combinations:      combinations,
 	}
@@ -155,9 +155,9 @@ func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
 		}
 
 		description := &ast.CombinationDescription{
-			Type:                    typ,
-			Distinct:                distinct,
-			SimpleSelectDescription: unionTarget,
+			Type:     typ,
+			Distinct: distinct,
+			Select:   unionTarget,
 		}
 
 		combinations = append(combinations, description)
@@ -167,15 +167,15 @@ func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )
-func (p *parser) parseCombinationTarget() (ast.BaseTableExpressionDescription, error) {
+func (p *parser) parseCombinationTarget() (ast.TableReferenceOrExpression, error) {
 	expectParen := false
-	var parseFunc func() (ast.BaseTableExpressionDescription, error)
+	var parseFunc func() (ast.TableReferenceOrExpression, error)
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
 		parseFunc = p.parseSelectOrValues
 	} else {
-		parseFunc = func() (ast.BaseTableExpressionDescription, error) {
+		parseFunc = func() (ast.TableReferenceOrExpression, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {
 				return nil, err
 			}
@@ -186,7 +186,7 @@ func (p *parser) parseCombinationTarget() (ast.BaseTableExpressionDescription, e
 			}
 
 			builder := &ast.SelectBuilder{
-				SimpleSelect: description,
+				Select: description,
 			}
 
 			return builder, nil

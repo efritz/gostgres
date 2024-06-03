@@ -17,11 +17,11 @@ import (
 )
 
 type UpdateBuilder struct {
-	TableDescription     TableDescription
-	SetExpressions       []SetExpression
-	FromExpressions      []TableExpressionDescription
-	WhereExpression      impls.Expression
-	ReturningExpressions []projection.ProjectionExpression
+	Target    TargetTable
+	Updates   []SetExpression
+	From      []TableExpression
+	Where     impls.Expression
+	Returning []projection.ProjectionExpression
 }
 
 type SetExpression struct {
@@ -30,27 +30,27 @@ type SetExpression struct {
 }
 
 func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	table, ok := ctx.Tables.Get(b.TableDescription.Name)
+	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.TableDescription.Name)
+		return nil, fmt.Errorf("unknown table %s", b.Target.Name)
 	}
 
 	node := access.NewAccess(table)
-	if b.TableDescription.AliasName != "" {
-		node = alias.NewAlias(node, b.TableDescription.AliasName)
+	if b.Target.AliasName != "" {
+		node = alias.NewAlias(node, b.Target.AliasName)
 	}
 
-	if b.FromExpressions != nil {
-		node = joinNodes(ctx, node, b.FromExpressions)
+	if b.From != nil {
+		node = joinNodes(ctx, node, b.From)
 	}
 
-	if b.WhereExpression != nil {
-		node = filter.NewFilter(node, b.WhereExpression)
+	if b.Where != nil {
+		node = filter.NewFilter(node, b.Where)
 	}
 
-	relationName := b.TableDescription.Name
-	if b.TableDescription.AliasName != "" {
-		relationName = b.TableDescription.AliasName
+	relationName := b.Target.Name
+	if b.Target.AliasName != "" {
+		relationName = b.Target.AliasName
 	}
 	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
@@ -62,15 +62,15 @@ func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		return nil, err
 	}
 
-	node = alias.NewAlias(node, b.TableDescription.Name)
+	node = alias.NewAlias(node, b.Target.Name)
 
-	setExpressions := make([]mutation.SetExpression, len(b.SetExpressions))
-	for i, setExpression := range b.SetExpressions {
+	setExpressions := make([]mutation.SetExpression, len(b.Updates))
+	for i, setExpression := range b.Updates {
 		setExpressions[i] = mutation.SetExpression{
 			Name:       setExpression.Name,
 			Expression: setExpression.Expression,
 		}
 	}
 
-	return mutation.NewUpdate(node, table, setExpressions, b.TableDescription.AliasName, b.ReturningExpressions)
+	return mutation.NewUpdate(node, table, setExpressions, b.Target.AliasName, b.Returning)
 }

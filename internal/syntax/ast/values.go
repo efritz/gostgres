@@ -8,8 +8,8 @@ import (
 )
 
 type ValuesBuilder struct {
-	RowFields         []fields.Field
-	AllRowExpressions [][]impls.Expression
+	Fields      []fields.Field
+	Expressions [][]impls.Expression
 }
 
 func (b *ValuesBuilder) Build(ctx BuildContext) (queries.Node, error) {
@@ -17,5 +17,5 @@ func (b *ValuesBuilder) Build(ctx BuildContext) (queries.Node, error) {
 }
 
 func (b ValuesBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
-	return access.NewValues(b.RowFields, b.AllRowExpressions), nil
+	return access.NewValues(b.Fields, b.Expressions), nil
 }

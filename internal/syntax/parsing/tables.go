@@ -71,18 +71,18 @@ func (p *parser) parseTableExpression() (ast.TableExpression, error) {
 }
 
 // aliasedBaseTableExpression := baseTableExpression [ tableAlias ]
-func (p *parser) parseAliasedBaseTableExpression() (ast.AliasedTableRefrenceOrExpression, error) {
+func (p *parser) parseAliasedBaseTableExpression() (ast.AliasedTableReferenceOrExpression, error) {
 	baseTableExpression, err := p.parseBaseTableExpression()
 	if err != nil {
-		return ast.AliasedTableRefrenceOrExpression{}, err
+		return ast.AliasedTableReferenceOrExpression{}, err
 	}
 
 	alias, err := p.parseTableAlias()
 	if err != nil {
-		return ast.AliasedTableRefrenceOrExpression{}, err
+		return ast.AliasedTableReferenceOrExpression{}, err
 	}
 
-	return ast.AliasedTableRefrenceOrExpression{
+	return ast.AliasedTableReferenceOrExpression{
 		BaseTableExpression: baseTableExpression,
 		Alias:               alias,
 	}, nil
@@ -237,7 +237,7 @@ func joinNodes(expressions []ast.TableExpression) ast.TableExpression {
 		return ast.TableExpression{}
 	}
 
-	base := ast.AliasedTableRefrenceOrExpression{
+	base := ast.AliasedTableReferenceOrExpression{
 		BaseTableExpression: expressions[0],
 		Alias:               nil,
 	}

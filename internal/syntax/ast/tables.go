@@ -23,7 +23,7 @@ type TableReferenceOrExpression interface {
 	TableExpression(ctx BuildContext) (queries.Node, error)
 }
 
-type AliasedTableRefrenceOrExpression struct {
+type AliasedTableReferenceOrExpression struct {
 	BaseTableExpression TableReferenceOrExpression
 	Alias               *TableAlias
 }
@@ -51,7 +51,7 @@ func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) 
 }
 
 type TableExpression struct {
-	Base  AliasedTableRefrenceOrExpression
+	Base  AliasedTableReferenceOrExpression
 	Joins []Join
 }
 

@@ -1,4 +1,4 @@
-SELECT f.title, a.first_name || ' ' || a.last_name
+SELECT f.title, a.first_name || ' ' || a.last_name AS name
 FROM film f
 JOIN film_actor fa ON fa.film_id = f.film_id
 JOIN actor a ON a.actor_id = fa.actor_id

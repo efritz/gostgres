@@ -1,0 +1,87 @@
+`
+Query:
+
+SELECT s.name || ' (' || s.lang || ')' AS normalized_title
+FROM (
+    SELECT f.title, l.name AS language_name
+    FROM film f
+    JOIN language l ON l.language_id = f.language_id
+    ORDER BY f.title
+    LIMIT 50
+) s (name, lang);
+
+Plan:
+
+                                    query plan
+----------------------------------------------------------------------------------
+ select (s.name ||  ( || s.lang || ) as normalized_title)
+    select (s.title as name, s.language_name as lang)
+        alias as s
+            select (title, l.name as language_name)
+                limit 50
+                    join using nested loop
+                        alias as f
+                            btree index scan of film via idx_title
+                    with
+                        alias as l
+                            btree index scan of language via language_pkey
+                                index cond: language.language_id = f.language_id
+                    on l.language_id = f.language_id
+(1 rows)
+
+Results:
+
+           normalized_title
+---------------------------------------
+ ACADEMY DINOSAUR (English)
+ ACE GOLDFINGER (English)
+ ADAPTATION HOLES (English)
+ AFFAIR PREJUDICE (English)
+ AFRICAN EGG (English)
+ AGENT TRUMAN (English)
+ AIRPLANE SIERRA (English)
+ AIRPORT POLLOCK (English)
+ ALABAMA DEVIL (English)
+ ALADDIN CALENDAR (English)
+ ALAMO VIDEOTAPE (English)
+ ALASKA PHANTOM (English)
+ ALI FOREVER (English)
+ ALICE FANTASIA (English)
+ ALIEN CENTER (English)
+ ALLEY EVOLUTION (English)
+ ALONE TRIP (English)
+ ALTER VICTORY (English)
+ AMADEUS HOLY (English)
+ AMELIE HELLFIGHTERS (English)
+ AMERICAN CIRCUS (English)
+ AMISTAD MIDSUMMER (English)
+ ANACONDA CONFESSIONS (English)
+ ANALYZE HOOSIERS (English)
+ ANGELS LIFE (English)
+ ANNIE IDENTITY (English)
+ ANONYMOUS HUMAN (English)
+ ANTHEM LUKE (English)
+ ANTITRUST TOMATOES (English)
+ ANYTHING SAVANNAH (English)
+ APACHE DIVINE (English)
+ APOCALYPSE FLAMINGOS (English)
+ APOLLO TEEN (English)
+ ARABIA DOGMA (English)
+ ARACHNOPHOBIA ROLLERCOASTER (English)
+ ARGONAUTS TOWN (English)
+ ARIZONA BANG (English)
+ ARK RIDGEMONT (English)
+ ARMAGEDDON LOST (English)
+ ARMY FLINTSTONES (English)
+ ARSENIC INDEPENDENCE (English)
+ ARTIST COLDBLOODED (English)
+ ATLANTIS CAUSE (English)
+ ATTACKS HATE (English)
+ ATTRACTION NEWTON (English)
+ AUTUMN CROW (English)
+ BABY HALL (English)
+ BACKLASH UNDEFEATED (English)
+ BADMAN DAWN (English)
+ BAKED CLEOPATRA (English)
+(50 rows)
+`

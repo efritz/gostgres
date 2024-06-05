@@ -18,7 +18,7 @@ func (p *parser) initDDLParsers() {
 
 func (p *parser) initStatementParsers() {
 	p.explainableParsers = explainableParsers{
-		tokens.TokenTypeSelect: func(_ tokens.Token) (ast.Builder, error) { return p.parseSelect() },
+		tokens.TokenTypeSelect: p.parseSelectBuilder,
 		tokens.TokenTypeInsert: p.parseInsert,
 		tokens.TokenTypeUpdate: p.parseUpdate,
 		tokens.TokenTypeDelete: p.parseDelete,

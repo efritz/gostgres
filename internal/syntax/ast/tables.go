@@ -19,8 +19,15 @@ type TargetTable struct {
 }
 
 type TableReferenceOrExpression interface {
-	Builder
 	TableExpression(ctx BuildContext) (queries.Node, error)
+}
+
+type TableReferenceOrExpressionBuilder struct {
+	TableReferenceOrExpression
+}
+
+func (r TableReferenceOrExpressionBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	return r.TableExpression(ctx)
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -35,10 +42,6 @@ type TableAlias struct {
 
 type TableReference struct {
 	Name string
-}
-
-func (r TableReference) Build(ctx BuildContext) (queries.Node, error) {
-	return r.TableExpression(ctx)
 }
 
 func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {

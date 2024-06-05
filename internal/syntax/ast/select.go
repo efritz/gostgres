@@ -97,7 +97,7 @@ func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.Select.Build(ctx)
+			right, err := c.Select.TableExpression(ctx)
 			if err != nil {
 				return nil, err
 			}

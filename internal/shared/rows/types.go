@@ -8,9 +8,6 @@ import (
 
 func refineTypes(refinableFields []fields.Field, values []any) ([]fields.Field, []any, error) {
 	if len(refinableFields) != len(values) {
-		fmt.Printf("> %#v\n", refinableFields)
-		fmt.Printf("> %#v\n", values)
-
 		return nil, nil, fmt.Errorf("unexpected number of columns")
 	}
 

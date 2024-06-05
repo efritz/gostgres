@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
 	"github.com/efritz/gostgres/internal/execution/queries/alias"
@@ -20,7 +21,7 @@ type DeleteBuilder struct {
 	Target    TargetTable
 	Using     []TableExpression
 	Where     impls.Expression
-	Returning []projection.ProjectionExpression
+	Returning []projector.ProjectionExpression
 }
 
 func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
@@ -46,8 +47,8 @@ func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	}
 	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
 
-	node, err := projection.NewProjection(node, []projection.ProjectionExpression{
-		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
+	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
+		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
 	})
 	if err != nil {
 		return nil, err

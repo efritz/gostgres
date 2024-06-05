@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -20,8 +20,8 @@ import (
 type hashAggregate struct {
 	queries.Node
 	groupExpressions  []impls.Expression
-	selectExpressions []projection.ProjectionExpression
-	projector         *projection.Projector
+	selectExpressions []projector.ProjectionExpression
+	projector         *projector.Projector
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -29,9 +29,9 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	selectExpressions []projection.ProjectionExpression,
+	selectExpressions []projector.ProjectionExpression,
 ) queries.Node {
-	projector, err := projection.NewProjector(node.Name(), node.Fields(), selectExpressions)
+	projector, err := projector.NewProjector(node.Name(), node.Fields(), selectExpressions)
 	if err != nil {
 		panic(err.Error()) // TODO
 	}
@@ -97,7 +97,7 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	var groupedFields []fields.Field
 	var exprs []impls.Expression
 	for _, selectExpression := range n.selectExpressions {
-		expr, alias, ok := projection.UnwrapAlias(selectExpression)
+		expr, alias, ok := projector.UnwrapAlias(selectExpression)
 		if !ok {
 			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 		}

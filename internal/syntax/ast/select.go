@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/aggregate"
 	"github.com/efritz/gostgres/internal/execution/queries/combination"
@@ -25,7 +26,7 @@ type SelectBuilder struct {
 }
 
 type SimpleSelectDescription struct {
-	SelectExpressions []projection.ProjectionExpression
+	SelectExpressions []projector.ProjectionExpression
 	From              TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
@@ -55,7 +56,7 @@ func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 	if b.Select.Groupings != nil {
 	selectLoop:
 		for _, selectExpression := range b.Select.SelectExpressions {
-			expression, alias, ok := projection.UnwrapAlias(selectExpression)
+			expression, alias, ok := projector.UnwrapAlias(selectExpression)
 			if !ok {
 				return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 			}

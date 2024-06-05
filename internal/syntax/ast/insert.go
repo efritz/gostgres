@@ -3,16 +3,16 @@ package ast
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 )
 
 type InsertBuilder struct {
 	Target      TargetTable
 	ColumnNames []string
 	Source      TableReferenceOrExpression
-	Returning   []projection.ProjectionExpression
+	Returning   []projector.ProjectionExpression
 }
 
 func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {

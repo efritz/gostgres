@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -18,7 +18,7 @@ type updateNode struct {
 	table          impls.Table
 	setExpressions []SetExpression
 	columnNames    []string
-	projector      *projection.Projector
+	projector      *projector.Projector
 }
 
 var _ queries.Node = &updateNode{}
@@ -28,7 +28,7 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpression, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpression, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -40,7 +40,7 @@ func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpress
 		}
 	}
 
-	projector, err := projection.NewProjector(node.Name(), fields, expressions)
+	projector, err := projector.NewProjector(node.Name(), fields, expressions)
 	if err != nil {
 		return nil, err
 	}

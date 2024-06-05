@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // basicType := ident
@@ -38,7 +39,7 @@ func (p *parser) parseBasicType() (types.Type, error) {
 		typ = types.TypeBool
 		// TODO - use multi-phrase keyword(s)
 	case "timestamp":
-		if !p.advanceIf(isIdent("with"), isIdent("time"), isIdent("zone")) {
+		if !p.advanceIf(isType(tokens.TokenTypeWith), isIdent("time"), isIdent("zone")) {
 			return types.TypeUnknown, fmt.Errorf("unknown type %q", "timestamp")
 		}
 		typ = types.TypeTimestampTz

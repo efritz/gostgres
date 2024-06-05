@@ -151,7 +151,7 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 		return rows.Row{}, false, nil
 	}
 
-	for _, index := range t.indexes {
+	for _, index := range t.Indexes() {
 		if err := index.Delete(fullRow); err != nil {
 			return rows.Row{}, false, err
 		}

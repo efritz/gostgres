@@ -48,7 +48,7 @@ type TableReference struct {
 func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {
 	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", r.Name)
+		return nil, fmt.Errorf("unknown table %q", r.Name)
 	}
 
 	return access.NewAccess(table), nil

@@ -33,7 +33,7 @@ type SetExpression struct {
 func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %s", b.Target.Name)
+		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
 	}
 
 	node := access.NewAccess(table)

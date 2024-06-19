@@ -3,15 +3,14 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 type parser struct {
 	tokens                  []tokens.Token
 	cursor                  int
-	tables                  TableGetter
 	ddlParsers              ddlParsers
 	createParsers           createParsers
 	alterParsers            alterParsers
@@ -22,27 +21,22 @@ type parser struct {
 	infixParsers            infixParsers
 }
 
-type TableGetter interface {
-	Get(name string) (impls.Table, bool)
-}
-
 type tokenFilterFunc func(token tokens.Token) bool
 type prefixParserFunc func(token tokens.Token) (impls.Expression, error)
 type infixParserFunc func(left impls.Expression, token tokens.Token) (impls.Expression, error)
 
-type ddlParsers map[tokens.TokenType]func(token tokens.Token) (queries.Query, error)
-type createParsers map[tokens.TokenType]func() (queries.Query, error)
-type alterParsers map[tokens.TokenType]func() (queries.Query, error)
-type addConstraintParsers map[tokens.TokenType]func(name, tableName string) (queries.Query, error)
+type ddlParsers map[tokens.TokenType]func(token tokens.Token) (Query, error)
+type createParsers map[tokens.TokenType]func() (Query, error)
+type alterParsers map[tokens.TokenType]func() (Query, error)
+type addConstraintParsers map[tokens.TokenType]func(name, tableName string) (Query, error)
 type columnConstraintParsers map[tokens.TokenType]func(columnName, tableName string, description *columnDescription) error
-type explainableParsers map[tokens.TokenType]func(token tokens.Token) (queries.Node, error)
+type explainableParsers map[tokens.TokenType]func(token tokens.Token) (ast.Builder, error)
 type prefixParsers map[tokens.TokenType]prefixParserFunc
 type infixParsers map[tokens.TokenType]infixParserFunc
 
-func newParser(tokenStream []tokens.Token, tables TableGetter) *parser {
+func newParser(tokenStream []tokens.Token) *parser {
 	p := &parser{
 		tokens: tokenStream,
-		tables: tables,
 	}
 
 	p.initAlterParsers()

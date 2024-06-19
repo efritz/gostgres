@@ -1,8 +1,7 @@
 package projection
 
 import (
-	"slices"
-
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -13,13 +12,13 @@ import (
 
 type projectionNode struct {
 	queries.Node
-	projector *Projector
+	projector *projector.Projector
 }
 
 var _ queries.Node = &projectionNode{}
 
-func NewProjection(node queries.Node, expressions []ProjectionExpression) (queries.Node, error) {
-	projector, err := NewProjector(node.Name(), node.Fields(), expressions)
+func NewProjection(node queries.Node, expressions []projector.ProjectionExpression) (queries.Node, error) {
+	projector, err := projector.NewProjector(node.Name(), node.Fields(), expressions)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +30,7 @@ func NewProjection(node queries.Node, expressions []ProjectionExpression) (queri
 }
 
 func (n *projectionNode) Fields() []fields.Field {
-	return slices.Clone(n.projector.projectedFields)
+	return n.projector.Fields()
 }
 
 func (n *projectionNode) Serialize(w serialization.IndentWriter) {
@@ -40,12 +39,12 @@ func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 }
 
 func (n *projectionNode) AddFilter(filter impls.Expression) {
-	n.Node.AddFilter(n.projector.projectExpression(filter))
+	n.Node.AddFilter(n.projector.ProjectExpression(filter))
 }
 
 func (n *projectionNode) AddOrder(order impls.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
-		return n.projector.projectExpression(expression)
+		return n.projector.ProjectExpression(expression)
 	}))
 }
 
@@ -60,7 +59,7 @@ func (n *projectionNode) Filter() impls.Expression {
 		return nil
 	}
 
-	return n.projector.deprojectExpression(filter)
+	return n.projector.DeprojectExpression(filter)
 }
 
 func (n *projectionNode) Ordering() impls.OrderExpression {
@@ -70,7 +69,7 @@ func (n *projectionNode) Ordering() impls.OrderExpression {
 	}
 
 	return ordering.Map(func(expression impls.Expression) impls.Expression {
-		return n.projector.deprojectExpression(expression)
+		return n.projector.DeprojectExpression(expression)
 	})
 }
 

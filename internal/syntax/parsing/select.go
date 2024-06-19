@@ -1,114 +1,106 @@
 package parsing
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/aggregate"
-	"github.com/efritz/gostgres/internal/execution/queries/combination"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/limit"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
+func (p *parser) parseSelectBuilder(_ tokens.Token) (ast.Builder, error) {
+	expr, err := p.parseSelect()
+	if err != nil {
+		return nil, err
+	}
+
+	return ast.TableReferenceOrExpressionBuilder{
+		TableReferenceOrExpression: expr,
+	}, nil
+}
+
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect(token tokens.Token) (queries.Node, error) {
-	node, selectExpressions, err := p.parseSimpleSelect()
+func (p *parser) parseSelect() (ast.TableReferenceOrExpression, error) {
+	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err
 	}
 
-	if orderExpression, hasOrder, err := p.parseOrderBy(); err != nil {
-		return nil, err
-	} else if hasOrder {
-		node = order.NewOrder(node, orderExpression)
-	}
-
-	node, err = p.parseLimitOffset(node)
+	orderExpression, _, err := p.parseOrderBy()
 	if err != nil {
 		return nil, err
 	}
 
-	if selectExpressions != nil {
-		return projection.NewProjection(node, selectExpressions)
+	limit, offset, err := p.parseLimitOffset()
+	if err != nil {
+		return nil, err
 	}
 
-	return node, nil
+	builder := &ast.SelectBuilder{
+		Select: simpleSelect,
+		Order:  orderExpression,
+		Limit:  limit,
+		Offset: offset,
+	}
+
+	return builder, nil
 }
 
 // simpleSelect := selectExpressions from where groupBy combinedQuery
-func (p *parser) parseSimpleSelect() (queries.Node, []projection.ProjectionExpression, error) {
+func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// TODO - make from optional
 	node, err := p.parseFrom()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	whereExpression, hasWhere, err := p.parseWhere()
+	whereExpression, _, err := p.parseWhere()
 	if err != nil {
-		return nil, nil, err
-	}
-	if hasWhere {
-		node = filter.NewFilter(node, whereExpression)
+		return nil, err
 	}
 
-	groupings, hasGroupings, err := p.parseGroupBy()
+	groupings, _, err := p.parseGroupBy()
 	if err != nil {
-		return nil, nil, err
-	}
-	if hasGroupings {
-	selectLoop:
-		for _, selectExpression := range selectExpressions {
-			expression, alias, ok := projection.UnwrapAlias(selectExpression)
-			if !ok {
-				return nil, nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
-			}
-
-			if len(expressions.Fields(expression)) > 0 {
-				for _, grouping := range groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
-						continue selectLoop
-					}
-				}
-
-				// TODO - more lenient validation
-				// return nil, nil, fmt.Errorf("%q not in group by", expression)
-			}
-		}
-
-		node = aggregate.NewHashAggregate(node, groupings, selectExpressions)
-		selectExpressions = nil
+		return nil, err
 	}
 
-	return p.parseCombinedQuery(node, selectExpressions)
+	combinations, err := p.parseCombinedQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	description := &ast.SimpleSelectDescription{
+		SelectExpressions: selectExpressions,
+		From:              node,
+		Where:             whereExpression,
+		Groupings:         groupings,
+		Combinations:      combinations,
+	}
+
+	return description, nil
 }
 
 // selectExpressions := `*` | ( selectExpression [, ...] )
-func (p *parser) parseSelectExpressions() (aliasedExpressions []projection.ProjectionExpression, _ error) {
+func (p *parser) parseSelectExpressions() (aliasedExpressions []projector.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
-		return []projection.ProjectionExpression{projection.NewWildcardProjectionExpression()}, nil
+		return []projector.ProjectionExpression{projector.NewWildcardProjectionExpression()}, nil
 	}
 
 	return parseCommaSeparatedList(p, p.parseSelectExpression)
 }
 
 // selectExpression := ( ident `.` `*` ) | ( expression alias )
-func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error) {
+func (p *parser) parseSelectExpression() (projector.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
-		return projection.NewTableWildcardProjectionExpression(nameToken.Text), nil
+		return projector.NewTableWildcardProjectionExpression(nameToken.Text), nil
 	}
 
 	expression, err := p.parseRootExpression()
@@ -130,7 +122,7 @@ func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error
 		alias = "?column?"
 	}
 
-	return projection.NewAliasProjectionExpression(expression, alias), nil
+	return projector.NewAliasProjectionExpression(expression, alias), nil
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]
@@ -149,15 +141,14 @@ func (p *parser) parseGroupBy() ([]impls.Expression, bool, error) {
 }
 
 // combinedQuery := [ ( ( `UNION` | `INTERSECT` | `EXCEPT` ) [ ( `ALL` | `DISTINCT` ) ] combinationTarget ) [, ...] ]
-func (p *parser) parseCombinedQuery(node queries.Node, selectExpressions []projection.ProjectionExpression) (queries.Node, []projection.ProjectionExpression, error) {
+func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
+	var combinations []*ast.CombinationDescription
 	for {
-		var factory func(left, right queries.Node, distinct bool) (queries.Node, error)
+		typ := p.current().Type
+
 		if p.advanceIf(isType(tokens.TokenTypeUnion)) {
-			factory = combination.NewUnion
 		} else if p.advanceIf(isType(tokens.TokenTypeIntersect)) {
-			factory = combination.NewIntersect
 		} else if p.advanceIf(isType(tokens.TokenTypeExcept)) {
-			factory = combination.NewExcept
 		} else {
 			break
 		}
@@ -171,48 +162,45 @@ func (p *parser) parseCombinedQuery(node queries.Node, selectExpressions []proje
 
 		unionTarget, err := p.parseCombinationTarget()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		if selectExpressions != nil {
-			node, err = projection.NewProjection(node, selectExpressions)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			selectExpressions = nil
+		description := &ast.CombinationDescription{
+			Type:     typ,
+			Distinct: distinct,
+			Select:   unionTarget,
 		}
 
-		node, err = factory(node, unionTarget, distinct)
-		if err != nil {
-			return nil, nil, err
-		}
-
+		combinations = append(combinations, description)
 	}
 
-	return node, selectExpressions, nil
+	return combinations, nil
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )
-func (p *parser) parseCombinationTarget() (queries.Node, error) {
+func (p *parser) parseCombinationTarget() (ast.TableReferenceOrExpression, error) {
 	expectParen := false
-	var parseFunc func() (queries.Node, error)
+	var parseFunc func() (ast.TableReferenceOrExpression, error)
 
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		expectParen = true
 		parseFunc = p.parseSelectOrValues
 	} else {
-		parseFunc = func() (queries.Node, error) {
+		parseFunc = func() (ast.TableReferenceOrExpression, error) {
 			if _, err := p.mustAdvance(isType(tokens.TokenTypeSelect)); err != nil {
 				return nil, err
 			}
 
-			node, selectExpressions, err := p.parseSimpleSelect()
+			description, err := p.parseSimpleSelect()
 			if err != nil {
 				return nil, err
 			}
 
-			return projection.NewProjection(node, selectExpressions)
+			builder := &ast.SelectBuilder{
+				Select: description,
+			}
+
+			return builder, nil
 		}
 	}
 
@@ -248,24 +236,20 @@ func (p *parser) parseOrderBy() (impls.OrderExpression, bool, error) {
 }
 
 // limitOffset := limit offset
-func (p *parser) parseLimitOffset(node queries.Node) (queries.Node, error) {
-	limitValue, hasLimit, err := p.parseLimit()
-	if err != nil {
-		return nil, err
-	}
-	offsetValue, hasOffset, err := p.parseOffset()
-	if err != nil {
-		return nil, err
+func (p *parser) parseLimitOffset() (limit, offset *int, _ error) {
+	if limitValue, hasLimit, err := p.parseLimit(); err != nil {
+		return nil, nil, err
+	} else if hasLimit {
+		limit = &limitValue
 	}
 
-	if hasOffset {
-		node = limit.NewOffset(node, offsetValue)
-	}
-	if hasLimit {
-		node = limit.NewLimit(node, limitValue)
+	if offsetValue, hasOffset, err := p.parseOffset(); err != nil {
+		return nil, nil, err
+	} else if hasOffset {
+		offset = &offsetValue
 	}
 
-	return node, nil
+	return limit, offset, nil
 }
 
 // limit := [ `LIMIT` expression ]
@@ -274,6 +258,7 @@ func (p *parser) parseLimit() (int, bool, error) {
 		return 0, false, nil
 	}
 
+	// TODO - can be arbitrary expression
 	limitToken, err := p.mustAdvance(isType(tokens.TokenTypeNumber))
 	if err != nil {
 		return 0, false, err
@@ -289,6 +274,7 @@ func (p *parser) parseOffset() (int, bool, error) {
 		return 0, false, nil
 	}
 
+	// TODO - can be arbitrary expression
 	limitToken, err := p.mustAdvance(isType(tokens.TokenTypeNumber))
 	if err != nil {
 		return 0, false, err

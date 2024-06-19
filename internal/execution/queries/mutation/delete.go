@@ -3,8 +3,8 @@ package mutation
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -16,12 +16,12 @@ type deleteNode struct {
 	queries.Node
 	table       impls.Table
 	columnNames []string
-	projector   *projection.Projector
+	projector   *projector.Projector
 }
 
 var _ queries.Node = &deleteNode{}
 
-func NewDelete(node queries.Node, table impls.Table, alias string, expressions []projection.ProjectionExpression) (queries.Node, error) {
+func NewDelete(node queries.Node, table impls.Table, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -33,7 +33,7 @@ func NewDelete(node queries.Node, table impls.Table, alias string, expressions [
 		}
 	}
 
-	projector, err := projection.NewProjector(node.Name(), fields, expressions)
+	projector, err := projector.NewProjector(node.Name(), fields, expressions)
 	if err != nil {
 		return nil, err
 	}

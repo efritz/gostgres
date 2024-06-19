@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/explain"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -17,7 +18,7 @@ func (p *parser) initDDLParsers() {
 
 func (p *parser) initStatementParsers() {
 	p.explainableParsers = explainableParsers{
-		tokens.TokenTypeSelect: p.parseSelect,
+		tokens.TokenTypeSelect: p.parseSelectBuilder,
 		tokens.TokenTypeInsert: p.parseInsert,
 		tokens.TokenTypeUpdate: p.parseUpdate,
 		tokens.TokenTypeDelete: p.parseDelete,
@@ -27,7 +28,7 @@ func (p *parser) initStatementParsers() {
 // statement := ddlStatement | ( [ `EXPLAIN` ] explainableStatement )
 // ddlStatement := ( `CREATE` createTail ) | ( `ALTER` alterTail )
 // explainableStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
-func (p *parser) parseStatement() (Query, error) {
+func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
@@ -43,7 +44,12 @@ func (p *parser) parseStatement() (Query, error) {
 	for tokenType, parser := range p.explainableParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
-			node, err := parser(token)
+			builder, err := parser(token)
+			if err != nil {
+				return nil, err
+			}
+
+			node, err := builder.Build(ctx)
 			if err != nil {
 				return nil, err
 			}

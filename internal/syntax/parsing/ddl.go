@@ -3,7 +3,6 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -11,12 +10,12 @@ func (p *parser) initCreateParsers() {
 	p.createParsers = createParsers{
 		tokens.TokenTypeTable:    p.parseCreateTable,
 		tokens.TokenTypeSequence: p.parseCreateSequence,
-		tokens.TokenTypeIndex:    func() (queries.Query, error) { return p.parseCreateIndex(false) },
+		tokens.TokenTypeIndex:    func() (Query, error) { return p.parseCreateIndex(false) },
 	}
 }
 
 // createTail := ( `TABLE` createTableTail ) | ( `SEQUENCE` createSequenceTail ) | ( [ `UNIQUE` ] `INDEX` createIndexTail )
-func (p *parser) parseCreate(token tokens.Token) (queries.Query, error) {
+func (p *parser) parseCreate(token tokens.Token) (Query, error) {
 	for tokenType, parser := range p.createParsers {
 		if p.advanceIf(isType(tokenType)) {
 			return parser()
@@ -38,7 +37,7 @@ func (p *parser) initAlterParsers() {
 }
 
 // alterTail := `TABLE` alterTableTail
-func (p *parser) parseAlter(token tokens.Token) (queries.Query, error) {
+func (p *parser) parseAlter(token tokens.Token) (Query, error) {
 	for tokenType, parser := range p.alterParsers {
 		if p.advanceIf(isType(tokenType)) {
 			return parser()

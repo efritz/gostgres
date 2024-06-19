@@ -7,6 +7,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/protocol"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -14,9 +15,9 @@ type Query interface {
 	Execute(ctx impls.Context, w protocol.ResponseWriter)
 }
 
-func Parse(tokenStream []tokens.Token, tables TableGetter) (Query, error) {
-	parser := newParser(tokenStream, tables)
-	statement, err := parser.parseStatement()
+func Parse(ctx ast.BuildContext, tokenStream []tokens.Token) (Query, error) {
+	parser := newParser(tokenStream)
+	statement, err := parser.parseStatement(ctx)
 	if err != nil {
 		return nil, err
 	}

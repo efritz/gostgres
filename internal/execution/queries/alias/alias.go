@@ -4,8 +4,8 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -49,7 +49,7 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 
 func (n *aliasNode) AddFilter(filter impls.Expression) {
 	for _, field := range n.fields {
-		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
+		filter = projector.Alias(filter, field, namedFromField(field, n.Node.Name()))
 	}
 
 	n.Node.AddFilter(filter)
@@ -58,7 +58,7 @@ func (n *aliasNode) AddFilter(filter impls.Expression) {
 func (n *aliasNode) AddOrder(order impls.OrderExpression) {
 	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
 		for _, field := range n.fields {
-			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
+			expression = projector.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
 
 		return expression
@@ -76,7 +76,7 @@ func (n *aliasNode) Filter() impls.Expression {
 	}
 
 	for _, field := range expressions.Fields(filter) {
-		filter = projection.Alias(filter, field, namedFromField(field, n.name))
+		filter = projector.Alias(filter, field, namedFromField(field, n.name))
 	}
 
 	return filter
@@ -90,7 +90,7 @@ func (n *aliasNode) Ordering() impls.OrderExpression {
 
 	return ordering.Map(func(expression impls.Expression) impls.Expression {
 		for _, field := range expressions.Fields(expression) {
-			expression = projection.Alias(expression, field, namedFromField(field, n.name))
+			expression = projector.Alias(expression, field, namedFromField(field, n.name))
 		}
 
 		return expression

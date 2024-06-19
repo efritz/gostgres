@@ -1,28 +1,15 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/alias"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/mutation"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
-	"github.com/efritz/gostgres/internal/shared/rows"
-	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
-func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
-	table, name, aliasName, err := p.parseTable()
+func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
+	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
-	}
-	node := access.NewAccess(table)
-	if aliasName != "" {
-		node = alias.NewAlias(node, aliasName)
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeSet)); err != nil {
@@ -34,47 +21,35 @@ func (p *parser) parseUpdate(token tokens.Token) (queries.Node, error) {
 		return nil, err
 	}
 
+	var fromExpressions []ast.TableExpression
 	if p.advanceIf(isType(tokens.TokenTypeFrom)) {
-		fromExpressions, err := p.parseTableExpressions()
+		fromExpressions, err = p.parseTableExpressions()
 		if err != nil {
 			return nil, err
 		}
-		node = joinNodes(append([]queries.Node{node}, fromExpressions...))
 	}
 
-	whereExpression, hasWhere, err := p.parseWhere()
-	if err != nil {
-		return nil, err
-	}
-	if hasWhere {
-		node = filter.NewFilter(node, whereExpression)
-	}
-
-	returningExpressions, err := p.parseReturning(name)
+	whereExpression, _, err := p.parseWhere()
 	if err != nil {
 		return nil, err
 	}
 
-	relationName := name
-	if aliasName != "" {
-		relationName = aliasName
-	}
-	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
-
-	node, err = projection.NewProjection(node, []projection.ProjectionExpression{
-		projection.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
-		projection.NewTableWildcardProjectionExpression(relationName),
-	})
+	returningExpressions, err := p.parseReturning(tableDescription.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	node = alias.NewAlias(node, name)
-	return mutation.NewUpdate(node, table, setExpressions, aliasName, returningExpressions)
+	return &ast.UpdateBuilder{
+		Target:    tableDescription,
+		Updates:   setExpressions,
+		From:      fromExpressions,
+		Where:     whereExpression,
+		Returning: returningExpressions,
+	}, nil
 }
 
 // setExpression := ident `=` expression
-func (p *parser) parseSetExpression() (mutation.SetExpression, error) {
+func (p *parser) parseSetExpression() (ast.SetExpression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		// TODO - support sub-select
 		// TODO - support row values
@@ -83,19 +58,19 @@ func (p *parser) parseSetExpression() (mutation.SetExpression, error) {
 
 	name, err := p.parseIdent()
 	if err != nil {
-		return mutation.SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeEquals)); err != nil {
-		return mutation.SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
 	expr, err := p.parseRootExpression()
 	if err != nil {
-		return mutation.SetExpression{}, err
+		return ast.SetExpression{}, err
 	}
 
-	return mutation.SetExpression{
+	return ast.SetExpression{
 		Name:       name,
 		Expression: expr,
 	}, nil

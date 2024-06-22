@@ -14,10 +14,10 @@ Plan:
 
                                     query plan
 ----------------------------------------------------------------------------------
- select (s.name ||  ( || s.lang || ) as normalized_title)
-    select (s.title as name, s.language_name as lang)
+ select (s.name ||  ( || s.lang || ) as "normalized_title")
+    select (s.title as "name", s.language_name as "lang")
         alias as s
-            select (title, l.name as language_name)
+            select (title, l.name as "language_name")
                 limit 50
                     join using nested loop
                         alias as f

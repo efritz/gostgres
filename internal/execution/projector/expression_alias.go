@@ -9,30 +9,37 @@ import (
 )
 
 type aliasProjectionExpression struct {
-	expression impls.Expression
-	alias      string
+	expression   impls.Expression
+	relationName string
+	aliasName    string
 }
 
-func NewAliasProjectionExpression(expression impls.Expression, alias string) ProjectionExpression {
+func NewAliasProjectionExpression(expression impls.Expression, aliasName string) ProjectionExpression {
 	return aliasProjectionExpression{
 		expression: expression,
-		alias:      alias,
+		aliasName:  aliasName,
 	}
 }
 
 func (p aliasProjectionExpression) String() string {
-	return fmt.Sprintf("%s as %s", p.expression, p.alias)
+	name := fmt.Sprintf("%q", p.aliasName)
+	if p.relationName != "" {
+		name = fmt.Sprintf("%q.%q", p.relationName, p.aliasName)
+	}
+
+	return fmt.Sprintf("%s as %s", p.expression, name)
 }
 
-func (p aliasProjectionExpression) Dealias(name string, fields []fields.Field, alias string) ProjectionExpression {
+func (p aliasProjectionExpression) Dealias(relationName string, fields []fields.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
-		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
+		expression = Alias(expression, field.WithRelationName(relationName), expressions.NewNamed(field))
 	}
 
 	return aliasProjectionExpression{
-		expression: expression,
-		alias:      p.alias,
+		expression:   expression,
+		relationName: relationName,
+		aliasName:    p.aliasName,
 	}
 }
 
@@ -57,10 +64,10 @@ func Alias(e impls.Expression, field fields.Field, target impls.Expression) impl
 	})
 }
 
-func UnwrapAlias(e ProjectionExpression) (impls.Expression, string, bool) {
+func UnwrapAlias(e ProjectionExpression) (impls.Expression, string, string, bool) {
 	if alias, ok := e.(aliasProjectionExpression); ok {
-		return alias.expression, alias.alias, true
+		return alias.expression, alias.relationName, alias.aliasName, true
 	}
 
-	return nil, "", false
+	return nil, "", "", false
 }

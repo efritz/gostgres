@@ -56,14 +56,14 @@ func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 	if b.Select.Groupings != nil {
 	selectLoop:
 		for _, selectExpression := range b.Select.SelectExpressions {
-			expression, alias, ok := projector.UnwrapAlias(selectExpression)
+			expression, relationName, aliasName, ok := projector.UnwrapAlias(selectExpression)
 			if !ok {
 				return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 			}
 
 			if len(expressions.Fields(expression)) > 0 {
 				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
+					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField(relationName, aliasName, types.TypeAny))) {
 						continue selectLoop
 					}
 				}

@@ -19,9 +19,8 @@ type TargetTable struct {
 	AliasName string
 }
 
-// TODO - can we get rid of this iface?
 type TableReferenceOrExpression interface {
-	TableExpression()
+	TableExpression() // TODO - necessary marker?
 	ResolverBuilder
 }
 
@@ -36,22 +35,29 @@ type TableAlias struct {
 }
 
 type TableReference struct {
-	Name string
+	Name  string
+	table impls.Table
 }
 
-func (r TableReference) Resolve(ctx ResolveContext) error {
-	return fmt.Errorf("table reference resolve unimplemented")
-}
+func (r *TableReference) TableExpression() {}
 
-func (r TableReference) TableExpression() {}
-
-func (r TableReference) Build(ctx BuildContext) (queries.Node, error) {
+func (r *TableReference) Resolve(ctx ResolveContext) ([]fields.Field, error) {
 	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
 		return nil, fmt.Errorf("unknown table %q", r.Name)
 	}
+	r.table = table
 
-	return access.NewAccess(table), nil
+	var fields []fields.Field
+	for _, f := range table.Fields() {
+		fields = append(fields, f.Field)
+	}
+
+	return fields, nil
+}
+
+func (r *TableReference) Build() (queries.Node, error) {
+	return access.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -64,14 +70,29 @@ type Join struct {
 	Condition impls.Expression
 }
 
-func (e TableExpression) Resolve(ctx ResolveContext) error {
-	return fmt.Errorf("table expression resolve unimplemented")
-}
-
 func (e TableExpression) TableExpression() {}
 
-func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
-	node, err := e.Base.BaseTableExpression.Build(ctx)
+func (e TableExpression) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+	fields, err := e.Base.BaseTableExpression.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_ = e.Base.Alias // TODO
+
+	for _, j := range e.Joins {
+		fields2, err := j.Table.Resolve(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		fields = append(fields, fields2...)
+	}
+
+	return fields, nil
+}
+
+func (e TableExpression) Build() (queries.Node, error) {
+	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +128,8 @@ func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
 	}
 
 	for _, j := range e.Joins {
-		right, err := j.Table.Build(ctx)
+
+		right, err := j.Table.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -118,9 +140,9 @@ func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
 	return node, nil
 }
 
-func joinNodes(ctx BuildContext, left queries.Node, expressions []TableExpression) queries.Node {
+func joinNodes(left queries.Node, expressions []TableExpression) queries.Node {
 	for _, expression := range expressions {
-		right, err := expression.Build(ctx)
+		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}

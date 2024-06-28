@@ -30,15 +30,16 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Resolve(ctx ResolveContext) error {
-	return fmt.Errorf("update resolve unimplemented")
+func (b *UpdateBuilder) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+	return nil, fmt.Errorf("update resolve unimplemented")
 }
 
-func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	table, ok := ctx.Tables.Get(b.Target.Name)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
-	}
+func (b *UpdateBuilder) Build() (queries.Node, error) {
+	// table, ok := ctx.Tables.Get(b.Target.Name)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+	// }
+	var table impls.Table // TODO
 
 	node := access.NewAccess(table)
 	if b.Target.AliasName != "" {
@@ -46,7 +47,7 @@ func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	}
 
 	if b.From != nil {
-		node = joinNodes(ctx, node, b.From)
+		node = joinNodes(node, b.From)
 	}
 
 	if b.Where != nil {

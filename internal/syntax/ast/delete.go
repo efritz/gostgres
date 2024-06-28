@@ -24,22 +24,23 @@ type DeleteBuilder struct {
 	Returning []projector.ProjectionExpression
 }
 
-func (b *DeleteBuilder) Resolve(ctx ResolveContext) error {
-	return fmt.Errorf("delete resolve unimplemented")
+func (b *DeleteBuilder) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+	return nil, fmt.Errorf("delete resolve unimplemented")
 }
 
-func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	table, ok := ctx.Tables.Get(b.Target.Name)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
-	}
+func (b *DeleteBuilder) Build() (queries.Node, error) {
+	// table, ok := ctx.Tables.Get(b.Target.Name)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+	// }
+	var table impls.Table // TODO
 
 	node := access.NewAccess(table)
 	if b.Target.AliasName != "" {
 		node = alias.NewAlias(node, b.Target.AliasName)
 	}
 	if len(b.Using) > 0 {
-		node = joinNodes(ctx, node, b.Using)
+		node = joinNodes(node, b.Using)
 	}
 	if b.Where != nil {
 		node = filter.NewFilter(node, b.Where)

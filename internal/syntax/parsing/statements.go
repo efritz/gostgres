@@ -28,7 +28,7 @@ func (p *parser) initStatementParsers() {
 // statement := ddlStatement | ( [ `EXPLAIN` ] explainableStatement )
 // ddlStatement := ( `CREATE` createTail ) | ( `ALTER` alterTail )
 // explainableStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
-func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
+func (p *parser) parseStatement(tableGetter ast.TableGetter) (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
@@ -49,11 +49,17 @@ func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
 				return nil, err
 			}
 
-			if err := builder.Resolve(ast.ResolveContext{Tables: ctx.Tables}); err != nil {
-				return nil, err
+			ctx := ast.ResolveContext{
+				Tables: tableGetter,
 			}
 
-			node, err := builder.Build(ctx)
+			if types, err := builder.Resolve(ctx); err != nil {
+				return nil, err
+			} else {
+				fmt.Printf("RESULT TYPES: %#v\n", types)
+			}
+
+			node, err := builder.Build()
 			if err != nil {
 				return nil, err
 			}

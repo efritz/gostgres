@@ -25,6 +25,44 @@ type SelectBuilder struct {
 	Offset *int
 }
 
+func (b SelectBuilder) TableExpression() {}
+
+func (b *SelectBuilder) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+	fields, err := b.Select.Resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO
+	return fields, nil
+}
+
+func (b *SelectBuilder) Build() (queries.Node, error) {
+	node, err := b.Select.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	if b.Order != nil {
+		node = order.NewOrder(node, b.Order)
+	}
+	if b.Offset != nil {
+		node = limit.NewOffset(node, *b.Offset)
+	}
+	if b.Limit != nil {
+		node = limit.NewLimit(node, *b.Limit)
+	}
+
+	// TODO - must come last? Can order come first?
+	if b.Select.SelectExpressions != nil {
+		return projection.NewProjection(node, b.Select.SelectExpressions)
+	}
+	return node, nil
+}
+
+//
+//
+
 type SimpleSelectDescription struct {
 	SelectExpressions []projector.ProjectionExpression
 	From              TableExpression
@@ -39,32 +77,44 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Resolve(ctx ResolveContext) error {
-	return fmt.Errorf("select resolve unimplemented")
-}
-
-func (b SelectBuilder) TableExpression() {}
-
-func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	node, err := b.Select.From.Build(ctx)
+func (b *SimpleSelectDescription) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+	fields, err := b.From.Resolve(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if b.Select.Where != nil {
-		node = filter.NewFilter(node, b.Select.Where)
+	for _, t := range b.Combinations {
+		fs, err := t.Select.Resolve(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		_ = fs // TODO - compare types
 	}
 
-	if b.Select.Groupings != nil {
+	return fields, nil
+}
+
+func (b *SimpleSelectDescription) Build() (queries.Node, error) {
+	node, err := b.From.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	if b.Where != nil {
+		node = filter.NewFilter(node, b.Where)
+	}
+
+	if b.Groupings != nil {
 	selectLoop:
-		for _, selectExpression := range b.Select.SelectExpressions {
+		for _, selectExpression := range b.SelectExpressions {
 			expression, alias, ok := projector.UnwrapAlias(selectExpression)
 			if !ok {
 				return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 			}
 
 			if len(expressions.Fields(expression)) > 0 {
-				for _, grouping := range b.Select.Groupings {
+				for _, grouping := range b.Groupings {
 					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
 						continue selectLoop
 					}
@@ -75,21 +125,21 @@ func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
 			}
 		}
 
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
-		b.Select.SelectExpressions = nil
+		node = aggregate.NewHashAggregate(node, b.Groupings, b.SelectExpressions)
+		b.SelectExpressions = nil
 	}
 
-	if len(b.Select.Combinations) != 0 {
-		if b.Select.SelectExpressions != nil {
-			newNode, err := projection.NewProjection(node, b.Select.SelectExpressions)
+	if len(b.Combinations) != 0 {
+		if b.SelectExpressions != nil {
+			newNode, err := projection.NewProjection(node, b.SelectExpressions)
 			if err != nil {
 				return nil, err
 			}
 			node = newNode
-			b.Select.SelectExpressions = nil
+			b.SelectExpressions = nil
 		}
 
-		for _, c := range b.Select.Combinations {
+		for _, c := range b.Combinations {
 			var factory func(left, right queries.Node, distinct bool) (queries.Node, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
@@ -100,7 +150,7 @@ func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.Select.Build(ctx)
+			right, err := c.Select.Build()
 			if err != nil {
 				return nil, err
 			}
@@ -113,18 +163,5 @@ func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		}
 	}
 
-	if b.Order != nil {
-		node = order.NewOrder(node, b.Order)
-	}
-	if b.Offset != nil {
-		node = limit.NewOffset(node, *b.Offset)
-	}
-	if b.Limit != nil {
-		node = limit.NewLimit(node, *b.Limit)
-	}
-
-	if b.Select.SelectExpressions != nil {
-		return projection.NewProjection(node, b.Select.SelectExpressions)
-	}
 	return node, nil
 }

@@ -1,6 +1,9 @@
 package ast
 
-import "github.com/efritz/gostgres/internal/shared/impls"
+import (
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+)
 
 type ResolveContext struct {
 	Tables TableGetter
@@ -11,5 +14,5 @@ type TableGetter interface {
 }
 
 type Resolver interface {
-	Resolve(ctx ResolveContext) error
+	Resolve(ctx ResolveContext) ([]fields.Field, error)
 }

@@ -123,10 +123,10 @@ func (p *parser) parseBaseTableExpression() (ast.TableReferenceOrExpression, err
 func (p *parser) parseTableReference() (ast.TableReferenceOrExpression, error) {
 	nameToken, err := p.parseIdent()
 	if err != nil {
-		return ast.TableReference{}, err
+		return &ast.TableReference{}, err
 	}
 
-	return ast.TableReference{
+	return &ast.TableReference{
 		Name: nameToken,
 	}, nil
 }

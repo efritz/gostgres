@@ -15,9 +15,9 @@ type Query interface {
 	Execute(ctx impls.Context, w protocol.ResponseWriter)
 }
 
-func Parse(ctx ast.BuildContext, tokenStream []tokens.Token) (Query, error) {
+func Parse(tableGetter ast.TableGetter, tokenStream []tokens.Token) (Query, error) {
 	parser := newParser(tokenStream)
-	statement, err := parser.parseStatement(ctx)
+	statement, err := parser.parseStatement(tableGetter)
 	if err != nil {
 		return nil, err
 	}

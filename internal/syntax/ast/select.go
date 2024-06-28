@@ -43,12 +43,10 @@ func (b *SelectBuilder) Resolve(ctx ResolveContext) error {
 	return fmt.Errorf("select resolve unimplemented")
 }
 
-func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	return b.TableExpression(ctx)
-}
+func (b SelectBuilder) TableExpression() {}
 
-func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
-	node, err := b.Select.From.TableExpression(ctx)
+func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
+	node, err := b.Select.From.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +100,7 @@ func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.Select.TableExpression(ctx)
+			right, err := c.Select.Build(ctx)
 			if err != nil {
 				return nil, err
 			}

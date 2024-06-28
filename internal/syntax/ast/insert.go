@@ -25,7 +25,7 @@ func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
 	}
 
-	node, err := b.Source.TableExpression(ctx)
+	node, err := b.Source.Build(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -15,7 +15,7 @@ func (p *parser) parseSelectBuilder(_ tokens.Token) (ast.ResolverBuilder, error)
 }
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect() (ast.TableReferenceOrExpressionResolverBuilder, error) {
+func (p *parser) parseSelect() (ast.TableReferenceOrExpression, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err

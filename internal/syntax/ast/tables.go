@@ -27,6 +27,10 @@ type TableReferenceOrExpressionBuilder struct {
 	TableReferenceOrExpression
 }
 
+func (r TableReferenceOrExpressionBuilder) Resolve(ctx *ResolutionContext) error {
+	return fmt.Errorf("TableReferenceOrExpressionBuilder.Resolve unimplemented")
+}
+
 func (r TableReferenceOrExpressionBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	return r.TableExpression(ctx)
 }
@@ -62,6 +66,26 @@ type TableExpression struct {
 type Join struct {
 	Table     TableExpression
 	Condition impls.Expression
+}
+
+func (e TableExpression) Resolve(ctx *ResolutionContext) error {
+	if a := e.Base.Alias; a != nil {
+		ctx.AddTableAlias(a.TableAlias, "TODO")
+	} else {
+		if r, ok := e.Base.BaseTableExpression.(TableReference); !ok {
+			return fmt.Errorf("table expression must have an alias")
+		} else {
+			ctx.AddTableAlias(r.Name, "TODO")
+		}
+	}
+
+	for _, j := range e.Joins {
+		if err := j.Table.Resolve(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {

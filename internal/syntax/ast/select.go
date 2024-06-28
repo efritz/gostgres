@@ -39,6 +39,20 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
+func (b *SelectBuilder) Resolve(ctx *ResolutionContext) error {
+	ctx.PushScope()
+	defer ctx.PopScope()
+
+	if err := b.Select.From.Resolve(ctx); err != nil {
+		return err
+	}
+
+	// TODO - separate scopes?
+	_ = b.Select.Combinations
+
+	return fmt.Errorf("SelectBuilder.Resolve unimplemented")
+}
+
 func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	return b.TableExpression(ctx)
 }

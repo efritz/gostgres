@@ -24,6 +24,10 @@ type DeleteBuilder struct {
 	Returning []projector.ProjectionExpression
 }
 
+func (b *DeleteBuilder) Resolve(ctx *ResolutionContext) error {
+	return nil // return fmt.Errorf("DeleteBuilder.Resolve unimplemented")
+}
+
 func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {

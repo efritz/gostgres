@@ -6,7 +6,7 @@ import (
 )
 
 // deleteTail := `FROM` table deleteUsing where returning
-func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseDelete(token tokens.Token) (ast.ResolverBuilder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
 	}

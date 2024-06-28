@@ -30,6 +30,10 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
+func (b *UpdateBuilder) Resolve(ctx ResolveContext) error {
+	return fmt.Errorf("update resolve unimplemented")
+}
+
 func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {

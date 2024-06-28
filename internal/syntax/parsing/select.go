@@ -10,19 +10,12 @@ import (
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
-func (p *parser) parseSelectBuilder(_ tokens.Token) (ast.Builder, error) {
-	expr, err := p.parseSelect()
-	if err != nil {
-		return nil, err
-	}
-
-	return ast.TableReferenceOrExpressionBuilder{
-		TableReferenceOrExpression: expr,
-	}, nil
+func (p *parser) parseSelectBuilder(_ tokens.Token) (ast.ResolverBuilder, error) {
+	return p.parseSelect()
 }
 
 // selectTail := simpleSelect orderBy limitOffset
-func (p *parser) parseSelect() (ast.TableReferenceOrExpression, error) {
+func (p *parser) parseSelect() (ast.TableReferenceOrExpressionResolverBuilder, error) {
 	simpleSelect, err := p.parseSimpleSelect()
 	if err != nil {
 		return nil, err

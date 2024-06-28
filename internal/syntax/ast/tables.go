@@ -19,16 +19,14 @@ type TargetTable struct {
 	AliasName string
 }
 
+// TODO - can we get rid of this iface?
 type TableReferenceOrExpression interface {
 	TableExpression(ctx BuildContext) (queries.Node, error)
 }
 
-type TableReferenceOrExpressionBuilder struct {
+type TableReferenceOrExpressionResolverBuilder interface {
 	TableReferenceOrExpression
-}
-
-func (r TableReferenceOrExpressionBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	return r.TableExpression(ctx)
+	ResolverBuilder
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -43,6 +41,10 @@ type TableAlias struct {
 
 type TableReference struct {
 	Name string
+}
+
+func (r TableReference) Build(ctx BuildContext) (queries.Node, error) {
+	return r.TableExpression(ctx)
 }
 
 func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {
@@ -63,6 +65,10 @@ type Join struct {
 	Table     TableExpression
 	Condition impls.Expression
 }
+
+// func (e TableExpression) Resolve(ctx ResolveContext) error {
+// 	return fmt.Errorf("table expression resolve unimplemented")
+// }
 
 func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
 	return e.TableExpression(ctx)

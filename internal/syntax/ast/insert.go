@@ -15,6 +15,10 @@ type InsertBuilder struct {
 	Returning   []projector.ProjectionExpression
 }
 
+func (b *InsertBuilder) Resolve(ctx ResolveContext) error {
+	return fmt.Errorf("insert resolve unimplemented")
+}
+
 func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {

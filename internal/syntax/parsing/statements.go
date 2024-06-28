@@ -49,6 +49,10 @@ func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
 				return nil, err
 			}
 
+			if err := builder.Resolve(ast.ResolveContext{Tables: ctx.Tables}); err != nil {
+				return nil, err
+			}
+
 			node, err := builder.Build(ctx)
 			if err != nil {
 				return nil, err

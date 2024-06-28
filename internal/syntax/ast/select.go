@@ -39,6 +39,10 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
+func (b *SelectBuilder) Resolve(ctx ResolveContext) error {
+	return fmt.Errorf("select resolve unimplemented")
+}
+
 func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	return b.TableExpression(ctx)
 }

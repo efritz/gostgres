@@ -28,6 +28,7 @@ var tokenSequenceReplacements = []tokenSequenceReplacement{
 	{tokens.TokenTypeNotBetween, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween}},
 	{tokens.TokenTypeNotBetweenSymmetric, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeBetween, tokens.TokenTypeSymmetric}},
 	{tokens.TokenTypeNotILike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeILike}},
+	{tokens.TokenTypeNotIn, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeIn}},
 	{tokens.TokenTypeNotLike, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeLike}},
 	{tokens.TokenTypeNotNull, []tokens.TokenType{tokens.TokenTypeNot, tokens.TokenTypeNull}},
 	{tokens.TokenTypePrimaryKey, []tokens.TokenType{tokens.TokenTypePrimary, tokens.TokenTypeKey}},

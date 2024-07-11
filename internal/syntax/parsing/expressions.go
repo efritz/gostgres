@@ -57,6 +57,7 @@ func (p *parser) initExpressionPrefixParsers() {
 		tokens.TokenTypeMinus:     p.parseUnary(expressions.NewUnaryMinus),
 		tokens.TokenTypeLeftParen: p.parseParenthesizedExpression,
 		tokens.TokenTypePlus:      p.parseUnary(expressions.NewUnaryPlus),
+		tokens.TokenTypeExists:    p.parseExistsExpression,
 	}
 }
 
@@ -261,3 +262,31 @@ func negate(parserFunc infixParserFunc) infixParserFunc {
 		return expressions.NewNot(expression), nil
 	}
 }
+
+// exists := `EXISTS` `(` subquery `)`
+func (p *parser) parseExistsExpression(token tokens.Token) (impls.Expression, error) {
+	if _, err := p.mustAdvance(isType(tokens.TokenTypeLeftParen)); err != nil {
+		return nil, err
+	}
+
+	subquery, err := p.parseSelectOrValues()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := p.mustAdvance(isType(tokens.TokenTypeRightParen)); err != nil {
+		return nil, err
+	}
+
+	return expressions.NewExistsSubqueryExpression(subquery), nil
+}
+
+// IN/NOT IN (subquery) => = ANY/!= ANY
+// op ANY/SOME (subquery)
+// op ALL (subquery)
+
+// TODO
+// row_constructor    {IN / NOT IN}      (subquery)
+// row_constructor op {ALL / ANY / SOME} (subquery)
+// row_constructor op ALL                (subquery)
+// row_constructor op (single-row subquery)

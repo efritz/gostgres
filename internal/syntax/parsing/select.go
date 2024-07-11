@@ -4,9 +4,9 @@ import (
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/projection"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -81,19 +81,19 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 }
 
 // selectExpressions := `*` | ( selectExpression [, ...] )
-func (p *parser) parseSelectExpressions() (aliasedExpressions []projector.ProjectionExpression, _ error) {
+func (p *parser) parseSelectExpressions() (aliasedExpressions []projection.Projection, _ error) {
 	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
-		return []projector.ProjectionExpression{projector.NewWildcardProjectionExpression()}, nil
+		return []projection.Projection{projection.NewWildcardProjection()}, nil
 	}
 
 	return parseCommaSeparatedList(p, p.parseSelectExpression)
 }
 
 // selectExpression := ( ident `.` `*` ) | ( expression alias )
-func (p *parser) parseSelectExpression() (projector.ProjectionExpression, error) {
+func (p *parser) parseSelectExpression() (projection.Projection, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
-		return projector.NewTableWildcardProjectionExpression(nameToken.Text), nil
+		return projection.NewTableWildcardProjection(nameToken.Text), nil
 	}
 
 	expression, err := p.parseRootExpression()
@@ -104,18 +104,17 @@ func (p *parser) parseSelectExpression() (projector.ProjectionExpression, error)
 	type named interface {
 		Name() string
 	}
-	var alias string
+
+	alias := ""
 	if value, ok, err := p.parseAlias(); err != nil {
 		return nil, err
 	} else if ok {
 		alias = value
 	} else if named, ok := expression.(named); ok {
 		alias = named.Name()
-	} else {
-		alias = "?column?"
 	}
 
-	return projector.NewAliasProjectionExpression(expression, alias), nil
+	return projection.NewAliasProjection(expression, alias), nil
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]

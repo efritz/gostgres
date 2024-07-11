@@ -49,20 +49,21 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 
 func (n *aliasNode) AddFilter(filter impls.Expression) {
 	for _, field := range n.fields {
-		filter = projector.Alias(filter, field, namedFromField(field, n.Node.Name()))
+		filter, _ = projector.Alias(filter, field, namedFromField(field, n.Node.Name()))
 	}
 
 	n.Node.AddFilter(filter)
 }
 
 func (n *aliasNode) AddOrder(order impls.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
+	o, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
 		for _, field := range n.fields {
-			expression = projector.Alias(expression, field, namedFromField(field, n.Node.Name()))
+			expression, _ = projector.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
 
-		return expression
-	}))
+		return expression, nil
+	})
+	n.Node.AddOrder(o)
 }
 
 func (n *aliasNode) Optimize() {
@@ -76,7 +77,7 @@ func (n *aliasNode) Filter() impls.Expression {
 	}
 
 	for _, field := range expressions.Fields(filter) {
-		filter = projector.Alias(filter, field, namedFromField(field, n.name))
+		filter, _ = projector.Alias(filter, field, namedFromField(field, n.name))
 	}
 
 	return filter
@@ -88,13 +89,14 @@ func (n *aliasNode) Ordering() impls.OrderExpression {
 		return nil
 	}
 
-	return ordering.Map(func(expression impls.Expression) impls.Expression {
+	o, _ := ordering.Map(func(expression impls.Expression) (impls.Expression, error) {
 		for _, field := range expressions.Fields(expression) {
-			expression = projector.Alias(expression, field, namedFromField(field, n.name))
+			expression, _ = projector.Alias(expression, field, namedFromField(field, n.name))
 		}
 
-		return expression
+		return expression, nil
 	})
+	return o
 }
 
 func (n *aliasNode) SupportsMarkRestore() bool {

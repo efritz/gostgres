@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
@@ -32,10 +33,15 @@ func (p *parser) parseInsert(token tokens.Token) (ast.ResolverBuilder, error) {
 		return nil, err
 	}
 
+	var re []projector.ProjectionExpression
+	for _, e := range returningExpressions {
+		_ = e // TODO
+	}
+
 	return &ast.InsertBuilder{
 		Target:      tableDescription,
 		ColumnNames: columnNames,
 		Source:      node,
-		Returning:   returningExpressions,
+		Returning:   re,
 	}, nil
 }

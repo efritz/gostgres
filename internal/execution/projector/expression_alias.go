@@ -27,7 +27,7 @@ func (p aliasProjectionExpression) String() string {
 func (p aliasProjectionExpression) Dealias(name string, fields []fields.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
-		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
+		expression, _ = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
 	return aliasProjectionExpression{
@@ -43,17 +43,17 @@ func (p aliasProjectionExpression) Expand(fields []fields.Field) ([]aliasProject
 //
 //
 
-func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
-	return e.Map(func(e impls.Expression) impls.Expression {
+func Alias(e impls.Expression, field fields.Field, target impls.Expression) (impls.Expression, error) {
+	return e.Map(func(e impls.Expression) (impls.Expression, error) {
 		if named, ok := e.(expressions.NamedExpression); ok {
 			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
 				if named.Field().Name() == field.Name() {
-					return target
+					return target, nil
 				}
 			}
 		}
 
-		return e
+		return e, nil
 	})
 }
 

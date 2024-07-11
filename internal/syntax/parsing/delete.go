@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
@@ -31,11 +32,16 @@ func (p *parser) parseDelete(token tokens.Token) (ast.ResolverBuilder, error) {
 		return nil, err
 	}
 
+	var re []projector.ProjectionExpression
+	for _, e := range returningExpressions {
+		_ = e // TODO
+	}
+
 	return &ast.DeleteBuilder{
 		Target:    tableDescription,
 		Using:     usingExpressions,
 		Where:     whereExpression,
-		Returning: returningExpressions,
+		Returning: re,
 	}, nil
 }
 

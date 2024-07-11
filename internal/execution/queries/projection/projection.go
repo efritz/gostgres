@@ -43,9 +43,10 @@ func (n *projectionNode) AddFilter(filter impls.Expression) {
 }
 
 func (n *projectionNode) AddOrder(order impls.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
-		return n.projector.ProjectExpression(expression)
-	}))
+	o, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
+		return n.projector.ProjectExpression(expression), nil
+	})
+	n.Node.AddOrder(o)
 }
 
 func (n *projectionNode) Optimize() {
@@ -68,9 +69,10 @@ func (n *projectionNode) Ordering() impls.OrderExpression {
 		return nil
 	}
 
-	return ordering.Map(func(expression impls.Expression) impls.Expression {
-		return n.projector.DeprojectExpression(expression)
+	o, _ := ordering.Map(func(expression impls.Expression) (impls.Expression, error) {
+		return n.projector.DeprojectExpression(expression), nil
 	})
+	return o
 }
 
 func (n *projectionNode) SupportsMarkRestore() bool {

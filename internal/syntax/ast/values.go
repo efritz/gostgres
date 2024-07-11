@@ -5,6 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/access"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type ValuesBuilder struct {
@@ -12,9 +13,15 @@ type ValuesBuilder struct {
 	Expressions [][]impls.Expression
 }
 
-func (b ValuesBuilder) TableExpression() {}
+func (b *ValuesBuilder) Resolve(ctx *context.ResolverContext) ([]fields.Field, error) {
+	return b.ResolveWithAlias(ctx, nil)
+}
 
-func (b *ValuesBuilder) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+func (b *ValuesBuilder) ResolveWithAlias(ctx *context.ResolverContext, alias *TableAlias) ([]fields.Field, error) {
+	if alias != nil {
+		panic("OH NO") // TODO
+	}
+
 	return b.Fields, nil // TODO - check expression types
 }
 

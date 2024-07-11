@@ -15,6 +15,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type UpdateBuilder struct {
@@ -30,7 +31,7 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Resolve(ctx ResolveContext) ([]fields.Field, error) {
+func (b *UpdateBuilder) Resolve(ctx *context.ResolverContext) ([]fields.Field, error) {
 	return nil, fmt.Errorf("update resolve unimplemented")
 }
 

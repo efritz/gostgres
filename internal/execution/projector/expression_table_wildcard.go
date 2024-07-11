@@ -46,7 +46,7 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projec
 	}
 
 	if !matched {
-		return nil, fmt.Errorf("unknown relation %q", p.relationName)
+		return nil, fmt.Errorf("[wildcard] unknown relation %q", p.relationName)
 	}
 
 	return projections, nil

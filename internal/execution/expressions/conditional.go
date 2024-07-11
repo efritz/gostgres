@@ -113,8 +113,18 @@ func (e conditionalExpression) Fold() impls.Expression {
 	return tryEvaluate(e.foldFunc(e.left.Fold(), e.right.Fold()))
 }
 
-func (e conditionalExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
-	return f(newConditionalExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
+func (e conditionalExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
+	left, err := e.left.Map(f)
+	if err != nil {
+		return nil, err
+	}
+
+	right, err := e.right.Map(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return f(newConditionalExpression(left, right, e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
 }
 
 func (e conditionalExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {

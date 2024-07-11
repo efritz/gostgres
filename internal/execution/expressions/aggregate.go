@@ -5,39 +5,43 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func AsAggregate(ctx impls.Context, e impls.Expression) impls.AggregateExpression {
+func AsAggregate(ctx impls.Context, e impls.Expression) (impls.AggregateExpression, error) {
 	var (
 		results        []*constantExpression
 		subExpressions []impls.AggregateExpression
 	)
-	outerExpression := e.Map(func(e impls.Expression) impls.Expression {
+
+	outerExpression, err := e.Map(func(e impls.Expression) (impls.Expression, error) {
 		f, ok := e.(functionExpression)
 		if !ok {
-			return e
+			return e, nil
 		}
 
 		aggregate, ok := ctx.Aggregates.Get(f.name)
 		if !ok {
-			return e
+			return e, nil
 		}
 
 		placeholder := &constantExpression{}
 		results = append(results, placeholder)
 		subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: f.args})
-		return placeholder
+		return placeholder, nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	if len(subExpressions) > 0 {
 		return &explodedAggregateExpression{
 			results:         results,
 			subExpressions:  subExpressions,
 			outerExpression: outerExpression,
-		}
+		}, nil
 	}
 
 	return &nonAggregateExpression{
 		expression: outerExpression,
-	}
+	}, nil
 }
 
 type explodedAggregateExpression struct {

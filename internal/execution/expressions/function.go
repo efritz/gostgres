@@ -65,10 +65,15 @@ func (e functionExpression) Fold() impls.Expression {
 	return NewFunction(e.name, args)
 }
 
-func (e functionExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
+func (e functionExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
 	args := make([]impls.Expression, 0, len(e.args))
 	for _, arg := range e.args {
-		args = append(args, arg.Map(f))
+		a, err := arg.Map(f)
+		if err != nil {
+			return nil, err
+		}
+
+		args = append(args, a)
 	}
 
 	return f(NewFunction(e.name, args))

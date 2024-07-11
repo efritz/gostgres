@@ -1,12 +1,13 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // insertTail := `INTO` table [ `(` ident [, ...] `)` ] selectOrValues returning
-func (p *parser) parseInsert(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseInsert(token tokens.Token) (ast.ResolverBuilder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
 	}
@@ -32,10 +33,15 @@ func (p *parser) parseInsert(token tokens.Token) (ast.Builder, error) {
 		return nil, err
 	}
 
+	var re []projector.ProjectionExpression
+	for _, e := range returningExpressions {
+		_ = e // TODO
+	}
+
 	return &ast.InsertBuilder{
 		Target:      tableDescription,
 		ColumnNames: columnNames,
 		Source:      node,
-		Returning:   returningExpressions,
+		Returning:   re,
 	}, nil
 }

@@ -1,12 +1,13 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
-func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseUpdate(token tokens.Token) (ast.ResolverBuilder, error) {
 	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
@@ -39,12 +40,17 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
 		return nil, err
 	}
 
+	var re []projector.ProjectionExpression
+	for _, e := range returningExpressions {
+		_ = e // TODO
+	}
+
 	return &ast.UpdateBuilder{
 		Target:    tableDescription,
 		Updates:   setExpressions,
 		From:      fromExpressions,
 		Where:     whereExpression,
-		Returning: returningExpressions,
+		Returning: re,
 	}, nil
 }
 

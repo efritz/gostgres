@@ -74,7 +74,7 @@ func (p *Projector) ProjectRow(ctx impls.Context, row rows.Row) (rows.Row, error
 
 func (p *Projector) ProjectExpression(expression impls.Expression) impls.Expression {
 	for _, alias := range p.aliases {
-		expression = Alias(expression, fields.NewField("", alias.alias, types.TypeAny), alias.expression)
+		expression, _ = Alias(expression, fields.NewField("", alias.alias, types.TypeAny), alias.expression)
 	}
 
 	return expression
@@ -83,7 +83,7 @@ func (p *Projector) ProjectExpression(expression impls.Expression) impls.Express
 func (p *Projector) DeprojectExpression(expression impls.Expression) impls.Expression {
 	for i, alias := range p.aliases {
 		if named, ok := alias.expression.(expressions.NamedExpression); ok {
-			expression = Alias(expression, named.Field(), expressions.NewNamed(p.projectedFields[i]))
+			expression, _ = Alias(expression, named.Field(), expressions.NewNamed(p.projectedFields[i]))
 		}
 	}
 

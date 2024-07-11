@@ -1,12 +1,13 @@
 package parsing
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // deleteTail := `FROM` table deleteUsing where returning
-func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseDelete(token tokens.Token) (ast.ResolverBuilder, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
 	}
@@ -31,11 +32,16 @@ func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
 		return nil, err
 	}
 
+	var re []projector.ProjectionExpression
+	for _, e := range returningExpressions {
+		_ = e // TODO
+	}
+
 	return &ast.DeleteBuilder{
 		Target:    tableDescription,
 		Using:     usingExpressions,
 		Where:     whereExpression,
-		Returning: returningExpressions,
+		Returning: re,
 	}, nil
 }
 

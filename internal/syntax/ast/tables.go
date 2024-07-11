@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projector"
@@ -12,6 +13,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type TargetTable struct {
@@ -20,15 +22,8 @@ type TargetTable struct {
 }
 
 type TableReferenceOrExpression interface {
-	TableExpression(ctx BuildContext) (queries.Node, error)
-}
-
-type TableReferenceOrExpressionBuilder struct {
-	TableReferenceOrExpression
-}
-
-func (r TableReferenceOrExpressionBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	return r.TableExpression(ctx)
+	ResolverBuilder
+	ResolveWithAlias(ctx *context.ResolverContext, alias *TableAlias) ([]fields.Field, error)
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -36,22 +31,65 @@ type AliasedTableReferenceOrExpression struct {
 	Alias               *TableAlias
 }
 
+func (a AliasedTableReferenceOrExpression) String() string {
+	return fmt.Sprintf("AliasedTableReferenceOrExpression(%s) AS %s", a.BaseTableExpression, a.Alias)
+}
+
 type TableAlias struct {
 	TableAlias    string
 	ColumnAliases []string
 }
 
-type TableReference struct {
-	Name string
+func (a *TableAlias) String() string {
+	return fmt.Sprintf("TableAlias(%s)(%s)", a.TableAlias, strings.Join(a.ColumnAliases, ", "))
 }
 
-func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {
+type TableReference struct {
+	Name  string
+	table impls.Table
+}
+
+func (r *TableReference) String() string {
+	return fmt.Sprintf("TableReference(%s)", r.Name)
+}
+
+func (r *TableReference) Resolve(ctx *context.ResolverContext) ([]fields.Field, error) {
+	return r.ResolveWithAlias(ctx, nil)
+}
+
+func (r *TableReference) ResolveWithAlias(ctx *context.ResolverContext, alias *TableAlias) ([]fields.Field, error) {
 	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
 		return nil, fmt.Errorf("unknown table %q", r.Name)
 	}
+	r.table = table
 
-	return access.NewAccess(table), nil
+	name := r.Name
+	if alias != nil {
+		if len(alias.ColumnAliases) != 0 {
+			return nil, fmt.Errorf("column aliases unimplemented")
+		}
+
+		name = alias.TableAlias
+	}
+
+	var exprs []impls.Expression
+	var fields []fields.Field
+	for _, f := range table.Fields() {
+		f2 := f.Field.WithRelationName(name)
+		exprs = append(exprs, expressions.NewNamed(f2))
+		fields = append(fields, f2)
+	}
+
+	if _, err := ctx.SymbolTable.AddRelation(r.Name, name, exprs, fields); err != nil {
+		return nil, err
+	}
+
+	return fields, nil
+}
+
+func (r *TableReference) Build() (queries.Node, error) {
+	return access.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -59,17 +97,55 @@ type TableExpression struct {
 	Joins []Join
 }
 
+func (te TableExpression) String() string {
+	return fmt.Sprintf("TableExpression(%s)", te.Base)
+}
+
 type Join struct {
 	Table     TableExpression
 	Condition impls.Expression
 }
 
-func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
-	return e.TableExpression(ctx)
+func (e TableExpression) Resolve(ctx *context.ResolverContext) ([]fields.Field, error) {
+	return e.ResolveWithAlias(ctx, nil)
 }
 
-func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error) {
-	node, err := e.Base.BaseTableExpression.TableExpression(ctx)
+func (e TableExpression) ResolveWithAlias(ctx *context.ResolverContext, alias *TableAlias) ([]fields.Field, error) {
+	if alias != nil {
+		panic("OH NO") // TODO
+	}
+
+	fields, err := e.Base.BaseTableExpression.ResolveWithAlias(ctx, e.Base.Alias)
+	if err != nil {
+		return nil, err
+	}
+
+	// if e.Base.Alias != nil {
+	// 	if len(e.Base.Alias.ColumnAliases) != 0 {
+	// 		return nil, fmt.Errorf("column alias resolution not yet implemented")
+	// 	}
+
+	// 	if _, ok := e.Base.BaseTableExpression.(*TableReference); !ok {
+	// 		if err := ctx.SymbolTable.AddRelation(e.Base.Alias.TableAlias, fields); err != nil {
+	// 			return nil, err
+	// 		}
+	// 	}
+	// }
+
+	for _, j := range e.Joins {
+		fields2, err := j.Table.Resolve(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		fields = append(fields, fields2...)
+	}
+
+	return fields, nil
+}
+
+func (e TableExpression) Build() (queries.Node, error) {
+	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +181,8 @@ func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error)
 	}
 
 	for _, j := range e.Joins {
-		right, err := j.Table.TableExpression(ctx)
+
+		right, err := j.Table.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -116,9 +193,9 @@ func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error)
 	return node, nil
 }
 
-func joinNodes(ctx BuildContext, left queries.Node, expressions []TableExpression) queries.Node {
+func joinNodes(left queries.Node, expressions []TableExpression) queries.Node {
 	for _, expression := range expressions {
-		right, err := expression.TableExpression(ctx)
+		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}

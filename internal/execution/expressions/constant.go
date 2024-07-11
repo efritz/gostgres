@@ -35,7 +35,7 @@ func (e constantExpression) Fold() impls.Expression {
 	return e
 }
 
-func (e constantExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
+func (e constantExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
 	return f(e)
 }
 

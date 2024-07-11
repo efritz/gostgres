@@ -15,6 +15,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type UpdateBuilder struct {
@@ -30,11 +31,16 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	table, ok := ctx.Tables.Get(b.Target.Name)
-	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
-	}
+func (b *UpdateBuilder) Resolve(ctx *context.ResolverContext) ([]fields.Field, error) {
+	return nil, fmt.Errorf("update resolve unimplemented")
+}
+
+func (b *UpdateBuilder) Build() (queries.Node, error) {
+	// table, ok := ctx.Tables.Get(b.Target.Name)
+	// if !ok {
+	// 	return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+	// }
+	var table impls.Table // TODO
 
 	node := access.NewAccess(table)
 	if b.Target.AliasName != "" {
@@ -42,7 +48,7 @@ func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 	}
 
 	if b.From != nil {
-		node = joinNodes(ctx, node, b.From)
+		node = joinNodes(node, b.From)
 	}
 
 	if b.Where != nil {

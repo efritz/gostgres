@@ -1,8 +1,8 @@
 package parsing
 
 import (
-	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/projection"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -21,7 +21,7 @@ func (p *parser) parseWhere() (impls.Expression, bool, error) {
 }
 
 // returning := [`RETURNING` selectExpressions]
-func (p *parser) parseReturning(name string) (returningExpressions []projector.ProjectionExpression, err error) {
+func (p *parser) parseReturning(name string) (returningExpressions []projection.Projection, err error) {
 	if !p.advanceIf(isType(tokens.TokenTypeReturning)) {
 		return nil, nil
 	}
@@ -34,5 +34,5 @@ func (p *parser) parseReturning(name string) (returningExpressions []projector.P
 		return returningExpressions, nil
 	}
 
-	return []projector.ProjectionExpression{projector.NewTableWildcardProjectionExpression(name)}, nil
+	return []projection.Projection{projection.NewTableWildcardProjection(name)}, nil
 }

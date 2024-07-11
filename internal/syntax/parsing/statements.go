@@ -5,7 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/explain"
-	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -28,7 +28,7 @@ func (p *parser) initStatementParsers() {
 // statement := ddlStatement | ( [ `EXPLAIN` ] explainableStatement )
 // ddlStatement := ( `CREATE` createTail ) | ( `ALTER` alterTail )
 // explainableStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
-func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
+func (p *parser) parseStatement(tableGetter context.TableGetter) (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
@@ -49,7 +49,14 @@ func (p *parser) parseStatement(ctx ast.BuildContext) (Query, error) {
 				return nil, err
 			}
 
-			node, err := builder.Build(ctx)
+			ctx := &context.ResolveContext{
+				Tables: tableGetter,
+			}
+			if err := builder.Resolve(ctx); err != nil {
+				return nil, err
+			}
+
+			node, err := builder.Build()
 			if err != nil {
 				return nil, err
 			}

@@ -12,6 +12,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type TargetTable struct {
@@ -20,15 +21,16 @@ type TargetTable struct {
 }
 
 type TableReferenceOrExpression interface {
-	TableExpression(ctx BuildContext) (queries.Node, error)
+	BuilderResolver
+	TableExpression() (queries.Node, error)
 }
 
 type TableReferenceOrExpressionBuilder struct {
 	TableReferenceOrExpression
 }
 
-func (r TableReferenceOrExpressionBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	return r.TableExpression(ctx)
+func (r *TableReferenceOrExpressionBuilder) Build() (queries.Node, error) {
+	return r.TableExpression()
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -43,15 +45,26 @@ type TableAlias struct {
 
 type TableReference struct {
 	Name string
+
+	table impls.Table
 }
 
-func (r TableReference) TableExpression(ctx BuildContext) (queries.Node, error) {
+func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %q", r.Name)
+		return fmt.Errorf("unknown table %q", r.Name)
 	}
+	r.table = table
 
-	return access.NewAccess(table), nil
+	return nil
+}
+
+func (r *TableReference) Build() (queries.Node, error) {
+	return r.TableExpression()
+}
+
+func (r TableReference) TableExpression() (queries.Node, error) {
+	return access.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -60,16 +73,30 @@ type TableExpression struct {
 }
 
 type Join struct {
-	Table     TableExpression
+	Table     *TableExpression
 	Condition impls.Expression
 }
 
-func (e TableExpression) Build(ctx BuildContext) (queries.Node, error) {
-	return e.TableExpression(ctx)
+func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
+	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
+		return err
+	}
+
+	for _, j := range r.Joins {
+		if err := j.Table.Resolve(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error) {
-	node, err := e.Base.BaseTableExpression.TableExpression(ctx)
+func (e *TableExpression) Build() (queries.Node, error) {
+	return e.TableExpression()
+}
+
+func (e *TableExpression) TableExpression() (queries.Node, error) {
+	node, err := e.Base.BaseTableExpression.TableExpression()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +132,7 @@ func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error)
 	}
 
 	for _, j := range e.Joins {
-		right, err := j.Table.TableExpression(ctx)
+		right, err := j.Table.TableExpression()
 		if err != nil {
 			return nil, err
 		}
@@ -116,9 +143,9 @@ func (e TableExpression) TableExpression(ctx BuildContext) (queries.Node, error)
 	return node, nil
 }
 
-func joinNodes(ctx BuildContext, left queries.Node, expressions []TableExpression) queries.Node {
+func joinNodes(left queries.Node, expressions []*TableExpression) queries.Node {
 	for _, expression := range expressions {
-		right, err := expression.TableExpression(ctx)
+		right, err := expression.TableExpression()
 		if err != nil {
 			return nil
 		}

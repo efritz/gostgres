@@ -6,6 +6,8 @@ import (
 	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
+	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type InsertBuilder struct {
@@ -13,18 +15,29 @@ type InsertBuilder struct {
 	ColumnNames []string
 	Source      TableReferenceOrExpression
 	Returning   []projector.ProjectionExpression
+
+	table impls.Table
 }
 
-func (b *InsertBuilder) Build(ctx BuildContext) (queries.Node, error) {
+func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+		return fmt.Errorf("unknown table %q", b.Target.Name)
+	}
+	b.table = table
+
+	if err := b.Source.Resolve(ctx); err != nil {
+		return err
 	}
 
-	node, err := b.Source.TableExpression(ctx)
+	return nil
+}
+
+func (b *InsertBuilder) Build() (queries.Node, error) {
+	node, err := b.Source.TableExpression()
 	if err != nil {
 		return nil, err
 	}
 
-	return mutation.NewInsert(node, table, b.Target.Name, b.Target.AliasName, b.ColumnNames, b.Returning)
+	return mutation.NewInsert(node, b.table, b.Target.Name, b.Target.AliasName, b.ColumnNames, b.Returning)
 }

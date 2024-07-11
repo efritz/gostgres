@@ -15,27 +15,41 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type DeleteBuilder struct {
 	Target    TargetTable
-	Using     []TableExpression
+	Using     []*TableExpression
 	Where     impls.Expression
 	Returning []projector.ProjectionExpression
+
+	table impls.Table
 }
 
-func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
+func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+		return fmt.Errorf("unknown table %q", b.Target.Name)
+	}
+	b.table = table
+
+	for _, e := range b.Using {
+		if err := e.Resolve(ctx); err != nil {
+			return err
+		}
 	}
 
-	node := access.NewAccess(table)
+	return nil
+}
+
+func (b *DeleteBuilder) Build() (queries.Node, error) {
+	node := access.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		node = alias.NewAlias(node, b.Target.AliasName)
 	}
 	if len(b.Using) > 0 {
-		node = joinNodes(ctx, node, b.Using)
+		node = joinNodes(node, b.Using)
 	}
 	if b.Where != nil {
 		node = filter.NewFilter(node, b.Where)
@@ -54,5 +68,5 @@ func (b *DeleteBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		return nil, err
 	}
 
-	return mutation.NewDelete(node, table, b.Target.AliasName, b.Returning)
+	return mutation.NewDelete(node, b.table, b.Target.AliasName, b.Returning)
 }

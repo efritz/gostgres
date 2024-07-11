@@ -15,14 +15,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type UpdateBuilder struct {
 	Target    TargetTable
 	Updates   []SetExpression
-	From      []TableExpression
+	From      []*TableExpression
 	Where     impls.Expression
 	Returning []projector.ProjectionExpression
+
+	table impls.Table
 }
 
 type SetExpression struct {
@@ -30,19 +33,30 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
+func (b *UpdateBuilder) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
-		return nil, fmt.Errorf("unknown table %q", b.Target.Name)
+		return fmt.Errorf("unknown table %q", b.Target.Name)
+	}
+	b.table = table
+
+	for _, from := range b.From {
+		if err := from.Resolve(ctx); err != nil {
+			return err
+		}
 	}
 
-	node := access.NewAccess(table)
+	return nil
+}
+
+func (b *UpdateBuilder) Build() (queries.Node, error) {
+	node := access.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		node = alias.NewAlias(node, b.Target.AliasName)
 	}
 
 	if b.From != nil {
-		node = joinNodes(ctx, node, b.From)
+		node = joinNodes(node, b.From)
 	}
 
 	if b.Where != nil {
@@ -73,5 +87,5 @@ func (b *UpdateBuilder) Build(ctx BuildContext) (queries.Node, error) {
 		}
 	}
 
-	return mutation.NewUpdate(node, table, setExpressions, b.Target.AliasName, b.Returning)
+	return mutation.NewUpdate(node, b.table, setExpressions, b.Target.AliasName, b.Returning)
 }

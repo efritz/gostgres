@@ -29,42 +29,42 @@ func (p *parser) parseTable() (ast.TargetTable, error) {
 }
 
 // from := `FROM` tableExpressions
-func (p *parser) parseFrom() (node ast.TableExpression, _ error) {
+func (p *parser) parseFrom() (*ast.TableExpression, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
-		return ast.TableExpression{}, err
+		return nil, err
 	}
 
 	tableExpressions, err := p.parseTableExpressions()
 	if err != nil {
-		return ast.TableExpression{}, err
+		return nil, err
 	}
 
 	return joinNodes(tableExpressions), nil
 }
 
 // tableExpressions := tableExpression [, ...]
-func (p *parser) parseTableExpressions() ([]ast.TableExpression, error) {
+func (p *parser) parseTableExpressions() ([]*ast.TableExpression, error) {
 	return parseCommaSeparatedList(p, p.parseTableExpression)
 }
 
 // tableExpression := aliasedBaseTableExpression [ `JOIN` joinTail [...] ]
-func (p *parser) parseTableExpression() (ast.TableExpression, error) {
+func (p *parser) parseTableExpression() (*ast.TableExpression, error) {
 	node, err := p.parseAliasedBaseTableExpression()
 	if err != nil {
-		return ast.TableExpression{}, err
+		return nil, err
 	}
 
 	var joins []ast.Join
 	for p.advanceIf(isType(tokens.TokenTypeJoin)) {
 		join, err := p.parseJoin()
 		if err != nil {
-			return ast.TableExpression{}, err
+			return nil, err
 		}
 
 		joins = append(joins, join)
 	}
 
-	return ast.TableExpression{
+	return &ast.TableExpression{
 		Base:  node,
 		Joins: joins,
 	}, nil
@@ -123,10 +123,10 @@ func (p *parser) parseBaseTableExpression() (ast.TableReferenceOrExpression, err
 func (p *parser) parseTableReference() (ast.TableReferenceOrExpression, error) {
 	nameToken, err := p.parseIdent()
 	if err != nil {
-		return ast.TableReference{}, err
+		return &ast.TableReference{}, err
 	}
 
-	return ast.TableReference{
+	return &ast.TableReference{
 		Name: nameToken,
 	}, nil
 }
@@ -232,9 +232,9 @@ func (p *parser) parseJoin() (ast.Join, error) {
 	}, nil
 }
 
-func joinNodes(expressions []ast.TableExpression) ast.TableExpression {
+func joinNodes(expressions []*ast.TableExpression) *ast.TableExpression {
 	if len(expressions) == 0 {
-		return ast.TableExpression{}
+		return nil
 	}
 
 	base := ast.AliasedTableReferenceOrExpression{
@@ -250,7 +250,7 @@ func joinNodes(expressions []ast.TableExpression) ast.TableExpression {
 		})
 	}
 
-	return ast.TableExpression{
+	return &ast.TableExpression{
 		Base:  base,
 		Joins: joins,
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 // insertTail := `INTO` table [ `(` ident [, ...] `)` ] selectOrValues returning
-func (p *parser) parseInsert(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseInsert(token tokens.Token) (ast.BuilderResolver, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeInto)); err != nil {
 		return nil, err
 	}

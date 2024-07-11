@@ -15,6 +15,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -27,7 +28,7 @@ type SelectBuilder struct {
 
 type SimpleSelectDescription struct {
 	SelectExpressions []projector.ProjectionExpression
-	From              TableExpression
+	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
 	Combinations      []*CombinationDescription
@@ -39,12 +40,26 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Build(ctx BuildContext) (queries.Node, error) {
-	return b.TableExpression(ctx)
+func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
+	if err := b.Select.From.Resolve(ctx); err != nil {
+		return err
+	}
+
+	for _, c := range b.Select.Combinations {
+		if err := c.Select.Resolve(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
-	node, err := b.Select.From.TableExpression(ctx)
+func (b *SelectBuilder) Build() (queries.Node, error) {
+	return b.TableExpression()
+}
+
+func (b SelectBuilder) TableExpression() (queries.Node, error) {
+	node, err := b.Select.From.TableExpression()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +113,7 @@ func (b SelectBuilder) TableExpression(ctx BuildContext) (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.Select.TableExpression(ctx)
+			right, err := c.Select.TableExpression()
 			if err != nil {
 				return nil, err
 			}

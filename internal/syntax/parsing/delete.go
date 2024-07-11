@@ -6,7 +6,7 @@ import (
 )
 
 // deleteTail := `FROM` table deleteUsing where returning
-func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseDelete(token tokens.Token) (ast.BuilderResolver, error) {
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeFrom)); err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (p *parser) parseDelete(token tokens.Token) (ast.Builder, error) {
 }
 
 // deleteUsing := `USING` tableExpressions
-func (p *parser) parseDeleteUsing() ([]ast.TableExpression, error) {
+func (p *parser) parseDeleteUsing() ([]*ast.TableExpression, error) {
 	if !p.advanceIf(isType(tokens.TokenTypeUsing)) {
 		return nil, nil
 	}

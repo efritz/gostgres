@@ -1,8 +1,8 @@
-package ast
+package context
 
 import "github.com/efritz/gostgres/internal/shared/impls"
 
-type BuildContext struct {
+type ResolveContext struct {
 	Tables TableGetter
 }
 

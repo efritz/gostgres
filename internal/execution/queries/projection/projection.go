@@ -39,7 +39,7 @@ func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 }
 
 func (n *projectionNode) AddFilter(filter impls.Expression) {
-	n.Node.AddFilter(n.projector.ProjectExpression(filter))
+	// n.Node.AddFilter(n.projector.ProjectExpression(filter))
 }
 
 func (n *projectionNode) AddOrder(order impls.OrderExpression) {

@@ -70,6 +70,13 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 			return unqualifiedIndexes[0], nil
 		}
 		if len(unqualifiedIndexes) > 1 {
+			if needle.name == "category_id" {
+				fmt.Printf("> %#v\n", needle)
+				fmt.Printf("> %#v\n", haystack)
+				fmt.Printf("\n\n\n")
+				panic(":)")
+			}
+
 			return 0, fmt.Errorf("ambiguous field %q", needle.name)
 		}
 	}

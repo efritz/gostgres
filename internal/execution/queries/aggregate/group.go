@@ -97,12 +97,12 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	var groupedFields []fields.Field
 	var exprs []impls.Expression
 	for _, selectExpression := range n.selectExpressions {
-		expr, alias, ok := projector.UnwrapAlias(selectExpression)
+		expr, relationName, aliasName, ok := projector.UnwrapAlias(selectExpression)
 		if !ok {
 			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 		}
 
-		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny))
+		groupedFields = append(groupedFields, fields.NewField(relationName, aliasName, types.TypeAny))
 		exprs = append(exprs, expr)
 	}
 

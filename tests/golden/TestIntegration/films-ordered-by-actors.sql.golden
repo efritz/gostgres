@@ -12,7 +12,7 @@ Plan:
 
                                 query plan
 ---------------------------------------------------------------------------
- select (title, a.first_name ||   || a.last_name as name)
+ select (title, a.first_name ||   || a.last_name as "name")
     limit 50
         order by a.last_name desc, a.first_name desc
             join using nested loop

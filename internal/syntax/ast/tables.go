@@ -82,13 +82,18 @@ type Join struct {
 }
 
 func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
+	// if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
+	// 	return err
+	// }
+
 	if a := r.Base.Alias; a != nil {
 		ctx.AddTableAlias(a.TableAlias, "TODO")
 	} else {
-		if r, ok := r.Base.BaseTableExpression.(*TableReference); !ok {
+		if rx, ok := r.Base.BaseTableExpression.(*TableReference); !ok {
+			fmt.Printf("BASE: %T(%#v)\n", r.Base.BaseTableExpression, r.Base.BaseTableExpression)
 			return fmt.Errorf("table expression must have an alias")
 		} else {
-			ctx.AddTableAlias(r.Name, "TODO")
+			ctx.AddTableAlias(rx.Name, "TODO")
 		}
 	}
 
@@ -99,18 +104,6 @@ func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
-
-	// if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
-	// 	return err
-	// }
-
-	// for _, j := range r.Joins {
-	// 	if err := j.Table.Resolve(ctx); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// return nil
 }
 
 func (e *TableExpression) Build() (queries.Node, error) {

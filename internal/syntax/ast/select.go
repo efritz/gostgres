@@ -49,17 +49,11 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	// TODO - separate scopes?
-	_ = b.Select.Combinations
-
-	// if err := b.Select.From.Resolve(ctx); err != nil {
-	// 	return err
-	// }
-
-	// for _, c := range b.Select.Combinations {
-	// 	if err := c.Select.Resolve(ctx); err != nil {
-	// 		return err
-	// 	}
-	// }
+	for _, c := range b.Select.Combinations {
+		if err := c.Select.Resolve(ctx); err != nil {
+			return err
+		}
+	}
 
 	// return nil
 	return fmt.Errorf("SelectBuilder.Resolve unimplemented")

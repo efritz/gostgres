@@ -41,6 +41,7 @@ func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
+	// return fmt.Errorf("DeleteBuilder.Resolve unimplemented")
 }
 
 func (b *DeleteBuilder) Build() (queries.Node, error) {

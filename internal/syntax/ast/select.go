@@ -41,17 +41,28 @@ type CombinationDescription struct {
 }
 
 func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
+	ctx.PushScope()
+	defer ctx.PopScope()
+
 	if err := b.Select.From.Resolve(ctx); err != nil {
 		return err
 	}
 
-	for _, c := range b.Select.Combinations {
-		if err := c.Select.Resolve(ctx); err != nil {
-			return err
-		}
-	}
+	// TODO - separate scopes?
+	_ = b.Select.Combinations
 
-	return nil
+	// if err := b.Select.From.Resolve(ctx); err != nil {
+	// 	return err
+	// }
+
+	// for _, c := range b.Select.Combinations {
+	// 	if err := c.Select.Resolve(ctx); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// return nil
+	return fmt.Errorf("SelectBuilder.Resolve unimplemented")
 }
 
 func (b *SelectBuilder) Build() (queries.Node, error) {

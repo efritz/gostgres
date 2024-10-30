@@ -31,6 +31,7 @@ func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
+	// return fmt.Errorf("InsertBuilder.Resolve unimplemented")
 }
 
 func (b *InsertBuilder) Build() (queries.Node, error) {

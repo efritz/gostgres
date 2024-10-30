@@ -46,7 +46,8 @@ func (b *UpdateBuilder) Resolve(ctx *context.ResolveContext) error {
 		}
 	}
 
-	return nil
+	// return nil
+	return fmt.Errorf("UpdateBuilder.Resolve unimplemented")
 }
 
 func (b *UpdateBuilder) Build() (queries.Node, error) {

@@ -56,6 +56,8 @@ func (p *parser) parseStatement(tableGetter context.TableGetter) (Query, error) 
 				return nil, err
 			}
 
+			fmt.Printf("> %#v\n", builder)
+
 			node, err := builder.Build()
 			if err != nil {
 				return nil, err

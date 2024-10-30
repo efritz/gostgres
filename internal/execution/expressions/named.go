@@ -42,7 +42,7 @@ func (e namedExpression) Fold() impls.Expression {
 	return e
 }
 
-func (e namedExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
+func (e namedExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
 	return f(e)
 }
 

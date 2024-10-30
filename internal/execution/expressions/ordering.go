@@ -43,14 +43,19 @@ func (e orderExpression) Fold() impls.OrderExpression {
 	return orderExpression{expressions: expressions}
 }
 
-func (e orderExpression) Map(f func(impls.Expression) impls.Expression) impls.OrderExpression {
+func (e orderExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.OrderExpression, error) {
 	expressions := make([]impls.ExpressionWithDirection, 0, len(e.expressions))
 	for _, expression := range e.expressions {
+		expr, err := f(expression.Expression)
+		if err != nil {
+			return nil, err
+		}
+
 		expressions = append(expressions, impls.ExpressionWithDirection{
-			Expression: f(expression.Expression),
+			Expression: expr,
 			Reverse:    expression.Reverse,
 		})
 	}
 
-	return orderExpression{expressions: expressions}
+	return orderExpression{expressions: expressions}, nil
 }

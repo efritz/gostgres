@@ -43,8 +43,13 @@ func (e unaryExpression) Fold() impls.Expression {
 	return tryEvaluate(newUnaryExpression(e.expression.Fold(), e.operatorText, e.valueFrom))
 }
 
-func (e unaryExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
-	return f(newUnaryExpression(e.expression.Map(f), e.operatorText, e.valueFrom))
+func (e unaryExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
+	inner, err := e.expression.Map(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return f(newUnaryExpression(inner, e.operatorText, e.valueFrom))
 }
 
 func (e unaryExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {

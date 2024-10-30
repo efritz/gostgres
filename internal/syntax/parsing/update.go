@@ -6,7 +6,7 @@ import (
 )
 
 // updateTail := table `SET` ( setExpression [, ...] ) [ `FROM` tableExpressions ] where returning
-func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
+func (p *parser) parseUpdate(token tokens.Token) (ast.BuilderResolver, error) {
 	tableDescription, err := p.parseTable()
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.Builder, error) {
 		return nil, err
 	}
 
-	var fromExpressions []ast.TableExpression
+	var fromExpressions []*ast.TableExpression
 	if p.advanceIf(isType(tokens.TokenTypeFrom)) {
 		fromExpressions, err = p.parseTableExpressions()
 		if err != nil {

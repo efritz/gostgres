@@ -1,4 +1,4 @@
-package ast
+package context
 
 import (
 	"fmt"
@@ -6,20 +6,24 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-type ResolutionContext struct {
+type ResolveContext struct {
 	Tables TableGetter
 	Scopes []Scope
 }
 
-func (rc *ResolutionContext) PushScope() {
+type TableGetter interface {
+	Get(name string) (impls.Table, bool)
+}
+
+func (rc *ResolveContext) PushScope() {
 	rc.Scopes = append(rc.Scopes, Scope{})
 }
 
-func (rc *ResolutionContext) PopScope() {
+func (rc *ResolveContext) PopScope() {
 	rc.Scopes = rc.Scopes[:len(rc.Scopes)-1]
 }
 
-func (rc *ResolutionContext) CurrentScope() *Scope {
+func (rc *ResolveContext) CurrentScope() *Scope {
 	if len(rc.Scopes) == 0 {
 		panic("no scopes in context")
 	}
@@ -27,7 +31,7 @@ func (rc *ResolutionContext) CurrentScope() *Scope {
 	return &rc.Scopes[len(rc.Scopes)-1]
 }
 
-func (rc *ResolutionContext) AddTableAlias(alias, relationName string) {
+func (rc *ResolveContext) AddTableAlias(alias, relationName string) {
 	scope := rc.CurrentScope()
 	scope.TableAliases = append(scope.TableAliases, TableAliasInfo{
 		Alias:        alias,
@@ -35,7 +39,7 @@ func (rc *ResolutionContext) AddTableAlias(alias, relationName string) {
 	})
 }
 
-func (rc *ResolutionContext) AddColumnAlias(alias, relationName, columnName string) {
+func (rc *ResolveContext) AddColumnAlias(alias, relationName, columnName string) {
 	scope := rc.CurrentScope()
 	scope.ColumnAliases = append(scope.ColumnAliases, ColumnAliasInfo{
 		Alias:        alias,
@@ -44,7 +48,7 @@ func (rc *ResolutionContext) AddColumnAlias(alias, relationName, columnName stri
 	})
 }
 
-func (rc *ResolutionContext) GetTableAlias(alias string) (string, error) {
+func (rc *ResolveContext) GetTableAlias(alias string) (string, error) {
 	for i := len(rc.Scopes) - 1; i >= 0; i-- {
 		scope := rc.Scopes[i]
 
@@ -56,7 +60,7 @@ func (rc *ResolutionContext) GetTableAlias(alias string) (string, error) {
 	return "", notFoundError{"table", alias}
 }
 
-func (rc *ResolutionContext) GetColumnAlias(relationName, alias string) (string, string, error) {
+func (rc *ResolveContext) GetColumnAlias(relationName, alias string) (string, string, error) {
 	for i := len(rc.Scopes) - 1; i >= 0; i-- {
 		scope := rc.Scopes[i]
 
@@ -132,15 +136,3 @@ type ColumnAliasInfo struct {
 // type ExpressionAliasInfo struct {
 // 	// TODO
 // }
-
-//
-//
-//
-
-type BuildContext struct {
-	Tables TableGetter // TODO - necessary if used in resolution pass?
-}
-
-type TableGetter interface {
-	Get(name string) (impls.Table, bool)
-}

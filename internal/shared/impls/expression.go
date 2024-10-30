@@ -11,7 +11,7 @@ type Expression interface {
 
 	Equal(other Expression) bool
 	Fold() Expression
-	Map(f func(Expression) Expression) Expression
+	Map(f func(Expression) (Expression, error)) (Expression, error)
 	ValueFrom(cts Context, row rows.Row) (any, error)
 }
 
@@ -23,7 +23,7 @@ type AggregateExpression interface {
 type OrderExpression interface {
 	Expressions() []ExpressionWithDirection
 	Fold() OrderExpression
-	Map(f func(e Expression) Expression) OrderExpression
+	Map(f func(e Expression) (Expression, error)) (OrderExpression, error)
 }
 
 type ExpressionWithDirection struct {

@@ -117,7 +117,12 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 		aggregateExpressions, ok := h[key]
 		if !ok {
 			for _, expression := range exprs {
-				aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, expression))
+				aggregate, err := expressions.AsAggregate(ctx, expression)
+				if err != nil {
+					return false, err
+				}
+
+				aggregateExpressions = append(aggregateExpressions, aggregate)
 			}
 
 			h[key] = aggregateExpressions

@@ -117,11 +117,13 @@ func (q *createIndex) createHashIndex(ctx impls.Context) (impls.BaseIndex, error
 }
 
 func setRelationName(e impls.Expression, name string) impls.Expression {
-	return e.Map(func(e impls.Expression) impls.Expression {
+	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
 		if named, ok := e.(expressions.NamedExpression); ok {
-			return expressions.NewNamed(named.Field().WithRelationName(name))
+			return expressions.NewNamed(named.Field().WithRelationName(name)), nil
 		}
 
-		return e
+		return e, nil
 	})
+
+	return mapped
 }

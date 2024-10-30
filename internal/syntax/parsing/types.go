@@ -43,7 +43,7 @@ func (p *parser) parseBasicType() (types.Type, error) {
 		}
 		typ = types.TypeTimestampTz
 	default:
-		return types.TypeUnknown, fmt.Errorf("unknown type %s", dataType)
+		return types.TypeUnknown, fmt.Errorf("unknown type %q", dataType)
 	}
 
 	return typ, nil

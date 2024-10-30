@@ -56,13 +56,15 @@ func (n *aliasNode) AddFilter(filter impls.Expression) {
 }
 
 func (n *aliasNode) AddOrder(order impls.OrderExpression) {
-	n.Node.AddOrder(order.Map(func(expression impls.Expression) impls.Expression {
+	mapped, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
 		for _, field := range n.fields {
 			expression = projector.Alias(expression, field, namedFromField(field, n.Node.Name()))
 		}
 
-		return expression
-	}))
+		return expression, nil
+	})
+
+	n.Node.AddOrder(mapped)
 }
 
 func (n *aliasNode) Optimize() {
@@ -88,13 +90,15 @@ func (n *aliasNode) Ordering() impls.OrderExpression {
 		return nil
 	}
 
-	return ordering.Map(func(expression impls.Expression) impls.Expression {
+	mapped, _ := ordering.Map(func(expression impls.Expression) (impls.Expression, error) {
 		for _, field := range expressions.Fields(expression) {
 			expression = projector.Alias(expression, field, namedFromField(field, n.name))
 		}
 
-		return expression
+		return expression, nil
 	})
+
+	return mapped
 }
 
 func (n *aliasNode) SupportsMarkRestore() bool {

@@ -111,7 +111,7 @@ func (n *updateNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 			}
 
 			if !found {
-				return rows.Row{}, fmt.Errorf("unknown column %s", set.Name)
+				return rows.Row{}, fmt.Errorf("unknown column %q", set.Name)
 			}
 		}
 

@@ -61,8 +61,18 @@ func (e binaryExpression) Fold() impls.Expression {
 	return tryEvaluate(newBinaryExpression(e.left.Fold(), e.right.Fold(), e.operatorText, e.valueFrom))
 }
 
-func (e binaryExpression) Map(f func(impls.Expression) impls.Expression) impls.Expression {
-	return f(newBinaryExpression(e.left.Map(f), e.right.Map(f), e.operatorText, e.valueFrom))
+func (e binaryExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
+	left, err := e.left.Map(f)
+	if err != nil {
+		return nil, err
+	}
+
+	right, err := e.right.Map(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return f(newBinaryExpression(left, right, e.operatorText, e.valueFrom))
 }
 
 func (e binaryExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {

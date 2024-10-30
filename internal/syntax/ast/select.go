@@ -55,8 +55,8 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 		}
 	}
 
-	// return nil
-	return fmt.Errorf("SelectBuilder.Resolve unimplemented")
+	return nil
+	// return fmt.Errorf("SelectBuilder.Resolve unimplemented")
 }
 
 func (b *SelectBuilder) Build() (queries.Node, error) {

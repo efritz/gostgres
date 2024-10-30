@@ -82,19 +82,20 @@ type Join struct {
 }
 
 func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
-	// if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
-	// 	return err
+	// if a := r.Base.Alias; a != nil {
+	// 	ctx.AddTableAlias(a.TableAlias, "TODO")
+	// } else {
+	// 	fmt.Printf("%T\n", r.Base.BaseTableExpression)
+
+	// 	if ref, ok := r.Base.BaseTableExpression.(*TableReference); ok {
+	// 		ctx.AddTableAlias(ref.Name, "TODO")
+	// 	} else {
+	// 		return fmt.Errorf("table expression must have an alias")
+	// 	}
 	// }
 
-	if a := r.Base.Alias; a != nil {
-		ctx.AddTableAlias(a.TableAlias, "TODO")
-	} else {
-		if rx, ok := r.Base.BaseTableExpression.(*TableReference); !ok {
-			fmt.Printf("BASE: %T(%#v)\n", r.Base.BaseTableExpression, r.Base.BaseTableExpression)
-			return fmt.Errorf("table expression must have an alias")
-		} else {
-			ctx.AddTableAlias(rx.Name, "TODO")
-		}
+	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
+		return err
 	}
 
 	for _, j := range r.Joins {

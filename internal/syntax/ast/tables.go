@@ -25,18 +25,6 @@ type TableReferenceOrExpression interface {
 	TableExpression() (queries.Node, error)
 }
 
-type TableReferenceOrExpressionBuilder struct {
-	TableReferenceOrExpression
-}
-
-func (r TableReferenceOrExpressionBuilder) Resolve(ctx *context.ResolveContext) error {
-	return fmt.Errorf("TableReferenceOrExpressionBuilder.Resolve unimplemented")
-}
-
-func (r TableReferenceOrExpressionBuilder) Build() (queries.Node, error) {
-	return r.TableExpression()
-}
-
 type AliasedTableReferenceOrExpression struct {
 	BaseTableExpression TableReferenceOrExpression
 	Alias               *TableAlias

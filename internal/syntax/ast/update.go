@@ -34,6 +34,8 @@ type SetExpression struct {
 }
 
 func (b *UpdateBuilder) Resolve(ctx *context.ResolveContext) error {
+	// TODO - perform name resolution
+
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
@@ -47,7 +49,6 @@ func (b *UpdateBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
-	// return fmt.Errorf("UpdateBuilder.Resolve unimplemented")
 }
 
 func (b *UpdateBuilder) Build() (queries.Node, error) {

@@ -20,6 +20,8 @@ type InsertBuilder struct {
 }
 
 func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
+	// TODO - perform name resolution
+
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
@@ -31,7 +33,6 @@ func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
-	// return fmt.Errorf("InsertBuilder.Resolve unimplemented")
 }
 
 func (b *InsertBuilder) Build() (queries.Node, error) {

@@ -70,17 +70,7 @@ type Join struct {
 }
 
 func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
-	// if a := r.Base.Alias; a != nil {
-	// 	ctx.AddTableAlias(a.TableAlias, "TODO")
-	// } else {
-	// 	fmt.Printf("%T\n", r.Base.BaseTableExpression)
-
-	// 	if ref, ok := r.Base.BaseTableExpression.(*TableReference); ok {
-	// 		ctx.AddTableAlias(ref.Name, "TODO")
-	// 	} else {
-	// 		return fmt.Errorf("table expression must have an alias")
-	// 	}
-	// }
+	// TODO - perform name resolution
 
 	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err

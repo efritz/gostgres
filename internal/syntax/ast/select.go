@@ -44,19 +44,23 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 	ctx.PushScope()
 	defer ctx.PopScope()
 
+	// TODO - perform name resolution
+
 	if err := b.Select.From.Resolve(ctx); err != nil {
 		return err
 	}
 
-	// TODO - separate scopes?
 	for _, c := range b.Select.Combinations {
+		ctx.PushScope()
+
 		if err := c.Select.Resolve(ctx); err != nil {
 			return err
 		}
+
+		ctx.PopScope()
 	}
 
 	return nil
-	// return fmt.Errorf("SelectBuilder.Resolve unimplemented")
 }
 
 func (b *SelectBuilder) Build() (queries.Node, error) {

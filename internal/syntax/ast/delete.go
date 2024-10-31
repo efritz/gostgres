@@ -28,6 +28,8 @@ type DeleteBuilder struct {
 }
 
 func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
+	// TODO - perform name resolution
+
 	table, ok := ctx.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
@@ -41,7 +43,6 @@ func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	return nil
-	// return fmt.Errorf("DeleteBuilder.Resolve unimplemented")
 }
 
 func (b *DeleteBuilder) Build() (queries.Node, error) {

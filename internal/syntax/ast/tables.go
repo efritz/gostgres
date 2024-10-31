@@ -42,6 +42,8 @@ type TableReference struct {
 }
 
 func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
+	// TODO - perform name resolution
+
 	table, ok := ctx.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)

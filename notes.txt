@@ -1,0 +1,2 @@
+AMBIGUOUS:      select * from foo f join (select   x as q from foo q) b(r) on true;
+NON-AMBIGUOUS:  select * from foo f join (select q.x as q from foo q) b(r) on true;

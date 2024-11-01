@@ -22,12 +22,7 @@ type TargetTable struct {
 
 type TableReferenceOrExpression interface {
 	BuilderResolver
-	TableExpression() (queries.Node, error)
-}
-
-type AliasedTableReferenceOrExpression struct {
-	BaseTableExpression TableReferenceOrExpression
-	Alias               *TableAlias
+	tableExpression()
 }
 
 type TableAlias struct {
@@ -51,17 +46,20 @@ func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
 	return nil
 }
 
-func (r *TableReference) Build() (queries.Node, error) {
-	return r.TableExpression()
-}
+func (TableReference) tableExpression() {}
 
-func (r TableReference) TableExpression() (queries.Node, error) {
+func (r *TableReference) Build() (queries.Node, error) {
 	return access.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
+}
+
+type AliasedTableReferenceOrExpression struct {
+	BaseTableExpression TableReferenceOrExpression
+	Alias               *TableAlias
 }
 
 type Join struct {
@@ -83,12 +81,10 @@ func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
 	return nil
 }
 
-func (e *TableExpression) Build() (queries.Node, error) {
-	return e.TableExpression()
-}
+func (TableExpression) tableExpression() {}
 
-func (e *TableExpression) TableExpression() (queries.Node, error) {
-	node, err := e.Base.BaseTableExpression.TableExpression()
+func (e *TableExpression) Build() (queries.Node, error) {
+	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +120,7 @@ func (e *TableExpression) TableExpression() (queries.Node, error) {
 	}
 
 	for _, j := range e.Joins {
-		right, err := j.Table.TableExpression()
+		right, err := j.Table.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +133,7 @@ func (e *TableExpression) TableExpression() (queries.Node, error) {
 
 func joinNodes(left queries.Node, expressions []*TableExpression) queries.Node {
 	for _, expression := range expressions {
-		right, err := expression.TableExpression()
+		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}

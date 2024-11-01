@@ -54,12 +54,10 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 	return nil
 }
 
-func (b *SelectBuilder) Build() (queries.Node, error) {
-	return b.TableExpression()
-}
+func (SelectBuilder) tableExpression() {}
 
-func (b SelectBuilder) TableExpression() (queries.Node, error) {
-	node, err := b.Select.From.TableExpression()
+func (b *SelectBuilder) Build() (queries.Node, error) {
+	node, err := b.Select.From.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +111,7 @@ func (b SelectBuilder) TableExpression() (queries.Node, error) {
 				factory = combination.NewExcept
 			}
 
-			right, err := c.Select.TableExpression()
+			right, err := c.Select.Build()
 			if err != nil {
 				return nil, err
 			}

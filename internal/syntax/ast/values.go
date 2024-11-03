@@ -17,7 +17,9 @@ func (b *ValuesBuilder) Resolve(ctx *context.ResolveContext) error {
 	return nil
 }
 
-func (ValuesBuilder) tableExpression() {}
+func (b ValuesBuilder) TableFields() []fields.Field {
+	return b.Fields
+}
 
 func (b *ValuesBuilder) Build() (queries.Node, error) {
 	return access.NewValues(b.Fields, b.Expressions), nil

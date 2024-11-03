@@ -24,6 +24,8 @@ type SelectBuilder struct {
 	Order  impls.OrderExpression
 	Limit  *int
 	Offset *int
+
+	fields []fields.Field
 }
 
 type SimpleSelectDescription struct {
@@ -51,10 +53,19 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 		}
 	}
 
+	// TODO - use symbol table
+	proj, err := projector.NewProjector("", b.Select.From.TableFields(), b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
+
+	b.fields = proj.Fields()
 	return nil
 }
 
-func (SelectBuilder) tableExpression() {}
+func (b SelectBuilder) TableFields() []fields.Field {
+	return b.fields
+}
 
 func (b *SelectBuilder) Build() (queries.Node, error) {
 	node, err := b.Select.From.Build()

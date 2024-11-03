@@ -20,20 +20,11 @@ type TargetTable struct {
 	AliasName string
 }
 
-type TableReferenceOrExpression interface {
-	BuilderResolver
-	tableExpression()
-}
-
-type TableAlias struct {
-	TableAlias    string
-	ColumnAliases []string
-}
-
 type TableReference struct {
 	Name string
 
-	table impls.Table
+	table  impls.Table
+	fields []fields.Field
 }
 
 func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
@@ -41,12 +32,22 @@ func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
 	}
-	r.table = table
 
+	tableFields := table.Fields()
+	fields := make([]fields.Field, 0, len(tableFields))
+	for _, tableField := range tableFields {
+		fields = append(fields, tableField.Field)
+	}
+
+	// TODO - populate symbol table
+	r.table = table
+	r.fields = fields
 	return nil
 }
 
-func (TableReference) tableExpression() {}
+func (r *TableReference) TableFields() []fields.Field {
+	return r.fields
+}
 
 func (r *TableReference) Build() (queries.Node, error) {
 	return access.NewAccess(r.table), nil
@@ -55,6 +56,8 @@ func (r *TableReference) Build() (queries.Node, error) {
 type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
+
+	fields []fields.Field
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -62,26 +65,57 @@ type AliasedTableReferenceOrExpression struct {
 	Alias               *TableAlias
 }
 
+type TableReferenceOrExpression interface {
+	BuilderResolver
+	TableFields() []fields.Field
+}
+
+type TableAlias struct {
+	TableAlias    string
+	ColumnAliases []string
+}
+
 type Join struct {
 	Table     *TableExpression
 	Condition impls.Expression
 }
 
-func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
-	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
+func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
+	if err := e.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err
 	}
 
-	for _, j := range r.Joins {
+	for _, j := range e.Joins {
 		if err := j.Table.Resolve(ctx); err != nil {
 			return err
 		}
 	}
 
+	baseFields := e.Base.BaseTableExpression.TableFields()
+
+	var fields []fields.Field
+	if a := e.Base.Alias; a != nil {
+		for _, field := range baseFields {
+			fields = append(fields, field.WithRelationName(a.TableAlias)) // TODO - do column aliases here too
+		}
+	} else {
+		for _, field := range baseFields {
+			fields = append(fields, field.WithRelationName(""))
+		}
+	}
+
+	for _, j := range e.Joins {
+		fields = append(fields, j.Table.TableFields()...)
+	}
+
+	// TODO - use symbol table
+	e.fields = fields
 	return nil
 }
 
-func (TableExpression) tableExpression() {}
+func (e TableExpression) TableFields() []fields.Field {
+	return e.fields
+}
 
 func (e *TableExpression) Build() (queries.Node, error) {
 	node, err := e.Base.BaseTableExpression.Build()

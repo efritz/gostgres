@@ -43,23 +43,76 @@ type CombinationDescription struct {
 }
 
 func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
-	if err := b.Select.From.Resolve(ctx); err != nil {
-		return err
-	}
-
-	for _, c := range b.Select.Combinations {
-		if err := c.Select.Resolve(ctx); err != nil {
-			return err
-		}
-	}
-
-	// TODO - use symbol table
-	proj, err := projector.NewProjector("", b.Select.From.TableFields(), b.Select.SelectExpressions)
+	ctx.PushScope()
+	err := b.Select.From.Resolve(ctx)
+	ctx.PopScope()
 	if err != nil {
 		return err
 	}
 
-	b.fields = proj.Fields()
+	// TODO - figure out scoping rule here
+	for _, c := range b.Select.Combinations {
+		// TODO - separate scopes?
+		ctx.PushScope()
+		err := c.Select.Resolve(ctx)
+		ctx.PopScope()
+		if err != nil {
+			return err
+		}
+
+		// TODO - validate field widths (types?)
+	}
+
+	fromFields := b.Select.From.TableFields()
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+
+	ctx.Bind(fromFields...)
+
+	if b.Select.Where != nil {
+		e, err := ctx.ResolveExpression(b.Select.Where)
+		if err != nil {
+			return err
+		}
+		b.Select.Where = e
+	}
+
+	aliases, err := projector.ExpandProjection(fromFields, b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
+	for _, a := range aliases {
+		e, err := a.Map(ctx.ResolveExpression)
+		if err != nil {
+			return err
+		}
+		_ = e // TODO
+	}
+	// TODO - store aliases?
+	b.fields = projector.FieldsFromProjection("", aliases)
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(b.fields...)
+
+	for i, g := range b.Select.Groupings {
+		e, err := ctx.ResolveExpression(g)
+		if err != nil {
+			return err
+		}
+
+		b.Select.Groupings[i] = e
+	}
+
+	if b.Order != nil {
+		os, err := b.Order.Map(ctx.ResolveExpression)
+		if err != nil {
+			return err
+		}
+		b.Order = os
+	}
+
 	return nil
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
@@ -39,7 +40,6 @@ func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
 		fields = append(fields, tableField.Field)
 	}
 
-	// TODO - populate symbol table
 	r.table = table
 	r.fields = fields
 	return nil
@@ -81,35 +81,60 @@ type Join struct {
 }
 
 func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
+	ctx.PushScope()
+	defer ctx.PopScope()
+
 	if err := e.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err
 	}
+
+	baseFields := e.Base.BaseTableExpression.TableFields()
+
+	if a := e.Base.Alias; a != nil {
+		if len(a.ColumnAliases) > 0 {
+			count := 0
+			for _, f := range baseFields {
+				if !f.Internal() {
+					count++
+				}
+			}
+
+			if len(a.ColumnAliases) != count {
+				return fmt.Errorf("wrong number of fields in alias")
+			}
+
+			baseFields = baseFields[:0]
+			for _, alias := range a.ColumnAliases {
+				baseFields = append(baseFields, fields.NewField(a.TableAlias, alias, types.TypeAny))
+			}
+		} else {
+			for i, field := range baseFields {
+				baseFields[i] = field.WithRelationName(a.TableAlias)
+			}
+		}
+	}
+
+	ctx.Bind(baseFields...)
 
 	for _, j := range e.Joins {
 		if err := j.Table.Resolve(ctx); err != nil {
 			return err
 		}
-	}
 
-	baseFields := e.Base.BaseTableExpression.TableFields()
+		joinFields := j.Table.TableFields()
+		ctx.Bind(joinFields...)
+		baseFields = append(baseFields, joinFields...)
 
-	var fields []fields.Field
-	if a := e.Base.Alias; a != nil {
-		for _, field := range baseFields {
-			fields = append(fields, field.WithRelationName(a.TableAlias)) // TODO - do column aliases here too
+		if j.Condition != nil {
+			e, err := ctx.ResolveExpression(j.Condition)
+			if err != nil {
+				return err
+			}
+			j.Condition = e
 		}
-	} else {
-		for _, field := range baseFields {
-			fields = append(fields, field.WithRelationName(""))
-		}
 	}
 
-	for _, j := range e.Joins {
-		fields = append(fields, j.Table.TableFields()...)
-	}
-
-	// TODO - use symbol table
-	e.fields = fields
+	e.fields = baseFields
 	return nil
 }
 

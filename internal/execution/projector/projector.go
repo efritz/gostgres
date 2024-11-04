@@ -112,3 +112,12 @@ func fieldsFromProjection(relationName string, aliases []aliasProjectionExpressi
 
 	return projectedFields
 }
+
+//
+//
+//
+
+var (
+	ExpandProjection     = expandProjection
+	FieldsFromProjection = fieldsFromProjection
+)

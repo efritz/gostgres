@@ -3,6 +3,7 @@ package projector
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type wildcardProjectionExpression struct{}
@@ -32,4 +33,8 @@ func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections
 	}
 
 	return projections, nil
+}
+
+func (p wildcardProjectionExpression) Map(f func(impls.Expression) (impls.Expression, error)) (ProjectionExpression, error) {
+	return p, nil
 }

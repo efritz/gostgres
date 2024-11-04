@@ -40,6 +40,15 @@ func (p aliasProjectionExpression) Expand(fields []fields.Field) ([]aliasProject
 	return []aliasProjectionExpression{p}, nil
 }
 
+func (a aliasProjectionExpression) Map(f func(impls.Expression) (impls.Expression, error)) (ProjectionExpression, error) {
+	expression, err := f(a.expression)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAliasProjectionExpression(expression, a.alias), nil
+}
+
 //
 //
 

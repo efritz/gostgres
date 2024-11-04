@@ -88,7 +88,6 @@ func (p *Projector) DeprojectExpression(expression impls.Expression) impls.Expre
 	}
 
 	return expression
-
 }
 
 func expandProjection(fields []fields.Field, expressions []ProjectionExpression) ([]aliasProjectionExpression, error) {

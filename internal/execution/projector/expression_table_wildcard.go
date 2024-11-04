@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type tableWildcardProjectionExpression struct {
@@ -50,4 +51,8 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projec
 	}
 
 	return projections, nil
+}
+
+func (p tableWildcardProjectionExpression) Map(f func(impls.Expression) (impls.Expression, error)) (ProjectionExpression, error) {
+	return p, nil
 }

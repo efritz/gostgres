@@ -4,7 +4,7 @@ Query:
 SELECT a.district, count(1)
 FROM address a
 GROUP BY a.district
-ORDER BY a.count DESC, a.district
+ORDER BY count DESC, a.district
 LIMIT 10;
 
 Plan:
@@ -12,7 +12,7 @@ Plan:
                       query plan
 ------------------------------------------------------
  limit 10
-    order by a.count desc, a.district
+    order by count desc, a.district
         group by a.district, select(district, count)
             alias as a
                 table scan of address

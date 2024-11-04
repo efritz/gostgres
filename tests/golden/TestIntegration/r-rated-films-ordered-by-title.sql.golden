@@ -19,7 +19,7 @@ Plan:
             join using nested loop
                 alias as f
                     btree index scan of film via idx_title
-                        filter: rating = R
+                        filter: film.rating = R
             with
                 alias as fc
                     btree index scan of film_category via film_category_pkey

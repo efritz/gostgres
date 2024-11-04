@@ -50,9 +50,10 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 		return err
 	}
 
+	fromFields := b.Select.From.TableFields()
+
 	// TODO - figure out scoping rule here
 	for _, c := range b.Select.Combinations {
-		// TODO - separate scopes?
 		ctx.PushScope()
 		err := c.Select.Resolve(ctx)
 		ctx.PopScope()
@@ -60,10 +61,10 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 			return err
 		}
 
-		// TODO - validate field widths (types?)
+		if len(c.Select.TableFields()) != len(fromFields) {
+			return fmt.Errorf("union tables have different number of columns")
+		}
 	}
-
-	fromFields := b.Select.From.TableFields()
 
 	ctx.PushScope()
 	defer ctx.PopScope()

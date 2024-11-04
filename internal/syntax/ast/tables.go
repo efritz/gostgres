@@ -57,7 +57,8 @@ type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
 
-	fields []fields.Field
+	fields                []fields.Field
+	projectionExpressions []projector.ProjectionExpression
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -90,26 +91,34 @@ func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
 
 	baseFields := e.Base.BaseTableExpression.TableFields()
 
+	var projectionExpressions []projector.ProjectionExpression
 	if a := e.Base.Alias; a != nil {
-		if len(a.ColumnAliases) > 0 {
-			count := 0
+		tableAlias := a.TableAlias
+		columnAliases := a.ColumnAliases
+
+		if len(columnAliases) > 0 {
+			var rawFields []fields.Field
 			for _, f := range baseFields {
 				if !f.Internal() {
-					count++
+					rawFields = append(rawFields, f.WithRelationName(tableAlias))
 				}
 			}
 
-			if len(a.ColumnAliases) != count {
+			if len(columnAliases) != len(rawFields) {
 				return fmt.Errorf("wrong number of fields in alias")
 			}
 
-			baseFields = baseFields[:0]
-			for _, alias := range a.ColumnAliases {
-				baseFields = append(baseFields, fields.NewField(a.TableAlias, alias, types.TypeAny))
+			baseFields := baseFields[:0]
+			for i, rawField := range rawFields {
+				columnAlias := columnAliases[i]
+				aliasedField := fields.NewField(tableAlias, columnAlias, types.TypeAny)
+
+				baseFields = append(baseFields, aliasedField)
+				projectionExpressions = append(projectionExpressions, projector.NewAliasProjectionExpression(expressions.NewNamed(rawField), columnAlias))
 			}
 		} else {
 			for i, field := range baseFields {
-				baseFields[i] = field.WithRelationName(a.TableAlias)
+				baseFields[i] = field.WithRelationName(tableAlias)
 			}
 		}
 	}
@@ -135,6 +144,7 @@ func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
 	}
 
 	e.fields = baseFields
+	e.projectionExpressions = projectionExpressions
 	return nil
 }
 
@@ -149,29 +159,10 @@ func (e *TableExpression) Build() (queries.Node, error) {
 	}
 
 	if e.Base.Alias != nil {
-		aliasName := e.Base.Alias.TableAlias
-		columnNames := e.Base.Alias.ColumnAliases
+		node = alias.NewAlias(node, e.Base.Alias.TableAlias)
 
-		node = alias.NewAlias(node, aliasName)
-
-		if len(columnNames) > 0 {
-			var fields []fields.Field
-			for _, f := range node.Fields() {
-				if !f.Internal() {
-					fields = append(fields, f)
-				}
-			}
-
-			if len(columnNames) != len(fields) {
-				return nil, fmt.Errorf("wrong number of fields in alias")
-			}
-
-			projectionExpressions := make([]projector.ProjectionExpression, 0, len(fields))
-			for i, field := range fields {
-				projectionExpressions = append(projectionExpressions, projector.NewAliasProjectionExpression(expressions.NewNamed(field), columnNames[i]))
-			}
-
-			node, err = projection.NewProjection(node, projectionExpressions)
+		if len(e.projectionExpressions) > 0 {
+			node, err = projection.NewProjection(node, e.projectionExpressions)
 			if err != nil {
 				return nil, err
 			}

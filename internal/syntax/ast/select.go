@@ -43,32 +43,28 @@ type CombinationDescription struct {
 }
 
 func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
-	ctx.PushScope()
-	err := b.Select.From.Resolve(ctx)
-	ctx.PopScope()
-	if err != nil {
+	if err := b.resolvePrimarySelect(ctx); err != nil {
+		return err
+	}
+
+	if err := b.resolveCombinations(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error {
+	if err := ctx.WithScope(func() error {
+		return b.Select.From.Resolve(ctx)
+	}); err != nil {
 		return err
 	}
 
 	fromFields := b.Select.From.TableFields()
 
-	// TODO - figure out scoping rule here
-	for _, c := range b.Select.Combinations {
-		ctx.PushScope()
-		err := c.Select.Resolve(ctx)
-		ctx.PopScope()
-		if err != nil {
-			return err
-		}
-
-		if len(c.Select.TableFields()) != len(fromFields) {
-			return fmt.Errorf("union tables have different number of columns")
-		}
-	}
-
 	ctx.PushScope()
 	defer ctx.PopScope()
-
 	ctx.Bind(fromFields...)
 
 	if b.Select.Where != nil {
@@ -112,6 +108,24 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 			return err
 		}
 		b.Order = os
+	}
+
+	return nil
+}
+
+func (b *SelectBuilder) resolveCombinations(ctx *context.ResolveContext) error {
+	for _, c := range b.Select.Combinations {
+		if err := ctx.WithScope(func() error {
+			return c.Select.Resolve(ctx)
+		}); err != nil {
+			return err
+		}
+
+		combinationFields := c.Select.TableFields()
+
+		if len(combinationFields) != len(b.fields) {
+			return fmt.Errorf("union tables have different number of columns")
+		}
 	}
 
 	return nil

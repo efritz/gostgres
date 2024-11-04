@@ -21,6 +21,13 @@ type TableGetter interface {
 	Get(name string) (impls.Table, bool)
 }
 
+func (rc *ResolveContext) WithScope(f func() error) error {
+	rc.PushScope()
+	defer rc.PopScope()
+
+	return f()
+}
+
 func (rc *ResolveContext) PushScope() {
 	rc.Scopes = append(rc.Scopes, Scope{})
 }

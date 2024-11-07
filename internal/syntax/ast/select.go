@@ -184,7 +184,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 				}
 
 				// TODO - more lenient validation
-				// return nil,  fmt.Errorf("%q not in group by", expression)
+				// return nil, fmt.Errorf("%q not in group by", expression)
 			}
 		}
 

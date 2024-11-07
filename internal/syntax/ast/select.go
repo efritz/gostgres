@@ -79,12 +79,18 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error 
 	if err != nil {
 		return err
 	}
+	type mappedAlias struct {
+		alias string
+		expr  impls.Expression
+	}
+	var mappedAliases []mappedAlias
 	for _, a := range aliases {
-		e, err := a.Map(ctx.ResolveExpression)
+		e, err := a.Expression.Map(ctx.ResolveExpression)
 		if err != nil {
 			return err
 		}
-		_ = e // TODO
+
+		mappedAliases = append(mappedAliases, mappedAlias{alias: a.Alias, expr: e})
 	}
 	// TODO - store aliases?
 	b.fields = projector.FieldsFromProjection("", aliases)
@@ -99,6 +105,22 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error 
 			return err
 		}
 
+		// TODO - vet
+		e, err = e.Map(func(e impls.Expression) (impls.Expression, error) {
+			if named, ok := e.(expressions.NamedExpression); ok {
+				for _, a := range mappedAliases {
+					if a.alias == named.Field().Name() {
+						return a.expr, nil
+					}
+				}
+			}
+
+			return e, nil
+		})
+		if err != nil {
+			return err
+		}
+
 		b.Select.Groupings[i] = e
 	}
 
@@ -107,6 +129,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error 
 		if err != nil {
 			return err
 		}
+
 		b.Order = os
 	}
 
@@ -166,17 +189,12 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		}
 
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
-		b.Select.SelectExpressions = nil
 	}
 
-	if len(b.Select.Combinations) != 0 {
-		if b.Select.SelectExpressions != nil {
-			newNode, err := projection.NewProjection(node, b.Select.SelectExpressions)
-			if err != nil {
-				return nil, err
-			}
-			node = newNode
-			b.Select.SelectExpressions = nil
+	if len(b.Select.Combinations) > 0 {
+		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
 		}
 
 		for _, c := range b.Select.Combinations {
@@ -213,8 +231,12 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		node = limit.NewLimit(node, *b.Limit)
 	}
 
-	if b.Select.SelectExpressions != nil {
-		return projection.NewProjection(node, b.Select.SelectExpressions)
+	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
+		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return node, nil
 }

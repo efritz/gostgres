@@ -7,6 +7,6 @@ import (
 
 type ProjectionExpression interface {
 	Dealias(name string, fields []fields.Field, alias string) ProjectionExpression
-	Expand(fields []fields.Field) ([]aliasProjectionExpression, error)
+	Expand(fields []fields.Field) ([]AliasProjectionExpression, error)
 	Map(f func(impls.Expression) (impls.Expression, error)) (ProjectionExpression, error)
 }

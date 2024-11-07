@@ -20,15 +20,15 @@ func (p wildcardProjectionExpression) Dealias(name string, fields []fields.Field
 	return p
 }
 
-func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections []aliasProjectionExpression, _ error) {
+func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections []AliasProjectionExpression, _ error) {
 	for _, field := range fields {
 		if field.Internal() {
 			continue
 		}
 
-		projections = append(projections, aliasProjectionExpression{
-			alias:      field.Name(),
-			expression: expressions.NewNamed(field),
+		projections = append(projections, AliasProjectionExpression{
+			Alias:      field.Name(),
+			Expression: expressions.NewNamed(field),
 		})
 	}
 

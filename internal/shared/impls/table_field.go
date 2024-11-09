@@ -12,12 +12,8 @@ type TableField struct {
 	defaultExpression Expression
 }
 
-func NewTableField(relationName, name string, typ types.Type) TableField {
-	return newTableField(fields.NewField(relationName, name, typ), true, nil)
-}
-
-func NewInternalTableField(relationName, name string, typ types.Type) TableField {
-	return newTableField(fields.NewInternalField(relationName, name, typ), true, nil)
+func NewTableField(relationName, name string, typ types.Type, internalFieldType fields.InternalFieldType) TableField {
+	return newTableField(fields.NewField(relationName, name, typ, internalFieldType), true, nil)
 }
 
 func newTableField(field fields.Field, nullable bool, defaultExpression Expression) TableField {

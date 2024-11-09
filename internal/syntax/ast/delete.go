@@ -13,7 +13,6 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
@@ -59,10 +58,10 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	if b.Target.AliasName != "" {
 		relationName = b.Target.AliasName
 	}
-	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
+	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
 
 	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
+		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
 	})
 	if err != nil {
 		return nil, err

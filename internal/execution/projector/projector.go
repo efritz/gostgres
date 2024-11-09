@@ -74,7 +74,7 @@ func (p *Projector) ProjectRow(ctx impls.Context, row rows.Row) (rows.Row, error
 
 func (p *Projector) ProjectExpression(expression impls.Expression) impls.Expression {
 	for _, alias := range p.aliases {
-		expression = Alias(expression, fields.NewField("", alias.alias, types.TypeAny), alias.expression)
+		expression = Alias(expression, fields.NewField("", alias.alias, types.TypeAny, fields.NonInternalField), alias.expression)
 	}
 
 	return expression
@@ -108,7 +108,7 @@ func expandProjection(fields []fields.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []aliasProjectionExpression) []fields.Field {
 	projectedFields := make([]fields.Field, 0, len(aliases))
 	for _, field := range aliases {
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.alias, types.TypeAny))
+		projectedFields = append(projectedFields, fields.NewField(relationName, field.alias, types.TypeAny, fields.NonInternalField))
 	}
 
 	return projectedFields

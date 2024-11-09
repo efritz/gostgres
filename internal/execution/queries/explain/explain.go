@@ -26,10 +26,10 @@ func (n *explain) Name() string {
 	return "EXPLAIN"
 }
 
+var queryPlanField = fields.NewField("", "query plan", types.TypeText, fields.NonInternalField)
+
 func (n *explain) Fields() []fields.Field {
-	return []fields.Field{
-		fields.NewField("", "query plan", types.TypeText),
-	}
+	return []fields.Field{queryPlanField}
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter) {}

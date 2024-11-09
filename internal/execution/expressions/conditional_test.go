@@ -125,10 +125,10 @@ func TestEvaluateOr(t *testing.T) {
 }
 
 func TestConditionalEqual(t *testing.T) {
-	a := NewNamed(fields.NewField("t", "a", types.TypeText))
-	b := NewNamed(fields.NewField("t", "b", types.TypeText))
-	c := NewNamed(fields.NewField("t", "c", types.TypeText))
-	d := NewNamed(fields.NewField("t", "d", types.TypeText))
+	a := NewNamed(fields.NewField("t", "a", types.TypeText, fields.NonInternalField))
+	b := NewNamed(fields.NewField("t", "b", types.TypeText, fields.NonInternalField))
+	c := NewNamed(fields.NewField("t", "c", types.TypeText, fields.NonInternalField))
+	d := NewNamed(fields.NewField("t", "d", types.TypeText, fields.NonInternalField))
 
 	e1 := NewEquals(a, b)
 	e2 := NewLessThanEquals(b, c)

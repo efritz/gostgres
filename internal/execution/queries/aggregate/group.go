@@ -102,7 +102,7 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 		}
 
-		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny))
+		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny, fields.NonInternalField))
 		exprs = append(exprs, expr)
 	}
 

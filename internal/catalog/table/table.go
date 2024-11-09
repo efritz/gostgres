@@ -21,11 +21,11 @@ type table struct {
 
 var _ impls.Table = &table{}
 
-func NewTable(name string, fields []impls.TableField) impls.Table {
+func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	tableFields := []impls.TableField{
-		impls.NewInternalTableField(name, rows.TIDName, types.TypeBigInteger),
+		impls.NewTableField(name, "tid", types.TypeBigInteger, fields.InternalFieldTid),
 	}
-	for _, field := range fields {
+	for _, field := range nonInternalFields {
 		tableFields = append(tableFields, field.WithRelationName(name))
 	}
 

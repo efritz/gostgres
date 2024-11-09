@@ -8,7 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-func (i *btreeIndex) Scanner(ctx impls.Context, opts BtreeIndexScanOptions) (scan.TIDScanner, error) {
+func (i *btreeIndex) Scanner(ctx impls.ExecutionContext, opts BtreeIndexScanOptions) (scan.TIDScanner, error) {
 	ctx.Log("Building BTree Index scanner")
 
 	stack := []*btreeNode{}
@@ -73,7 +73,7 @@ type resolvedScanBound struct {
 	inclusive bool
 }
 
-func resolveScanBounds(ctx impls.Context, scanBounds [][]scanBound) ([][]resolvedScanBound, error) {
+func resolveScanBounds(ctx impls.ExecutionContext, scanBounds [][]scanBound) ([][]resolvedScanBound, error) {
 	var resolvedScanBounds [][]resolvedScanBound
 	for _, bounds := range scanBounds {
 		resolvedBounds := []resolvedScanBound{}

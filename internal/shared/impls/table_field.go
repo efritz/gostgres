@@ -28,7 +28,7 @@ func (f TableField) Nullable() bool {
 	return f.nullable
 }
 
-func (f TableField) Default(ctx Context) (any, error) {
+func (f TableField) Default(ctx ExecutionContext) (any, error) {
 	if f.defaultExpression == nil {
 		return nil, nil
 	}

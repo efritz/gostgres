@@ -14,7 +14,7 @@ type binaryExpression struct {
 	valueFrom    binaryValueFromFunc
 }
 
-type binaryValueFromFunc func(ctx impls.Context, left, right impls.Expression, row rows.Row) (any, error)
+type binaryValueFromFunc func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error)
 
 func newBinaryExpression(left, right impls.Expression, operatorText string, valueFrom binaryValueFromFunc) impls.Expression {
 	return binaryExpression{
@@ -75,6 +75,6 @@ func (e binaryExpression) Map(f func(impls.Expression) (impls.Expression, error)
 	return f(newBinaryExpression(left, right, e.operatorText, e.valueFrom))
 }
 
-func (e binaryExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e binaryExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	return e.valueFrom(ctx, e.left, e.right, row)
 }

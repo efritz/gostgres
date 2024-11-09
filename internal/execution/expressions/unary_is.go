@@ -7,7 +7,7 @@ import (
 )
 
 func NewIsNull(expression impls.Expression) impls.Expression {
-	return newUnaryExpression(expression, "is null", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+	return newUnaryExpression(expression, "is null", func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := expression.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
@@ -17,7 +17,7 @@ func NewIsNull(expression impls.Expression) impls.Expression {
 }
 
 func NewIsTrue(expression impls.Expression) impls.Expression {
-	return newUnaryExpression(expression, "is true", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+	return newUnaryExpression(expression, "is true", func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
@@ -27,7 +27,7 @@ func NewIsTrue(expression impls.Expression) impls.Expression {
 }
 
 func NewIsFalse(expression impls.Expression) impls.Expression {
-	return newUnaryExpression(expression, "is false", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+	return newUnaryExpression(expression, "is false", func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err
@@ -37,7 +37,7 @@ func NewIsFalse(expression impls.Expression) impls.Expression {
 }
 
 func NewIsUnknown(expression impls.Expression) impls.Expression {
-	return newUnaryExpression(expression, "is unknown", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+	return newUnaryExpression(expression, "is unknown", func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err

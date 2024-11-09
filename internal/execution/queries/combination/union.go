@@ -82,7 +82,7 @@ func (n *unionNode) Filter() impls.Expression {
 func (n *unionNode) Ordering() impls.OrderExpression { return nil }
 func (n *unionNode) SupportsMarkRestore() bool       { return false }
 
-func (n *unionNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *unionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Union scanner")
 
 	hash := map[string]struct{}{}

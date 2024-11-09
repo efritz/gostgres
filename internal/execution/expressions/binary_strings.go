@@ -7,7 +7,7 @@ import (
 )
 
 func NewConcat(left, right impls.Expression) impls.Expression {
-	return newBinaryExpression(left, right, "||", func(ctx impls.Context, left, right impls.Expression, row rows.Row) (any, error) {
+	return newBinaryExpression(left, right, "||", func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
 		lVal, err := types.ValueAs[string](left.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err

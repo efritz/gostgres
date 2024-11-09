@@ -33,13 +33,13 @@ func NewEngine(catalog impls.CatalogSet) *Engine {
 }
 
 func (e *Engine) Query(request protocol.Request, responseWriter protocol.ResponseWriter) {
-	query, err := parsing.Parse(e.catalog.Tables, lexing.Lex(request.Query))
+	query, err := parsing.Parse(e.catalog, lexing.Lex(request.Query))
 	if err != nil {
 		responseWriter.Error(fmt.Errorf("failed to parse query: %s", err))
 		return
 	}
 
-	executionContext := impls.NewContext(e.catalog)
+	executionContext := impls.NewExecutionContext(e.catalog)
 	if request.Debug {
 		executionContext = executionContext.WithDebug()
 	}

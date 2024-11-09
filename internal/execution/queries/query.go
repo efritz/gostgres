@@ -8,7 +8,7 @@ import (
 )
 
 type Query interface {
-	Execute(ctx impls.Context, w protocol.ResponseWriter)
+	Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter)
 }
 
 type NodeQuery struct {
@@ -23,7 +23,7 @@ func NewQuery(n Node) *NodeQuery {
 	}
 }
 
-func (q *NodeQuery) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *NodeQuery) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	q.Node.Optimize()
 
 	scanner, err := q.Node.Scanner(ctx)
@@ -43,6 +43,6 @@ func (q *NodeQuery) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func Evaluate(ctx impls.Context, expr impls.Expression, row rows.Row) (any, error) {
+func Evaluate(ctx impls.ExecutionContext, expr impls.Expression, row rows.Row) (any, error) {
 	return expr.ValueFrom(ctx, rows.CombineRows(row, ctx.OuterRow()))
 }

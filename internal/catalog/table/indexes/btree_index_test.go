@@ -44,7 +44,7 @@ func TestBTreeIndex(t *testing.T) {
 	}
 
 	ids := func(opts BtreeIndexScanOptions) []int32 {
-		scanner, err := index.Scanner(impls.EmptyContext, opts)
+		scanner, err := index.Scanner(impls.EmptyExecutionContext, opts)
 		require.NoError(t, err)
 
 		var ids []int32

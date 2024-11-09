@@ -127,7 +127,7 @@ func (e conditionalExpression) Map(f func(impls.Expression) (impls.Expression, e
 	return f(newConditionalExpression(left, right, e.operatorText, e.valueFrom, e.foldFunc, e.conjunctions))
 }
 
-func (e conditionalExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e conditionalExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	lVal, err := types.ValueAs[bool](e.left.ValueFrom(ctx, row))
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (e conditionalExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, 
 
 func simplifyConditional(factory foldFunc, f func(value *bool) (impls.Expression, bool)) foldFunc {
 	return func(left, right impls.Expression) impls.Expression {
-		if value, err := types.ValueAs[bool](left.ValueFrom(impls.EmptyContext, rows.Row{})); err == nil {
+		if value, err := types.ValueAs[bool](left.ValueFrom(impls.EmptyExecutionContext, rows.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}
@@ -151,7 +151,7 @@ func simplifyConditional(factory foldFunc, f func(value *bool) (impls.Expression
 			return right
 		}
 
-		if value, err := types.ValueAs[bool](right.ValueFrom(impls.EmptyContext, rows.Row{})); err == nil {
+		if value, err := types.ValueAs[bool](right.ValueFrom(impls.EmptyExecutionContext, rows.Row{})); err == nil {
 			if expression, ok := f(value); ok {
 				return expression
 			}

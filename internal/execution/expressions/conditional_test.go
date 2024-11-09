@@ -35,7 +35,7 @@ func TestEvaluateNot(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewNot(testCase.expr)
-			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
@@ -70,7 +70,7 @@ func TestEvaluateAnd(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewAnd(testCase.left, testCase.right)
-			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
@@ -117,7 +117,7 @@ func TestEvaluateOr(t *testing.T) {
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			e := NewOr(testCase.left, testCase.right)
-			val, err := e.ValueFrom(impls.EmptyContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})

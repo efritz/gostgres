@@ -39,6 +39,6 @@ func (e constantExpression) Map(f func(impls.Expression) (impls.Expression, erro
 	return f(e)
 }
 
-func (e constantExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e constantExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	return e.value, nil
 }

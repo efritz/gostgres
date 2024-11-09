@@ -46,7 +46,7 @@ func TestHashIndex(t *testing.T) {
 			expression: expressions.NewConstant("name-42"),
 		}
 
-		scanner, err := index.Scanner(impls.EmptyContext, opts)
+		scanner, err := index.Scanner(impls.EmptyExecutionContext, opts)
 		require.NoError(t, err)
 
 		var ids []int32

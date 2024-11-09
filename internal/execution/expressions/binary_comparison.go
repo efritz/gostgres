@@ -48,7 +48,7 @@ func NewBetweenSymmetric(left, middle, right impls.Expression) impls.Expression 
 }
 
 func newComparison(left, right impls.Expression, comparisonType ComparisonType) impls.Expression {
-	return newBinaryExpression(left, right, comparisonType.String(), func(ctx impls.Context, left, right impls.Expression, row rows.Row) (any, error) {
+	return newBinaryExpression(left, right, comparisonType.String(), func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
 		lVal, err := left.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err

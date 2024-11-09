@@ -106,7 +106,7 @@ func (i *hashIndex) extractTIDAndValueFromRow(row rows.Row) (int64, any, error) 
 		return 0, nil, err
 	}
 
-	value, err := i.expression.ValueFrom(impls.EmptyContext, row)
+	value, err := i.expression.ValueFrom(impls.EmptyExecutionContext, row)
 	if err != nil {
 		return 0, nil, err
 	}

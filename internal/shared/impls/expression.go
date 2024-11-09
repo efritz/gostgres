@@ -12,12 +12,12 @@ type Expression interface {
 	Equal(other Expression) bool
 	Fold() Expression
 	Map(f func(Expression) (Expression, error)) (Expression, error)
-	ValueFrom(cts Context, row rows.Row) (any, error)
+	ValueFrom(cts ExecutionContext, row rows.Row) (any, error)
 }
 
 type AggregateExpression interface {
-	Step(ctx Context, row rows.Row) error
-	Done(ctx Context) (any, error)
+	Step(ctx ExecutionContext, row rows.Row) error
+	Done(ctx ExecutionContext) (any, error)
 }
 
 type OrderExpression interface {

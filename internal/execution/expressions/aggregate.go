@@ -5,7 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func AsAggregate(ctx impls.Context, e impls.Expression) (impls.AggregateExpression, error) {
+func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) (impls.AggregateExpression, error) {
 	var (
 		results        []*constantExpression
 		subExpressions []impls.AggregateExpression
@@ -52,7 +52,7 @@ type explodedAggregateExpression struct {
 
 var _ impls.AggregateExpression = &explodedAggregateExpression{}
 
-func (e *explodedAggregateExpression) Step(ctx impls.Context, row rows.Row) error {
+func (e *explodedAggregateExpression) Step(ctx impls.ExecutionContext, row rows.Row) error {
 	for _, subexpression := range e.subExpressions {
 		if err := subexpression.Step(ctx, row); err != nil {
 			return err
@@ -62,7 +62,7 @@ func (e *explodedAggregateExpression) Step(ctx impls.Context, row rows.Row) erro
 	return nil
 }
 
-func (e *explodedAggregateExpression) Done(ctx impls.Context) (any, error) {
+func (e *explodedAggregateExpression) Done(ctx impls.ExecutionContext) (any, error) {
 	for i, subExpression := range e.subExpressions {
 		value, err := subExpression.Done(ctx)
 		if err != nil {
@@ -83,7 +83,7 @@ type aggregateSubExpression struct {
 
 var _ impls.AggregateExpression = &aggregateSubExpression{}
 
-func (e *aggregateSubExpression) Step(ctx impls.Context, row rows.Row) error {
+func (e *aggregateSubExpression) Step(ctx impls.ExecutionContext, row rows.Row) error {
 	var values []any
 	for _, arg := range e.args {
 		value, err := arg.ValueFrom(ctx, row)
@@ -103,7 +103,7 @@ func (e *aggregateSubExpression) Step(ctx impls.Context, row rows.Row) error {
 	return nil
 }
 
-func (e *aggregateSubExpression) Done(ctx impls.Context) (any, error) {
+func (e *aggregateSubExpression) Done(ctx impls.ExecutionContext) (any, error) {
 	return e.aggregate.Done(e.state)
 }
 
@@ -114,7 +114,7 @@ type nonAggregateExpression struct {
 
 var _ impls.AggregateExpression = &nonAggregateExpression{}
 
-func (e *nonAggregateExpression) Step(ctx impls.Context, row rows.Row) error {
+func (e *nonAggregateExpression) Step(ctx impls.ExecutionContext, row rows.Row) error {
 	value, err := e.expression.ValueFrom(ctx, row)
 	if err != nil {
 		return err
@@ -124,6 +124,6 @@ func (e *nonAggregateExpression) Step(ctx impls.Context, row rows.Row) error {
 	return nil
 }
 
-func (e *nonAggregateExpression) Done(ctx impls.Context) (any, error) {
+func (e *nonAggregateExpression) Done(ctx impls.ExecutionContext) (any, error) {
 	return e.state, nil
 }

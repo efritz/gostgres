@@ -29,7 +29,7 @@ func NewCreatePrimaryKeyConstraint(name, tableName string, columnNames []string)
 	}
 }
 
-func (q *createPrimaryKeyConstraint) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createPrimaryKeyConstraint) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -38,7 +38,7 @@ func (q *createPrimaryKeyConstraint) Execute(ctx impls.Context, w protocol.Respo
 	w.Done()
 }
 
-func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx impls.Context) error {
+func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx impls.ExecutionContext) error {
 	t, ok := ctx.Catalog.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -90,7 +90,7 @@ func NewCreateCheckConstraint(name, tableName string, expression impls.Expressio
 	}
 }
 
-func (q *createCheckConstraint) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createCheckConstraint) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -99,7 +99,7 @@ func (q *createCheckConstraint) Execute(ctx impls.Context, w protocol.ResponseWr
 	w.Done()
 }
 
-func (q *createCheckConstraint) ExecuteDDL(ctx impls.Context) error {
+func (q *createCheckConstraint) ExecuteDDL(ctx impls.ExecutionContext) error {
 	table, ok := ctx.Catalog.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
@@ -130,7 +130,7 @@ func NewCreateForeignKeyConstraint(name, tableName string, columnNames []string,
 	}
 }
 
-func (q *createForeignKeyConstraint) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createForeignKeyConstraint) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -139,7 +139,7 @@ func (q *createForeignKeyConstraint) Execute(ctx impls.Context, w protocol.Respo
 	w.Done()
 }
 
-func (q *createForeignKeyConstraint) ExecuteDDL(ctx impls.Context) error {
+func (q *createForeignKeyConstraint) ExecuteDDL(ctx impls.ExecutionContext) error {
 	t, ok := ctx.Catalog.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)

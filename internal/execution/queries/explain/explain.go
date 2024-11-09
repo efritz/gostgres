@@ -40,7 +40,7 @@ func (n *explain) Filter() impls.Expression               { return nil }
 func (n *explain) Ordering() impls.OrderExpression        { return nil }
 func (n *explain) SupportsMarkRestore() bool              { return false }
 
-func (n *explain) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *explain) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Explain scanner")
 
 	plan := serialization.SerializePlan(n.n)

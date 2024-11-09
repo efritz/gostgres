@@ -46,7 +46,7 @@ func (e namedExpression) Map(f func(impls.Expression) (impls.Expression, error))
 	return f(e)
 }
 
-func (e namedExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e namedExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	index, err := fields.FindMatchingFieldIndex(e.field, row.Fields)
 	if err != nil {
 		return nil, err

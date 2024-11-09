@@ -124,7 +124,7 @@ func SubsumesOrder(a, b impls.OrderExpression) bool {
 }
 
 func tryEvaluate(expression impls.Expression) impls.Expression {
-	if value, err := expression.ValueFrom(impls.EmptyContext, rows.Row{}); err == nil {
+	if value, err := expression.ValueFrom(impls.EmptyExecutionContext, rows.Row{}); err == nil {
 		return NewConstant(value)
 	}
 

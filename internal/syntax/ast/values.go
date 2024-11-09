@@ -5,7 +5,6 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/access"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type ValuesBuilder struct {
@@ -13,7 +12,7 @@ type ValuesBuilder struct {
 	Expressions [][]impls.Expression
 }
 
-func (b *ValuesBuilder) Resolve(ctx *context.ResolveContext) error {
+func (b *ValuesBuilder) Resolve(ctx impls.ResolutionContext) error {
 	return nil
 }
 

@@ -8,25 +8,38 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-type Context struct {
+type ResolutionContext struct {
+	Catalog CatalogSet
+}
+
+func NewResolutionContext(catalog CatalogSet) ResolutionContext {
+	return ResolutionContext{
+		Catalog: catalog,
+	}
+}
+
+//
+//
+
+type ExecutionContext struct {
 	Catalog  CatalogSet
 	debug    bool
 	outerRow rows.Row
 }
 
-var EmptyContext = NewContext(NewCatalogEmptySet())
+var EmptyExecutionContext = NewExecutionContext(NewCatalogEmptySet())
 
-func NewContext(catalog CatalogSet) Context {
-	return Context{
+func NewExecutionContext(catalog CatalogSet) ExecutionContext {
+	return ExecutionContext{
 		Catalog: catalog,
 	}
 }
 
-func (c Context) OuterRow() rows.Row                { return c.outerRow }
-func (c Context) WithDebug() Context                { c.debug = true; return c }
-func (c Context) WithOuterRow(row rows.Row) Context { c.outerRow = row; return c }
+func (c ExecutionContext) OuterRow() rows.Row                         { return c.outerRow }
+func (c ExecutionContext) WithDebug() ExecutionContext                { c.debug = true; return c }
+func (c ExecutionContext) WithOuterRow(row rows.Row) ExecutionContext { c.outerRow = row; return c }
 
-func (c Context) Log(format string, args ...interface{}) {
+func (c ExecutionContext) Log(format string, args ...interface{}) {
 	if !c.debug {
 		return
 	}

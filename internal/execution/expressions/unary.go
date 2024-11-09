@@ -13,7 +13,7 @@ type unaryExpression struct {
 	valueFrom    unaryValueFromFunc
 }
 
-type unaryValueFromFunc func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error)
+type unaryValueFromFunc func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error)
 
 func newUnaryExpression(expression impls.Expression, operatorText string, valueFrom unaryValueFromFunc) impls.Expression {
 	return unaryExpression{
@@ -52,6 +52,6 @@ func (e unaryExpression) Map(f func(impls.Expression) (impls.Expression, error))
 	return f(newUnaryExpression(inner, e.operatorText, e.valueFrom))
 }
 
-func (e unaryExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e unaryExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	return e.valueFrom(ctx, e.expression, row)
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func NewNot(expression impls.Expression) impls.Expression {
-	return newUnaryExpression(expression, "not", func(ctx impls.Context, expression impls.Expression, row rows.Row) (any, error) {
+	return newUnaryExpression(expression, "not", func(ctx impls.ExecutionContext, expression impls.Expression, row rows.Row) (any, error) {
 		val, err := types.ValueAs[bool](expression.ValueFrom(ctx, row))
 		if err != nil {
 			return nil, err

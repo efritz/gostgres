@@ -12,7 +12,7 @@ type accessStrategy interface {
 	Serialize(w serialization.IndentWriter)
 	Filter() impls.Expression
 	Ordering() impls.OrderExpression
-	Scanner(ctx impls.Context) (scan.RowScanner, error)
+	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 
 func selectAccessStrategy(

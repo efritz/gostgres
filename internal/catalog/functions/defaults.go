@@ -16,7 +16,7 @@ func DefaultFunctions() map[string]impls.Function {
 	}
 }
 
-func now(ctx impls.Context, args []any) (any, error) {
+func now(ctx impls.ExecutionContext, args []any) (any, error) {
 	if len(args) != 0 {
 		return nil, fmt.Errorf("now() takes no arguments")
 	}
@@ -24,7 +24,7 @@ func now(ctx impls.Context, args []any) (any, error) {
 	return time.Now(), nil
 }
 
-func nextval(ctx impls.Context, args []any) (any, error) {
+func nextval(ctx impls.ExecutionContext, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("nextval() takes one argument")
 	}
@@ -41,7 +41,7 @@ func nextval(ctx impls.Context, args []any) (any, error) {
 	return sequence.Next()
 }
 
-func setval(ctx impls.Context, args []any) (any, error) {
+func setval(ctx impls.ExecutionContext, args []any) (any, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("setval() takes two arguments")
 	}
@@ -62,7 +62,7 @@ func setval(ctx impls.Context, args []any) (any, error) {
 	return nil, sequence.Set(value)
 }
 
-func currval(ctx impls.Context, args []any) (any, error) {
+func currval(ctx impls.ExecutionContext, args []any) (any, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("currval() takes one argument")
 	}

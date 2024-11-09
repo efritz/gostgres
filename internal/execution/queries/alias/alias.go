@@ -105,7 +105,7 @@ func (n *aliasNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *aliasNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *aliasNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Alias scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

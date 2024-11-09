@@ -79,7 +79,7 @@ func (e functionExpression) Map(f func(impls.Expression) (impls.Expression, erro
 	return f(NewFunction(e.name, args))
 }
 
-func (e functionExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e functionExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	f, ok := ctx.Catalog.Functions.Get(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", e.name)

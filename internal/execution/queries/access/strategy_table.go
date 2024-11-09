@@ -31,7 +31,7 @@ func (s *tableAccessStrategy) Ordering() impls.OrderExpression {
 	return nil
 }
 
-func (s *tableAccessStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (s *tableAccessStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Table Access Strategy scanner")
 
 	tids := s.table.TIDs()

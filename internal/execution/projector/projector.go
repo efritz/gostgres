@@ -58,7 +58,7 @@ func (p *Projector) Optimize() {
 	}
 }
 
-func (p *Projector) ProjectRow(ctx impls.Context, row rows.Row) (rows.Row, error) {
+func (p *Projector) ProjectRow(ctx impls.ExecutionContext, row rows.Row) (rows.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := queries.Evaluate(ctx, field.expression, row)

@@ -12,7 +12,6 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type TargetTable struct {
@@ -41,8 +40,8 @@ type TableReference struct {
 	table impls.Table
 }
 
-func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
-	table, ok := ctx.Tables.Get(r.Name)
+func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
+	table, ok := ctx.Catalog.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
 	}
@@ -69,7 +68,7 @@ type Join struct {
 	Condition impls.Expression
 }
 
-func (r *TableExpression) Resolve(ctx *context.ResolveContext) error {
+func (r *TableExpression) Resolve(ctx impls.ResolutionContext) error {
 	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err
 	}

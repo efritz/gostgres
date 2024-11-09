@@ -5,37 +5,20 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
 type Context struct {
-	Tables     *catalog.Catalog[Table]
-	Sequences  *catalog.Catalog[Sequence]
-	Functions  *catalog.Catalog[Function]
-	Aggregates *catalog.Catalog[Aggregate]
-	debug      bool
-	outerRow   rows.Row
+	Catalog  CatalogSet
+	debug    bool
+	outerRow rows.Row
 }
 
-var EmptyContext = NewContext(
-	catalog.NewCatalog[Table](),
-	catalog.NewCatalog[Sequence](),
-	catalog.NewCatalog[Function](),
-	catalog.NewCatalog[Aggregate](),
-)
+var EmptyContext = NewContext(NewCatalogEmptySet())
 
-func NewContext(
-	tables *catalog.Catalog[Table],
-	sequences *catalog.Catalog[Sequence],
-	functions *catalog.Catalog[Function],
-	aggregates *catalog.Catalog[Aggregate],
-) Context {
+func NewContext(catalog CatalogSet) Context {
 	return Context{
-		Tables:     tables,
-		Sequences:  sequences,
-		Functions:  functions,
-		Aggregates: aggregates,
+		Catalog: catalog,
 	}
 }
 

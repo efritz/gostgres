@@ -32,6 +32,6 @@ func (q *createTable) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 }
 
 func (q *createTable) ExecuteDDL(ctx impls.Context) error {
-	ctx.Tables.Set(q.name, table.NewTable(q.name, q.fields))
+	ctx.Catalog.Tables.Set(q.name, table.NewTable(q.name, q.fields))
 	return nil
 }

@@ -33,7 +33,7 @@ func nextval(ctx impls.Context, args []any) (any, error) {
 		return nil, fmt.Errorf("nextval() takes one argument of type string")
 	}
 
-	sequence, ok := ctx.Sequences.Get(name)
+	sequence, ok := ctx.Catalog.Sequences.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("sequence %s does not exist", name)
 	}
@@ -54,7 +54,7 @@ func setval(ctx impls.Context, args []any) (any, error) {
 		return nil, fmt.Errorf("setval() takes two arguments of type string, biginteger")
 	}
 
-	sequence, ok := ctx.Sequences.Get(name)
+	sequence, ok := ctx.Catalog.Sequences.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("sequence %s does not exist", name)
 	}
@@ -71,7 +71,7 @@ func currval(ctx impls.Context, args []any) (any, error) {
 		return nil, fmt.Errorf("currval() takes one argument of type string")
 	}
 
-	sequence, ok := ctx.Sequences.Get(name)
+	sequence, ok := ctx.Catalog.Sequences.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("sequence %s does not exist", name)
 	}

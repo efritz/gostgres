@@ -14,6 +14,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type UpdateBuilder struct {
@@ -31,7 +32,7 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Resolve(ctx impls.ResolutionContext) error {
+func (b *UpdateBuilder) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)

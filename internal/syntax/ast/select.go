@@ -15,6 +15,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -41,7 +42,7 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Resolve(ctx impls.ResolutionContext) error {
+func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 	if err := b.resolvePrimarySelect(ctx); err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func (b *SelectBuilder) Resolve(ctx impls.ResolutionContext) error {
 	return nil
 }
 
-func (b *SelectBuilder) resolvePrimarySelect(ctx impls.ResolutionContext) error {
+func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error {
 	if err := ctx.WithScope(func() error {
 		return b.Select.From.Resolve(ctx)
 	}); err != nil {

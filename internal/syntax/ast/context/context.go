@@ -9,16 +9,12 @@ import (
 )
 
 type ResolveContext struct {
-	Tables TableGetter
+	impls.ResolutionContext
 	Scopes []Scope
 }
 
 type Scope struct {
 	fields []fields.Field
-}
-
-type TableGetter interface {
-	Get(name string) (impls.Table, bool)
 }
 
 func (rc *ResolveContext) WithScope(f func() error) error {

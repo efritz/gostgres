@@ -14,6 +14,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type DeleteBuilder struct {
@@ -25,7 +26,7 @@ type DeleteBuilder struct {
 	table impls.Table
 }
 
-func (b *DeleteBuilder) Resolve(ctx impls.ResolutionContext) error {
+func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)

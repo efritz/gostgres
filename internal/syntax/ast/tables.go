@@ -13,6 +13,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type TargetTable struct {
@@ -27,7 +28,7 @@ type TableReference struct {
 	fields []fields.Field
 }
 
-func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
+func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
 	table, ok := ctx.Catalog.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
@@ -80,7 +81,7 @@ type Join struct {
 	Condition impls.Expression
 }
 
-func (e *TableExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
 	ctx.PushScope()
 	defer ctx.PopScope()
 
@@ -110,7 +111,7 @@ func (e *TableExpression) Resolve(ctx impls.ResolutionContext) error {
 			baseFields := baseFields[:0]
 			for i, rawField := range rawFields {
 				columnAlias := columnAliases[i]
-				aliasedField := fields.NewField(tableAlias, columnAlias, types.TypeAny)
+				aliasedField := fields.NewField(tableAlias, columnAlias, types.TypeAny, fields.NonInternalField)
 
 				baseFields = append(baseFields, aliasedField)
 				projectionExpressions = append(projectionExpressions, projector.NewAliasProjectionExpression(expressions.NewNamed(rawField), columnAlias))

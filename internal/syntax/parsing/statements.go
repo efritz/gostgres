@@ -6,6 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/explain"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast/context"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -49,7 +50,7 @@ func (p *parser) parseStatement(catalog impls.CatalogSet) (Query, error) {
 				return nil, err
 			}
 
-			if err := builder.Resolve(impls.NewResolutionContext(catalog)); err != nil {
+			if err := builder.Resolve(&context.ResolveContext{ResolutionContext: impls.NewResolutionContext(catalog)}); err != nil {
 				return nil, err
 			}
 

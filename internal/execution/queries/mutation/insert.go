@@ -68,7 +68,7 @@ func (n *insertNode) Filter() impls.Expression        { return nil }
 func (n *insertNode) Ordering() impls.OrderExpression { return nil }
 func (n *insertNode) SupportsMarkRestore() bool       { return false }
 
-func (n *insertNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *insertNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Insert scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -115,7 +115,7 @@ func (n *insertNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	}), nil
 }
 
-func (n *insertNode) prepareValuesForRow(ctx impls.Context, row rows.Row, fields []impls.TableField) ([]any, error) {
+func (n *insertNode) prepareValuesForRow(ctx impls.ExecutionContext, row rows.Row, fields []impls.TableField) ([]any, error) {
 	values := make([]any, 0, len(row.Values))
 	for i, value := range row.Values {
 		if !row.Fields[i].Internal() {

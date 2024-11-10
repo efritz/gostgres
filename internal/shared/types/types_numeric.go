@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func refineNumeric(value any, typ Type) (Type, any, bool) {
+func refineNumericValue(value any, typ Type) (Type, any, bool) {
 	if typ == TypeAny {
 		return typ, value, true
 	}
@@ -28,15 +28,35 @@ func refineNumeric(value any, typ Type) (Type, any, bool) {
 //
 //
 
-func PromoteToCommonNumericValues(left, right any) (any, any, error) {
-	lIndex := numericTypeIndex(numericTypeKindFromValue(left))
+func PromoteToCommonNumericTypes(left, right Type) (Type, error) {
+	lIndex := numericTypeIndex(left)
 	if lIndex < 0 {
-		return nil, nil, fmt.Errorf("unexpected type (wanted numeric type, have %v)", left)
+		return TypeUnknown, fmt.Errorf("unexpected type (wanted numeric type, have %v)", left)
 	}
 
-	rIndex := numericTypeIndex(numericTypeKindFromValue(right))
+	rIndex := numericTypeIndex(right)
 	if rIndex < 0 {
-		return nil, nil, fmt.Errorf("unexpected type (wanted numeric type, have %v)", right)
+		return TypeUnknown, fmt.Errorf("unexpected type (wanted numeric type, have %v)", right)
+	}
+
+	if lIndex < rIndex {
+		return right, nil
+	}
+
+	return left, nil
+}
+
+func PromoteToCommonNumericValues(left, right any) (any, any, error) {
+	leftType := numericTypeKindFromValue(left)
+	lIndex := numericTypeIndex(leftType)
+	if lIndex < 0 {
+		return nil, nil, fmt.Errorf("unexpected type (wanted numeric type, have %v)", leftType)
+	}
+
+	rightType := numericTypeKindFromValue(right)
+	rIndex := numericTypeIndex(rightType)
+	if rIndex < 0 {
+		return nil, nil, fmt.Errorf("unexpected type (wanted numeric type, have %v)", rightType)
 	}
 
 	if lIndex < rIndex {

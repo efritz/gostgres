@@ -31,7 +31,7 @@ func (i *partialIndex[O]) Filter() impls.Expression {
 
 func (i *partialIndex[O]) Insert(row rows.Row) error {
 	if i.condition != nil {
-		if ok, err := types.ValueAs[bool](i.condition.ValueFrom(impls.EmptyContext, row)); err != nil {
+		if ok, err := types.ValueAs[bool](i.condition.ValueFrom(impls.EmptyExecutionContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil
@@ -43,7 +43,7 @@ func (i *partialIndex[O]) Insert(row rows.Row) error {
 
 func (i *partialIndex[O]) Delete(row rows.Row) error {
 	if i.condition != nil {
-		if ok, err := types.ValueAs[bool](i.condition.ValueFrom(impls.EmptyContext, row)); err != nil {
+		if ok, err := types.ValueAs[bool](i.condition.ValueFrom(impls.EmptyExecutionContext, row)); err != nil {
 			return err
 		} else if ok == nil || !*ok {
 			return nil

@@ -12,7 +12,7 @@ type ddlSet struct {
 
 type DDLQuery interface {
 	queries.Query
-	ExecuteDDL(ctx impls.Context) error
+	ExecuteDDL(ctx impls.ExecutionContext) error
 }
 
 var _ queries.Query = &ddlSet{}
@@ -23,7 +23,7 @@ func NewSet(queries []DDLQuery) *ddlSet {
 	}
 }
 
-func (q *ddlSet) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *ddlSet) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	for _, query := range q.queries {
 		if err := query.ExecuteDDL(ctx); err != nil {
 			w.Error(err)

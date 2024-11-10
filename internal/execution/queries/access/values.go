@@ -42,7 +42,7 @@ func (n *valuesNode) Filter() impls.Expression             { return nil }
 func (n *valuesNode) Ordering() impls.OrderExpression      { return nil }
 func (n *valuesNode) SupportsMarkRestore() bool            { return false }
 
-func (n *valuesNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *valuesNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Values scanner")
 
 	i := 0

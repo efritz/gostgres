@@ -81,7 +81,7 @@ func (n *projectionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *projectionNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Projection scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

@@ -88,7 +88,7 @@ func (n *joinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *joinNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *joinNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before scanning can be performed")
 	}

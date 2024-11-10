@@ -8,7 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-func NewFilterScanner(ctx impls.Context, scanner scan.RowScanner, filter impls.Expression) (scan.RowScanner, error) {
+func NewFilterScanner(ctx impls.ExecutionContext, scanner scan.RowScanner, filter impls.Expression) (scan.RowScanner, error) {
 	ctx.Log("Building Filter scanner")
 
 	if filter == nil {

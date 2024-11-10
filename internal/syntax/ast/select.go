@@ -178,7 +178,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 
 			if len(expressions.Fields(expression)) > 0 {
 				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
+					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny, fields.NonInternalField))) {
 						continue selectLoop
 					}
 				}

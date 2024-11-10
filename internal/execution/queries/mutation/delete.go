@@ -66,7 +66,7 @@ func (n *deleteNode) Filter() impls.Expression        { return nil }
 func (n *deleteNode) Ordering() impls.OrderExpression { return nil }
 func (n *deleteNode) SupportsMarkRestore() bool       { return false }
 
-func (n *deleteNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Delete scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

@@ -1,5 +1,6 @@
 package impls
 
 type Function interface {
-	Invoke(ctx Context, args []any) (any, error)
+	Callable
+	Invoke(ctx ExecutionContext, args []any) (any, error)
 }

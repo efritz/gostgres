@@ -99,7 +99,7 @@ func (t *table) AddIndex(index impls.BaseIndex) error {
 	return nil
 }
 
-func (t *table) AddConstraint(ctx impls.Context, constraint impls.Constraint) error {
+func (t *table) AddConstraint(ctx impls.ExecutionContext, constraint impls.Constraint) error {
 	for _, row := range t.rows {
 		if err := constraint.Check(ctx, row); err != nil {
 			return err
@@ -112,7 +112,7 @@ func (t *table) AddConstraint(ctx impls.Context, constraint impls.Constraint) er
 
 var tid = int64(0)
 
-func (t *table) Insert(ctx impls.Context, row rows.Row) (_ rows.Row, err error) {
+func (t *table) Insert(ctx impls.ExecutionContext, row rows.Row) (_ rows.Row, err error) {
 	tid++
 	id := tid
 

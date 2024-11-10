@@ -13,7 +13,7 @@ import (
 type joinStrategy interface {
 	Name() string
 	Ordering() impls.OrderExpression
-	Scanner(ctx impls.Context) (scan.RowScanner, error)
+	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 
 const (
@@ -102,7 +102,7 @@ type equalityPair struct {
 var leftOfPair = func(pair equalityPair) impls.Expression { return pair.left }
 var rightOfPair = func(pair equalityPair) impls.Expression { return pair.right }
 
-func evaluatePair(ctx impls.Context, pairs []equalityPair, expression func(equalityPair) impls.Expression, row rows.Row) (values []any, _ error) {
+func evaluatePair(ctx impls.ExecutionContext, pairs []equalityPair, expression func(equalityPair) impls.Expression, row rows.Row) (values []any, _ error) {
 	for _, pair := range pairs {
 		value, err := queries.Evaluate(ctx, expression(pair), row)
 		if err != nil {

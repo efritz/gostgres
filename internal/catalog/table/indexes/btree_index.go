@@ -292,7 +292,7 @@ func (i *btreeIndex) extractTIDAndValuesFromRow(row rows.Row) (int64, []any, err
 
 	values := []any{}
 	for _, expression := range i.expressions {
-		value, err := expression.Expression.ValueFrom(impls.EmptyContext, row)
+		value, err := expression.Expression.ValueFrom(impls.EmptyExecutionContext, row)
 		if err != nil {
 			return 0, nil, err
 		}

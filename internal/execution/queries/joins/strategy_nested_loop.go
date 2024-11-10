@@ -33,7 +33,7 @@ func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
-func (s *nestedLoopJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Nested Loop Join Strategy scanner")
 
 	leftScanner, err := s.n.left.Scanner(ctx)

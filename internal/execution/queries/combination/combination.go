@@ -98,7 +98,7 @@ func (n *combinationNode) Filter() impls.Expression {
 func (n *combinationNode) Ordering() impls.OrderExpression { return nil }
 func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
-func (n *combinationNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *combinationNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Combination scanner")
 
 	leftScanner, err := n.left.Scanner(ctx)

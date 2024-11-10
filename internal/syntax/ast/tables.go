@@ -28,8 +28,8 @@ type TableReference struct {
 	fields []fields.Field
 }
 
-func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
-	table, ok := ctx.Tables.Get(r.Name)
+func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
+	table, ok := ctx.Catalog.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
 	}

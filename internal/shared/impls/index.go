@@ -23,5 +23,5 @@ type Index[O ScanOptions] interface {
 	Description(opts O) string
 	Condition(opts O) Expression
 	Ordering(opts O) OrderExpression
-	Scanner(ctx Context, opts O) (scan.TIDScanner, error)
+	Scanner(ctx ExecutionContext, opts O) (scan.TIDScanner, error)
 }

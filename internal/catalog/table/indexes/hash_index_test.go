@@ -15,9 +15,9 @@ import (
 )
 
 func TestHashIndex(t *testing.T) {
-	tid := fields.NewInternalField("authors", rows.TIDName, types.TypeBigInteger)
-	id := fields.NewField("authors", "id", types.TypeInteger)
-	name := fields.NewField("authors", "name", types.TypeText)
+	tid := fields.NewField("authors", "tid", types.TypeBigInteger, fields.InternalFieldTid)
+	id := fields.NewField("authors", "id", types.TypeInteger, fields.NonInternalField)
+	name := fields.NewField("authors", "name", types.TypeText, fields.NonInternalField)
 	fields := []fields.Field{tid, id, name}
 
 	allRows := map[int64]rows.Row{}
@@ -46,7 +46,7 @@ func TestHashIndex(t *testing.T) {
 			expression: expressions.NewConstant("name-42"),
 		}
 
-		scanner, err := index.Scanner(impls.EmptyContext, opts)
+		scanner, err := index.Scanner(impls.EmptyExecutionContext, opts)
 		require.NoError(t, err)
 
 		var ids []int32

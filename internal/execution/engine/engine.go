@@ -14,48 +14,32 @@ import (
 )
 
 type Engine struct {
-	tables     *catalog.Catalog[impls.Table]
-	sequences  *catalog.Catalog[impls.Sequence]
-	functions  *catalog.Catalog[impls.Function]
-	aggregates *catalog.Catalog[impls.Aggregate]
+	catalog impls.CatalogSet
 }
 
 func NewDefaultEngine() *Engine {
-	return NewEngine(
+	return NewEngine(impls.NewCatalogSet(
 		catalog.NewCatalog[impls.Table](),
 		catalog.NewCatalog[impls.Sequence](),
 		catalog.NewCatalogWithEntries[impls.Function](functions.DefaultFunctions()),
 		catalog.NewCatalogWithEntries[impls.Aggregate](aggregates.DefaultAggregates()),
-	)
+	))
 }
 
-func NewEngine(
-	tables *catalog.Catalog[impls.Table],
-	sequences *catalog.Catalog[impls.Sequence],
-	functions *catalog.Catalog[impls.Function],
-	aggregates *catalog.Catalog[impls.Aggregate],
-) *Engine {
+func NewEngine(catalog impls.CatalogSet) *Engine {
 	return &Engine{
-		tables:     tables,
-		sequences:  sequences,
-		functions:  functions,
-		aggregates: aggregates,
+		catalog: catalog,
 	}
 }
 
 func (e *Engine) Query(request protocol.Request, responseWriter protocol.ResponseWriter) {
-	query, err := parsing.Parse(e.tables, lexing.Lex(request.Query))
+	query, err := parsing.Parse(e.catalog, lexing.Lex(request.Query))
 	if err != nil {
 		responseWriter.Error(fmt.Errorf("failed to parse query: %s", err))
 		return
 	}
 
-	executionContext := impls.NewContext(
-		e.tables,
-		e.sequences,
-		e.functions,
-		e.aggregates,
-	)
+	executionContext := impls.NewExecutionContext(e.catalog)
 	if request.Debug {
 		executionContext = executionContext.WithDebug()
 	}

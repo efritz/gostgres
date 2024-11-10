@@ -8,7 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-func (i *hashIndex) Scanner(ctx impls.Context, opts HashIndexScanOptions) (scan.TIDScanner, error) {
+func (i *hashIndex) Scanner(ctx impls.ExecutionContext, opts HashIndexScanOptions) (scan.TIDScanner, error) {
 	ctx.Log("Building Hash Index scanner")
 
 	value, err := queries.Evaluate(ctx, opts.expression, rows.Row{})

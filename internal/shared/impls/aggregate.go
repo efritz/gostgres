@@ -1,6 +1,7 @@
 package impls
 
 type Aggregate interface {
-	Step(state any, args []any) (any, error)
-	Done(state any) (any, error)
+	Callable
+	Step(ctx ExecutionContext, state any, args []any) (any, error)
+	Done(ctx ExecutionContext, state any) (any, error)
 }

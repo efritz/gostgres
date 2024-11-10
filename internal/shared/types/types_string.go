@@ -7,7 +7,7 @@ const (
 	timestampFormat = "2006-01-02 15:04:05-07"
 )
 
-func refineString(value string, typ Type) (Type, any, bool) {
+func refineStringValue(value string, typ Type) (Type, any, bool) {
 	if typ == TypeTimestampTz {
 		if t, err := time.Parse(dateFormat, value); err == nil {
 			return typ, t, true // Just date parsing

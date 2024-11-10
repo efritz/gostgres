@@ -29,7 +29,7 @@ func (c *foreignKeyConstraint) Name() string {
 	return c.name
 }
 
-func (c *foreignKeyConstraint) Check(ctx impls.Context, row rows.Row) error {
+func (c *foreignKeyConstraint) Check(ctx impls.ExecutionContext, row rows.Row) error {
 	var values []any
 	for _, expression := range c.expressions {
 		val, err := expression.ValueFrom(ctx, row)
@@ -45,7 +45,7 @@ func (c *foreignKeyConstraint) Check(ctx impls.Context, row rows.Row) error {
 		values = append(values, val)
 	}
 
-	scanner, err := c.refIndex.Scanner(impls.EmptyContext, indexes.NewBtreeSearchOptions(values))
+	scanner, err := c.refIndex.Scanner(impls.EmptyExecutionContext, indexes.NewBtreeSearchOptions(values))
 	if err != nil {
 		return err
 	}

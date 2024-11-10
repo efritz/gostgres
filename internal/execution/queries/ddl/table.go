@@ -22,7 +22,7 @@ func NewCreateTable(name string, fields []impls.TableField) *createTable {
 	}
 }
 
-func (q *createTable) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createTable) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -31,7 +31,7 @@ func (q *createTable) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createTable) ExecuteDDL(ctx impls.Context) error {
-	ctx.Tables.Set(q.name, table.NewTable(q.name, q.fields))
+func (q *createTable) ExecuteDDL(ctx impls.ExecutionContext) error {
+	ctx.Catalog.Tables.Set(q.name, table.NewTable(q.name, q.fields))
 	return nil
 }

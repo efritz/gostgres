@@ -4,16 +4,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type namedExpression struct {
 	field fields.Field
 }
 
-var _ impls.Expression = namedExpression{}
+var _ impls.Expression = &namedExpression{}
 
 func NewNamed(field fields.Field) impls.Expression {
-	return namedExpression{
+	return &namedExpression{
 		field: field,
 	}
 }
@@ -22,8 +23,16 @@ func (e namedExpression) String() string {
 	return e.field.String()
 }
 
+func (e *namedExpression) Resolve(ctx impls.ResolutionContext) error {
+	return nil
+}
+
+func (e namedExpression) Type() types.Type {
+	return e.field.Type()
+}
+
 func (e namedExpression) Equal(other impls.Expression) bool {
-	if o, ok := other.(namedExpression); ok {
+	if o, ok := other.(*namedExpression); ok {
 		return e.field.Name() == o.field.Name() && (e.field.RelationName() == o.field.RelationName() || e.field.RelationName() == "" || o.field.RelationName() == "")
 	}
 
@@ -39,14 +48,14 @@ func (e namedExpression) Field() fields.Field {
 }
 
 func (e namedExpression) Fold() impls.Expression {
-	return e
+	return &e
 }
 
 func (e namedExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
-	return f(e)
+	return f(&e)
 }
 
-func (e namedExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
+func (e namedExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	index, err := fields.FindMatchingFieldIndex(e.field, row.Fields)
 	if err != nil {
 		return nil, err

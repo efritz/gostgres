@@ -33,7 +33,7 @@ func NewCreateIndex(name, tableName, method string, unique bool, columnExpressio
 	}
 }
 
-func (q *createIndex) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createIndex) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -42,8 +42,8 @@ func (q *createIndex) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createIndex) ExecuteDDL(ctx impls.Context) error {
-	factories := map[string]func(ctx impls.Context) (impls.BaseIndex, error){
+func (q *createIndex) ExecuteDDL(ctx impls.ExecutionContext) error {
+	factories := map[string]func(ctx impls.ExecutionContext) (impls.BaseIndex, error){
 		"btree": q.createBtreeIndex,
 		"hash":  q.createHashIndex,
 	}
@@ -58,7 +58,7 @@ func (q *createIndex) ExecuteDDL(ctx impls.Context) error {
 		return err
 	}
 
-	table, ok := ctx.Tables.Get(q.tableName)
+	table, ok := ctx.Catalog.Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}
@@ -70,7 +70,7 @@ func (q *createIndex) ExecuteDDL(ctx impls.Context) error {
 	return nil
 }
 
-func (q *createIndex) createBtreeIndex(ctx impls.Context) (impls.BaseIndex, error) {
+func (q *createIndex) createBtreeIndex(ctx impls.ExecutionContext) (impls.BaseIndex, error) {
 	var columnExpressions []impls.ExpressionWithDirection
 	for _, column := range q.columnExpressions {
 		columnExpressions = append(columnExpressions, impls.ExpressionWithDirection{
@@ -92,7 +92,7 @@ func (q *createIndex) createBtreeIndex(ctx impls.Context) (impls.BaseIndex, erro
 	return index, nil
 }
 
-func (q *createIndex) createHashIndex(ctx impls.Context) (impls.BaseIndex, error) {
+func (q *createIndex) createHashIndex(ctx impls.ExecutionContext) (impls.BaseIndex, error) {
 	if len(q.columnExpressions) != 1 {
 		return nil, fmt.Errorf("hash index must have exactly one column")
 	}

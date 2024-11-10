@@ -23,7 +23,7 @@ func (s *hashJoinStrategy) Ordering() impls.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *hashJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Join Strategy scanner")
 
 	rightScanner, err := s.n.right.Scanner(ctx)

@@ -20,19 +20,19 @@ func NewRow(fields []fields.Field, values []any) (_ Row, err error) {
 	return Row{Fields: fields, Values: values}, nil
 }
 
-const TIDName = "tid"
-
 func (r Row) TID() (int64, error) {
-	if len(r.Fields) == 0 || r.Fields[0].Name() != TIDName {
-		return 0, nil
+	for i, field := range r.Fields {
+		if field.IsTID() {
+			v, ok := r.Values[i].(int64)
+			if !ok {
+				panic("tid is not an int64")
+			}
+
+			return v, nil
+		}
 	}
 
-	tid, ok := r.Values[0].(int64)
-	if !ok {
-		return 0, fmt.Errorf("no tid in row")
-	}
-
-	return tid, nil
+	return 0, fmt.Errorf("no tid in row")
 }
 
 func CombineRows(rows ...Row) Row {

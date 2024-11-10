@@ -13,9 +13,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type DeleteBuilder struct {
@@ -27,8 +25,8 @@ type DeleteBuilder struct {
 	table impls.Table
 }
 
-func (b *DeleteBuilder) Resolve(ctx *context.ResolveContext) error {
-	table, ok := ctx.Tables.Get(b.Target.Name)
+func (b *DeleteBuilder) Resolve(ctx impls.ResolutionContext) error {
+	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
 	}
@@ -59,10 +57,10 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	if b.Target.AliasName != "" {
 		relationName = b.Target.AliasName
 	}
-	tidField := fields.NewField(relationName, rows.TIDName, types.TypeBigInteger)
+	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
 
 	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), rows.TIDName),
+		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
 	})
 	if err != nil {
 		return nil, err

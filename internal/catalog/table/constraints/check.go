@@ -25,7 +25,7 @@ func (c *checkConstraint) Name() string {
 	return c.name
 }
 
-func (c *checkConstraint) Check(ctx impls.Context, row rows.Row) error {
+func (c *checkConstraint) Check(ctx impls.ExecutionContext, row rows.Row) error {
 	if val, err := c.expression.ValueFrom(ctx, row); err != nil {
 		return err
 	} else if val != true {

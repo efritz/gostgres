@@ -26,10 +26,10 @@ func (n *explain) Name() string {
 	return "EXPLAIN"
 }
 
+var queryPlanField = fields.NewField("", "query plan", types.TypeText, fields.NonInternalField)
+
 func (n *explain) Fields() []fields.Field {
-	return []fields.Field{
-		fields.NewField("", "query plan", types.TypeText),
-	}
+	return []fields.Field{queryPlanField}
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter) {}
@@ -40,7 +40,7 @@ func (n *explain) Filter() impls.Expression               { return nil }
 func (n *explain) Ordering() impls.OrderExpression        { return nil }
 func (n *explain) SupportsMarkRestore() bool              { return false }
 
-func (n *explain) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *explain) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Explain scanner")
 
 	plan := serialization.SerializePlan(n.n)

@@ -2,11 +2,11 @@ package ast
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type Resolver interface {
-	Resolve(ctx *context.ResolveContext) error
+	Resolve(ctx impls.ResolutionContext) error
 }
 
 type Builder interface {

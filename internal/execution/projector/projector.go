@@ -58,7 +58,7 @@ func (p *Projector) Optimize() {
 	}
 }
 
-func (p *Projector) ProjectRow(ctx impls.Context, row rows.Row) (rows.Row, error) {
+func (p *Projector) ProjectRow(ctx impls.ExecutionContext, row rows.Row) (rows.Row, error) {
 	values := make([]any, 0, len(p.aliases))
 	for _, field := range p.aliases {
 		value, err := queries.Evaluate(ctx, field.Expression, row)
@@ -74,7 +74,7 @@ func (p *Projector) ProjectRow(ctx impls.Context, row rows.Row) (rows.Row, error
 
 func (p *Projector) ProjectExpression(expression impls.Expression) impls.Expression {
 	for _, alias := range p.aliases {
-		expression = Alias(expression, fields.NewField("", alias.Alias, types.TypeAny), alias.Expression)
+		expression = Alias(expression, fields.NewField("", alias.alias, types.TypeAny, fields.NonInternalField), alias.expression)
 	}
 
 	return expression
@@ -107,7 +107,7 @@ func expandProjection(fields []fields.Field, expressions []ProjectionExpression)
 func fieldsFromProjection(relationName string, aliases []AliasProjectionExpression) []fields.Field {
 	projectedFields := make([]fields.Field, 0, len(aliases))
 	for _, field := range aliases {
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, types.TypeAny))
+		projectedFields = append(projectedFields, fields.NewField(relationName, field.alias, types.TypeAny, fields.NonInternalField))
 	}
 
 	return projectedFields

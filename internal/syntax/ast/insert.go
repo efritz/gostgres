@@ -7,7 +7,6 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type InsertBuilder struct {
@@ -19,8 +18,8 @@ type InsertBuilder struct {
 	table impls.Table
 }
 
-func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
-	table, ok := ctx.Tables.Get(b.Target.Name)
+func (b *InsertBuilder) Resolve(ctx impls.ResolutionContext) error {
+	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 )
 
 type TargetTable struct {
@@ -28,8 +27,8 @@ type TableReference struct {
 	fields []fields.Field
 }
 
-func (r *TableReference) Resolve(ctx *context.ResolveContext) error {
-	table, ok := ctx.Tables.Get(r.Name)
+func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
+	table, ok := ctx.Catalog.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
 	}
@@ -81,7 +80,7 @@ type Join struct {
 	Condition impls.Expression
 }
 
-func (e *TableExpression) Resolve(ctx *context.ResolveContext) error {
+func (e *TableExpression) Resolve(ctx impls.ResolutionContext) error {
 	ctx.PushScope()
 	defer ctx.PopScope()
 

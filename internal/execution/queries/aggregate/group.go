@@ -86,7 +86,7 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
 	scanner, err := n.Node.Scanner(ctx)
@@ -102,7 +102,7 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
 		}
 
-		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny))
+		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny, fields.NonInternalField))
 		exprs = append(exprs, expr)
 	}
 
@@ -165,7 +165,7 @@ func (n *hashAggregate) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 	}), nil
 }
 
-func evaluatePair(ctx impls.Context, expressions []impls.Expression, row rows.Row) (values []any, _ error) {
+func evaluatePair(ctx impls.ExecutionContext, expressions []impls.Expression, row rows.Row) (values []any, _ error) {
 	for _, expression := range expressions {
 		value, err := queries.Evaluate(ctx, expression, row)
 		if err != nil {

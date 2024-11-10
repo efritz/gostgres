@@ -184,7 +184,7 @@ func (p *parser) parseNamedExpression(token tokens.Token) (impls.Expression, err
 			return nil, err
 		}
 
-		return expressions.NewNamed(fields.NewField(token.Text, qualifiedNameToken, types.TypeAny)), nil
+		return expressions.NewNamed(fields.NewField(token.Text, qualifiedNameToken, types.TypeAny, fields.NonInternalField)), nil
 	}
 
 	if p.peek(0).Type == tokens.TokenTypeLeftParen {
@@ -196,7 +196,7 @@ func (p *parser) parseNamedExpression(token tokens.Token) (impls.Expression, err
 		return expressions.NewFunction(token.Text, args), nil
 	}
 
-	return expressions.NewNamed(fields.NewField("", token.Text, types.TypeAny)), nil
+	return expressions.NewNamed(fields.NewField("", token.Text, types.TypeAny, fields.NonInternalField)), nil
 }
 
 type unaryExpressionParserFunc func(expression impls.Expression) impls.Expression

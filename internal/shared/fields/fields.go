@@ -6,34 +6,38 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
+type InternalFieldType int
+
+const (
+	NonInternalField InternalFieldType = iota
+	InternalFieldTid
+)
+
 type Field struct {
-	relationName string
-	name         string
-	typ          types.Type
-	internal     bool
+	relationName      string
+	name              string
+	typ               types.Type
+	internalFieldType InternalFieldType
 }
 
-func NewField(relationName, name string, typ types.Type) Field {
-	return newField(relationName, name, typ, false)
+func NewField(relationName, name string, typ types.Type, internalFieldType InternalFieldType) Field {
+	return newField(relationName, name, typ, internalFieldType)
 }
 
-func NewInternalField(relationName, name string, typ types.Type) Field {
-	return newField(relationName, name, typ, true)
-}
-
-func newField(relationName, name string, typ types.Type, internal bool) Field {
+func newField(relationName, name string, typ types.Type, internalFieldType InternalFieldType) Field {
 	return Field{
-		relationName: relationName,
-		name:         name,
-		typ:          typ,
-		internal:     internal,
+		relationName:      relationName,
+		name:              name,
+		typ:               typ,
+		internalFieldType: internalFieldType,
 	}
 }
 
 func (f Field) RelationName() string { return f.relationName }
 func (f Field) Name() string         { return f.name }
 func (f Field) Type() types.Type     { return f.typ }
-func (f Field) Internal() bool       { return f.internal }
+func (f Field) Internal() bool       { return f.internalFieldType != NonInternalField }
+func (f Field) IsTID() bool          { return f.internalFieldType == InternalFieldTid }
 
 func (f Field) String() string {
 	if f.relationName == "" {
@@ -44,11 +48,11 @@ func (f Field) String() string {
 }
 
 func (f Field) WithRelationName(relationName string) Field {
-	return newField(relationName, f.name, f.typ, f.internal)
+	return newField(relationName, f.name, f.typ, f.internalFieldType)
 }
 
 func (f Field) WithType(typ types.Type) Field {
-	return newField(f.relationName, f.name, typ, f.internal)
+	return newField(f.relationName, f.name, typ, f.internalFieldType)
 }
 
 func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {

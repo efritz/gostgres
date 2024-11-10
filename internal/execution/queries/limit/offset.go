@@ -38,7 +38,7 @@ func (n *offsetNode) Filter() impls.Expression             { return n.Node.Filte
 func (n *offsetNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
 func (n *offsetNode) SupportsMarkRestore() bool            { return false }
 
-func (n *offsetNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *offsetNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Offset scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/ddl"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -61,7 +62,7 @@ func (p *parser) parseColumnDescription(tableName string) (columnDescription, er
 	}
 
 	description := columnDescription{
-		field:       impls.NewTableField("", name, types.TypeAny),
+		field:       impls.NewTableField("", name, types.TypeAny, fields.NonInternalField),
 		sequences:   nil,
 		constraints: nil,
 	}

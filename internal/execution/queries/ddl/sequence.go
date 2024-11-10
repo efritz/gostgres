@@ -23,7 +23,7 @@ func NewCreateSequence(name string, typ types.Type) *createSequence {
 	}
 }
 
-func (q *createSequence) Execute(ctx impls.Context, w protocol.ResponseWriter) {
+func (q *createSequence) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	if err := q.ExecuteDDL(ctx); err != nil {
 		w.Error(err)
 		return
@@ -32,7 +32,7 @@ func (q *createSequence) Execute(ctx impls.Context, w protocol.ResponseWriter) {
 	w.Done()
 }
 
-func (q *createSequence) ExecuteDDL(ctx impls.Context) error {
-	ctx.Sequences.Set(q.name, sequence.NewSequence(q.name, q.typ))
+func (q *createSequence) ExecuteDDL(ctx impls.ExecutionContext) error {
+	ctx.Catalog.Sequences.Set(q.name, sequence.NewSequence(q.name, q.typ))
 	return nil
 }

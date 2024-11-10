@@ -155,7 +155,7 @@ func (p *parser) parseValues() (*ast.ValuesBuilder, error) {
 
 	rowFields := make([]fields.Field, 0, len(allRowExpressions[0]))
 	for i := range allRowExpressions[0] {
-		rowFields = append(rowFields, fields.NewField("", fmt.Sprintf("column%d", i+1), types.TypeAny))
+		rowFields = append(rowFields, fields.NewField("", fmt.Sprintf("column%d", i+1), types.TypeAny, fields.NonInternalField))
 	}
 
 	// TODO - support `DEFAULT` expressions

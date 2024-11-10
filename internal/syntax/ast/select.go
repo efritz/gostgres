@@ -15,7 +15,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
-	"github.com/efritz/gostgres/internal/syntax/ast/context"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -42,7 +41,7 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
+func (b *SelectBuilder) Resolve(ctx impls.ResolutionContext) error {
 	if err := b.resolvePrimarySelect(ctx); err != nil {
 		return err
 	}
@@ -54,7 +53,7 @@ func (b *SelectBuilder) Resolve(ctx *context.ResolveContext) error {
 	return nil
 }
 
-func (b *SelectBuilder) resolvePrimarySelect(ctx *context.ResolveContext) error {
+func (b *SelectBuilder) resolvePrimarySelect(ctx impls.ResolutionContext) error {
 	if err := ctx.WithScope(func() error {
 		return b.Select.From.Resolve(ctx)
 	}); err != nil {
@@ -178,7 +177,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 
 			if len(expressions.Fields(expression)) > 0 {
 				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny))) {
+					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny, fields.NonInternalField))) {
 						continue selectLoop
 					}
 				}

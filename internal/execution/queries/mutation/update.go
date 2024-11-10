@@ -74,7 +74,7 @@ func (n *updateNode) Filter() impls.Expression        { return nil }
 func (n *updateNode) Ordering() impls.OrderExpression { return nil }
 func (n *updateNode) SupportsMarkRestore() bool       { return false }
 
-func (n *updateNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Update scanner")
 
 	scanner, err := n.Node.Scanner(ctx)

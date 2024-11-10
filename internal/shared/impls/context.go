@@ -5,45 +5,41 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/efritz/gostgres/internal/catalog"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-type Context struct {
-	Tables     *catalog.Catalog[Table]
-	Sequences  *catalog.Catalog[Sequence]
-	Functions  *catalog.Catalog[Function]
-	Aggregates *catalog.Catalog[Aggregate]
-	debug      bool
-	outerRow   rows.Row
+type ResolutionContext struct {
+	Catalog CatalogSet
 }
 
-var EmptyContext = NewContext(
-	catalog.NewCatalog[Table](),
-	catalog.NewCatalog[Sequence](),
-	catalog.NewCatalog[Function](),
-	catalog.NewCatalog[Aggregate](),
-)
-
-func NewContext(
-	tables *catalog.Catalog[Table],
-	sequences *catalog.Catalog[Sequence],
-	functions *catalog.Catalog[Function],
-	aggregates *catalog.Catalog[Aggregate],
-) Context {
-	return Context{
-		Tables:     tables,
-		Sequences:  sequences,
-		Functions:  functions,
-		Aggregates: aggregates,
+func NewResolutionContext(catalog CatalogSet) ResolutionContext {
+	return ResolutionContext{
+		Catalog: catalog,
 	}
 }
 
-func (c Context) OuterRow() rows.Row                { return c.outerRow }
-func (c Context) WithDebug() Context                { c.debug = true; return c }
-func (c Context) WithOuterRow(row rows.Row) Context { c.outerRow = row; return c }
+//
+//
 
-func (c Context) Log(format string, args ...interface{}) {
+type ExecutionContext struct {
+	Catalog  CatalogSet
+	debug    bool
+	outerRow rows.Row
+}
+
+var EmptyExecutionContext = NewExecutionContext(NewCatalogEmptySet())
+
+func NewExecutionContext(catalog CatalogSet) ExecutionContext {
+	return ExecutionContext{
+		Catalog: catalog,
+	}
+}
+
+func (c ExecutionContext) OuterRow() rows.Row                         { return c.outerRow }
+func (c ExecutionContext) WithDebug() ExecutionContext                { c.debug = true; return c }
+func (c ExecutionContext) WithOuterRow(row rows.Row) ExecutionContext { c.outerRow = row; return c }
+
+func (c ExecutionContext) Log(format string, args ...interface{}) {
 	if !c.debug {
 		return
 	}

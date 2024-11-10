@@ -13,14 +13,14 @@ import (
 )
 
 type orderScanner struct {
-	ctx     impls.Context
+	ctx     impls.ExecutionContext
 	rows    rows.Rows
 	indexes []int
 	next    int
 	mark    int
 }
 
-func NewOrderScanner(ctx impls.Context, scanner scan.RowScanner, fields []fields.Field, order impls.OrderExpression) (scan.RowScanner, error) {
+func NewOrderScanner(ctx impls.ExecutionContext, scanner scan.RowScanner, fields []fields.Field, order impls.OrderExpression) (scan.RowScanner, error) {
 	ctx.Log("Building Order scanner")
 
 	rows, err := rows.NewRows(fields)
@@ -70,7 +70,7 @@ func (s *orderScanner) Restore() {
 	s.next = s.mark
 }
 
-func findIndexIterationOrder(ctx impls.Context, order impls.OrderExpression, rows rows.Rows) ([]int, error) {
+func findIndexIterationOrder(ctx impls.ExecutionContext, order impls.OrderExpression, rows rows.Rows) ([]int, error) {
 	var expressions []impls.ExpressionWithDirection
 	if order != nil {
 		expressions = order.Expressions()
@@ -116,7 +116,7 @@ type indexValue struct {
 	values []any
 }
 
-func makeIndexValues(ctx impls.Context, expressions []impls.ExpressionWithDirection, rows rows.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx impls.ExecutionContext, expressions []impls.ExpressionWithDirection, rows rows.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
 		values := make([]any, 0, len(expressions))

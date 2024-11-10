@@ -23,7 +23,7 @@ func (s *mergeJoinStrategy) Ordering() impls.OrderExpression {
 	return s.n.left.Ordering()
 }
 
-func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) {
+func (s *mergeJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Merge Join Strategy scanner")
 
 	leftScanner, err := s.n.left.Scanner(ctx)
@@ -51,7 +51,7 @@ func (s *mergeJoinStrategy) Scanner(ctx impls.Context) (scan.RowScanner, error) 
 }
 
 type mergeJoinScanner struct {
-	ctx          impls.Context
+	ctx          impls.ExecutionContext
 	strategy     *mergeJoinStrategy
 	leftScanner  scan.RowScanner
 	rightScanner scan.RowScanner

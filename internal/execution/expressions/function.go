@@ -7,17 +7,19 @@ import (
 
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type functionExpression struct {
 	name string
 	args []impls.Expression
+	typ  types.Type
 }
 
-var _ impls.Expression = functionExpression{}
+var _ impls.Expression = &functionExpression{}
 
 func NewFunction(name string, args []impls.Expression) impls.Expression {
-	return functionExpression{
+	return &functionExpression{
 		name: name,
 		args: args,
 	}
@@ -32,8 +34,35 @@ func (e functionExpression) String() string {
 	return fmt.Sprintf("%s(%s)", e.name, strings.Join(args, ", "))
 }
 
+func (e *functionExpression) Resolve(ctx impls.ResolutionContext) error {
+	f, ok := ctx.Catalog.Functions.Get(e.name)
+	if !ok {
+		return fmt.Errorf("unknown function %q", e.name)
+	}
+
+	var argTypes []types.Type
+	for _, arg := range e.args {
+		if err := arg.Resolve(ctx); err != nil {
+			return err
+		}
+
+		argTypes = append(argTypes, arg.Type())
+	}
+
+	if err := f.ValidateArgTypes(argTypes); err != nil {
+		return err
+	}
+
+	e.typ = f.ReturnType()
+	return nil
+}
+
+func (e functionExpression) Type() types.Type {
+	return e.typ
+}
+
 func (e functionExpression) Equal(other impls.Expression) bool {
-	if o, ok := other.(functionExpression); ok {
+	if o, ok := other.(*functionExpression); ok {
 		if e.name == o.name && len(e.args) == len(o.args) {
 			for i, arg := range e.args {
 				if !arg.Equal(o.args[i]) {
@@ -79,8 +108,8 @@ func (e functionExpression) Map(f func(impls.Expression) (impls.Expression, erro
 	return f(NewFunction(e.name, args))
 }
 
-func (e functionExpression) ValueFrom(ctx impls.Context, row rows.Row) (any, error) {
-	f, ok := ctx.Functions.Get(e.name)
+func (e functionExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
+	f, ok := ctx.Catalog.Functions.Get(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", e.name)
 	}

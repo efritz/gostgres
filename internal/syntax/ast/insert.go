@@ -34,7 +34,7 @@ func (b *InsertBuilder) Resolve(ctx *context.ResolveContext) error {
 }
 
 func (b *InsertBuilder) Build() (queries.Node, error) {
-	node, err := b.Source.TableExpression()
+	node, err := b.Source.Build()
 	if err != nil {
 		return nil, err
 	}

@@ -48,7 +48,7 @@ func (n *hashAggregate) Name() string {
 	return "" // TODO
 }
 
-func (n *hashAggregate) Fields() []fields.Field {
+func (n *hashAggregate) Fields() []fields.ResolvedField {
 	return n.projector.Fields()
 }
 

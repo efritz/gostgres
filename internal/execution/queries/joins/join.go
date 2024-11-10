@@ -17,7 +17,7 @@ type joinNode struct {
 	left     queries.Node
 	right    queries.Node
 	filter   impls.Expression
-	fields   []fields.Field
+	fields   []fields.ResolvedField
 	strategy joinStrategy
 }
 
@@ -37,7 +37,7 @@ func (n *joinNode) Name() string {
 	return ""
 }
 
-func (n *joinNode) Fields() []fields.Field {
+func (n *joinNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.fields)
 }
 

@@ -3,6 +3,7 @@ package projector
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type wildcardProjectionExpression struct{}
@@ -19,17 +20,21 @@ func (p wildcardProjectionExpression) Dealias(name string, fields []fields.Field
 	return p
 }
 
-func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections []aliasProjectionExpression, _ error) {
+func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections []AliasProjectionExpression, _ error) {
 	for _, field := range fields {
 		if field.Internal() {
 			continue
 		}
 
-		projections = append(projections, aliasProjectionExpression{
-			alias:      field.Name(),
-			expression: expressions.NewNamed(field),
+		projections = append(projections, AliasProjectionExpression{
+			Alias:      field.Name(),
+			Expression: expressions.NewNamed(field),
 		})
 	}
 
 	return projections, nil
+}
+
+func (p wildcardProjectionExpression) Map(f func(impls.Expression) (impls.Expression, error)) (ProjectionExpression, error) {
+	return p, nil
 }

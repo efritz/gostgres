@@ -19,7 +19,7 @@ import (
 type unionNode struct {
 	left     queries.Node
 	right    queries.Node
-	fields   []fields.Field
+	fields   []fields.ResolvedField
 	distinct bool
 }
 
@@ -51,7 +51,7 @@ func (n *unionNode) Name() string {
 	return ""
 }
 
-func (n *unionNode) Fields() []fields.Field {
+func (n *unionNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.fields)
 }
 

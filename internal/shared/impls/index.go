@@ -9,7 +9,7 @@ import (
 type BaseIndex interface {
 	Name() string
 	Unwrap() BaseIndex
-	UniqueOn() []fields.Field
+	UniqueOn() []fields.ResolvedField
 	Filter() Expression
 	Insert(row rows.Row) error
 	Delete(row rows.Row) error

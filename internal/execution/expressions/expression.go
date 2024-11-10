@@ -6,18 +6,18 @@ import (
 )
 
 type NamedExpression interface {
-	Field() fields.Field
+	Field() fields.ResolvedField
 }
 
 type CompositeExpression interface {
 	Children() []impls.Expression
 }
 
-func Fields(expr impls.Expression) []fields.Field {
+func Fields(expr impls.Expression) []fields.ResolvedField {
 	return gatherFields(expr, nil)
 }
 
-func gatherFields(expr impls.Expression, fields []fields.Field) []fields.Field {
+func gatherFields(expr impls.Expression, fields []fields.ResolvedField) []fields.ResolvedField {
 	if named, ok := expr.(NamedExpression); ok {
 		fields = append(fields, named.Field())
 	}

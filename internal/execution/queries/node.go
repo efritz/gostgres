@@ -11,7 +11,7 @@ type Node interface {
 	serialization.Serializable
 
 	Name() string
-	Fields() []fields.Field
+	Fields() []fields.ResolvedField
 	AddFilter(filter impls.Expression)
 	AddOrder(order impls.OrderExpression)
 	Optimize()

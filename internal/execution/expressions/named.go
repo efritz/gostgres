@@ -7,12 +7,12 @@ import (
 )
 
 type namedExpression struct {
-	field fields.Field
+	field fields.ResolvedField
 }
 
 var _ impls.Expression = namedExpression{}
 
-func NewNamed(field fields.Field) impls.Expression {
+func NewNamed(field fields.ResolvedField) impls.Expression {
 	return namedExpression{
 		field: field,
 	}
@@ -34,7 +34,7 @@ func (e namedExpression) Name() string {
 	return e.field.Name()
 }
 
-func (e namedExpression) Field() fields.Field {
+func (e namedExpression) Field() fields.ResolvedField {
 	return e.field
 }
 

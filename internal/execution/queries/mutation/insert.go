@@ -23,9 +23,9 @@ type insertNode struct {
 var _ queries.Node = &insertNode{}
 
 func NewInsert(node queries.Node, table impls.Table, name, alias string, columnNames []string, expressions []projector.ProjectionExpression) (queries.Node, error) {
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
+		fields = append(fields, field.ResolvedField)
 	}
 
 	if alias != "" {
@@ -47,7 +47,7 @@ func NewInsert(node queries.Node, table impls.Table, name, alias string, columnN
 	}, nil
 }
 
-func (n *insertNode) Fields() []fields.Field {
+func (n *insertNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.projector.Fields())
 }
 
@@ -83,9 +83,9 @@ func (n *insertNode) Scanner(ctx impls.Context) (scan.RowScanner, error) {
 		}
 	}
 
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, field := range nonInternalFields {
-		fields = append(fields, field.Field)
+		fields = append(fields, field.ResolvedField)
 	}
 
 	return scan.RowScannerFunc(func() (rows.Row, error) {

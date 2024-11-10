@@ -29,7 +29,7 @@ func NewProjection(node queries.Node, expressions []projector.ProjectionExpressi
 	}, nil
 }
 
-func (n *projectionNode) Fields() []fields.Field {
+func (n *projectionNode) Fields() []fields.ResolvedField {
 	return n.projector.Fields()
 }
 

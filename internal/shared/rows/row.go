@@ -7,11 +7,11 @@ import (
 )
 
 type Row struct {
-	Fields []fields.Field
+	Fields []fields.ResolvedField
 	Values []any
 }
 
-func NewRow(fields []fields.Field, values []any) (_ Row, err error) {
+func NewRow(fields []fields.ResolvedField, values []any) (_ Row, err error) {
 	fields, values, err = refineTypes(fields, values)
 	if err != nil {
 		return Row{}, err
@@ -20,23 +20,18 @@ func NewRow(fields []fields.Field, values []any) (_ Row, err error) {
 	return Row{Fields: fields, Values: values}, nil
 }
 
-const TIDName = "tid"
-
 func (r Row) TID() (int64, error) {
-	if len(r.Fields) == 0 || r.Fields[0].Name() != TIDName {
-		return 0, nil
+	for i, field := range r.Fields {
+		if field.IsTID() {
+			return r.Values[i].(int64), nil
+		}
 	}
 
-	tid, ok := r.Values[0].(int64)
-	if !ok {
-		return 0, fmt.Errorf("no tid in row")
-	}
-
-	return tid, nil
+	return 0, fmt.Errorf("no tid in row")
 }
 
 func CombineRows(rows ...Row) Row {
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, row := range rows {
 		fields = append(fields, row.Fields...)
 	}

@@ -71,12 +71,12 @@ func (i *btreeIndex) Unwrap() impls.BaseIndex {
 	return i
 }
 
-func (i *btreeIndex) UniqueOn() []fields.Field {
+func (i *btreeIndex) UniqueOn() []fields.ResolvedField {
 	if !i.unique {
 		return nil
 	}
 
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, e := range i.expressions {
 		named, ok := e.Expression.(expressions.NamedExpression)
 		if !ok {

@@ -10,13 +10,13 @@ import (
 )
 
 type valuesNode struct {
-	fields      []fields.Field
+	fields      []fields.ResolvedField
 	expressions [][]impls.Expression
 }
 
 var _ queries.Node = &valuesNode{}
 
-func NewValues(fields []fields.Field, expressions [][]impls.Expression) queries.Node {
+func NewValues(fields []fields.ResolvedField, expressions [][]impls.Expression) queries.Node {
 	return &valuesNode{
 		fields:      fields,
 		expressions: expressions,
@@ -27,7 +27,7 @@ func (n *valuesNode) Name() string {
 	return "values"
 }
 
-func (n *valuesNode) Fields() []fields.Field {
+func (n *valuesNode) Fields() []fields.ResolvedField {
 	return n.fields
 }
 

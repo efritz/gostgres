@@ -29,9 +29,9 @@ type SetExpression struct {
 }
 
 func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpression, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
+		fields = append(fields, field.ResolvedField)
 	}
 
 	if alias != "" {
@@ -53,7 +53,7 @@ func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpress
 	}, nil
 }
 
-func (n *updateNode) Fields() []fields.Field {
+func (n *updateNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.projector.Fields())
 }
 

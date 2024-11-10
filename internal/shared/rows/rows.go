@@ -5,15 +5,15 @@ import (
 )
 
 type Rows struct {
-	Fields []fields.Field
+	Fields []fields.ResolvedField
 	Values [][]any
 }
 
-func NewRows(fields []fields.Field) (Rows, error) {
+func NewRows(fields []fields.ResolvedField) (Rows, error) {
 	return NewRowsWithValues(fields, nil)
 }
 
-func NewRowsWithValues(fields []fields.Field, values [][]any) (_ Rows, err error) {
+func NewRowsWithValues(fields []fields.ResolvedField, values [][]any) (_ Rows, err error) {
 	for i, rowValues := range values {
 		fields, rowValues, err = refineTypes(fields, rowValues)
 		if err != nil {

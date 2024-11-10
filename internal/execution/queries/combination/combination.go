@@ -18,7 +18,7 @@ import (
 type combinationNode struct {
 	left             queries.Node
 	right            queries.Node
-	fields           []fields.Field
+	fields           []fields.ResolvedField
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
@@ -67,7 +67,7 @@ func (n *combinationNode) Name() string {
 	return ""
 }
 
-func (n *combinationNode) Fields() []fields.Field {
+func (n *combinationNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.fields)
 }
 

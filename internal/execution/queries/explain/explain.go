@@ -26,10 +26,10 @@ func (n *explain) Name() string {
 	return "EXPLAIN"
 }
 
-func (n *explain) Fields() []fields.Field {
-	return []fields.Field{
-		fields.NewField("", "query plan", types.TypeText),
-	}
+var queryPlanField = fields.ResolveDescriptor(fields.NewFieldDescriptor("", "query plan", types.TypeText, fields.NotInternal))
+
+func (n *explain) Fields() []fields.ResolvedField {
+	return []fields.ResolvedField{queryPlanField}
 }
 
 func (n *explain) Serialize(w serialization.IndentWriter) {}

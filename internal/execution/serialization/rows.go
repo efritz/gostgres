@@ -22,7 +22,7 @@ func SerializeRows(rows rows.Rows) string {
 		}
 
 		// Center column name
-		name := c.field.Name()
+		name := c.fieldDescriptor.Name()
 		padding := c.maxWidthWithFieldName - len(name)
 		b.WriteString(spacesBuffer[:padding/2])
 		b.WriteString(name)
@@ -49,7 +49,7 @@ func SerializeRows(rows rows.Rows) string {
 				b.WriteString(" | ")
 			}
 
-			if c.field.Type().IsNumber() {
+			if c.fieldDescriptor.Type().IsNumber() {
 				// Right-align numeric types
 				b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
 				b.WriteString(c.values[i])
@@ -89,7 +89,7 @@ func SerializeRowsExpanded(rows rows.Rows) string {
 		b.WriteRune('\n')
 
 		for _, c := range serialized.columns {
-			name := c.field.Name()
+			name := c.fieldDescriptor.Name()
 			b.WriteString(name)
 			b.WriteString(spacesBuffer[:serialized.maxFieldWidth-len(name)])
 			b.WriteString(" | ")
@@ -118,7 +118,7 @@ type serializedRows struct {
 }
 
 type serializedColumn struct {
-	field                 fields.Field
+	fieldDescriptor       fields.FieldDescriptor
 	values                []string
 	maxValueWidth         int // maximum length of serialized value in this column
 	maxWidthWithFieldName int // max(maxValueWidth, len(field.Name()))
@@ -127,7 +127,9 @@ type serializedColumn struct {
 func serializeRows(rows rows.Rows) serializedRows {
 	var columns []serializedColumn
 	for _, field := range rows.Fields {
-		columns = append(columns, serializedColumn{field: field})
+		columns = append(columns, serializedColumn{
+			fieldDescriptor: field.FieldDescriptor,
+		})
 	}
 
 	for _, rowValues := range rows.Values {
@@ -152,7 +154,7 @@ func serializeRows(rows rows.Rows) serializedRows {
 	maxFieldWidth := 0
 	maxValueWidth := 0
 	for i, c := range columns {
-		nameLen := len(c.field.Name())
+		nameLen := len(c.fieldDescriptor.Name())
 		maxFieldWidth = max(maxFieldWidth, nameLen)
 		maxValueWidth = max(maxValueWidth, c.maxValueWidth)
 		columns[i].maxWidthWithFieldName = max(c.maxValueWidth, nameLen)

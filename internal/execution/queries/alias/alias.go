@@ -16,7 +16,7 @@ import (
 type aliasNode struct {
 	queries.Node
 	name   string
-	fields []fields.Field
+	fields []fields.ResolvedField
 }
 
 var _ queries.Node = &aliasNode{}
@@ -24,7 +24,7 @@ var _ queries.Node = &aliasNode{}
 func NewAlias(node queries.Node, name string) queries.Node {
 	fields := slices.Clone(node.Fields())
 	for i := range fields {
-		fields[i] = fields[i].WithRelationName(name)
+		fields[i] = fields[i] // .WithRelationName(name)
 	}
 
 	return &aliasNode{
@@ -38,7 +38,7 @@ func (n *aliasNode) Name() string {
 	return n.name
 }
 
-func (n *aliasNode) Fields() []fields.Field {
+func (n *aliasNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.fields)
 }
 

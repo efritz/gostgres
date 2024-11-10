@@ -21,12 +21,14 @@ type table struct {
 
 var _ impls.Table = &table{}
 
-func NewTable(name string, fields []impls.TableField) impls.Table {
+const tidName = "tid"
+
+func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	tableFields := []impls.TableField{
-		impls.NewInternalTableField(name, rows.TIDName, types.TypeBigInteger),
+		impls.NewTableField(name, tidName, types.TypeBigInteger, fields.TIDInternalFieldType),
 	}
-	for _, field := range fields {
-		tableFields = append(tableFields, field.WithRelationName(name))
+	for _, field := range nonInternalFields {
+		tableFields = append(tableFields, field) // TODO - .WithRelationName(name))
 	}
 
 	return &table{
@@ -114,9 +116,9 @@ func (t *table) Insert(ctx impls.Context, row rows.Row) (_ rows.Row, err error) 
 	tid++
 	id := tid
 
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, field := range t.fields {
-		fields = append(fields, field.Field)
+		fields = append(fields, field.ResolvedField)
 	}
 
 	newRow, err := rows.NewRow(fields, append([]any{id}, row.Values...))

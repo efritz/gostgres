@@ -20,7 +20,7 @@ type orderScanner struct {
 	mark    int
 }
 
-func NewOrderScanner(ctx impls.Context, scanner scan.RowScanner, fields []fields.Field, order impls.OrderExpression) (scan.RowScanner, error) {
+func NewOrderScanner(ctx impls.Context, scanner scan.RowScanner, fields []fields.ResolvedField, order impls.OrderExpression) (scan.RowScanner, error) {
 	ctx.Log("Building Order scanner")
 
 	rows, err := rows.NewRows(fields)

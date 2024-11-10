@@ -58,7 +58,7 @@ func (q *createPrimaryKeyConstraint) ExecuteDDL(ctx impls.Context) error {
 		}
 
 		columnExpressions = append(columnExpressions, impls.ExpressionWithDirection{
-			Expression: setRelationName(expressions.NewNamed(field.Field), q.tableName),
+			Expression: setRelationName(expressions.NewNamed(field.ResolvedField), q.tableName),
 			Reverse:    false,
 		})
 	}
@@ -151,7 +151,7 @@ func (q *createForeignKeyConstraint) ExecuteDDL(ctx impls.Context) error {
 		if i < 0 {
 			return fmt.Errorf("no such column %q on table %q", columnName, q.tableName)
 		}
-		field := t.Fields()[i].Field
+		field := t.Fields()[i].ResolvedField
 
 		exprs = append(exprs, setRelationName(expressions.NewNamed(field), q.tableName))
 	}

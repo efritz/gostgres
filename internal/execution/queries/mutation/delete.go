@@ -22,9 +22,9 @@ type deleteNode struct {
 var _ queries.Node = &deleteNode{}
 
 func NewDelete(node queries.Node, table impls.Table, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
-	var fields []fields.Field
+	var fields []fields.ResolvedField
 	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
+		fields = append(fields, field.ResolvedField)
 	}
 
 	if alias != "" {
@@ -45,7 +45,7 @@ func NewDelete(node queries.Node, table impls.Table, alias string, expressions [
 	}, nil
 }
 
-func (n *deleteNode) Fields() []fields.Field {
+func (n *deleteNode) Fields() []fields.ResolvedField {
 	return slices.Clone(n.projector.Fields())
 }
 

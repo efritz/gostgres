@@ -29,12 +29,12 @@ func (n *accessNode) Name() string {
 	return n.table.Name()
 }
 
-func (n *accessNode) Fields() []fields.Field {
-	var fields []fields.Field
+func (n *accessNode) Fields() []fields.ResolvedField {
+	var fields []fields.ResolvedField
 	for _, field := range n.table.Fields() {
 		// TODO - should never not be the case?
-		field := field.WithRelationName(n.table.Name())
-		fields = append(fields, field.Field)
+		// field := field.WithRelationName(n.table.Name())
+		fields = append(fields, field.ResolvedField)
 	}
 
 	return fields

@@ -41,7 +41,7 @@ func (i *hashIndex) Unwrap() impls.BaseIndex {
 	return i
 }
 
-func (i *hashIndex) UniqueOn() []fields.Field {
+func (i *hashIndex) UniqueOn() []fields.ResolvedField {
 	return nil
 }
 

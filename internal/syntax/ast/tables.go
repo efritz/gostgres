@@ -19,21 +19,6 @@ type TargetTable struct {
 	AliasName string
 }
 
-type TableReferenceOrExpression interface {
-	BuilderResolver
-	TableExpression() (queries.Node, error)
-}
-
-type AliasedTableReferenceOrExpression struct {
-	BaseTableExpression TableReferenceOrExpression
-	Alias               *TableAlias
-}
-
-type TableAlias struct {
-	TableAlias    string
-	ColumnAliases []string
-}
-
 type TableReference struct {
 	Name string
 
@@ -61,6 +46,21 @@ func (r TableReference) TableExpression() (queries.Node, error) {
 type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
+}
+
+type TableReferenceOrExpression interface {
+	BuilderResolver
+	TableExpression() (queries.Node, error)
+}
+
+type AliasedTableReferenceOrExpression struct {
+	BaseTableExpression TableReferenceOrExpression
+	Alias               *TableAlias
+}
+
+type TableAlias struct {
+	TableAlias    string
+	ColumnAliases []string
 }
 
 type Join struct {

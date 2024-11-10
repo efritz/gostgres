@@ -5,22 +5,32 @@ import (
 
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type constantExpression struct {
 	value any
 }
 
-var _ impls.Expression = constantExpression{}
+var _ impls.Expression = &constantExpression{}
 
 func NewConstant(value any) impls.Expression {
-	return constantExpression{
+	return &constantExpression{
 		value: value,
 	}
 }
 
+func (e *constantExpression) Resolve(ctx impls.ResolutionContext) error {
+	return nil
+}
+
+func (e constantExpression) Type() types.Type {
+	// TODO - should consider explicit `::type` casts
+	return types.TypeKindFromValue(e.value)
+}
+
 func (e constantExpression) Equal(other impls.Expression) bool {
-	if o, ok := other.(constantExpression); ok {
+	if o, ok := other.(*constantExpression); ok {
 		return e.value == o.value
 	}
 
@@ -32,11 +42,11 @@ func (e constantExpression) String() string {
 }
 
 func (e constantExpression) Fold() impls.Expression {
-	return e
+	return &e
 }
 
 func (e constantExpression) Map(f func(impls.Expression) (impls.Expression, error)) (impls.Expression, error) {
-	return f(e)
+	return f(&e)
 }
 
 func (e constantExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {

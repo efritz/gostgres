@@ -4,11 +4,14 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type Expression interface {
 	fmt.Stringer
 
+	Resolve(ctx ResolutionContext) error
+	Type() types.Type
 	Equal(other Expression) bool
 	Fold() Expression
 	Map(f func(Expression) (Expression, error)) (Expression, error)

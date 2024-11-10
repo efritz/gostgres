@@ -75,9 +75,9 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 
 	switch v := value.(type) {
 	case string:
-		return refineString(v, typ)
+		return refineStringValue(v, typ)
 	case int16, int32, int64, float32, float64, *big.Float:
-		return refineNumeric(v, typ)
+		return refineNumericValue(v, typ)
 	case bool:
 		return typ, v, typ == TypeAny || typ == TypeBool
 	case time.Time:
@@ -85,6 +85,46 @@ func (typ Type) Refine(value any) (Type, any, bool) {
 	}
 
 	return TypeUnknown, nil, false
+}
+
+func (typ Type) PromoteToCommonType(other Type) Type {
+	if typ < other {
+		return other.PromoteToCommonType(typ)
+	}
+
+	if typ == other {
+		return typ
+	}
+
+	switch typ {
+	case TypeAny:
+		return other
+
+	case TypeSmallInteger, TypeInteger, TypeBigInteger, TypeReal, TypeDoublePrecision, TypeNumeric:
+		if common, err := PromoteToCommonNumericTypes(typ, other); err == nil {
+			return common
+		}
+
+	default:
+		// Not equal, not promotable
+	}
+
+	return TypeUnknown
+}
+
+func TypeKindFromValue(value any) Type {
+	switch value.(type) {
+	case string:
+		return TypeText
+	case int16, int32, int64, float32, float64, *big.Float:
+		return numericTypeKindFromValue(value)
+	case bool:
+		return TypeBool
+	case time.Time:
+		return TypeTimestampTz
+	}
+
+	return TypeUnknown
 }
 
 func ValueAs[T any](untypedValue any, err error) (*T, error) {

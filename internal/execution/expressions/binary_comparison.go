@@ -1,12 +1,15 @@
 package expressions
 
 import (
+	"fmt"
+
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 func IsComparison(expr impls.Expression) (_ ComparisonType, left, right impls.Expression) {
-	if e, ok := expr.(binaryExpression); ok {
+	if e, ok := expr.(*binaryExpression); ok {
 		if ct := ComparisonTypeFromString(e.operatorText); ct != ComparisonTypeUnknown {
 			return ct, e.left, e.right
 		}
@@ -48,7 +51,15 @@ func NewBetweenSymmetric(left, middle, right impls.Expression) impls.Expression 
 }
 
 func newComparison(left, right impls.Expression, comparisonType ComparisonType) impls.Expression {
-	return newBinaryExpression(left, right, comparisonType.String(), func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
+	typeChecker := func(left types.Type, right types.Type) (types.Type, error) {
+		if typ := left.PromoteToCommonType(right); typ != types.TypeUnknown {
+			return types.TypeBool, nil
+		}
+
+		return types.TypeUnknown, fmt.Errorf("illegal operand types for comparison: %s and %s", left, right)
+	}
+
+	valueFrom := func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
 		lVal, err := left.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
@@ -64,5 +75,7 @@ func newComparison(left, right impls.Expression, comparisonType ComparisonType) 
 		}
 
 		return comparisonType.MatchesOrderType(lVal, rVal)
-	})
+	}
+
+	return newBinaryExpression(left, right, comparisonType.String(), typeChecker, valueFrom)
 }

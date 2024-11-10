@@ -53,11 +53,13 @@ type conditionalExpression struct {
 	conjunctions bool
 }
 
+var _ impls.Expression = &conditionalExpression{}
+
 type foldFunc func(left, right impls.Expression) impls.Expression
 type conditionalValueFromFunc func(a, b *bool) (any, error)
 
 func newConditionalExpression(left, right impls.Expression, operatorText string, valueFrom conditionalValueFromFunc, foldFunc foldFunc, conjunctions bool) impls.Expression {
-	return conditionalExpression{
+	return &conditionalExpression{
 		left:         left,
 		right:        right,
 		operatorText: operatorText,
@@ -71,14 +73,34 @@ func (e conditionalExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
+func (e *conditionalExpression) Resolve(ctx impls.ResolutionContext) error {
+	if err := e.left.Resolve(ctx); err != nil {
+		return err
+	}
+
+	if err := e.right.Resolve(ctx); err != nil {
+		return err
+	}
+
+	if e.left.Type() == types.TypeBool && e.right.Type() == types.TypeBool {
+		return nil
+	}
+
+	return fmt.Errorf("illegal operand types for conditional: %s and %s", e.left.Type(), e.right.Type())
+}
+
+func (e conditionalExpression) Type() types.Type {
+	return types.TypeBool
+}
+
 func (e conditionalExpression) Equal(other impls.Expression) bool {
-	if o, ok := other.(conditionalExpression); ok {
+	if o, ok := other.(*conditionalExpression); ok {
 		if e.conjunctions && o.conjunctions {
-			return compareExpressionBags(Conjunctions(e), Conjunctions(o))
+			return compareExpressionBags(Conjunctions(&e), Conjunctions(o))
 		}
 
 		if !e.conjunctions && !o.conjunctions {
-			return compareExpressionBags(Disjunctions(e), Disjunctions(o))
+			return compareExpressionBags(Disjunctions(&e), Disjunctions(o))
 		}
 	}
 

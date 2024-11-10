@@ -6,7 +6,7 @@ import (
 )
 
 func Conjunctions(e impls.Expression) []impls.Expression {
-	if c, ok := e.(conditionalExpression); ok && c.conjunctions {
+	if c, ok := e.(*conditionalExpression); ok && c.conjunctions {
 		return append(Conjunctions(c.left), Conjunctions(c.right)...)
 	}
 
@@ -14,7 +14,7 @@ func Conjunctions(e impls.Expression) []impls.Expression {
 }
 
 func Disjunctions(e impls.Expression) []impls.Expression {
-	if c, ok := e.(conditionalExpression); ok && !c.conjunctions {
+	if c, ok := e.(*conditionalExpression); ok && !c.conjunctions {
 		return append(Disjunctions(c.left), Disjunctions(c.right)...)
 	}
 

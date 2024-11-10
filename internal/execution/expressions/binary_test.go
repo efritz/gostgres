@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBinaryEqual(t *testing.T) {
-	a := NewNamed(fields.NewField("t", "a", types.TypeText, fields.NonInternalField))
-	b := NewNamed(fields.NewField("t", "b", types.TypeText, fields.NonInternalField))
+func TestBinary_Equal(t *testing.T) {
+	a := NewNamed(fields.NewField("t", "a", types.TypeSmallInteger, fields.NonInternalField))
+	b := NewNamed(fields.NewField("t", "b", types.TypeInteger, fields.NonInternalField))
 
 	for _, testCase := range []struct {
 		name     string

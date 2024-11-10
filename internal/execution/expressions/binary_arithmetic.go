@@ -11,7 +11,7 @@ import (
 )
 
 func IsArithmetic(expr impls.Expression) (_ ArithmeticType, left, right impls.Expression) {
-	if e, ok := expr.(binaryExpression); ok {
+	if e, ok := expr.(*binaryExpression); ok {
 		if ct := ArithmeticTypeFromString(e.operatorText); ct != ArithmeticTypeUnknown {
 			return ct, e.left, e.right
 		}
@@ -45,7 +45,15 @@ func NewUnaryMinus(expression impls.Expression) impls.Expression {
 }
 
 func newBinaryIntExpression(left, right impls.Expression, operatorText string, f func(a, b any) (any, error)) impls.Expression {
-	return newBinaryExpression(left, right, operatorText, func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
+	typeChecker := func(left types.Type, right types.Type) (types.Type, error) {
+		if typ := left.PromoteToCommonType(right); typ.IsNumber() {
+			return typ, nil
+		}
+
+		return types.TypeUnknown, fmt.Errorf("illegal operand types for %s: %s and %s", operatorText, left, right)
+	}
+
+	valueFrom := func(ctx impls.ExecutionContext, left, right impls.Expression, row rows.Row) (any, error) {
 		lVal, err := left.ValueFrom(ctx, row)
 		if err != nil {
 			return nil, err
@@ -66,7 +74,9 @@ func newBinaryIntExpression(left, right impls.Expression, operatorText string, f
 		}
 
 		return f(lVal, rVal)
-	})
+	}
+
+	return newBinaryExpression(left, right, operatorText, typeChecker, valueFrom)
 }
 
 func add(a, b any) (any, error) {

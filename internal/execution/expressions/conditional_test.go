@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEvaluateNot(t *testing.T) {
+func TestEvaluate_Not(t *testing.T) {
+	field := fields.NewField("t", "a", types.TypeBool, fields.NonInternalField)
+
 	for _, testCase := range []struct {
 		name     string
 		expr     impls.Expression
@@ -29,20 +31,25 @@ func TestEvaluateNot(t *testing.T) {
 		},
 		{
 			name:     "nil",
-			expr:     NewConstant(nil),
+			expr:     NewNamed(field),
 			expected: nil,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
+			row, err := rows.NewRow([]fields.Field{field}, []any{nil})
+			require.NoError(t, err)
+
 			e := NewNot(testCase.expr)
-			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, row)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
 	}
 }
 
-func TestEvaluateAnd(t *testing.T) {
+func TestEvaluate_And(t *testing.T) {
+	field := fields.NewField("t", "a", types.TypeBool, fields.NonInternalField)
+
 	for _, testCase := range []struct {
 		name     string
 		left     impls.Expression
@@ -63,21 +70,26 @@ func TestEvaluateAnd(t *testing.T) {
 		},
 		{
 			name:     "nil",
-			left:     NewConstant(nil),
+			left:     NewNamed(field),
 			right:    NewConstant(true),
 			expected: nil,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
+			row, err := rows.NewRow([]fields.Field{field}, []any{nil})
+			require.NoError(t, err)
+
 			e := NewAnd(testCase.left, testCase.right)
-			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, row)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
 	}
 }
 
-func TestEvaluateOr(t *testing.T) {
+func TestEvaluate_Or(t *testing.T) {
+	field := fields.NewField("t", "a", types.TypeBool, fields.NonInternalField)
+
 	for _, testCase := range []struct {
 		name     string
 		left     impls.Expression
@@ -98,33 +110,36 @@ func TestEvaluateOr(t *testing.T) {
 		},
 		{
 			name:     "semi-nil (true)",
-			left:     NewConstant(nil),
+			left:     NewNamed(field),
 			right:    NewConstant(true),
 			expected: true,
 		},
 		{
 			name:     "semi-nil (false)",
-			left:     NewConstant(nil),
+			left:     NewNamed(field),
 			right:    NewConstant(false),
 			expected: nil,
 		},
 		{
 			name:     "nil",
-			left:     NewConstant(nil),
-			right:    NewConstant(nil),
+			left:     NewNamed(field),
+			right:    NewNamed(field),
 			expected: nil,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
+			row, err := rows.NewRow([]fields.Field{field}, []any{nil})
+			require.NoError(t, err)
+
 			e := NewOr(testCase.left, testCase.right)
-			val, err := e.ValueFrom(impls.EmptyExecutionContext, rows.Row{})
+			val, err := e.ValueFrom(impls.EmptyExecutionContext, row)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expected, val)
 		})
 	}
 }
 
-func TestConditionalEqual(t *testing.T) {
+func TestConditional_Equal(t *testing.T) {
 	a := NewNamed(fields.NewField("t", "a", types.TypeText, fields.NonInternalField))
 	b := NewNamed(fields.NewField("t", "b", types.TypeText, fields.NonInternalField))
 	c := NewNamed(fields.NewField("t", "c", types.TypeText, fields.NonInternalField))

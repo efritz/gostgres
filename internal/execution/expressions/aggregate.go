@@ -12,7 +12,7 @@ func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) (impls.Aggregat
 	)
 
 	outerExpression, err := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		f, ok := e.(functionExpression)
+		f, ok := e.(*functionExpression)
 		if !ok {
 			return e, nil
 		}
@@ -94,7 +94,7 @@ func (e *aggregateSubExpression) Step(ctx impls.ExecutionContext, row rows.Row) 
 		values = append(values, value)
 	}
 
-	newState, err := e.aggregate.Step(e.state, values)
+	newState, err := e.aggregate.Step(ctx, e.state, values)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (e *aggregateSubExpression) Step(ctx impls.ExecutionContext, row rows.Row) 
 }
 
 func (e *aggregateSubExpression) Done(ctx impls.ExecutionContext) (any, error) {
-	return e.aggregate.Done(e.state)
+	return e.aggregate.Done(ctx, e.state)
 }
 
 type nonAggregateExpression struct {

@@ -5,76 +5,74 @@ import (
 	"time"
 
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 func DefaultFunctions() map[string]impls.Function {
-	return map[string]impls.Function{
-		"now":     simpleFunction(now),
-		"nextval": simpleFunction(nextval),
-		"setval":  simpleFunction(setval),
-		"currval": simpleFunction(currval),
+	m := map[string]impls.Function{}
+	for _, f := range []impls.Function{
+		now,
+		currval,
+		nextval,
+		setval,
+	} {
+		m[f.Name()] = f
 	}
+
+	return m
 }
 
-func now(ctx impls.ExecutionContext, args []any) (any, error) {
-	if len(args) != 0 {
-		return nil, fmt.Errorf("now() takes no arguments")
-	}
+var now = newFunctionImpl(
+	"now",
+	nil,
+	types.TypeTimestampTz,
+	func(ctx impls.ExecutionContext, args []any) (any, error) {
+		return time.Now(), nil
+	},
+)
 
-	return time.Now(), nil
-}
+var currval = newFunctionImpl(
+	"currval",
+	[]types.Type{types.TypeText},
+	types.TypeBigInteger,
+	func(ctx impls.ExecutionContext, args []any) (any, error) {
+		name := args[0].(string)
+		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		if !ok {
+			return nil, fmt.Errorf("sequence %s does not exist", name)
+		}
 
-func nextval(ctx impls.ExecutionContext, args []any) (any, error) {
-	if len(args) != 1 {
-		return nil, fmt.Errorf("nextval() takes one argument")
-	}
-	name, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("nextval() takes one argument of type string")
-	}
+		return sequence.Value(), nil
+	},
+)
 
-	sequence, ok := ctx.Catalog.Sequences.Get(name)
-	if !ok {
-		return nil, fmt.Errorf("sequence %s does not exist", name)
-	}
+var nextval = newFunctionImpl(
+	"nextval",
+	[]types.Type{types.TypeText},
+	types.TypeBigInteger,
+	func(ctx impls.ExecutionContext, args []any) (any, error) {
+		name := args[0].(string)
+		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		if !ok {
+			return nil, fmt.Errorf("sequence %s does not exist", name)
+		}
 
-	return sequence.Next()
-}
+		return sequence.Next()
+	},
+)
 
-func setval(ctx impls.ExecutionContext, args []any) (any, error) {
-	if len(args) != 2 {
-		return nil, fmt.Errorf("setval() takes two arguments")
-	}
-	name, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("setval() takes two arguments of type string, biginteger")
-	}
-	value, ok := args[1].(int64)
-	if !ok {
-		return nil, fmt.Errorf("setval() takes two arguments of type string, biginteger")
-	}
+var setval = newFunctionImpl(
+	"setval",
+	[]types.Type{types.TypeText, types.TypeBigInteger},
+	types.TypeBigInteger,
+	func(ctx impls.ExecutionContext, args []any) (any, error) {
+		name := args[0].(string)
+		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		if !ok {
+			return nil, fmt.Errorf("sequence %s does not exist", name)
+		}
 
-	sequence, ok := ctx.Catalog.Sequences.Get(name)
-	if !ok {
-		return nil, fmt.Errorf("sequence %s does not exist", name)
-	}
-
-	return nil, sequence.Set(value)
-}
-
-func currval(ctx impls.ExecutionContext, args []any) (any, error) {
-	if len(args) != 1 {
-		return nil, fmt.Errorf("currval() takes one argument")
-	}
-	name, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("currval() takes one argument of type string")
-	}
-
-	sequence, ok := ctx.Catalog.Sequences.Get(name)
-	if !ok {
-		return nil, fmt.Errorf("sequence %s does not exist", name)
-	}
-
-	return sequence.Value(), nil
-}
+		value := args[1].(int64)
+		return nil, sequence.Set(value)
+	},
+)

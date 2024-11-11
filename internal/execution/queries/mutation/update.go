@@ -17,7 +17,6 @@ type updateNode struct {
 	queries.Node
 	table          impls.Table
 	setExpressions []SetExpression
-	columnNames    []string
 	projector      *projector.Projector
 }
 

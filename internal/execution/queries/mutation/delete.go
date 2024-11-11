@@ -14,9 +14,8 @@ import (
 
 type deleteNode struct {
 	queries.Node
-	table       impls.Table
-	columnNames []string
-	projector   *projector.Projector
+	table     impls.Table
+	projector *projector.Projector
 }
 
 var _ queries.Node = &deleteNode{}

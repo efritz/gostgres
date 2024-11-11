@@ -9,8 +9,8 @@ import (
 )
 
 type ProjectedExpression struct {
-	expression impls.Expression
-	alias      string
+	Expression impls.Expression
+	Alias      string
 }
 
 var _ ProjectionExpression1 = &ProjectedExpression{}
@@ -18,8 +18,8 @@ var _ ProjectionExpression2 = &ProjectedExpression{}
 
 func NewProjectedExpression(expression impls.Expression, alias string) ProjectionExpression {
 	return ProjectedExpression{
-		expression: expression,
-		alias:      alias,
+		Expression: expression,
+		Alias:      alias,
 	}
 }
 
@@ -28,18 +28,18 @@ func NewProjectedExpressionFromField(field fields.Field) ProjectionExpression {
 }
 
 func (p ProjectedExpression) String() string {
-	return fmt.Sprintf("%s as %s", p.expression, p.alias)
+	return fmt.Sprintf("%s as %s", p.Expression, p.Alias)
 }
 
 func (p ProjectedExpression) Dealias(name string, fields []fields.Field, alias string) ProjectionExpression {
-	expression := p.expression
+	expression := p.Expression
 	for _, field := range fields {
 		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
 	return ProjectedExpression{
-		expression: expression,
-		alias:      p.alias,
+		Expression: expression,
+		Alias:      p.Alias,
 	}
 }
 
@@ -64,12 +64,4 @@ func Alias(e impls.Expression, field fields.Field, target impls.Expression) impl
 	})
 
 	return mapped
-}
-
-func UnwrapAlias(e ProjectionExpression) (impls.Expression, string, bool) {
-	if alias, ok := e.(ProjectedExpression); ok {
-		return alias.expression, alias.alias, true
-	}
-
-	return nil, "", false
 }

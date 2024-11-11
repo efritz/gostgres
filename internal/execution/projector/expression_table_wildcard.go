@@ -43,8 +43,8 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projec
 
 		matched = true
 		projections = append(projections, ProjectedExpression{
-			alias:      field.Name(),
-			expression: expressions.NewNamed(field),
+			Alias:      field.Name(),
+			Expression: expressions.NewNamed(field),
 		})
 	}
 

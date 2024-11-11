@@ -29,8 +29,8 @@ func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections
 		}
 
 		projections = append(projections, ProjectedExpression{
-			alias:      field.Name(),
-			expression: expressions.NewNamed(field),
+			Alias:      field.Name(),
+			Expression: expressions.NewNamed(field),
 		})
 	}
 

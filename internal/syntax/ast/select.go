@@ -1,8 +1,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -68,16 +66,18 @@ func (b SelectBuilder) TableExpression() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-	selectLoop:
-		for _, selectExpression := range b.Select.SelectExpressions {
-			expression, alias, ok := projector.UnwrapAlias(selectExpression)
-			if !ok {
-				return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
-			}
+		aliases, err := projector.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
+		}
 
-			if len(expressions.Fields(expression)) > 0 {
+	selectLoop:
+		for _, selectExpression := range aliases {
+			if len(expressions.Fields(selectExpression.Expression)) > 0 {
+				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+
 				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(expression) || grouping.Equal(expressions.NewNamed(fields.NewField("", alias, types.TypeAny, fields.NonInternalField))) {
+					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
 						continue selectLoop
 					}
 				}

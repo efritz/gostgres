@@ -91,20 +91,6 @@ func (p *Projector) DeprojectExpression(expression impls.Expression) impls.Expre
 
 }
 
-func expandProjection(fields []fields.Field, expressions []ProjectionExpression) ([]ProjectedExpression, error) {
-	aliases := make([]ProjectedExpression, 0, len(fields))
-	for _, expression := range expressions {
-		as, err := expression.Expand(fields)
-		if err != nil {
-			return nil, err
-		}
-
-		aliases = append(aliases, as...)
-	}
-
-	return aliases, nil
-}
-
 func fieldsFromProjection(relationName string, aliases []ProjectedExpression) []fields.Field {
 	projectedFields := make([]fields.Field, 0, len(aliases))
 	for _, field := range aliases {

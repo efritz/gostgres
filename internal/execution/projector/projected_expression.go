@@ -13,6 +13,9 @@ type ProjectedExpression struct {
 	alias      string
 }
 
+var _ ProjectionExpression1 = &ProjectedExpression{}
+var _ ProjectionExpression2 = &ProjectedExpression{}
+
 func NewProjectedExpression(expression impls.Expression, alias string) ProjectionExpression {
 	return ProjectedExpression{
 		expression: expression,

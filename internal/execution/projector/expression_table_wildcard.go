@@ -11,6 +11,9 @@ type tableWildcardProjectionExpression struct {
 	relationName string
 }
 
+var _ ProjectionExpression1 = &tableWildcardProjectionExpression{}
+var _ ProjectionExpression2 = &tableWildcardProjectionExpression{}
+
 func NewTableWildcardProjectionExpression(relationName string) ProjectionExpression {
 	return tableWildcardProjectionExpression{
 		relationName: relationName,

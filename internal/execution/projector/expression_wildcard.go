@@ -7,6 +7,9 @@ import (
 
 type wildcardProjectionExpression struct{}
 
+var _ ProjectionExpression1 = &wildcardProjectionExpression{}
+var _ ProjectionExpression2 = &wildcardProjectionExpression{}
+
 func NewWildcardProjectionExpression() ProjectionExpression {
 	return wildcardProjectionExpression{}
 }

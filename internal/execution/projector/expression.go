@@ -15,9 +15,18 @@ type ProjectionExpression2 interface {
 	Expand(fields []fields.Field) ([]ProjectedExpression, error)
 }
 
-func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression) ([]ProjectedExpression, error) {
+type AliasedTable struct {
+	TableName string
+	Alias     string
+}
+
+func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression, aliasedTables ...AliasedTable) ([]ProjectedExpression, error) {
 	aliases := make([]ProjectedExpression, 0, len(fields))
 	for _, expression := range expressions {
+		for _, table := range aliasedTables {
+			expression = expression.Dealias(table.TableName, fields, table.Alias)
+		}
+
 		as, err := expression.Expand(fields)
 		if err != nil {
 			return nil, err

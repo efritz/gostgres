@@ -26,13 +26,15 @@ func NewDelete(node queries.Node, table impls.Table, alias string, expressions [
 		fields = append(fields, field.Field)
 	}
 
+	var aliasedTables []projector.AliasedTable
 	if alias != "" {
-		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(table.Name(), fields, alias)
-		}
+		aliasedTables = append(aliasedTables, projector.AliasedTable{
+			TableName: table.Name(),
+			Alias:     alias,
+		})
 	}
 
-	aliases, err := projector.ExpandProjection(fields, expressions)
+	aliases, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
 	if err != nil {
 		return nil, err
 	}

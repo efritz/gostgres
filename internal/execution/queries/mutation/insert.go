@@ -28,13 +28,15 @@ func NewInsert(node queries.Node, table impls.Table, name, alias string, columnN
 		fields = append(fields, field.Field)
 	}
 
+	var aliasedTables []projector.AliasedTable
 	if alias != "" {
-		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(name, fields, alias)
-		}
+		aliasedTables = append(aliasedTables, projector.AliasedTable{
+			TableName: table.Name(),
+			Alias:     alias,
+		})
 	}
 
-	aliases, err := projector.ExpandProjection(fields, expressions)
+	aliases, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
 	if err != nil {
 		return nil, err
 	}

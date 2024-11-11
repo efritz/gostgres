@@ -16,14 +16,14 @@ type ProjectedExpression struct {
 var _ ProjectionExpression1 = &ProjectedExpression{}
 var _ ProjectionExpression2 = &ProjectedExpression{}
 
-func NewProjectedExpression(expression impls.Expression, alias string) ProjectionExpression {
+func NewProjectedExpression(expression impls.Expression, alias string) ProjectedExpression {
 	return ProjectedExpression{
 		Expression: expression,
 		Alias:      alias,
 	}
 }
 
-func NewProjectedExpressionFromField(field fields.Field) ProjectionExpression {
+func NewProjectedExpressionFromField(field fields.Field) ProjectedExpression {
 	return NewProjectedExpression(expressions.NewNamed(field), field.Name())
 }
 
@@ -37,10 +37,7 @@ func (p ProjectedExpression) Dealias(name string, fields []fields.Field, alias s
 		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
-	return ProjectedExpression{
-		Expression: expression,
-		Alias:      p.Alias,
-	}
+	return NewProjectedExpression(expression, p.Alias)
 }
 
 func (p ProjectedExpression) Expand(fields []fields.Field) ([]ProjectedExpression, error) {

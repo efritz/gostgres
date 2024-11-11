@@ -1,7 +1,6 @@
 package projector
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 )
 
@@ -28,10 +27,7 @@ func (p wildcardProjectionExpression) Expand(fields []fields.Field) (projections
 			continue
 		}
 
-		projections = append(projections, ProjectedExpression{
-			Alias:      field.Name(),
-			Expression: expressions.NewNamed(field),
-		})
+		projections = append(projections, NewProjectedExpressionFromField(field))
 	}
 
 	return projections, nil

@@ -3,7 +3,6 @@ package ast
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
@@ -60,7 +59,7 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
 
 	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewProjectedExpression(expressions.NewNamed(tidField), "tid"),
+		projector.NewProjectedExpressionFromField(tidField),
 	})
 	if err != nil {
 		return nil, err

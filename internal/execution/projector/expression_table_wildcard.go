@@ -3,7 +3,6 @@ package projector
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 )
 
@@ -42,10 +41,7 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projec
 		}
 
 		matched = true
-		projections = append(projections, ProjectedExpression{
-			Alias:      field.Name(),
-			Expression: expressions.NewNamed(field),
-		})
+		projections = append(projections, NewProjectedExpressionFromField(field))
 	}
 
 	if !matched {

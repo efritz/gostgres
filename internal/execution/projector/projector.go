@@ -14,20 +14,18 @@ import (
 
 type Projector struct {
 	aliases         []ProjectedExpression
-	fields          []fields.Field
 	projectedFields []fields.Field
 }
 
-func NewProjector(name string, fields []fields.Field, expressions []ProjectionExpression) (*Projector, error) {
-	aliases, err := expandProjection(fields, expressions)
-	if err != nil {
-		return nil, err
+func NewProjector(relationName string, aliases []ProjectedExpression) (*Projector, error) {
+	var projectedFields []fields.Field
+	for _, field := range aliases {
+		projectedFields = append(projectedFields, fields.NewField(relationName, field.alias, types.TypeAny, fields.NonInternalField))
 	}
 
 	return &Projector{
 		aliases:         aliases,
-		fields:          fields,
-		projectedFields: fieldsFromProjection(name, aliases),
+		projectedFields: projectedFields,
 	}, nil
 }
 
@@ -89,13 +87,4 @@ func (p *Projector) DeprojectExpression(expression impls.Expression) impls.Expre
 
 	return expression
 
-}
-
-func fieldsFromProjection(relationName string, aliases []ProjectedExpression) []fields.Field {
-	projectedFields := make([]fields.Field, 0, len(aliases))
-	for _, field := range aliases {
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.alias, types.TypeAny, fields.NonInternalField))
-	}
-
-	return projectedFields
 }

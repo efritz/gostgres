@@ -34,7 +34,12 @@ func NewInsert(node queries.Node, table impls.Table, name, alias string, columnN
 		}
 	}
 
-	projector, err := projector.NewProjector(node.Name(), fields, expressions)
+	aliases, err := projector.ExpandProjection(fields, expressions)
+	if err != nil {
+		return nil, err
+	}
+
+	projector, err := projector.NewProjector(node.Name(), aliases)
 	if err != nil {
 		return nil, err
 	}

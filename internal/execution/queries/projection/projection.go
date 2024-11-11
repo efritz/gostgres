@@ -18,7 +18,12 @@ type projectionNode struct {
 var _ queries.Node = &projectionNode{}
 
 func NewProjection(node queries.Node, expressions []projector.ProjectionExpression) (queries.Node, error) {
-	projector, err := projector.NewProjector(node.Name(), node.Fields(), expressions)
+	aliases, err := projector.ExpandProjection(node.Fields(), expressions)
+	if err != nil {
+		return nil, err
+	}
+
+	projector, err := projector.NewProjector(node.Name(), aliases)
 	if err != nil {
 		return nil, err
 	}

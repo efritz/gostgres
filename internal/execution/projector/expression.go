@@ -15,7 +15,7 @@ type ProjectionExpression2 interface {
 	Expand(fields []fields.Field) ([]ProjectedExpression, error)
 }
 
-func expandProjection(fields []fields.Field, expressions []ProjectionExpression) ([]ProjectedExpression, error) {
+func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression) ([]ProjectedExpression, error) {
 	aliases := make([]ProjectedExpression, 0, len(fields))
 	for _, expression := range expressions {
 		as, err := expression.Expand(fields)

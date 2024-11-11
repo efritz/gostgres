@@ -1,7 +1,6 @@
 package aggregate
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -20,7 +19,7 @@ import (
 type hashAggregate struct {
 	queries.Node
 	groupExpressions  []impls.Expression
-	selectExpressions []projector.ProjectionExpression
+	selectExpressions []projector.ProjectedExpression
 	projector         *projector.Projector
 }
 
@@ -31,7 +30,12 @@ func NewHashAggregate(
 	groupExpressions []impls.Expression,
 	selectExpressions []projector.ProjectionExpression,
 ) queries.Node {
-	projector, err := projector.NewProjector(node.Name(), node.Fields(), selectExpressions)
+	projectedExpressions, err := projector.ExpandProjection(node.Fields(), selectExpressions)
+	if err != nil {
+		panic(err.Error()) // TODO
+	}
+
+	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
 	if err != nil {
 		panic(err.Error()) // TODO
 	}
@@ -39,7 +43,7 @@ func NewHashAggregate(
 	return &hashAggregate{
 		Node:              node,
 		groupExpressions:  groupExpressions,
-		selectExpressions: selectExpressions,
+		selectExpressions: projectedExpressions,
 		projector:         projector,
 	}
 }
@@ -97,13 +101,8 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 	var groupedFields []fields.Field
 	var exprs []impls.Expression
 	for _, selectExpression := range n.selectExpressions {
-		expr, alias, ok := projector.UnwrapAlias(selectExpression)
-		if !ok {
-			return nil, fmt.Errorf("cannot unwrap alias %q", selectExpression)
-		}
-
-		groupedFields = append(groupedFields, fields.NewField("", alias, types.TypeAny, fields.NonInternalField))
-		exprs = append(exprs, expr)
+		groupedFields = append(groupedFields, fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+		exprs = append(exprs, selectExpression.Expression)
 	}
 
 	h := map[uint64][]impls.AggregateExpression{}

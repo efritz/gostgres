@@ -17,7 +17,6 @@ type updateNode struct {
 	queries.Node
 	table          impls.Table
 	setExpressions []SetExpression
-	columnNames    []string
 	projector      *projector.Projector
 }
 
@@ -34,13 +33,20 @@ func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpress
 		fields = append(fields, field.Field)
 	}
 
+	var aliasedTables []projector.AliasedTable
 	if alias != "" {
-		for i, pe := range expressions {
-			expressions[i] = pe.Dealias(table.Name(), fields, alias)
-		}
+		aliasedTables = append(aliasedTables, projector.AliasedTable{
+			TableName: table.Name(),
+			Alias:     alias,
+		})
 	}
 
-	projector, err := projector.NewProjector(node.Name(), fields, expressions)
+	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
+	if err != nil {
+		return nil, err
+	}
+
+	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
 	if err != nil {
 		return nil, err
 	}

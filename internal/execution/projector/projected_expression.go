@@ -43,22 +43,3 @@ func (p ProjectedExpression) Dealias(name string, fields []fields.Field, alias s
 func (p ProjectedExpression) Expand(fields []fields.Field) ([]ProjectedExpression, error) {
 	return []ProjectedExpression{p}, nil
 }
-
-//
-//
-
-func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
-	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if named, ok := e.(expressions.NamedExpression); ok {
-			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
-				if named.Field().Name() == field.Name() {
-					return target, nil
-				}
-			}
-		}
-
-		return e, nil
-	})
-
-	return mapped
-}

@@ -41,12 +41,12 @@ func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpress
 		})
 	}
 
-	aliases, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
+	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
 	if err != nil {
 		return nil, err
 	}
 
-	projector, err := projector.NewProjector(node.Name(), aliases)
+	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
 	if err != nil {
 		return nil, err
 	}

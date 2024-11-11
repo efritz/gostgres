@@ -66,13 +66,13 @@ func (b SelectBuilder) TableExpression() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		aliases, err := projector.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
+		projectedExpressions, err := projector.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
 		if err != nil {
 			return nil, err
 		}
 
 	selectLoop:
-		for _, selectExpression := range aliases {
+		for _, selectExpression := range projectedExpressions {
 			if len(expressions.Fields(selectExpression.Expression)) > 0 {
 				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
 

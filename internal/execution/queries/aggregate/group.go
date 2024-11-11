@@ -30,12 +30,12 @@ func NewHashAggregate(
 	groupExpressions []impls.Expression,
 	selectExpressions []projector.ProjectionExpression,
 ) queries.Node {
-	aliases, err := projector.ExpandProjection(node.Fields(), selectExpressions)
+	projectedExpressions, err := projector.ExpandProjection(node.Fields(), selectExpressions)
 	if err != nil {
 		panic(err.Error()) // TODO
 	}
 
-	projector, err := projector.NewProjector(node.Name(), aliases)
+	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
 	if err != nil {
 		panic(err.Error()) // TODO
 	}
@@ -43,7 +43,7 @@ func NewHashAggregate(
 	return &hashAggregate{
 		Node:              node,
 		groupExpressions:  groupExpressions,
-		selectExpressions: aliases,
+		selectExpressions: projectedExpressions,
 		projector:         projector,
 	}
 }

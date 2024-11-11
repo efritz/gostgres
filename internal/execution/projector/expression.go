@@ -1,39 +1,29 @@
 package projector
 
-import "github.com/efritz/gostgres/internal/shared/fields"
+import (
+	"fmt"
 
-type ProjectionExpression interface {
-	ProjectionExpression1
-	ProjectionExpression2
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
+)
+
+type ProjectedExpression struct {
+	Expression impls.Expression
+	Alias      string
 }
 
-type ProjectionExpression1 interface {
-	Dealias(name string, fields []fields.Field, alias string) ProjectionExpression
-}
-
-type ProjectionExpression2 interface {
-	Expand(fields []fields.Field) ([]ProjectedExpression, error)
-}
-
-type AliasedTable struct {
-	TableName string
-	Alias     string
-}
-
-func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression, aliasedTables ...AliasedTable) ([]ProjectedExpression, error) {
-	aliases := make([]ProjectedExpression, 0, len(fields))
-	for _, expression := range expressions {
-		for _, table := range aliasedTables {
-			expression = expression.Dealias(table.TableName, fields, table.Alias)
-		}
-
-		as, err := expression.Expand(fields)
-		if err != nil {
-			return nil, err
-		}
-
-		aliases = append(aliases, as...)
+func NewProjectedExpression(expression impls.Expression, alias string) ProjectedExpression {
+	return ProjectedExpression{
+		Expression: expression,
+		Alias:      alias,
 	}
+}
 
-	return aliases, nil
+func NewProjectedExpressionFromField(field fields.Field) ProjectedExpression {
+	return NewProjectedExpression(expressions.NewNamed(field), field.Name())
+}
+
+func (p ProjectedExpression) String() string {
+	return fmt.Sprintf("%s as %s", p.Expression, p.Alias)
 }

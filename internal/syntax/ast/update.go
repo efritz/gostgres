@@ -67,7 +67,7 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
 
 	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewProjectedExpressionFromField(tidField),
+		projector.NewAliasedExpressionFromField(tidField),
 		projector.NewTableWildcardProjectionExpression(relationName),
 	})
 	if err != nil {

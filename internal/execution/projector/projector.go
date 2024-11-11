@@ -86,21 +86,4 @@ func (p *Projector) DeprojectExpression(expression impls.Expression) impls.Expre
 	}
 
 	return expression
-
-}
-
-func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
-	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if named, ok := e.(expressions.NamedExpression); ok {
-			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
-				if named.Field().Name() == field.Name() {
-					return target, nil
-				}
-			}
-		}
-
-		return e, nil
-	})
-
-	return mapped
 }

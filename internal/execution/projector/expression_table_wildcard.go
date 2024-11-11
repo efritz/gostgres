@@ -31,7 +31,7 @@ func (p tableWildcardProjectionExpression) Dealias(name string, fields []fields.
 	return p
 }
 
-func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projections []aliasProjectionExpression, _ error) {
+func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projections []ProjectedExpression, _ error) {
 	matched := false
 	for _, field := range fields {
 		if field.Internal() || field.RelationName() != p.relationName {
@@ -39,7 +39,7 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field) (projec
 		}
 
 		matched = true
-		projections = append(projections, aliasProjectionExpression{
+		projections = append(projections, ProjectedExpression{
 			alias:      field.Name(),
 			expression: expressions.NewNamed(field),
 		})

@@ -8,36 +8,40 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-type aliasProjectionExpression struct {
+type ProjectedExpression struct {
 	expression impls.Expression
 	alias      string
 }
 
-func NewAliasProjectionExpression(expression impls.Expression, alias string) ProjectionExpression {
-	return aliasProjectionExpression{
+func NewProjectedExpression(expression impls.Expression, alias string) ProjectionExpression {
+	return ProjectedExpression{
 		expression: expression,
 		alias:      alias,
 	}
 }
 
-func (p aliasProjectionExpression) String() string {
+func NewProjectedExpressionFromField(field fields.Field) ProjectionExpression {
+	return NewProjectedExpression(expressions.NewNamed(field), field.Name())
+}
+
+func (p ProjectedExpression) String() string {
 	return fmt.Sprintf("%s as %s", p.expression, p.alias)
 }
 
-func (p aliasProjectionExpression) Dealias(name string, fields []fields.Field, alias string) ProjectionExpression {
+func (p ProjectedExpression) Dealias(name string, fields []fields.Field, alias string) ProjectionExpression {
 	expression := p.expression
 	for _, field := range fields {
 		expression = Alias(expression, field.WithRelationName(name), expressions.NewNamed(field))
 	}
 
-	return aliasProjectionExpression{
+	return ProjectedExpression{
 		expression: expression,
 		alias:      p.alias,
 	}
 }
 
-func (p aliasProjectionExpression) Expand(fields []fields.Field) ([]aliasProjectionExpression, error) {
-	return []aliasProjectionExpression{p}, nil
+func (p ProjectedExpression) Expand(fields []fields.Field) ([]ProjectedExpression, error) {
+	return []ProjectedExpression{p}, nil
 }
 
 //
@@ -60,7 +64,7 @@ func Alias(e impls.Expression, field fields.Field, target impls.Expression) impl
 }
 
 func UnwrapAlias(e ProjectionExpression) (impls.Expression, string, bool) {
-	if alias, ok := e.(aliasProjectionExpression); ok {
+	if alias, ok := e.(ProjectedExpression); ok {
 		return alias.expression, alias.alias, true
 	}
 

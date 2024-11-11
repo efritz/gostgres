@@ -60,7 +60,7 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
 
 	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewAliasProjectionExpression(expressions.NewNamed(tidField), "tid"),
+		projector.NewProjectedExpression(expressions.NewNamed(tidField), "tid"),
 	})
 	if err != nil {
 		return nil, err

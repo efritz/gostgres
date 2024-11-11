@@ -112,7 +112,7 @@ func (e *TableExpression) TableExpression() (queries.Node, error) {
 
 			projectionExpressions := make([]projector.ProjectionExpression, 0, len(fields))
 			for i, field := range fields {
-				projectionExpressions = append(projectionExpressions, projector.NewAliasProjectionExpression(expressions.NewNamed(field), columnNames[i]))
+				projectionExpressions = append(projectionExpressions, projector.NewProjectedExpression(expressions.NewNamed(field), columnNames[i]))
 			}
 
 			node, err = projection.NewProjection(node, projectionExpressions)

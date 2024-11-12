@@ -38,5 +38,10 @@ func (b *InsertBuilder) Build() (queries.Node, error) {
 		return nil, err
 	}
 
-	return mutation.NewInsert(node, b.table, b.Target.Name, b.Target.AliasName, b.ColumnNames, b.Returning)
+	insert, err := mutation.NewInsert(node, b.table, b.ColumnNames)
+	if err != nil {
+		return nil, err
+	}
+
+	return wrapReturning(insert, b.table, b.Target.AliasName, b.Returning)
 }

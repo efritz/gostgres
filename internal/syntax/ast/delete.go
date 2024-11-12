@@ -9,10 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/alias"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type DeleteBuilder struct {
@@ -52,18 +49,10 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 		node = filter.NewFilter(node, b.Where)
 	}
 
-	relationName := b.Target.Name
-	if b.Target.AliasName != "" {
-		relationName = b.Target.AliasName
-	}
-	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
-
-	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewAliasedExpressionFromField(tidField),
-	})
+	delete, err := mutation.NewDelete(node, b.table, b.Target.AliasName)
 	if err != nil {
 		return nil, err
 	}
 
-	return mutation.NewDelete(node, b.table, b.Target.AliasName, b.Returning)
+	return wrapReturning(delete, b.table, b.Target.AliasName, b.Returning)
 }

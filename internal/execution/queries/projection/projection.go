@@ -28,10 +28,14 @@ func NewProjection(node queries.Node, expressions []projector.ProjectionExpressi
 		return nil, err
 	}
 
+	return NewProjectionWithProjector(node, projector), nil
+}
+
+func NewProjectionWithProjector(node queries.Node, projector *projector.Projector) queries.Node {
 	return &projectionNode{
 		Node:      node,
 		projector: projector,
-	}, nil
+	}
 }
 
 func (n *projectionNode) Fields() []fields.Field {

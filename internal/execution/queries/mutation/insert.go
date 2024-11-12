@@ -2,9 +2,7 @@ package mutation
 
 import (
 	"fmt"
-	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -16,50 +14,32 @@ import (
 type insertNode struct {
 	queries.Node
 	table       impls.Table
+	fields      []fields.Field
 	columnNames []string
-	projector   *projector.Projector
 }
 
 var _ queries.Node = &insertNode{}
 
-func NewInsert(node queries.Node, table impls.Table, name, alias string, columnNames []string, expressions []projector.ProjectionExpression) (queries.Node, error) {
+func NewInsert(node queries.Node, table impls.Table, columnNames []string) (queries.Node, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
 	}
 
-	var aliasedTables []projector.AliasedTable
-	if alias != "" {
-		aliasedTables = append(aliasedTables, projector.AliasedTable{
-			TableName: table.Name(),
-			Alias:     alias,
-		})
-	}
-
-	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		return nil, err
-	}
-
 	return &insertNode{
 		Node:        node,
 		table:       table,
+		fields:      fields,
 		columnNames: columnNames,
-		projector:   projector,
 	}, nil
 }
 
 func (n *insertNode) Fields() []fields.Field {
-	return slices.Clone(n.projector.Fields())
+	return n.fields
 }
 
 func (n *insertNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("insert returning (%s)", n.projector)
+	w.WritefLine("insert into %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
 }
 
@@ -67,7 +47,6 @@ func (n *insertNode) AddFilter(filter impls.Expression)    {}
 func (n *insertNode) AddOrder(order impls.OrderExpression) {}
 
 func (n *insertNode) Optimize() {
-	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -118,7 +97,7 @@ func (n *insertNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			return rows.Row{}, err
 		}
 
-		return n.projector.ProjectRow(ctx, insertedRow)
+		return insertedRow, nil
 	}), nil
 }
 

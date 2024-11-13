@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/projector"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -18,9 +18,8 @@ import (
 
 type hashAggregate struct {
 	queries.Node
-	groupExpressions  []impls.Expression
-	selectExpressions []projector.ProjectedExpression
-	projector         *projector.Projector
+	groupExpressions []impls.Expression
+	projection       *projection.Projection
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -28,23 +27,17 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	selectExpressions []projector.ProjectionExpression,
+	selectExpressions []projection.ProjectionExpression,
 ) queries.Node {
-	projectedExpressions, err := projector.ExpandProjection(node.Fields(), selectExpressions)
-	if err != nil {
-		panic(err.Error()) // TODO
-	}
-
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
+	projection, err := projection.NewProjection(node.Name(), node.Fields(), selectExpressions)
 	if err != nil {
 		panic(err.Error()) // TODO
 	}
 
 	return &hashAggregate{
-		Node:              node,
-		groupExpressions:  groupExpressions,
-		selectExpressions: projectedExpressions,
-		projector:         projector,
+		Node:             node,
+		groupExpressions: groupExpressions,
+		projection:       projection,
 	}
 }
 
@@ -53,7 +46,7 @@ func (n *hashAggregate) Name() string {
 }
 
 func (n *hashAggregate) Fields() []fields.Field {
-	return n.projector.Fields()
+	return n.projection.Fields()
 }
 
 func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
@@ -62,7 +55,7 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 		strExpressions = append(strExpressions, expr.String())
 	}
 
-	w.WritefLine("group by %s, select(%s)", strings.Join(strExpressions, ", "), n.projector)
+	w.WritefLine("group by %s, select(%s)", strings.Join(strExpressions, ", "), n.projection)
 	n.Node.Serialize(w.Indent())
 }
 
@@ -100,7 +93,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 
 	var groupedFields []fields.Field
 	var exprs []impls.Expression
-	for _, selectExpression := range n.selectExpressions {
+	for _, selectExpression := range n.projection.Aliases() {
 		groupedFields = append(groupedFields, fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
 		exprs = append(exprs, selectExpression.Expression)
 	}

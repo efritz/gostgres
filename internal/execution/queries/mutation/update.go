@@ -2,9 +2,7 @@ package mutation
 
 import (
 	"fmt"
-	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -16,8 +14,9 @@ import (
 type updateNode struct {
 	queries.Node
 	table          impls.Table
+	fields         []fields.Field
+	aliasName      string
 	setExpressions []SetExpression
-	projector      *projector.Projector
 }
 
 var _ queries.Node = &updateNode{}
@@ -27,44 +26,27 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func NewUpdate(node queries.Node, table impls.Table, setExpressions []SetExpression, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
+func NewUpdate(node queries.Node, table impls.Table, aliasName string, setExpressions []SetExpression) (queries.Node, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
 	}
 
-	var aliasedTables []projector.AliasedTable
-	if alias != "" {
-		aliasedTables = append(aliasedTables, projector.AliasedTable{
-			TableName: table.Name(),
-			Alias:     alias,
-		})
-	}
-
-	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		return nil, err
-	}
-
 	return &updateNode{
 		Node:           node,
 		table:          table,
+		fields:         fields,
+		aliasName:      aliasName,
 		setExpressions: setExpressions,
-		projector:      projector,
 	}, nil
 }
 
 func (n *updateNode) Fields() []fields.Field {
-	return slices.Clone(n.projector.Fields())
+	return n.fields
 }
 
 func (n *updateNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("update returning (%s)", n.projector)
+	w.WritefLine("update %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
 }
 
@@ -72,7 +54,6 @@ func (n *updateNode) AddFilter(filter impls.Expression)    {}
 func (n *updateNode) AddOrder(order impls.OrderExpression) {}
 
 func (n *updateNode) Optimize() {
-	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -96,8 +77,7 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			return rows.Row{}, err
 		}
 
-		values := slices.Clone(row.Values)
-
+		updates := map[int]any{}
 		for _, set := range n.setExpressions {
 			value, err := queries.Evaluate(ctx, set.Expression, row)
 			if err != nil {
@@ -105,14 +85,15 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			}
 
 			found := false
-			for i, field := range row.Fields {
+			for i, field := range n.table.Fields() {
 				if field.Name() == set.Name {
 					if field.Internal() {
-						return rows.Row{}, fmt.Errorf("cannot update internal field %s", set.Name)
+						return rows.Row{}, fmt.Errorf("cannot update internal field %q", field.Name())
 					}
 
 					found = true
-					values[i] = value
+					updates[i] = value
+					break
 				}
 			}
 
@@ -121,26 +102,32 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			}
 		}
 
-		deletedRow, err := rows.NewRow(row.Fields[:1], values[:1])
+		relationName := n.table.Name()
+		if n.aliasName != "" {
+			relationName = n.aliasName
+		}
+
+		tidRow, err := row.IsolateTID(relationName)
 		if err != nil {
 			return rows.Row{}, err
 		}
-		if _, ok, err := n.table.Delete(deletedRow); err != nil {
+
+		baseRow, ok, err := n.table.Delete(tidRow)
+		if err != nil {
 			return rows.Row{}, err
 		} else if !ok {
 			return rows.Row{}, nil
 		}
 
-		insertedRow, err := rows.NewRow(row.Fields[1:], values[1:])
+		for i, value := range updates {
+			baseRow.Values[i] = value
+		}
+
+		updatedRow, err := n.table.Insert(ctx, baseRow.DropInternalFields())
 		if err != nil {
 			return rows.Row{}, err
 		}
 
-		updatedRow, err := n.table.Insert(ctx, insertedRow)
-		if err != nil {
-			return rows.Row{}, err
-		}
-
-		return n.projector.ProjectRow(ctx, updatedRow)
+		return updatedRow, nil
 	}), nil
 }

@@ -1,9 +1,6 @@
 package mutation
 
 import (
-	"slices"
-
-	"github.com/efritz/gostgres/internal/execution/projector"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -15,48 +12,32 @@ import (
 type deleteNode struct {
 	queries.Node
 	table     impls.Table
-	projector *projector.Projector
+	fields    []fields.Field
+	aliasName string
 }
 
 var _ queries.Node = &deleteNode{}
 
-func NewDelete(node queries.Node, table impls.Table, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
+func NewDelete(node queries.Node, table impls.Table, aliasName string) (queries.Node, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
 	}
 
-	var aliasedTables []projector.AliasedTable
-	if alias != "" {
-		aliasedTables = append(aliasedTables, projector.AliasedTable{
-			TableName: table.Name(),
-			Alias:     alias,
-		})
-	}
-
-	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		return nil, err
-	}
-
 	return &deleteNode{
 		Node:      node,
 		table:     table,
-		projector: projector,
+		fields:    fields,
+		aliasName: aliasName,
 	}, nil
 }
 
 func (n *deleteNode) Fields() []fields.Field {
-	return slices.Clone(n.projector.Fields())
+	return n.fields
 }
 
 func (n *deleteNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("delete returning (%s)", n.projector)
+	w.WritefLine("delete from %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
 }
 
@@ -64,7 +45,6 @@ func (n *deleteNode) AddFilter(filter impls.Expression)    {}
 func (n *deleteNode) AddOrder(order impls.OrderExpression) {}
 
 func (n *deleteNode) Optimize() {
-	n.projector.Optimize()
 	n.Node.Optimize()
 }
 
@@ -88,7 +68,17 @@ func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			return rows.Row{}, err
 		}
 
-		deletedRow, ok, err := n.table.Delete(row)
+		relationName := n.table.Name()
+		if n.aliasName != "" {
+			relationName = n.aliasName
+		}
+
+		tidRow, err := row.IsolateTID(relationName)
+		if err != nil {
+			return rows.Row{}, err
+		}
+
+		deletedRow, ok, err := n.table.Delete(tidRow)
 		if err != nil {
 			return rows.Row{}, err
 		}
@@ -96,6 +86,6 @@ func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			return rows.Row{}, scan.ErrNoRows
 		}
 
-		return n.projector.ProjectRow(ctx, deletedRow)
+		return deletedRow, nil
 	}), nil
 }

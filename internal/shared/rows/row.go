@@ -20,19 +20,60 @@ func NewRow(fields []fields.Field, values []any) (_ Row, err error) {
 	return Row{Fields: fields, Values: values}, nil
 }
 
-func (r Row) TID() (int64, error) {
+func (r Row) TID() (tid int64, _ error) {
 	for i, field := range r.Fields {
-		if field.IsTID() {
-			v, ok := r.Values[i].(int64)
-			if !ok {
-				panic("tid is not an int64")
-			}
+		if !field.IsTID() {
+			continue
+		}
 
-			return v, nil
+		if tid != 0 {
+			return 0, fmt.Errorf("ambiguous tid in row")
+		}
+
+		var ok bool
+		tid, ok = r.Values[i].(int64)
+		if !ok {
+			panic("tid is not an int64")
 		}
 	}
 
-	return 0, fmt.Errorf("no tid in row")
+	if tid == 0 {
+		return 0, fmt.Errorf("no tid in row")
+	}
+
+	return tid, nil
+}
+
+func (r Row) DropInternalFields() Row {
+	var fields []fields.Field
+	var values []any
+
+	for i, field := range r.Fields {
+		if field.Internal() {
+			continue
+		}
+
+		fields = append(fields, field)
+		values = append(values, r.Values[i])
+	}
+
+	return Row{Fields: fields, Values: values}
+}
+
+func (r Row) IsolateTID(relationName string) (Row, error) {
+	var fields []fields.Field
+	var values []any
+
+	for i, field := range r.Fields {
+		if !field.IsTID() || field.RelationName() != relationName {
+			continue
+		}
+
+		fields = append(fields, field)
+		values = append(values, r.Values[i])
+	}
+
+	return Row{Fields: fields, Values: values}, nil
 }
 
 func CombineRows(rows ...Row) Row {

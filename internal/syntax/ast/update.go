@@ -3,16 +3,13 @@ package ast
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/projector"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
 	"github.com/efritz/gostgres/internal/execution/queries/alias"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
-	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type UpdateBuilder struct {
@@ -20,7 +17,7 @@ type UpdateBuilder struct {
 	Updates   []SetExpression
 	From      []*TableExpression
 	Where     impls.Expression
-	Returning []projector.ProjectionExpression
+	Returning []projection.ProjectionExpression
 
 	table impls.Table
 }
@@ -60,22 +57,6 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 		node = filter.NewFilter(node, b.Where)
 	}
 
-	relationName := b.Target.Name
-	if b.Target.AliasName != "" {
-		relationName = b.Target.AliasName
-	}
-	tidField := fields.NewField(relationName, "tid", types.TypeBigInteger, fields.InternalFieldTid)
-
-	node, err := projection.NewProjection(node, []projector.ProjectionExpression{
-		projector.NewAliasedExpressionFromField(tidField),
-		projector.NewTableWildcardProjectionExpression(relationName),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	node = alias.NewAlias(node, b.Target.Name)
-
 	setExpressions := make([]mutation.SetExpression, len(b.Updates))
 	for i, setExpression := range b.Updates {
 		setExpressions[i] = mutation.SetExpression{
@@ -84,5 +65,10 @@ func (b *UpdateBuilder) Build() (queries.Node, error) {
 		}
 	}
 
-	return mutation.NewUpdate(node, b.table, setExpressions, b.Target.AliasName, b.Returning)
+	update, err := mutation.NewUpdate(node, b.table, b.Target.AliasName, setExpressions)
+	if err != nil {
+		return nil, err
+	}
+
+	return wrapReturning(update, b.table, b.Target.AliasName, b.Returning)
 }

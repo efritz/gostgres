@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/projector"
+	projection1 "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
 	"github.com/efritz/gostgres/internal/execution/queries/alias"
@@ -110,9 +110,9 @@ func (e *TableExpression) TableExpression() (queries.Node, error) {
 				return nil, fmt.Errorf("wrong number of fields in alias")
 			}
 
-			projectionExpressions := make([]projector.ProjectionExpression, 0, len(fields))
+			projectionExpressions := make([]projection1.ProjectionExpression, 0, len(fields))
 			for i, field := range fields {
-				projectionExpressions = append(projectionExpressions, projector.NewAliasedExpression(expressions.NewNamed(field), columnNames[i]))
+				projectionExpressions = append(projectionExpressions, projection1.NewAliasedExpression(expressions.NewNamed(field), columnNames[i]))
 			}
 
 			node, err = projection.NewProjection(node, projectionExpressions)

@@ -1,4 +1,4 @@
-package projector
+package projection
 
 import (
 	"slices"
@@ -13,20 +13,21 @@ type Projection struct {
 	projectedFields []fields.Field
 }
 
-func NewProjection(relationName string, aliases []ProjectedExpression) *Projection {
+func NewProjection(relationName string, relationFields []fields.Field, expressions []ProjectionExpression, aliasedTables ...AliasedTable) (*Projection, error) {
+	projectedExpressions, err := ExpandProjection(relationFields, expressions, aliasedTables...)
+	if err != nil {
+		return nil, err
+	}
+
 	var projectedFields []fields.Field
-	for _, field := range aliases {
+	for _, field := range projectedExpressions {
 		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, types.TypeAny, fields.NonInternalField))
 	}
 
 	return &Projection{
-		aliases:         aliases,
+		aliases:         projectedExpressions,
 		projectedFields: projectedFields,
-	}
-}
-
-func (p *Projection) Fields() []fields.Field {
-	return slices.Clone(p.projectedFields)
+	}, nil
 }
 
 func (p *Projection) String() string {
@@ -44,6 +45,14 @@ func (p *Projection) String() string {
 	}
 
 	return strings.Join(fields, ", ")
+}
+
+func (p *Projection) Aliases() []ProjectedExpression {
+	return slices.Clone(p.aliases)
+}
+
+func (p *Projection) Fields() []fields.Field {
+	return slices.Clone(p.projectedFields)
 }
 
 func (p *Projection) Optimize() {

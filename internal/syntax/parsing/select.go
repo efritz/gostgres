@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/projector"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/ast"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -81,19 +81,19 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 }
 
 // selectExpressions := `*` | ( selectExpression [, ...] )
-func (p *parser) parseSelectExpressions() (aliasedExpressions []projector.ProjectionExpression, _ error) {
+func (p *parser) parseSelectExpressions() (aliasedExpressions []projection.ProjectionExpression, _ error) {
 	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
-		return []projector.ProjectionExpression{projector.NewWildcardProjectionExpression()}, nil
+		return []projection.ProjectionExpression{projection.NewWildcardProjectionExpression()}, nil
 	}
 
 	return parseCommaSeparatedList(p, p.parseSelectExpression)
 }
 
 // selectExpression := ( ident `.` `*` ) | ( expression alias )
-func (p *parser) parseSelectExpression() (projector.ProjectionExpression, error) {
+func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error) {
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
-		return projector.NewTableWildcardProjectionExpression(nameToken.Text), nil
+		return projection.NewTableWildcardProjectionExpression(nameToken.Text), nil
 	}
 
 	expression, err := p.parseRootExpression()
@@ -115,7 +115,7 @@ func (p *parser) parseSelectExpression() (projector.ProjectionExpression, error)
 		alias = "?column?"
 	}
 
-	return projector.NewAliasedExpression(expression, alias), nil
+	return projection.NewAliasedExpression(expression, alias), nil
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]

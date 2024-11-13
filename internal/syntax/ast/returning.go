@@ -1,31 +1,20 @@
 package ast
 
 import (
-	"github.com/efritz/gostgres/internal/execution/projector"
+	projection1 "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/projection"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func wrapReturning(node queries.Node, table impls.Table, alias string, expressions []projector.ProjectionExpression) (queries.Node, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	var aliasedTables []projector.AliasedTable
+func wrapReturning(node queries.Node, table impls.Table, alias string, expressions []projection1.ProjectionExpression) (queries.Node, error) {
+	var aliasedTables []projection1.AliasedTable
 	if alias != "" {
-		aliasedTables = append(aliasedTables, projector.AliasedTable{
+		aliasedTables = append(aliasedTables, projection1.AliasedTable{
 			TableName: table.Name(),
 			Alias:     alias,
 		})
 	}
 
-	projectedExpressions, err := projector.ExpandProjection(fields, expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	return projection.NewProjectionFromProjectedExpressions(node, projectedExpressions), nil
+	return projection.NewProjection(node, expressions, aliasedTables...)
 }

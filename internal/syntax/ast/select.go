@@ -2,7 +2,7 @@ package ast
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/projector"
+	projection1 "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/aggregate"
 	"github.com/efritz/gostgres/internal/execution/queries/combination"
@@ -24,7 +24,7 @@ type SelectBuilder struct {
 }
 
 type SimpleSelectDescription struct {
-	SelectExpressions []projector.ProjectionExpression
+	SelectExpressions []projection1.ProjectionExpression
 	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
@@ -66,7 +66,7 @@ func (b SelectBuilder) TableExpression() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		projectedExpressions, err := projector.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
+		projectedExpressions, err := projection1.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
 		if err != nil {
 			return nil, err
 		}

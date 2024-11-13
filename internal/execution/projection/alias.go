@@ -1,12 +1,10 @@
-package projector
+package projection
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
-
-// TODO - relocate
 
 func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
 	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {

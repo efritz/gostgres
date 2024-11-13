@@ -49,7 +49,7 @@ func (p *parser) parseStatement(catalog impls.CatalogSet) (Query, error) {
 				return nil, err
 			}
 
-			if err := builder.Resolve(impls.NewResolutionContext(catalog)); err != nil {
+			if err := builder.Resolve(impls.NewNodeResolutionContext(catalog)); err != nil {
 				return nil, err
 			}
 

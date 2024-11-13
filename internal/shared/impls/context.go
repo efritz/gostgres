@@ -8,12 +8,25 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-type ResolutionContext struct {
+type ExpressionResolutionContext struct {
 	Catalog CatalogSet
 }
 
-func NewResolutionContext(catalog CatalogSet) ResolutionContext {
-	return ResolutionContext{
+func NewExpressionResolutionContext(catalog CatalogSet) ExpressionResolutionContext {
+	return ExpressionResolutionContext{
+		Catalog: catalog,
+	}
+}
+
+//
+//
+
+type NodeResolutionContext struct {
+	Catalog CatalogSet
+}
+
+func NewNodeResolutionContext(catalog CatalogSet) NodeResolutionContext {
+	return NodeResolutionContext{
 		Catalog: catalog,
 	}
 }

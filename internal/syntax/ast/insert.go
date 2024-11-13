@@ -18,7 +18,7 @@ type InsertBuilder struct {
 	table impls.Table
 }
 
-func (b *InsertBuilder) Resolve(ctx impls.ResolutionContext) error {
+func (b *InsertBuilder) Resolve(ctx impls.NodeResolutionContext) error {
 	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)

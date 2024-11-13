@@ -36,7 +36,7 @@ func (e binaryExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
-func (e *binaryExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *binaryExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	if err := e.left.Resolve(ctx); err != nil {
 		return err
 	}

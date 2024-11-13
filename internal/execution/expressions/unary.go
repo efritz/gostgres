@@ -34,7 +34,7 @@ func (e unaryExpression) String() string {
 	return fmt.Sprintf("%s %s", e.operatorText, e.expression)
 }
 
-func (e *unaryExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *unaryExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	if err := e.expression.Resolve(ctx); err != nil {
 		return err
 	}

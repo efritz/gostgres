@@ -6,7 +6,7 @@ import (
 )
 
 type Resolver interface {
-	Resolve(ctx impls.ResolutionContext) error
+	Resolve(ctx impls.NodeResolutionContext) error
 }
 
 type Builder interface {

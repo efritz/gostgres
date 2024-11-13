@@ -26,7 +26,7 @@ type TableReference struct {
 	table impls.Table
 }
 
-func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
+func (r *TableReference) Resolve(ctx impls.NodeResolutionContext) error {
 	table, ok := ctx.Catalog.Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
@@ -76,7 +76,7 @@ type Join struct {
 	Condition impls.Expression
 }
 
-func (r *TableExpression) Resolve(ctx impls.ResolutionContext) error {
+func (r *TableExpression) Resolve(ctx impls.NodeResolutionContext) error {
 	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err
 	}

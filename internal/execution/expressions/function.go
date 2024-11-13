@@ -34,7 +34,7 @@ func (e functionExpression) String() string {
 	return fmt.Sprintf("%s(%s)", e.name, strings.Join(args, ", "))
 }
 
-func (e *functionExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	f, ok := ctx.Catalog.Functions.Get(e.name)
 	if !ok {
 		return fmt.Errorf("unknown function %q", e.name)

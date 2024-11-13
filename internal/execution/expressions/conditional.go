@@ -73,7 +73,7 @@ func (e conditionalExpression) String() string {
 	return fmt.Sprintf("%s %s %s", e.left, e.operatorText, e.right)
 }
 
-func (e *conditionalExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *conditionalExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	if err := e.left.Resolve(ctx); err != nil {
 		return err
 	}

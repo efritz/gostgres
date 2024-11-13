@@ -23,7 +23,7 @@ func (e namedExpression) String() string {
 	return e.field.String()
 }
 
-func (e *namedExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *namedExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	return nil
 }
 

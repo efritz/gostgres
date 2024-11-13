@@ -20,7 +20,7 @@ func NewConstant(value any) impls.Expression {
 	}
 }
 
-func (e *constantExpression) Resolve(ctx impls.ResolutionContext) error {
+func (e *constantExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
 	return nil
 }
 

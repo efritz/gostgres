@@ -10,7 +10,7 @@ import (
 type Expression interface {
 	fmt.Stringer
 
-	Resolve(ctx ResolutionContext) error
+	Resolve(ctx ExpressionResolutionContext) error
 	Type() types.Type
 	Equal(other Expression) bool
 	Fold() Expression

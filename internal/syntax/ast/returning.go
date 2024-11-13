@@ -27,10 +27,5 @@ func wrapReturning(node queries.Node, table impls.Table, alias string, expressio
 		return nil, err
 	}
 
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		return nil, err
-	}
-
-	return projection.NewProjectionWithProjector(node, projector), nil
+	return projection.NewProjectionFromProjectedExpressions(node, projectedExpressions), nil
 }

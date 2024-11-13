@@ -20,7 +20,7 @@ type hashAggregate struct {
 	queries.Node
 	groupExpressions  []impls.Expression
 	selectExpressions []projector.ProjectedExpression
-	projector         *projector.Projector
+	projector         *projector.Projection
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -35,16 +35,11 @@ func NewHashAggregate(
 		panic(err.Error()) // TODO
 	}
 
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		panic(err.Error()) // TODO
-	}
-
 	return &hashAggregate{
 		Node:              node,
 		groupExpressions:  groupExpressions,
 		selectExpressions: projectedExpressions,
-		projector:         projector,
+		projector:         projector.NewProjection(node.Name(), projectedExpressions),
 	}
 }
 

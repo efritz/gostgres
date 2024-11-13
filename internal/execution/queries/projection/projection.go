@@ -23,18 +23,13 @@ func NewProjection(node queries.Node, expressions []projector.ProjectionExpressi
 		return nil, err
 	}
 
-	projector, err := projector.NewProjector(node.Name(), projectedExpressions)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewProjectionWithProjector(node, projector), nil
+	return NewProjectionFromProjectedExpressions(node, projectedExpressions), nil
 }
 
-func NewProjectionWithProjector(node queries.Node, projector *projector.Projector) queries.Node {
+func NewProjectionFromProjectedExpressions(node queries.Node, projectedExpressions []projector.ProjectedExpression) queries.Node {
 	return &projectionNode{
 		Node:      node,
-		projector: projector,
+		projector: projector.NewProjector(node.Name(), projectedExpressions),
 	}
 }
 

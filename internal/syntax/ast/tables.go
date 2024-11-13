@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
@@ -35,7 +36,14 @@ func (r *TableReference) Resolve(ctx impls.ResolutionContext) error {
 	return nil
 }
 
-func (*TableReference) isTableReferenceOrExpression() {}
+func (r *TableReference) TableFields() []fields.Field {
+	var fields []fields.Field
+	for _, f := range r.table.Fields() {
+		fields = append(fields, f.Field)
+	}
+
+	return fields
+}
 
 func (r *TableReference) Build() (queries.Node, error) {
 	return access.NewAccess(r.table), nil
@@ -44,11 +52,13 @@ func (r *TableReference) Build() (queries.Node, error) {
 type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
+
+	fields []fields.Field
 }
 
 type TableReferenceOrExpression interface {
 	BuilderResolver
-	isTableReferenceOrExpression()
+	TableFields() []fields.Field
 }
 
 type AliasedTableReferenceOrExpression struct {
@@ -71,16 +81,48 @@ func (r *TableExpression) Resolve(ctx impls.ResolutionContext) error {
 		return err
 	}
 
+	baseFields := r.Base.BaseTableExpression.TableFields()
+
+	if r.Base.Alias != nil {
+		tableAlias := r.Base.Alias.TableAlias
+		columnAliases := r.Base.Alias.ColumnAliases
+
+		var rawFields []fields.Field
+		for _, f := range baseFields {
+			if !f.Internal() {
+				rawFields = append(rawFields, f.WithRelationName(tableAlias))
+			}
+		}
+
+		if len(columnAliases) > 0 {
+			if len(columnAliases) != len(rawFields) {
+				return fmt.Errorf("wrong number of fields in alias")
+			}
+
+			for i, field := range rawFields {
+				baseFields[i] = field.WithName(columnAliases[i])
+			}
+		} else {
+			baseFields = rawFields
+		}
+	}
+
 	for _, j := range r.Joins {
 		if err := j.Table.Resolve(ctx); err != nil {
 			return err
 		}
+
+		joinFields := j.Table.TableFields()
+		baseFields = append(baseFields, joinFields...)
 	}
 
+	r.fields = baseFields
 	return nil
 }
 
-func (*TableExpression) isTableReferenceOrExpression() {}
+func (e *TableExpression) TableFields() []fields.Field {
+	return slices.Clone(e.fields)
+}
 
 func (e *TableExpression) Build() (queries.Node, error) {
 	node, err := e.Base.BaseTableExpression.Build()

@@ -1,6 +1,8 @@
 package ast
 
 import (
+	"slices"
+
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -21,6 +23,8 @@ type SelectBuilder struct {
 	Order  impls.OrderExpression
 	Limit  *int
 	Offset *int
+
+	fields []fields.Field
 }
 
 type SimpleSelectDescription struct {
@@ -42,16 +46,26 @@ func (b *SelectBuilder) Resolve(ctx impls.ResolutionContext) error {
 		return err
 	}
 
+	fromFields := b.Select.From.TableFields()
+
 	for _, c := range b.Select.Combinations {
 		if err := c.Select.Resolve(ctx); err != nil {
 			return err
 		}
 	}
 
+	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
+
+	b.fields = projection.Fields()
 	return nil
 }
 
-func (*SelectBuilder) isTableReferenceOrExpression() {}
+func (b *SelectBuilder) TableFields() []fields.Field {
+	return slices.Clone(b.fields)
+}
 
 func (b *SelectBuilder) Build() (queries.Node, error) {
 	node, err := b.Select.From.Build()

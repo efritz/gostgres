@@ -30,6 +30,10 @@ var count = newAggregateImpl(
 	func(ctx impls.ExecutionContext, state any, args []any) (any, error) {
 		switch acc := state.(type) {
 		case nil:
+			if args[0] == nil {
+				return int64(0), nil
+			}
+
 			return int64(1), nil
 		case int64:
 			if args[0] == nil {

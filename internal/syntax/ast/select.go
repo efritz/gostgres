@@ -55,11 +55,19 @@ func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 }
 
 func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) error {
-	if err := b.Select.From.Resolve(ctx); err != nil {
+	if err := ctx.WithScope(func() error {
+		return b.Select.From.Resolve(ctx)
+	}); err != nil {
 		return err
 	}
 
 	fromFields := b.Select.From.TableFields()
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(fromFields...)
+
+	_ = b.Select.Where // TODO - resolve
 
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
@@ -67,12 +75,25 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 
 	b.fields = projection.Fields()
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(b.fields...)
+
+	for i, g := range b.Select.Groupings {
+		_, _ = i, g // TODO - resolve
+	}
+
+	_ = b.Order // TODO - resolve
+
 	return nil
 }
 
 func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) error {
 	for _, c := range b.Select.Combinations {
-		if err := c.Select.Resolve(ctx); err != nil {
+		if err := ctx.WithScope(func() error {
+			return c.Select.Resolve(ctx)
+		}); err != nil {
 			return err
 		}
 

@@ -77,6 +77,9 @@ type Join struct {
 }
 
 func (r *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
+	ctx.PushScope()
+	defer ctx.PopScope()
+
 	if err := r.Base.BaseTableExpression.Resolve(ctx); err != nil {
 		return err
 	}
@@ -107,13 +110,18 @@ func (r *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		}
 	}
 
+	ctx.Bind(baseFields...)
+
 	for _, j := range r.Joins {
 		if err := j.Table.Resolve(ctx); err != nil {
 			return err
 		}
 
 		joinFields := j.Table.TableFields()
+		ctx.Bind(joinFields...)
 		baseFields = append(baseFields, joinFields...)
+
+		_ = j.Condition // TODO
 	}
 
 	r.fields = baseFields

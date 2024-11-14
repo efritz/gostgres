@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -42,17 +43,23 @@ type CombinationDescription struct {
 }
 
 func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
+	if err := b.resolvePrimarySelect(ctx); err != nil {
+		return err
+	}
+
+	if err := b.resolveCombinations(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) error {
 	if err := b.Select.From.Resolve(ctx); err != nil {
 		return err
 	}
 
 	fromFields := b.Select.From.TableFields()
-
-	for _, c := range b.Select.Combinations {
-		if err := c.Select.Resolve(ctx); err != nil {
-			return err
-		}
-	}
 
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
@@ -60,6 +67,20 @@ func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 
 	b.fields = projection.Fields()
+	return nil
+}
+
+func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) error {
+	for _, c := range b.Select.Combinations {
+		if err := c.Select.Resolve(ctx); err != nil {
+			return err
+		}
+
+		if len(c.Select.TableFields()) != len(b.fields) {
+			return fmt.Errorf("selects in combination must have the same number of columns")
+		}
+	}
+
 	return nil
 }
 

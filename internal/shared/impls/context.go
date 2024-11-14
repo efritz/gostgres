@@ -25,10 +25,14 @@ type NodeResolutionContext struct {
 	Catalog CatalogSet
 }
 
-func NewNodeResolutionContext(catalog CatalogSet) NodeResolutionContext {
-	return NodeResolutionContext{
+func NewNodeResolutionContext(catalog CatalogSet) *NodeResolutionContext {
+	return &NodeResolutionContext{
 		Catalog: catalog,
 	}
+}
+
+func (ctx *NodeResolutionContext) ExpressionResolutionContext() ExpressionResolutionContext {
+	return NewExpressionResolutionContext(ctx.Catalog)
 }
 
 //

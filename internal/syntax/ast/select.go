@@ -41,7 +41,7 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Resolve(ctx impls.NodeResolutionContext) error {
+func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	if err := b.Select.From.Resolve(ctx); err != nil {
 		return err
 	}

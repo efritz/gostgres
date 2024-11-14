@@ -100,17 +100,14 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		}
 
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
-		b.Select.SelectExpressions = nil
 	}
 
-	if len(b.Select.Combinations) != 0 {
-		if b.Select.SelectExpressions != nil {
-			newNode, err := projection.NewProjection(node, b.Select.SelectExpressions)
+	if len(b.Select.Combinations) > 0 {
+		if b.Select.Groupings == nil {
+			node, err = projection.NewProjection(node, b.Select.SelectExpressions)
 			if err != nil {
 				return nil, err
 			}
-			node = newNode
-			b.Select.SelectExpressions = nil
 		}
 
 		for _, c := range b.Select.Combinations {
@@ -147,8 +144,12 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		node = limit.NewLimit(node, *b.Limit)
 	}
 
-	if b.Select.SelectExpressions != nil {
-		return projection.NewProjection(node, b.Select.SelectExpressions)
+	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
+		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return node, nil
 }

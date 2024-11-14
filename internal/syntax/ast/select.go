@@ -54,6 +54,29 @@ func (b *SelectBuilder) Resolve(ctx impls.NodeResolutionContext) error {
 		}
 	}
 
+	if b.Select.Groupings != nil {
+		projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.Select.SelectExpressions)
+		if err != nil {
+			return err
+		}
+
+	selectLoop:
+		for _, selectExpression := range projectedExpressions {
+			if len(expressions.Fields(selectExpression.Expression)) > 0 {
+				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+
+				for _, grouping := range b.Select.Groupings {
+					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
+						continue selectLoop
+					}
+				}
+
+				// TODO - more lenient validation
+				// return nil,  fmt.Errorf("%q not in group by", expression)
+			}
+		}
+	}
+
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
 		return err
@@ -78,27 +101,6 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		projectedExpressions, err := projectionHelpers.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
-		if err != nil {
-			return nil, err
-		}
-
-	selectLoop:
-		for _, selectExpression := range projectedExpressions {
-			if len(expressions.Fields(selectExpression.Expression)) > 0 {
-				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
-
-				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
-						continue selectLoop
-					}
-				}
-
-				// TODO - more lenient validation
-				// return nil,  fmt.Errorf("%q not in group by", expression)
-			}
-		}
-
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
 	}
 

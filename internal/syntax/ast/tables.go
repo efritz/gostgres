@@ -104,8 +104,9 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 			}
 
 			for i, field := range rawFields {
-				baseFields[i] = field.WithName(columnAliases[i])
-				e.projectionExpressions = append(e.projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), columnAliases[i]))
+				alias := columnAliases[i]
+				baseFields[i] = field.WithName(alias)
+				e.projectionExpressions = append(e.projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias))
 			}
 		} else {
 			baseFields = rawFields

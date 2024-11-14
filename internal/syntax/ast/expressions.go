@@ -5,7 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func ResolveExpression(ctx *impls.NodeResolutionContext, expr impls.Expression) (impls.Expression, error) {
+func resolveExpression(ctx *impls.NodeResolutionContext, expr impls.Expression) (impls.Expression, error) {
 	if expr == nil {
 		return nil, nil
 	}

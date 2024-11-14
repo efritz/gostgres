@@ -67,16 +67,21 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	defer ctx.PopScope()
 	ctx.Bind(fromFields...)
 
-	_ = b.Select.Where // TODO - resolve
+	resolved, err := resolveExpression(ctx, b.Select.Where)
+	if err != nil {
+		return err
+	}
+	b.Select.Where = resolved
+
+	// TODO - map the resulting expressions?
+	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
 
 	if b.Select.Groupings != nil {
-		projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.Select.SelectExpressions)
-		if err != nil {
-			return err
-		}
-
 	selectLoop:
-		for _, selectExpression := range projectedExpressions {
+		for _, selectExpression := range projection.Aliases() {
 			if len(expressions.Fields(selectExpression.Expression)) > 0 {
 				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
 
@@ -92,22 +97,48 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		}
 	}
 
-	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
-	if err != nil {
-		return err
-	}
-
 	b.fields = projection.Fields()
 
 	ctx.PushScope()
 	defer ctx.PopScope()
 	ctx.Bind(b.fields...)
 
-	for i, g := range b.Select.Groupings {
-		_, _ = i, g // TODO - resolve
+	for i, expr := range b.Select.Groupings {
+		resolved, err := resolveExpression(ctx, expr)
+		if err != nil {
+			return err
+		}
+
+		// TODO - vet
+		resolved2, err := resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
+			if named, ok := expr.(expressions.NamedExpression); ok {
+				for _, pair := range projection.Aliases() {
+					if pair.Alias == named.Field().Name() {
+						return pair.Expression, nil
+					}
+				}
+			}
+
+			return expr, nil
+		})
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("> %s vs %s vs %s\n", expr, resolved, resolved2) // DEBUG
+		b.Select.Groupings[i] = resolved2
 	}
 
-	_ = b.Order // TODO - resolve
+	if b.Order != nil {
+		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
+			return resolveExpression(ctx, expr)
+		})
+		if err != nil {
+			return err
+		}
+
+		b.Order = resolved
+	}
 
 	return nil
 }

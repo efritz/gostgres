@@ -6,6 +6,10 @@ import (
 )
 
 func ResolveExpression(ctx *impls.NodeResolutionContext, expr impls.Expression) (impls.Expression, error) {
+	if expr == nil {
+		return nil, nil
+	}
+
 	mappedExpr, err := expr.Map(func(expr impls.Expression) (impls.Expression, error) {
 		if named, ok := expr.(expressions.NamedExpression); ok {
 			field, err := ctx.Lookup(named.Field().RelationName(), named.Field().Name())

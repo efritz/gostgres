@@ -109,8 +109,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 			return err
 		}
 
-		// TODO - vet
-		resolved2, err := resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
+		resolved, err = resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
 			if named, ok := expr.(expressions.NamedExpression); ok {
 				for _, pair := range projection.Aliases() {
 					if pair.Alias == named.Field().Name() {
@@ -125,8 +124,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 			return err
 		}
 
-		fmt.Printf("> %s vs %s vs %s\n", expr, resolved, resolved2) // DEBUG
-		b.Select.Groupings[i] = resolved2
+		b.Select.Groupings[i] = resolved
 	}
 
 	if b.Order != nil {

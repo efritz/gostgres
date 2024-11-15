@@ -27,7 +27,7 @@ type SetExpression struct {
 	Expression impls.Expression
 }
 
-func (b *UpdateBuilder) Resolve(ctx impls.NodeResolutionContext) error {
+func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)

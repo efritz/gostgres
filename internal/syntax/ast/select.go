@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -41,25 +42,118 @@ type CombinationDescription struct {
 	Select   TableReferenceOrExpression
 }
 
-func (b *SelectBuilder) Resolve(ctx impls.NodeResolutionContext) error {
-	if err := b.Select.From.Resolve(ctx); err != nil {
+func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
+	if err := b.resolvePrimarySelect(ctx); err != nil {
+		return err
+	}
+
+	if err := b.resolveCombinations(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) error {
+	if err := ctx.WithScope(func() error {
+		return b.Select.From.Resolve(ctx)
+	}); err != nil {
 		return err
 	}
 
 	fromFields := b.Select.From.TableFields()
 
-	for _, c := range b.Select.Combinations {
-		if err := c.Select.Resolve(ctx); err != nil {
-			return err
-		}
-	}
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(fromFields...)
 
+	resolved, err := resolveExpression(ctx, b.Select.Where)
+	if err != nil {
+		return err
+	}
+	b.Select.Where = resolved
+
+	// TODO - map the resulting expressions?
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
 		return err
 	}
 
+	if b.Select.Groupings != nil {
+	selectLoop:
+		for _, selectExpression := range projection.Aliases() {
+			if len(expressions.Fields(selectExpression.Expression)) > 0 {
+				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+
+				for _, grouping := range b.Select.Groupings {
+					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
+						continue selectLoop
+					}
+				}
+
+				// TODO - more lenient validation
+				// return nil,  fmt.Errorf("%q not in group by", expression)
+			}
+		}
+	}
+
 	b.fields = projection.Fields()
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(b.fields...)
+
+	for i, expr := range b.Select.Groupings {
+		resolved, err := resolveExpression(ctx, expr)
+		if err != nil {
+			return err
+		}
+
+		resolved, err = resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
+			if named, ok := expr.(expressions.NamedExpression); ok {
+				for _, pair := range projection.Aliases() {
+					if pair.Alias == named.Field().Name() {
+						return pair.Expression, nil
+					}
+				}
+			}
+
+			return expr, nil
+		})
+		if err != nil {
+			return err
+		}
+
+		b.Select.Groupings[i] = resolved
+	}
+
+	if b.Order != nil {
+		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
+			return resolveExpression(ctx, expr)
+		})
+		if err != nil {
+			return err
+		}
+
+		b.Order = resolved
+	}
+
+	return nil
+}
+
+func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) error {
+	for _, c := range b.Select.Combinations {
+		if err := ctx.WithScope(func() error {
+			return c.Select.Resolve(ctx)
+		}); err != nil {
+			return err
+		}
+
+		if len(c.Select.TableFields()) != len(b.fields) {
+			return fmt.Errorf("selects in combination must have the same number of columns")
+		}
+	}
+
 	return nil
 }
 
@@ -78,39 +172,15 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		projectedExpressions, err := projectionHelpers.ExpandProjection(node.Fields(), b.Select.SelectExpressions)
-		if err != nil {
-			return nil, err
-		}
-
-	selectLoop:
-		for _, selectExpression := range projectedExpressions {
-			if len(expressions.Fields(selectExpression.Expression)) > 0 {
-				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
-
-				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
-						continue selectLoop
-					}
-				}
-
-				// TODO - more lenient validation
-				// return nil,  fmt.Errorf("%q not in group by", expression)
-			}
-		}
-
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
-		b.Select.SelectExpressions = nil
 	}
 
-	if len(b.Select.Combinations) != 0 {
-		if b.Select.SelectExpressions != nil {
-			newNode, err := projection.NewProjection(node, b.Select.SelectExpressions)
+	if len(b.Select.Combinations) > 0 {
+		if b.Select.Groupings == nil {
+			node, err = projection.NewProjection(node, b.Select.SelectExpressions)
 			if err != nil {
 				return nil, err
 			}
-			node = newNode
-			b.Select.SelectExpressions = nil
 		}
 
 		for _, c := range b.Select.Combinations {
@@ -147,8 +217,12 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		node = limit.NewLimit(node, *b.Limit)
 	}
 
-	if b.Select.SelectExpressions != nil {
-		return projection.NewProjection(node, b.Select.SelectExpressions)
+	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
+		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return node, nil
 }

@@ -21,7 +21,7 @@ type DeleteBuilder struct {
 	table impls.Table
 }
 
-func (b *DeleteBuilder) Resolve(ctx impls.NodeResolutionContext) error {
+func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	table, ok := ctx.Catalog.Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)

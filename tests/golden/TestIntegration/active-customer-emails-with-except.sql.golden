@@ -10,8 +10,8 @@ ORDER BY s.email;
 
 Plan:
 
-                 query plan
---------------------------------------------
+                     query plan
+-----------------------------------------------------
  select (email)
     order by s.email
         alias as s
@@ -21,7 +21,7 @@ Plan:
             with
                 select (email)
                     table scan of customer
-                        filter: active = 0
+                        filter: customer.active = 0
 (1 rows)
 
 Results:

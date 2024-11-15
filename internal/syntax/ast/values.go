@@ -14,7 +14,7 @@ type ValuesBuilder struct {
 	Expressions [][]impls.Expression
 }
 
-func (b *ValuesBuilder) Resolve(ctx impls.NodeResolutionContext) error {
+func (b *ValuesBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 

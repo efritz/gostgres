@@ -73,7 +73,6 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.Select.Where = resolved
 
-	// TODO - map the resulting expressions?
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
 		return err

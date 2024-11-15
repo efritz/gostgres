@@ -12,6 +12,7 @@ func DefaultFunctions() map[string]impls.Function {
 	m := map[string]impls.Function{}
 	for _, f := range []impls.Function{
 		now,
+		length,
 		currval,
 		nextval,
 		setval,
@@ -28,6 +29,16 @@ var now = newFunctionImpl(
 	types.TypeTimestampTz,
 	func(ctx impls.ExecutionContext, args []any) (any, error) {
 		return time.Now(), nil
+	},
+)
+
+var length = newFunctionImpl(
+	"length",
+	[]types.Type{types.TypeText},
+	types.TypeBigInteger,
+	func(ctx impls.ExecutionContext, args []any) (any, error) {
+		value := args[0].(string)
+		return int64(len(value)), nil
 	},
 )
 

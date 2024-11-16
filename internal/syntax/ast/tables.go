@@ -132,7 +132,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		ctx.Bind(joinFields...)
 		baseFields = append(baseFields, joinFields...)
 
-		resolved, err := resolveExpression(ctx, j.Condition)
+		resolved, err := resolveExpression(ctx, j.Condition, nil)
 		if err != nil {
 			return err
 		}

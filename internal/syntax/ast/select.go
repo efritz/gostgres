@@ -68,7 +68,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	defer ctx.PopScope()
 	ctx.Bind(fromFields...)
 
-	resolved, err := resolveExpression(ctx, b.Select.Where)
+	resolved, err := resolveExpression(ctx, b.Select.Where, nil)
 	if err != nil {
 		return err
 	}
@@ -105,22 +105,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	ctx.Bind(b.fields...)
 
 	for i, expr := range b.Select.Groupings {
-		resolved, err := resolveExpression(ctx, expr)
-		if err != nil {
-			return err
-		}
-
-		resolved, err = resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
-			if named, ok := expr.(expressions.NamedExpression); ok {
-				for _, pair := range projection.Aliases() {
-					if pair.Alias == named.Field().Name() {
-						return pair.Expression, nil
-					}
-				}
-			}
-
-			return expr, nil
-		})
+		resolved, err := resolveExpression(ctx, expr, projection)
 		if err != nil {
 			return err
 		}
@@ -130,7 +115,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	if b.Order != nil {
 		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
-			return resolveExpression(ctx, expr)
+			return resolveExpression(ctx, expr, projection)
 		})
 		if err != nil {
 			return err

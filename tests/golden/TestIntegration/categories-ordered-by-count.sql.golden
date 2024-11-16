@@ -13,7 +13,7 @@ Plan:
 
                                   query plan
 ------------------------------------------------------------------------------
- order by count, name
+ order by count, c.name
     group by c.name, select(name, count(1) as count)
         join using nested loop
             join using nested loop

@@ -14,14 +14,26 @@ type Projection struct {
 	projectedFields []fields.Field
 }
 
-func NewProjection(relationName string, relationFields []fields.Field, expressions []ProjectionExpression, aliasedTables ...AliasedTable) (*Projection, error) {
-	projectedExpressions, err := ExpandProjection(relationFields, expressions, aliasedTables...)
+func NewProjection(
+	targetRelationName string,
+	relationFields []fields.Field,
+	projectionExpressions []ProjectionExpression,
+	aliasedTables ...AliasedTable,
+) (*Projection, error) {
+	projectedExpressions, err := ExpandProjection(relationFields, projectionExpressions, aliasedTables...)
 	if err != nil {
 		return nil, err
 	}
 
 	var projectedFields []fields.Field
 	for _, field := range projectedExpressions {
+		relationName := targetRelationName
+		if relationName == "" {
+			if named, ok := field.Expression.(expressions.NamedExpression); ok {
+				relationName = named.Field().RelationName()
+			}
+		}
+
 		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, types.TypeAny, fields.NonInternalField))
 	}
 

@@ -53,8 +53,8 @@ type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
 
-	fields                []fields.Field
-	projectionExpressions []projectionHelpers.ProjectionExpression
+	fields     []fields.Field
+	projection *projectionHelpers.Projection
 }
 
 type TableReferenceOrExpression interface {
@@ -103,11 +103,19 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 				return fmt.Errorf("wrong number of fields in alias")
 			}
 
+			var projectionExpressions []projectionHelpers.ProjectionExpression
 			for i, field := range rawFields {
 				alias := columnAliases[i]
 				baseFields[i] = field.WithName(alias)
-				e.projectionExpressions = append(e.projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias))
+				projectionExpressions = append(projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias))
 			}
+
+			p, err := projectionHelpers.NewProjection(tableAlias, baseFields, projectionExpressions)
+			if err != nil {
+				return err
+			}
+			e.projection = p
+
 		} else {
 			baseFields = rawFields
 		}
@@ -148,12 +156,8 @@ func (e *TableExpression) Build() (queries.Node, error) {
 	if e.Base.Alias != nil {
 		node = alias.NewAlias(node, e.Base.Alias.TableAlias)
 
-		if len(e.projectionExpressions) > 0 {
-			p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), e.projectionExpressions)
-			if err != nil {
-				return nil, err
-			}
-			node = projection.NewProjection(node, p)
+		if e.projection != nil {
+			node = projection.NewProjection(node, e.projection)
 		}
 	}
 

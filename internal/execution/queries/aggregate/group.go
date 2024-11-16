@@ -27,13 +27,8 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	selectExpressions []projection.ProjectionExpression,
+	projection *projection.Projection,
 ) queries.Node {
-	projection, err := projection.NewProjection(node.Name(), node.Fields(), selectExpressions)
-	if err != nil {
-		panic(err.Error()) // TODO
-	}
-
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
@@ -42,7 +37,7 @@ func NewHashAggregate(
 }
 
 func (n *hashAggregate) Name() string {
-	return "" // TODO
+	return ""
 }
 
 func (n *hashAggregate) Fields() []fields.Field {
@@ -64,7 +59,7 @@ func (n *hashAggregate) AddFilter(filter impls.Expression) {
 }
 
 func (n *hashAggregate) AddOrder(order impls.OrderExpression) {
-	// TODO
+	// No-op
 }
 
 func (n *hashAggregate) Optimize() {

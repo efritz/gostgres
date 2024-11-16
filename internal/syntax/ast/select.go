@@ -25,7 +25,8 @@ type SelectBuilder struct {
 	Limit  *int
 	Offset *int
 
-	fields []fields.Field
+	fields     []fields.Field
+	projection *projectionHelpers.Projection
 }
 
 type SimpleSelectDescription struct {
@@ -73,11 +74,11 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.Select.Where = resolved
 
-	// TODO - map the resulting expressions?
 	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
 	if err != nil {
 		return err
 	}
+	b.projection = projection
 
 	if b.Select.Groupings != nil {
 	selectLoop:
@@ -172,15 +173,12 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection)
 	}
 
 	if len(b.Select.Combinations) > 0 {
 		if b.Select.Groupings == nil {
-			node, err = projection.NewProjection(node, b.Select.SelectExpressions)
-			if err != nil {
-				return nil, err
-			}
+			node = projection.NewProjection(node, b.projection)
 		}
 
 		for _, c := range b.Select.Combinations {
@@ -218,10 +216,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
-		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
-		if err != nil {
-			return nil, err
-		}
+		node = projection.NewProjection(node, b.projection)
 	}
 
 	return node, nil

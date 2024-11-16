@@ -86,5 +86,5 @@ func FindMatchingFieldIndex(needle Field, haystack []Field) (int, error) {
 		name = fmt.Sprintf("%q.%s", needle.relationName, name)
 	}
 
-	return 0, fmt.Errorf("unknown field %s", name)
+	return 0, fmt.Errorf("(runtime) unknown field %s", name)
 }

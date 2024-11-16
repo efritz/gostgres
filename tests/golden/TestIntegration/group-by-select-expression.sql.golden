@@ -8,10 +8,10 @@ ORDER BY len;
 
 Plan:
 
-                             query plan
----------------------------------------------------------------------
+                                   query plan
+---------------------------------------------------------------------------------
  order by len
-    group by length(f.title), select(length(f.title) as len, count)
+    group by length(f.title), select(length(f.title) as len, count(1) as count)
         alias as f
             table scan of film
 (1 rows)

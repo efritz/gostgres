@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
@@ -31,13 +32,9 @@ func NewProjection(relationName string, relationFields []fields.Field, expressio
 }
 
 func (p *Projection) String() string {
-	type named interface {
-		Name() string
-	}
-
 	fields := make([]string, 0, len(p.aliases))
 	for _, expression := range p.aliases {
-		if named, ok := expression.Expression.(named); ok && named.Name() == expression.Alias {
+		if named, ok := expression.Expression.(expressions.NamedExpression); ok && named.Field().Name() == expression.Alias {
 			fields = append(fields, expression.Alias)
 		} else {
 			fields = append(fields, expression.String())

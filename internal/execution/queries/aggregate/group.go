@@ -27,13 +27,8 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	selectExpressions []projection.ProjectionExpression,
+	projection *projection.Projection,
 ) queries.Node {
-	projection, err := projection.NewProjection(node.Name(), node.Fields(), selectExpressions)
-	if err != nil {
-		panic(err.Error()) // TODO
-	}
-
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,

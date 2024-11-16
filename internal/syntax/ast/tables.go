@@ -149,10 +149,11 @@ func (e *TableExpression) Build() (queries.Node, error) {
 		node = alias.NewAlias(node, e.Base.Alias.TableAlias)
 
 		if len(e.projectionExpressions) > 0 {
-			node, err = projection.NewProjection(node, e.projectionExpressions)
+			p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), e.projectionExpressions)
 			if err != nil {
 				return nil, err
 			}
+			node = projection.NewProjection(node, p)
 		}
 	}
 

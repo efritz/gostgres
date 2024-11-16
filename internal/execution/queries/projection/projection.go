@@ -19,16 +19,11 @@ type projectionNode struct {
 
 var _ queries.Node = &projectionNode{}
 
-func NewProjection(node queries.Node, expressions []projection.ProjectionExpression, aliasedTables ...projection.AliasedTable) (queries.Node, error) {
-	projection, err := projection.NewProjection(node.Name(), node.Fields(), expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
+func NewProjection(node queries.Node, projection *projection.Projection) queries.Node {
 	return &projectionNode{
 		Node:       node,
 		projection: projection,
-	}, nil
+	}
 }
 
 func (n *projectionNode) Fields() []fields.Field {

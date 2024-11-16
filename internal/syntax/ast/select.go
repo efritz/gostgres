@@ -172,15 +172,21 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.Select.SelectExpressions)
+		p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
+		if err != nil {
+			return nil, err
+		}
+
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, p)
 	}
 
 	if len(b.Select.Combinations) > 0 {
 		if b.Select.Groupings == nil {
-			node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+			p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
 			if err != nil {
 				return nil, err
 			}
+			node = projection.NewProjection(node, p)
 		}
 
 		for _, c := range b.Select.Combinations {
@@ -218,10 +224,11 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
-		node, err = projection.NewProjection(node, b.Select.SelectExpressions)
+		p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
 		if err != nil {
 			return nil, err
 		}
+		node = projection.NewProjection(node, p)
 	}
 
 	return node, nil

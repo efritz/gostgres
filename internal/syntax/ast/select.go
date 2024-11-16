@@ -171,21 +171,17 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		node = filter.NewFilter(node, b.Select.Where)
 	}
 
-	if b.Select.Groupings != nil {
-		p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
-		if err != nil {
-			return nil, err
-		}
+	p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
+	if err != nil {
+		return nil, err
+	}
 
+	if b.Select.Groupings != nil {
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, p)
 	}
 
 	if len(b.Select.Combinations) > 0 {
 		if b.Select.Groupings == nil {
-			p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
-			if err != nil {
-				return nil, err
-			}
 			node = projection.NewProjection(node, p)
 		}
 
@@ -224,10 +220,6 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
-		p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), b.Select.SelectExpressions)
-		if err != nil {
-			return nil, err
-		}
 		node = projection.NewProjection(node, p)
 	}
 

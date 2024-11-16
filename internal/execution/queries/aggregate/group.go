@@ -37,7 +37,7 @@ func NewHashAggregate(
 }
 
 func (n *hashAggregate) Name() string {
-	return "" // TODO
+	return ""
 }
 
 func (n *hashAggregate) Fields() []fields.Field {
@@ -59,7 +59,7 @@ func (n *hashAggregate) AddFilter(filter impls.Expression) {
 }
 
 func (n *hashAggregate) AddOrder(order impls.OrderExpression) {
-	// TODO
+	// No-op
 }
 
 func (n *hashAggregate) Optimize() {

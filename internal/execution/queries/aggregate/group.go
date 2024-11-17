@@ -80,11 +80,6 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
-	scanner, err := n.Node.Scanner(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var exprs []impls.Expression
 	for _, selectExpression := range n.projection.Aliases() {
 		exprs = append(exprs, selectExpression.Expression)
@@ -111,13 +106,18 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return aggregateExpressions, nil
 		}
 
-		aggregateExpressions, err = makeAggregates()
+		aggregateExpressions, err := makeAggregates()
 		if err != nil {
 			return nil, err
 		}
 
 		buckets[key] = aggregateExpressions
 		return aggregateExpressions, nil
+	}
+
+	scanner, err := n.Node.Scanner(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {

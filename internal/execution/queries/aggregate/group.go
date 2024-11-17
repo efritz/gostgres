@@ -103,7 +103,23 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 		return aggregateExpressions, nil
 	}
 
-	h := map[uint64][]impls.AggregateExpression{}
+	buckets := map[uint64][]impls.AggregateExpression{}
+
+	aggregatesForKey := func(key uint64) ([]impls.AggregateExpression, error) {
+		aggregateExpressions, ok := buckets[key]
+		if ok {
+			return aggregateExpressions, nil
+		}
+
+		aggregateExpressions, err = makeAggregates()
+		if err != nil {
+			return nil, err
+		}
+
+		buckets[key] = aggregateExpressions
+		return aggregateExpressions, nil
+	}
+
 	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
 		keys, err := queries.EvaluateExpressions(ctx, n.groupExpressions, row)
 		if err != nil {
@@ -111,15 +127,11 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 		}
 		key := utils.Hash(keys)
 
-		aggregateExpressions, ok := h[key]
-		if !ok {
-			aggregateExpressions, err = makeAggregates()
-			if err != nil {
-				return false, err
-			}
-
-			h[key] = aggregateExpressions
+		aggregateExpressions, err := aggregatesForKey(key)
+		if err != nil {
+			return false, err
 		}
+
 		for _, aggregateExpression := range aggregateExpressions {
 			if err := aggregateExpression.Step(ctx, row); err != nil {
 				return false, err
@@ -132,7 +144,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 	}
 
 	i := 0
-	keys := maps.Keys(h)
+	keys := maps.Keys(buckets)
 
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Hash Aggregate")
@@ -141,7 +153,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return rows.Row{}, scan.ErrNoRows
 		}
 
-		aggregateExpressions := h[keys[i]]
+		aggregateExpressions := buckets[keys[i]]
 		i++
 
 		var values []any

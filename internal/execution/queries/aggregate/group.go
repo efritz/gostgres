@@ -74,7 +74,7 @@ func (n *hashAggregate) Filter() impls.Expression {
 }
 
 func (n *hashAggregate) Ordering() impls.OrderExpression {
-	return nil // TODO
+	return nil
 }
 
 func (n *hashAggregate) SupportsMarkRestore() bool {

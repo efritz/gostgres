@@ -52,5 +52,5 @@ func resolveExpression(
 		return nil, err
 	}
 
-	return expr, nil
+	return mappedExpr, nil
 }

@@ -10,13 +10,19 @@ import (
 )
 
 type ExpressionResolutionContext struct {
-	Catalog CatalogSet
+	Catalog                 CatalogSet
+	allowAggregateFunctions bool
 }
 
-func NewExpressionResolutionContext(catalog CatalogSet) ExpressionResolutionContext {
+func NewExpressionResolutionContext(catalog CatalogSet, allowAggregateFunctions bool) ExpressionResolutionContext {
 	return ExpressionResolutionContext{
-		Catalog: catalog,
+		Catalog:                 catalog,
+		allowAggregateFunctions: allowAggregateFunctions,
 	}
+}
+
+func (ctx ExpressionResolutionContext) AllowAggregateFunctions() bool {
+	return ctx.allowAggregateFunctions
 }
 
 //
@@ -37,8 +43,8 @@ func NewNodeResolutionContext(catalog CatalogSet) *NodeResolutionContext {
 	}
 }
 
-func (ctx *NodeResolutionContext) ExpressionResolutionContext() ExpressionResolutionContext {
-	return NewExpressionResolutionContext(ctx.Catalog)
+func (ctx *NodeResolutionContext) ExpressionResolutionContext(allowAggregateFunctions bool) ExpressionResolutionContext {
+	return NewExpressionResolutionContext(ctx.Catalog, allowAggregateFunctions)
 }
 
 func (ctx *NodeResolutionContext) WithScope(f func() error) error {

@@ -18,10 +18,8 @@ type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
-	aggregateFactory AggregateFactory
+	aggregateFactory impls.AggregateExpressionFactory
 }
-
-type AggregateFactory func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error)
 
 var _ queries.Node = &hashAggregate{}
 
@@ -29,7 +27,7 @@ func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
-	aggregateFactory AggregateFactory,
+	aggregateFactory impls.AggregateExpressionFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,

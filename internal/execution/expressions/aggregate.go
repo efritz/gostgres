@@ -5,7 +5,18 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
+func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
+	return func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
+		var aggregateExpressions []impls.AggregateExpression
+		for _, expression := range exprs {
+			aggregateExpressions = append(aggregateExpressions, asAggregate(ctx, expression))
+		}
+
+		return aggregateExpressions, nil
+	}
+}
+
+func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (
 		results        []*constantExpression
 		subExpressions []impls.AggregateExpression

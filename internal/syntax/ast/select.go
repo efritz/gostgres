@@ -25,8 +25,9 @@ type SelectBuilder struct {
 	Limit  *int
 	Offset *int
 
-	fields     []fields.Field
-	projection *projectionHelpers.Projection
+	fields           []fields.Field
+	projection       *projectionHelpers.Projection
+	aggregateFactory impls.AggregateExpressionFactory
 }
 
 type SimpleSelectDescription struct {
@@ -105,9 +106,16 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 				}
 
 				// TODO - more lenient validation
-				// return nil,  fmt.Errorf("%q not in group by", expression)
+				// return nil, fmt.Errorf("%q not in group by", expression)
 			}
 		}
+
+		var exprs []impls.Expression
+		for _, selectExpression := range b.projection.Aliases() {
+			exprs = append(exprs, selectExpression.Expression)
+		}
+
+		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
 	}
 
 	b.fields = projection.Fields()
@@ -174,19 +182,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		var exprs []impls.Expression
-		for _, selectExpression := range b.projection.Aliases() {
-			exprs = append(exprs, selectExpression.Expression)
-		}
-
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
-			var aggregateExpressions []impls.AggregateExpression
-			for _, expression := range exprs {
-				aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, expression))
-			}
-
-			return aggregateExpressions, nil
-		})
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, b.aggregateFactory)
 	}
 
 	if len(b.Select.Combinations) > 0 {

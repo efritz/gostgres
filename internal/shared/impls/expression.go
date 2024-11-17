@@ -18,6 +18,8 @@ type Expression interface {
 	ValueFrom(cts ExecutionContext, row rows.Row) (any, error)
 }
 
+type AggregateExpressionFactory func(ctx ExecutionContext) ([]AggregateExpression, error)
+
 type AggregateExpression interface {
 	Step(ctx ExecutionContext, row rows.Row) error
 	Done(ctx ExecutionContext) (any, error)

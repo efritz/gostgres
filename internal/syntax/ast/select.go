@@ -127,6 +127,10 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	if b.Order != nil {
 		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
+			if len(b.Select.Groupings) > 0 {
+				return resolveExpression(ctx, expr, nil)
+			}
+
 			return resolveExpression(ctx, expr, projection)
 		})
 		if err != nil {

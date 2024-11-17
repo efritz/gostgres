@@ -74,7 +74,19 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.Select.Where = resolved
 
-	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
+	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
+	for i, expr := range projectedExpressions {
+		resolved, err := resolveExpression(ctx, expr.Expression, nil)
+		if err != nil {
+			return err
+		}
+
+		projectedExpressions[i].Expression = resolved
+	}
+	projection, err := projectionHelpers.NewProjectionFromProjectedExpressions("", projectedExpressions)
 	if err != nil {
 		return err
 	}

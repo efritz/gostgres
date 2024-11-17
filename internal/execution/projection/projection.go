@@ -6,7 +6,6 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
-	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type Projection struct {
@@ -14,7 +13,7 @@ type Projection struct {
 	projectedFields []fields.Field
 }
 
-func NewProjection(
+func NewProjectionFromProjectionExpressions(
 	targetRelationName string,
 	relationFields []fields.Field,
 	projectionExpressions []ProjectionExpression,
@@ -25,6 +24,13 @@ func NewProjection(
 		return nil, err
 	}
 
+	return NewProjectionFromProjectedExpressions(targetRelationName, projectedExpressions)
+}
+
+func NewProjectionFromProjectedExpressions(
+	targetRelationName string,
+	projectedExpressions []ProjectedExpression,
+) (*Projection, error) {
 	var projectedFields []fields.Field
 	for _, field := range projectedExpressions {
 		relationName := targetRelationName
@@ -34,7 +40,7 @@ func NewProjection(
 			}
 		}
 
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, types.TypeAny, fields.NonInternalField))
+		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, field.Expression.Type(), fields.NonInternalField))
 	}
 
 	return &Projection{

@@ -89,6 +89,19 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 	for _, selectExpression := range n.projection.Aliases() {
 		exprs = append(exprs, selectExpression.Expression)
 	}
+	makeAggregates := func() ([]impls.AggregateExpression, error) {
+		var aggregateExpressions []impls.AggregateExpression
+		for _, expression := range exprs {
+			aggregate, err := expressions.AsAggregate(ctx, expression)
+			if err != nil {
+				return nil, err
+			}
+
+			aggregateExpressions = append(aggregateExpressions, aggregate)
+		}
+
+		return aggregateExpressions, nil
+	}
 
 	h := map[uint64][]impls.AggregateExpression{}
 	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
@@ -100,13 +113,9 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 
 		aggregateExpressions, ok := h[key]
 		if !ok {
-			for _, expression := range exprs {
-				aggregate, err := expressions.AsAggregate(ctx, expression)
-				if err != nil {
-					return false, err
-				}
-
-				aggregateExpressions = append(aggregateExpressions, aggregate)
+			aggregateExpressions, err = makeAggregates()
+			if err != nil {
+				return false, err
 			}
 
 			h[key] = aggregateExpressions

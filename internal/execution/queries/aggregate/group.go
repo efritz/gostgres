@@ -11,7 +11,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/shared/utils"
 	"golang.org/x/exp/maps"
 )
@@ -86,10 +85,9 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 		return nil, err
 	}
 
-	var groupedFields []fields.Field
+	groupedFields := n.projection.Fields()
 	var exprs []impls.Expression
 	for _, selectExpression := range n.projection.Aliases() {
-		groupedFields = append(groupedFields, fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
 		exprs = append(exprs, selectExpression.Expression)
 	}
 

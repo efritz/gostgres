@@ -3,7 +3,6 @@ package aggregate
 import (
 	"strings"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
@@ -11,7 +10,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/shared/utils"
 	"golang.org/x/exp/maps"
 )
@@ -20,6 +18,7 @@ type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
+	aggregateFactory impls.AggregateExpressionFactory
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -28,11 +27,13 @@ func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
+	aggregateFactory impls.AggregateExpressionFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
 		projection:       projection,
+		aggregateFactory: aggregateFactory,
 	}
 }
 
@@ -71,7 +72,7 @@ func (n *hashAggregate) Filter() impls.Expression {
 }
 
 func (n *hashAggregate) Ordering() impls.OrderExpression {
-	return nil // TODO
+	return nil
 }
 
 func (n *hashAggregate) SupportsMarkRestore() bool {
@@ -81,39 +82,40 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
+	buckets := map[uint64][]impls.AggregateExpression{}
+
+	aggregatesForKey := func(key uint64) ([]impls.AggregateExpression, error) {
+		aggregateExpressions, ok := buckets[key]
+		if ok {
+			return aggregateExpressions, nil
+		}
+
+		aggregateExpressions, err := n.aggregateFactory(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		buckets[key] = aggregateExpressions
+		return aggregateExpressions, nil
+	}
+
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var groupedFields []fields.Field
-	var exprs []impls.Expression
-	for _, selectExpression := range n.projection.Aliases() {
-		groupedFields = append(groupedFields, fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
-		exprs = append(exprs, selectExpression.Expression)
-	}
-
-	h := map[uint64][]impls.AggregateExpression{}
 	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
-		keys, err := evaluatePair(ctx, n.groupExpressions, row)
+		keys, err := queries.EvaluateExpressions(ctx, n.groupExpressions, row)
 		if err != nil {
 			return false, err
 		}
 		key := utils.Hash(keys)
 
-		aggregateExpressions, ok := h[key]
-		if !ok {
-			for _, expression := range exprs {
-				aggregate, err := expressions.AsAggregate(ctx, expression)
-				if err != nil {
-					return false, err
-				}
-
-				aggregateExpressions = append(aggregateExpressions, aggregate)
-			}
-
-			h[key] = aggregateExpressions
+		aggregateExpressions, err := aggregatesForKey(key)
+		if err != nil {
+			return false, err
 		}
+
 		for _, aggregateExpression := range aggregateExpressions {
 			if err := aggregateExpression.Step(ctx, row); err != nil {
 				return false, err
@@ -126,7 +128,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 	}
 
 	i := 0
-	keys := maps.Keys(h)
+	keys := maps.Keys(buckets)
 
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Hash Aggregate")
@@ -135,7 +137,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return rows.Row{}, scan.ErrNoRows
 		}
 
-		aggregateExpressions := h[keys[i]]
+		aggregateExpressions := buckets[keys[i]]
 		i++
 
 		var values []any
@@ -148,19 +150,6 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			values = append(values, value)
 		}
 
-		return rows.Row{Fields: groupedFields, Values: values}, nil
+		return rows.Row{Fields: n.projection.Fields(), Values: values}, nil
 	}), nil
-}
-
-func evaluatePair(ctx impls.ExecutionContext, expressions []impls.Expression, row rows.Row) (values []any, _ error) {
-	for _, expression := range expressions {
-		value, err := queries.Evaluate(ctx, expression, row)
-		if err != nil {
-			return nil, err
-		}
-
-		values = append(values, value)
-	}
-
-	return values, nil
 }

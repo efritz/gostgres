@@ -35,9 +35,9 @@ func (e functionExpression) String() string {
 }
 
 func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
-	f, ok := ctx.Catalog.Functions.Get(e.name)
-	if !ok {
-		return fmt.Errorf("unknown function %q", e.name)
+	f, err := e.lookup(ctx)
+	if err != nil {
+		return err
 	}
 
 	var argTypes []types.Type
@@ -55,6 +55,22 @@ func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) erro
 
 	e.typ = f.ReturnType()
 	return nil
+}
+
+func (e *functionExpression) lookup(ctx impls.ExpressionResolutionContext) (impls.Callable, error) {
+	if f, ok := ctx.Catalog.Functions.Get(e.name); ok {
+		return f, nil
+	}
+
+	if a, ok := ctx.Catalog.Aggregates.Get(e.name); ok {
+		if !ctx.AllowAggregateFunctions() {
+			return nil, fmt.Errorf("aggregate function %q not allowed in this context", e.name)
+		}
+
+		return a, nil
+	}
+
+	return nil, fmt.Errorf("unknown function %q", e.name)
 }
 
 func (e functionExpression) Type() types.Type {

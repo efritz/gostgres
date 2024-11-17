@@ -10,6 +10,7 @@ func resolveExpression(
 	ctx *impls.NodeResolutionContext,
 	expr impls.Expression,
 	projection *projectionHelpers.Projection,
+	allowAggregateFunctions bool,
 ) (impls.Expression, error) {
 	if expr == nil {
 		return nil, nil
@@ -48,7 +49,7 @@ func resolveExpression(
 		}
 	}
 
-	if err := mappedExpr.Resolve(ctx.ExpressionResolutionContext()); err != nil {
+	if err := mappedExpr.Resolve(ctx.ExpressionResolutionContext(allowAggregateFunctions)); err != nil {
 		return nil, err
 	}
 

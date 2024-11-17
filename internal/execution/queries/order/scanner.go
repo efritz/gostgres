@@ -116,17 +116,17 @@ type indexValue struct {
 	values []any
 }
 
-func makeIndexValues(ctx impls.ExecutionContext, expressions []impls.ExpressionWithDirection, rows rows.Rows) ([]indexValue, error) {
+func makeIndexValues(ctx impls.ExecutionContext, orderExpressions []impls.ExpressionWithDirection, rows rows.Rows) ([]indexValue, error) {
 	indexValues := make([]indexValue, 0, len(rows.Values))
 	for i := range rows.Values {
-		values := make([]any, 0, len(expressions))
-		for _, expression := range expressions {
-			value, err := queries.Evaluate(ctx, expression.Expression, rows.Row(i))
-			if err != nil {
-				return nil, err
-			}
+		var expressions []impls.Expression
+		for _, expression := range orderExpressions {
+			expressions = append(expressions, expression.Expression)
+		}
 
-			values = append(values, value)
+		values, err := queries.EvaluateExpressions(ctx, expressions, rows.Row(i))
+		if err != nil {
+			return nil, err
 		}
 
 		indexValues = append(indexValues, indexValue{index: i, values: values})

@@ -24,7 +24,7 @@ func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.Aggregate
 		return e, nil
 	})
 
-	if len(subExpressions) > 0 {
+	if len(results) > 0 {
 		return &explodedAggregateExpression{
 			results:         results,
 			subExpressions:  subExpressions,

@@ -95,7 +95,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 
 	h := map[uint64][]impls.AggregateExpression{}
 	if err := scan.VisitRows(scanner, func(row rows.Row) (bool, error) {
-		keys, err := evaluatePair(ctx, n.groupExpressions, row)
+		keys, err := queries.EvaluateExpressions(ctx, n.groupExpressions, row)
 		if err != nil {
 			return false, err
 		}
@@ -150,17 +150,4 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 
 		return rows.Row{Fields: groupedFields, Values: values}, nil
 	}), nil
-}
-
-func evaluatePair(ctx impls.ExecutionContext, expressions []impls.Expression, row rows.Row) (values []any, _ error) {
-	for _, expression := range expressions {
-		value, err := queries.Evaluate(ctx, expression, row)
-		if err != nil {
-			return nil, err
-		}
-
-		values = append(values, value)
-	}
-
-	return values, nil
 }

@@ -85,7 +85,6 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 		return nil, err
 	}
 
-	groupedFields := n.projection.Fields()
 	var exprs []impls.Expression
 	for _, selectExpression := range n.projection.Aliases() {
 		exprs = append(exprs, selectExpression.Expression)
@@ -146,6 +145,6 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			values = append(values, value)
 		}
 
-		return rows.Row{Fields: groupedFields, Values: values}, nil
+		return rows.Row{Fields: n.projection.Fields(), Values: values}, nil
 	}), nil
 }

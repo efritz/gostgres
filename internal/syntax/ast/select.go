@@ -182,12 +182,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
 			var aggregateExpressions []impls.AggregateExpression
 			for _, expression := range exprs {
-				aggregate, err := expressions.AsAggregate(ctx, expression)
-				if err != nil {
-					return nil, err
-				}
-
-				aggregateExpressions = append(aggregateExpressions, aggregate)
+				aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, expression))
 			}
 
 			return aggregateExpressions, nil

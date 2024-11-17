@@ -5,43 +5,36 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) (impls.AggregateExpression, error) {
+func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (
 		results        []*constantExpression
 		subExpressions []impls.AggregateExpression
 	)
 
-	outerExpression, err := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		f, ok := e.(*functionExpression)
-		if !ok {
-			return e, nil
+	outerExpression, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
+		if f, ok := e.(*functionExpression); ok {
+			if aggregate, ok := ctx.Catalog.Aggregates.Get(f.name); ok {
+				placeholder := &constantExpression{}
+				results = append(results, placeholder)
+				subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: f.args})
+				return placeholder, nil
+			}
 		}
 
-		aggregate, ok := ctx.Catalog.Aggregates.Get(f.name)
-		if !ok {
-			return e, nil
-		}
-
-		placeholder := &constantExpression{}
-		results = append(results, placeholder)
-		subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: f.args})
-		return placeholder, nil
+		return e, nil
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	if len(subExpressions) > 0 {
 		return &explodedAggregateExpression{
 			results:         results,
 			subExpressions:  subExpressions,
 			outerExpression: outerExpression,
-		}, nil
+		}
 	}
 
 	return &nonAggregateExpression{
 		expression: outerExpression,
-	}, nil
+	}
 }
 
 type explodedAggregateExpression struct {

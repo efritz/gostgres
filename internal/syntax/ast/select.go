@@ -25,8 +25,9 @@ type SelectBuilder struct {
 	Limit  *int
 	Offset *int
 
-	fields     []fields.Field
-	projection *projectionHelpers.Projection
+	fields           []fields.Field
+	projection       *projectionHelpers.Projection
+	aggregateFactory impls.AggregateExpressionFactory
 }
 
 type SimpleSelectDescription struct {
@@ -68,13 +69,25 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	defer ctx.PopScope()
 	ctx.Bind(fromFields...)
 
-	resolved, err := resolveExpression(ctx, b.Select.Where)
+	resolved, err := resolveExpression(ctx, b.Select.Where, nil, false)
 	if err != nil {
 		return err
 	}
 	b.Select.Where = resolved
 
-	projection, err := projectionHelpers.NewProjection("", fromFields, b.Select.SelectExpressions)
+	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.Select.SelectExpressions)
+	if err != nil {
+		return err
+	}
+	for i, expr := range projectedExpressions {
+		resolved, err := resolveExpression(ctx, expr.Expression, nil, len(b.Select.Groupings) > 0)
+		if err != nil {
+			return err
+		}
+
+		projectedExpressions[i].Expression = resolved
+	}
+	projection, err := projectionHelpers.NewProjectionFromProjectedExpressions("", projectedExpressions)
 	if err != nil {
 		return err
 	}
@@ -93,9 +106,16 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 				}
 
 				// TODO - more lenient validation
-				// return nil,  fmt.Errorf("%q not in group by", expression)
+				// return nil, fmt.Errorf("%q not in group by", expression)
 			}
 		}
+
+		var exprs []impls.Expression
+		for _, selectExpression := range b.projection.Aliases() {
+			exprs = append(exprs, selectExpression.Expression)
+		}
+
+		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
 	}
 
 	b.fields = projection.Fields()
@@ -105,22 +125,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	ctx.Bind(b.fields...)
 
 	for i, expr := range b.Select.Groupings {
-		resolved, err := resolveExpression(ctx, expr)
-		if err != nil {
-			return err
-		}
-
-		resolved, err = resolved.Map(func(expr impls.Expression) (impls.Expression, error) {
-			if named, ok := expr.(expressions.NamedExpression); ok {
-				for _, pair := range projection.Aliases() {
-					if pair.Alias == named.Field().Name() {
-						return pair.Expression, nil
-					}
-				}
-			}
-
-			return expr, nil
-		})
+		resolved, err := resolveExpression(ctx, expr, projection, false)
 		if err != nil {
 			return err
 		}
@@ -130,7 +135,11 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	if b.Order != nil {
 		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
-			return resolveExpression(ctx, expr)
+			if len(b.Select.Groupings) > 0 {
+				return resolveExpression(ctx, expr, nil, false)
+			}
+
+			return resolveExpression(ctx, expr, projection, false)
 		})
 		if err != nil {
 			return err
@@ -173,7 +182,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection)
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, b.aggregateFactory)
 	}
 
 	if len(b.Select.Combinations) > 0 {

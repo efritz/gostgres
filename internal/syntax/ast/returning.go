@@ -16,7 +16,7 @@ func wrapReturning(node queries.Node, table impls.Table, alias string, expressio
 		})
 	}
 
-	p, err := projectionHelpers.NewProjection(node.Name(), node.Fields(), expressions, aliasedTables...)
+	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(node.Name(), node.Fields(), expressions, aliasedTables...)
 	if err != nil {
 		return nil, err
 	}

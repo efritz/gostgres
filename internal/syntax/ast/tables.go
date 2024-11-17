@@ -110,7 +110,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 				projectionExpressions = append(projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias))
 			}
 
-			p, err := projectionHelpers.NewProjection(tableAlias, baseFields, projectionExpressions)
+			p, err := projectionHelpers.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions)
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		ctx.Bind(joinFields...)
 		baseFields = append(baseFields, joinFields...)
 
-		resolved, err := resolveExpression(ctx, j.Condition)
+		resolved, err := resolveExpression(ctx, j.Condition, nil, false)
 		if err != nil {
 			return err
 		}

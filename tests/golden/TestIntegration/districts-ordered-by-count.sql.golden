@@ -24,15 +24,15 @@ Results:
 
      district     | count
 ------------------+-------
- Buenos Aires     | 10
- California       | 9
- Shandong         | 9
- West Bengali     | 9
- So Paulo         | 8
- Uttar Pradesh    | 8
- England          | 7
- Maharashtra      | 7
- Southern Tagalog | 6
- Gois             | 5
+ Buenos Aires     |    10
+ California       |     9
+ Shandong         |     9
+ West Bengali     |     9
+ So Paulo         |     8
+ Uttar Pradesh    |     8
+ England          |     7
+ Maharashtra      |     7
+ Southern Tagalog |     6
+ Gois             |     5
 (10 rows)
 `

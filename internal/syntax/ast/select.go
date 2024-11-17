@@ -174,7 +174,24 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection)
+		var exprs []impls.Expression
+		for _, selectExpression := range b.projection.Aliases() {
+			exprs = append(exprs, selectExpression.Expression)
+		}
+
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
+			var aggregateExpressions []impls.AggregateExpression
+			for _, expression := range exprs {
+				aggregate, err := expressions.AsAggregate(ctx, expression)
+				if err != nil {
+					return nil, err
+				}
+
+				aggregateExpressions = append(aggregateExpressions, aggregate)
+			}
+
+			return aggregateExpressions, nil
+		})
 	}
 
 	if len(b.Select.Combinations) > 0 {

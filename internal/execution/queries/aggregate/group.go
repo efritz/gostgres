@@ -3,7 +3,6 @@ package aggregate
 import (
 	"strings"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
@@ -19,7 +18,10 @@ type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
+	aggregateFactory AggregateFactory
 }
+
+type AggregateFactory func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error)
 
 var _ queries.Node = &hashAggregate{}
 
@@ -27,11 +29,13 @@ func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
+	aggregateFactory AggregateFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
 		projection:       projection,
+		aggregateFactory: aggregateFactory,
 	}
 }
 
@@ -80,24 +84,6 @@ func (n *hashAggregate) SupportsMarkRestore() bool {
 func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
-	var exprs []impls.Expression
-	for _, selectExpression := range n.projection.Aliases() {
-		exprs = append(exprs, selectExpression.Expression)
-	}
-	makeAggregates := func() ([]impls.AggregateExpression, error) {
-		var aggregateExpressions []impls.AggregateExpression
-		for _, expression := range exprs {
-			aggregate, err := expressions.AsAggregate(ctx, expression)
-			if err != nil {
-				return nil, err
-			}
-
-			aggregateExpressions = append(aggregateExpressions, aggregate)
-		}
-
-		return aggregateExpressions, nil
-	}
-
 	buckets := map[uint64][]impls.AggregateExpression{}
 
 	aggregatesForKey := func(key uint64) ([]impls.AggregateExpression, error) {
@@ -106,7 +92,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return aggregateExpressions, nil
 		}
 
-		aggregateExpressions, err := makeAggregates()
+		aggregateExpressions, err := n.aggregateFactory(ctx)
 		if err != nil {
 			return nil, err
 		}

@@ -9,9 +9,9 @@ ORDER BY total_cost DESC, f.title;
 
 Plan:
 
-                                    query plan
-----------------------------------------------------------------------------------
- select (f.title as film_title, f.rental_rate + f.replacement_cost as total_cost)
+                                   query plan
+--------------------------------------------------------------------------------
+ select (title as film_title, f.rental_rate + f.replacement_cost as total_cost)
     order by f.rental_rate + f.replacement_cost desc, f.title
         alias as f
             table scan of film

@@ -13,7 +13,7 @@ Plan:
 
                                   query plan
 ------------------------------------------------------------------------------
- select (title, rating, name)
+ select (f.title, f.rating, c.name)
     limit 20
         join using nested loop
             join using nested loop

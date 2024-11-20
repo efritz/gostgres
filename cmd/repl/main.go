@@ -67,7 +67,7 @@ loop:
 				continue
 
 			case "load sample":
-				if err := sample.LoadPagilaSampleSchema(engine); err != nil {
+				if err := sample.LoadPagilaSampleSchemaAndData(engine); err != nil {
 					return err
 				}
 				continue

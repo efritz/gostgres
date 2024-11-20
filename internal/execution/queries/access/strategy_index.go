@@ -38,13 +38,6 @@ func (s *indexAccessStrategy[ScanOptions]) Filter() impls.Expression {
 	filterExpression := s.index.Filter()
 	condition := s.index.Condition(s.opts)
 
-	if filterExpression == nil {
-		return condition
-	}
-	if condition == nil {
-		return filterExpression
-	}
-
 	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
 }
 

@@ -86,6 +86,8 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 		return nil, err
 	}
 
+	aliases := n.projection.Aliases()
+
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Projection")
 
@@ -94,28 +96,22 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 			return rows.Row{}, err
 		}
 
-		return n.projectRow(ctx, row)
+		values := make([]any, 0, len(aliases))
+		for _, field := range aliases {
+			value, err := queries.Evaluate(ctx, field.Expression, row)
+			if err != nil {
+				return rows.Row{}, err
+			}
+
+			values = append(values, value)
+		}
+
+		return rows.NewRow(n.projection.Fields(), values)
 	}), nil
 }
 
 //
 //
-
-func (p *projectionNode) projectRow(ctx impls.ExecutionContext, row rows.Row) (rows.Row, error) {
-	aliases := p.projection.Aliases()
-
-	values := make([]any, 0, len(aliases))
-	for _, field := range aliases {
-		value, err := queries.Evaluate(ctx, field.Expression, row)
-		if err != nil {
-			return rows.Row{}, err
-		}
-
-		values = append(values, value)
-	}
-
-	return rows.NewRow(p.projection.Fields(), values)
-}
 
 func (p *projectionNode) projectExpression(expression impls.Expression) impls.Expression {
 	aliases := p.projection.Aliases()

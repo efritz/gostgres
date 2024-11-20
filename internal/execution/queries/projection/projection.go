@@ -115,9 +115,11 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 
 func (p *projectionNode) projectExpression(expression impls.Expression) impls.Expression {
 	aliases := p.projection.Aliases()
+	projectionFields := p.projection.Fields()
 
-	for _, alias := range aliases {
-		expression = projection.Alias(expression, fields.NewField("", alias.Alias, types.TypeAny, fields.NonInternalField), alias.Expression)
+	for i, alias := range aliases {
+		field := fields.NewField(projectionFields[i].RelationName(), alias.Alias, types.TypeAny, fields.NonInternalField)
+		expression = projection.Alias(expression, field, alias.Expression)
 	}
 
 	return expression
@@ -125,11 +127,11 @@ func (p *projectionNode) projectExpression(expression impls.Expression) impls.Ex
 
 func (p *projectionNode) deprojectExpression(expression impls.Expression) impls.Expression {
 	aliases := p.projection.Aliases()
-	fields := p.projection.Fields()
+	projectionFields := p.projection.Fields()
 
 	for i, alias := range aliases {
 		if named, ok := alias.Expression.(expressions.NamedExpression); ok {
-			expression = projection.Alias(expression, named.Field(), expressions.NewNamed(fields[i]))
+			expression = projection.Alias(expression, named.Field(), expressions.NewNamed(projectionFields[i]))
 		}
 	}
 

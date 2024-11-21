@@ -1,0 +1,33 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate,
+    rental_duration
+FROM film
+ORDER BY rental_rate * rental_duration ASC
+LIMIT 5;
+
+Plan:
+
+                        query plan
+----------------------------------------------------------
+ select (film_id, title, rental_rate, rental_duration)
+    limit 5
+        order by film.rental_rate * film.rental_duration
+            table scan of film
+(1 rows)
+
+Results:
+
+ film_id |        title         | rental_rate | rental_duration
+---------+----------------------+-------------+-----------------
+      17 | ALONE TRIP           |        0.99 |               3
+      23 | ANACONDA CONFESSIONS |        0.99 |               3
+      26 | ANNIE IDENTITY       |        0.99 |               3
+      82 | BLOOD ARGONAUTS      |        0.99 |               3
+      90 | BOULEVARD MOB        |        0.99 |               3
+(5 rows)
+`

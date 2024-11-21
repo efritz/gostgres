@@ -1,0 +1,33 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate,
+    rental_duration
+FROM film
+ORDER BY rental_rate * rental_duration DESC
+LIMIT 5;
+
+Plan:
+
+                          query plan
+---------------------------------------------------------------
+ select (film_id, title, rental_rate, rental_duration)
+    limit 5
+        order by film.rental_rate * film.rental_duration desc
+            table scan of film
+(1 rows)
+
+Results:
+
+ film_id |      title       | rental_rate | rental_duration
+---------+------------------+-------------+-----------------
+      70 | BIKINI BORROWERS |        4.99 |               7
+      84 | BOILED DARES     |        4.99 |               7
+      88 | BORN SPINAL      |        4.99 |               7
+      92 | BOWFINGER GABLES |        4.99 |               7
+     100 | BROOKLYN DESERT  |        4.99 |               7
+(5 rows)
+`

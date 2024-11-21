@@ -1,0 +1,33 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate
+FROM film
+ORDER BY film_id
+LIMIT 5
+OFFSET 10;
+
+Plan:
+
+                     query plan
+----------------------------------------------------
+ select (film_id, title, rental_rate)
+    limit 5
+        offset 10
+            btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+ film_id |      title      | rental_rate
+---------+-----------------+-------------
+      11 | ALAMO VIDEOTAPE |        0.99
+      12 | ALASKA PHANTOM  |        0.99
+      13 | ALI FOREVER     |        4.99
+      14 | ALICE FANTASIA  |        0.99
+      15 | ALIEN CENTER    |        2.99
+(5 rows)
+`

@@ -1,0 +1,35 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rating,
+    rental_rate
+FROM film
+ORDER BY
+    rating ASC,
+    rental_rate DESC
+LIMIT 5;
+
+Plan:
+
+                     query plan
+-----------------------------------------------------
+ select (film_id, title, rating, rental_rate)
+    limit 5
+        order by film.rating, film.rental_rate desc
+            table scan of film
+(1 rows)
+
+Results:
+
+ film_id |       title       | rating | rental_rate
+---------+-------------------+--------+-------------
+       2 | ACE GOLDFINGER    | G      |        4.99
+      46 | AUTUMN CROW       | G      |        4.99
+      61 | BEAUTY GREASE     | G      |        4.99
+      75 | BIRD INDEPENDENCE | G      |        4.99
+      77 | BIRDS PERDITION   | G      |        4.99
+(5 rows)
+`

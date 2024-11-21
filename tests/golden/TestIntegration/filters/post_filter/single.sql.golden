@@ -1,0 +1,36 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    length
+FROM film
+WHERE length > 120
+ORDER BY
+    rating,
+    title
+LIMIT 5;
+
+Plan:
+
+                query plan
+-------------------------------------------
+ select (film_id, title, length)
+    limit 5
+        order by rating, film.title
+            table scan of film
+                filter: film.length > 120
+(1 rows)
+
+Results:
+
+ film_id |        title         | length
+---------+----------------------+--------
+       5 | AFRICAN EGG          |    130
+      11 | ALAMO VIDEOTAPE      |    126
+      43 | ATLANTIS CAUSE       |    170
+      50 | BAKED CLEOPATRA      |    182
+      52 | BALLROOM MOCKINGBIRD |    173
+(5 rows)
+`

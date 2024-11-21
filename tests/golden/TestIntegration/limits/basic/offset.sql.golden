@@ -1,0 +1,36 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate
+FROM film
+ORDER BY film_id
+OFFSET 990;
+
+Plan:
+
+                   query plan
+------------------------------------------------
+ select (film_id, title, rental_rate)
+    offset 990
+        btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+ film_id |       title       | rental_rate
+---------+-------------------+-------------
+     991 | WORST BANGER      |        2.99
+     992 | WRATH MILE        |        0.99
+     993 | WRONG BEHAVIOR    |        2.99
+     994 | WYOMING STORM     |        4.99
+     995 | YENTL IDAHO       |        4.99
+     996 | YOUNG LANGUAGE    |        0.99
+     997 | YOUTH KICK        |        0.99
+     998 | ZHIVAGO CORE      |        0.99
+     999 | ZOOLANDER FICTION |        2.99
+    1000 | ZORRO ARK         |        4.99
+(10 rows)
+`

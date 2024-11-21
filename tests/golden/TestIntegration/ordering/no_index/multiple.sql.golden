@@ -1,0 +1,35 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rating,
+    rental_rate
+FROM film
+ORDER BY
+    rating,
+    rental_rate
+LIMIT 5;
+
+Plan:
+
+                   query plan
+------------------------------------------------
+ select (film_id, title, rating, rental_rate)
+    limit 5
+        order by film.rating, film.rental_rate
+            table scan of film
+(1 rows)
+
+Results:
+
+ film_id |        title         | rating | rental_rate
+---------+----------------------+--------+-------------
+      11 | ALAMO VIDEOTAPE      | G      |        0.99
+      26 | ANNIE IDENTITY       | G      |        0.99
+      39 | ARMAGEDDON LOST      | G      |        0.99
+      52 | BALLROOM MOCKINGBIRD | G      |        0.99
+      82 | BLOOD ARGONAUTS      | G      |        0.99
+(5 rows)
+`

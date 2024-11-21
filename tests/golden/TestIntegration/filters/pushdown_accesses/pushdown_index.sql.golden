@@ -1,0 +1,36 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    length
+FROM film
+WHERE title < 'C'
+ORDER BY
+    rating,
+    title
+LIMIT 5;
+
+Plan:
+
+                     query plan
+----------------------------------------------------
+ select (film_id, title, length)
+    limit 5
+        order by rating, film.title
+            btree index scan of film via idx_title
+                index cond: film.title < C
+(1 rows)
+
+Results:
+
+ film_id |       title       | length
+---------+-------------------+--------
+       2 | ACE GOLDFINGER    |     48
+       4 | AFFAIR PREJUDICE  |    117
+       5 | AFRICAN EGG       |    130
+      11 | ALAMO VIDEOTAPE   |    126
+      22 | AMISTAD MIDSUMMER |     85
+(5 rows)
+`

@@ -1,0 +1,29 @@
+`
+Query:
+
+SELECT f.*
+FROM film f
+ORDER BY f.film_id
+LIMIT 5;
+
+Plan:
+
+                                                                             query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
+    limit 5
+        alias as f
+            btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+ film_id |      title       |                                                      description                                                      | release_year | language_id | original_language_id | rental_duration | rental_rate | length | replacement_cost | rating |              last_update
+---------+------------------+-----------------------------------------------------------------------------------------------------------------------+--------------+-------------+----------------------+-----------------+-------------+--------+------------------+--------+----------------------------------------
+       1 | ACADEMY DINOSAUR | A Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies                      |         2006 |           1 |               [NULL] |               6 |        0.99 |     86 |            20.99 | PG     | 2022-09-10 17:46:03.905795 +0100 +0100
+       2 | ACE GOLDFINGER   | A Astounding Epistle of a Database Administrator And a Explorer who must Find a Car in Ancient China                  |         2006 |           1 |               [NULL] |               3 |        4.99 |     48 |            12.99 | G      | 2022-09-10 17:46:03.905795 +0100 +0100
+       3 | ADAPTATION HOLES | A Astounding Reflection of a Lumberjack And a Car who must Sink a Lumberjack in A Baloon Factory                      |         2006 |           1 |               [NULL] |               7 |        2.99 |     50 |            18.99 | NC-17  | 2022-09-10 17:46:03.905795 +0100 +0100
+       4 | AFFAIR PREJUDICE | A Fanciful Documentary of a Frisbee And a Lumberjack who must Chase a Monkey in A Shark Tank                          |         2006 |           1 |               [NULL] |               5 |        2.99 |    117 |            26.99 | G      | 2022-09-10 17:46:03.905795 +0100 +0100
+       5 | AFRICAN EGG      | A Fast-Paced Documentary of a Pastry Chef And a Dentist who must Pursue a Forensic Psychologist in The Gulf of Mexico |         2006 |           1 |               [NULL] |               6 |        2.99 |    130 |            22.99 | G      | 2022-09-10 17:46:03.905795 +0100 +0100
+(5 rows)
+`

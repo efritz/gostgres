@@ -1,0 +1,56 @@
+`
+Query:
+
+SELECT
+    f.id AS film_id,
+    f.movie_name AS title,
+    f.cat AS category_name
+FROM (
+    SELECT
+        f.film_id,
+        f.title,
+        c.name
+    FROM film f
+    JOIN film_category fc ON fc.film_id = f.film_id
+    JOIN category c ON c.category_id = fc.category_id
+) f(id, movie_name, cat)
+ORDER BY f.id
+LIMIT 5;
+
+Plan:
+
+                                          query plan
+----------------------------------------------------------------------------------------------
+ select (id as film_id, movie_name as title, cat as category_name)
+    limit 5
+        order by f.id
+            select (film_id as id, title as movie_name, name as cat)
+                alias as f
+                    select (f.film_id, f.title, c.name)
+                        join using nested loop
+                            join using nested loop
+                                alias as f
+                                    table scan of film
+                            with
+                                alias as fc
+                                    btree index scan of film_category via film_category_pkey
+                                        index cond: film_category.film_id = f.film_id
+                            on fc.film_id = f.film_id
+                        with
+                            alias as c
+                                btree index scan of category via category_pkey
+                                    index cond: category.category_id = fc.category_id
+                        on c.category_id = fc.category_id
+(1 rows)
+
+Results:
+
+ film_id |      title       | category_name
+---------+------------------+---------------
+       1 | ACADEMY DINOSAUR | Documentary
+       2 | ACE GOLDFINGER   | Horror
+       3 | ADAPTATION HOLES | Documentary
+       4 | AFFAIR PREJUDICE | Horror
+       5 | AFRICAN EGG      | Family
+(5 rows)
+`

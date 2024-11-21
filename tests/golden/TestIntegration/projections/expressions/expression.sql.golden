@@ -1,0 +1,30 @@
+`
+Query:
+
+SELECT
+    film_id,
+    rental_rate * rental_duration AS total_rental_cost
+FROM film
+ORDER BY film_id
+LIMIT 5;
+
+Plan:
+
+                                   query plan
+--------------------------------------------------------------------------------
+ select (film_id, film.rental_rate * film.rental_duration as total_rental_cost)
+    limit 5
+        btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+ film_id | total_rental_cost
+---------+-------------------
+       1 |              5.94
+       2 |         14.969999
+       3 |             20.93
+       4 |             14.95
+       5 |             17.94
+(5 rows)
+`

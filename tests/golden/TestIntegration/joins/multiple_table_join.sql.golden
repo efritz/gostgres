@@ -1,0 +1,54 @@
+`
+Query:
+
+SELECT
+    f.film_id,
+    f.title,
+    c.name AS category_name,
+    l.name AS language_name
+FROM film f
+JOIN film_category fc ON f.film_id = fc.film_id
+JOIN category c ON fc.category_id = c.category_id
+JOIN language l ON f.language_id = l.language_id
+ORDER BY f.film_id
+LIMIT 5;
+
+Plan:
+
+                                    query plan
+----------------------------------------------------------------------------------
+ select (f.film_id, f.title, c.name as category_name, l.name as language_name)
+    limit 5
+        join using nested loop
+            join using nested loop
+                join using nested loop
+                    alias as f
+                        btree index scan of film via film_pkey
+                with
+                    alias as fc
+                        btree index scan of film_category via film_category_pkey
+                            index cond: film_category.film_id = f.film_id
+                on f.film_id = fc.film_id
+            with
+                alias as c
+                    btree index scan of category via category_pkey
+                        index cond: category.category_id = fc.category_id
+            on fc.category_id = c.category_id
+        with
+            alias as l
+                btree index scan of language via language_pkey
+                    index cond: language.language_id = f.language_id
+        on f.language_id = l.language_id
+(1 rows)
+
+Results:
+
+ film_id |      title       | category_name | language_name
+---------+------------------+---------------+---------------
+       1 | ACADEMY DINOSAUR | Documentary   | English
+       2 | ACE GOLDFINGER   | Horror        | English
+       3 | ADAPTATION HOLES | Documentary   | English
+       4 | AFFAIR PREJUDICE | Horror        | English
+       5 | AFRICAN EGG      | Family        | English
+(5 rows)
+`

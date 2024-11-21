@@ -1,0 +1,51 @@
+`
+Query:
+
+SELECT
+    f.film_id,
+    f.title,
+    c.name
+FROM film f
+JOIN film_category fc ON f.film_id = fc.film_id
+JOIN category c ON fc.category_id = c.category_id
+WHERE f.rental_rate > 4.50
+ORDER BY
+    rating,
+    title
+LIMIT 5;
+
+Plan:
+
+                                    query plan
+----------------------------------------------------------------------------------
+ select (f.film_id, f.title, c.name)
+    limit 5
+        order by rating, f.title
+            join using nested loop
+                join using nested loop
+                    alias as f
+                        table scan of film
+                            filter: film.rental_rate > 4.5
+                with
+                    alias as fc
+                        btree index scan of film_category via film_category_pkey
+                            index cond: film_category.film_id = f.film_id
+                on f.film_id = fc.film_id
+            with
+                alias as c
+                    btree index scan of category via category_pkey
+                        index cond: category.category_id = fc.category_id
+            on fc.category_id = c.category_id
+(1 rows)
+
+Results:
+
+ film_id |       title       |  name
+---------+-------------------+--------
+       2 | ACE GOLDFINGER    | Horror
+      46 | AUTUMN CROW       | Games
+      61 | BEAUTY GREASE     | Drama
+      75 | BIRD INDEPENDENCE | Travel
+      77 | BIRDS PERDITION   | New
+(5 rows)
+`

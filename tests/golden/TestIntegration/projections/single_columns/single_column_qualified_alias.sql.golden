@@ -1,0 +1,29 @@
+`
+Query:
+
+SELECT f.film_id
+FROM film f
+ORDER BY f.film_id
+LIMIT 5;
+
+Plan:
+
+                     query plan
+----------------------------------------------------
+ select (film_id)
+    limit 5
+        alias as f
+            btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+ film_id
+---------
+       1
+       2
+       3
+       4
+       5
+(5 rows)
+`

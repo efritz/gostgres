@@ -1,0 +1,38 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    length
+FROM film
+WHERE
+    length > 120 AND
+    rental_rate > 2.99
+ORDER BY
+    rating,
+    title
+LIMIT 5;
+
+Plan:
+
+                              query plan
+-----------------------------------------------------------------------
+ select (film_id, title, length)
+    limit 5
+        order by rating, film.title
+            table scan of film
+                filter: film.length > 120 and film.rental_rate > 2.99
+(1 rows)
+
+Results:
+
+ film_id |        title        | length
+---------+---------------------+--------
+       5 | AFRICAN EGG         |    130
+      43 | ATLANTIS CAUSE      |    170
+      50 | BAKED CLEOPATRA     |    182
+      56 | BAREFOOT MANCHURIAN |    129
+      58 | BEACH HEARTBREAKERS |    122
+(5 rows)
+`

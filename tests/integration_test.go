@@ -16,25 +16,68 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const rootDir = "queries"
-
 func TestIntegration(t *testing.T) {
 	engine := engine.NewDefaultEngine()
 	require.NoError(t, sample.LoadPagilaSampleSchemaAndData(engine))
 
-	entries, err := os.ReadDir(rootDir)
+	testCases, err := gatherTestCases(t)
 	require.NoError(t, err)
 
-	for _, entry := range entries {
-		t.Run(entry.Name(), func(t *testing.T) {
-			query, err := os.ReadFile(filepath.Join(rootDir, entry.Name()))
-			require.NoError(t, err)
-
-			got, err := runTestQuery(engine, string(query))
+	for _, testCase := range testCases {
+		t.Run(testCase.relPath, func(t *testing.T) {
+			got, err := runTestQuery(engine, testCase.contents)
 			require.NoError(t, err)
 			autogold.ExpectFile(t, got, autogold.Dir("golden"))
 		})
 	}
+}
+
+type testCase struct {
+	relPath  string
+	contents string
+}
+
+const rootDir = "queries"
+
+func gatherTestCases(t *testing.T) (cases []testCase, _ error) {
+	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(d.Name(), ".sql") {
+			return fmt.Errorf("unexpected file %s", path)
+		}
+
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+
+		rawContents, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		contents := string(rawContents)
+
+		if strings.HasPrefix(contents, "-- SKIP\n") {
+			t.Logf("Skipping %s", relPath)
+			return nil
+		}
+
+		cases = append(cases, testCase{
+			relPath:  relPath,
+			contents: string(contents),
+		})
+
+		return nil
+	})
+
+	return cases, err
 }
 
 func runTestQuery(engine *engine.Engine, input string) (string, error) {

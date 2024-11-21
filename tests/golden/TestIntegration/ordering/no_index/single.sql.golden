@@ -1,0 +1,32 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    description
+FROM film
+ORDER BY description
+LIMIT 5;
+
+Plan:
+
+              query plan
+--------------------------------------
+ select (film_id, title, description)
+    limit 5
+        order by film.description
+            table scan of film
+(1 rows)
+
+Results:
+
+ film_id |     title     |                                                  description
+---------+---------------+---------------------------------------------------------------------------------------------------------------
+     937 | VARSITY TRIP  | A Action-Packed Character Study of a Astronaut And a Explorer who must Reach a Monkey in A MySQL Convention
+     622 | NEWSIES STORY | A Action-Packed Character Study of a Dog And a Lumberjack who must Outrace a Moose in The Gulf of Mexico
+     232 | DIRTY ACE     | A Action-Packed Character Study of a Forensic Psychologist And a Girl who must Build a Dentist in The Outback
+     425 | HOLY TADPOLE  | A Action-Packed Display of a Feminist And a Pioneer who must Pursue a Dog in A Baloon Factory
+     530 | LORD ARIZONA  | A Action-Packed Display of a Frisbee And a Pastry Chef who must Pursue a Crocodile in A Jet Boat
+(5 rows)
+`

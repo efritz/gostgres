@@ -1,0 +1,31 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate
+FROM film
+ORDER BY title ASC
+LIMIT 5;
+
+Plan:
+
+                   query plan
+------------------------------------------------
+ select (film_id, title, rental_rate)
+    limit 5
+        btree index scan of film via idx_title
+(1 rows)
+
+Results:
+
+ film_id |      title       | rental_rate
+---------+------------------+-------------
+       1 | ACADEMY DINOSAUR |        0.99
+       2 | ACE GOLDFINGER   |        4.99
+       3 | ADAPTATION HOLES |        2.99
+       4 | AFFAIR PREJUDICE |        2.99
+       5 | AFRICAN EGG      |        2.99
+(5 rows)
+`

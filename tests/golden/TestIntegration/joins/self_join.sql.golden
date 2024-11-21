@@ -1,0 +1,47 @@
+`
+Query:
+
+SELECT
+    a1.actor_id,
+    a1.first_name || ' ' || a1.last_name AS actor_name,
+    a2.actor_id AS similar_actor_id,
+    a2.first_name || ' ' || a2.last_name AS similar_actor_name,
+    a1.last_name AS shared_last_name
+FROM actor a1
+JOIN actor a2 ON
+    a1.last_name = a2.last_name AND
+    a1.actor_id < a2.actor_id
+ORDER BY
+    a1.last_name,
+    a1.actor_id
+LIMIT 5;
+
+Plan:
+
+                                                                                             query plan
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select (a1.actor_id, a1.first_name ||   || a1.last_name as actor_name, a2.actor_id as similar_actor_id, a2.first_name ||   || a2.last_name as similar_actor_name, a1.last_name as shared_last_name)
+    limit 5
+        order by a1.last_name, a1.actor_id
+            join using nested loop
+                alias as a1
+                    table scan of actor
+            with
+                alias as a2
+                    btree index scan of actor via actor_pkey
+                        index cond: actor.actor_id > a1.actor_id
+                        filter: a1.last_name = actor.last_name
+            on a1.last_name = a2.last_name and a1.actor_id < a2.actor_id
+(1 rows)
+
+Results:
+
+ actor_id |    actor_name    | similar_actor_id | similar_actor_name | shared_last_name
+----------+------------------+------------------+--------------------+------------------
+       58 | CHRISTIAN AKROYD |               92 | KIRSTEN AKROYD     | AKROYD
+       58 | CHRISTIAN AKROYD |              182 | DEBBIE AKROYD      | AKROYD
+       92 | KIRSTEN AKROYD   |              182 | DEBBIE AKROYD      | AKROYD
+      118 | CUBA ALLEN       |              145 | KIM ALLEN          | ALLEN
+      118 | CUBA ALLEN       |              194 | MERYL ALLEN        | ALLEN
+(5 rows)
+`

@@ -1,0 +1,26 @@
+`
+Query:
+
+SELECT
+    film_id,
+    title,
+    rental_rate
+FROM film
+ORDER BY film_id
+LIMIT 0;
+
+Plan:
+
+                   query plan
+------------------------------------------------
+ select (film_id, title, rental_rate)
+    limit 0
+        btree index scan of film via film_pkey
+(1 rows)
+
+Results:
+
+
+--
+(0 rows)
+`

@@ -41,35 +41,37 @@ func SerializeRows(rows rows.Rows) string {
 	b.WriteRune('-')
 	b.WriteRune('\n')
 
-	// Write each row
-	for i := range serialized.columns[0].values {
-		b.WriteRune(' ')
-		for j, c := range serialized.columns {
-			if j != 0 {
-				b.WriteString(" | ")
-			}
+	if serialized.numRows != 0 {
+		// Write each row
+		for i := range serialized.columns[0].values {
+			b.WriteRune(' ')
+			for j, c := range serialized.columns {
+				if j != 0 {
+					b.WriteString(" | ")
+				}
 
-			if c.field.Type().IsNumber() {
-				// Right-align numeric types
-				b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
-				b.WriteString(c.values[i])
-			} else {
-				// Left-align all other types
-				for i, line := range strings.Split(c.values[i], "\n") {
-					if i != 0 {
-						b.WriteRune('\n')
+				if c.field.Type().IsNumber() {
+					// Right-align numeric types
+					b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(c.values[i])])
+					b.WriteString(c.values[i])
+				} else {
+					// Left-align all other types
+					for i, line := range strings.Split(c.values[i], "\n") {
+						if i != 0 {
+							b.WriteRune('\n')
+						}
+
+						b.WriteString(line)
+						b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(line)])
 					}
-
-					b.WriteString(line)
-					b.WriteString(spacesBuffer[:c.maxWidthWithFieldName-len(line)])
 				}
 			}
+			b.WriteRune('\n')
 		}
-		b.WriteRune('\n')
 	}
 
 	// Write row count trailer
-	b.WriteString(fmt.Sprintf("(%d rows)\n", len(serialized.columns[0].values)))
+	b.WriteString(fmt.Sprintf("(%d rows)\n", serialized.numRows))
 	return b.String()
 }
 

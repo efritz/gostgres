@@ -1,6 +1,3 @@
--- SKIP
--- Fails
-
 SELECT
     film_id,
     title,

@@ -97,7 +97,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
 	}
 
-	aggregatedReferences, freeReferences, containsAggregate, err := expressions.PartitionGropuedNames(
+	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
 		ctx.ExpressionResolutionContext(true),
 		rawProjectedExpressions,
 	)
@@ -109,25 +109,17 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 
 	if len(b.Select.Groupings) > 0 {
-		// selectLoop:
-		// 	for _, selectExpression := range projection.Aliases() {
-		// 		if len(expressions.Fields(selectExpression.Expression)) > 0 {
-		// 			alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+	selectLoop:
+		for _, field := range nonAggregatedFields {
+			for _, grouping := range b.Select.Groupings {
+				if grouping.Equal(expressions.NewNamed(field)) {
+					continue selectLoop
+				}
+			}
 
-		// 			for _, grouping := range b.Select.Groupings {
-		// 				if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
-		// 					continue selectLoop
-		// 				}
-		// 			}
-
-		// 			// TODO - more lenient validation
-		// 			// return nil, fmt.Errorf("%q not in group by", expression)
-		// 		}
-		// 	}
-
-		// TODO - implement these checks with ax/bx
-		_ = aggregatedReferences
-		_ = freeReferences
+			// TODO - more lenient validation
+			return fmt.Errorf("%q not in group by", field)
+		}
 
 		b.aggregateFactory = expressions.NewAggregateFactory(rawProjectedExpressions)
 	}

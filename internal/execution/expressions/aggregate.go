@@ -6,53 +6,58 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-//
-// TODO - clean this up
-//
-
-func PartitionGropuedNames(
-	ctx impls.ExpressionResolutionContext,
-	exprs []impls.Expression,
-) (
-	// TODO - make a set?
-	aggregated []fields.Field, // A param of an aggregate function
-	free []fields.Field, // Outside of any aggregate function
+func PartitionAggregatedFieldReferences(ctx impls.ExpressionResolutionContext, exprs []impls.Expression) (
+	aggregatedFields []fields.Field,
+	nonAggregatedFields []fields.Field,
 	containsAggregate bool,
 	_ error,
 ) {
-	var traverseExpression func(expr impls.Expression, inAggregate bool) error
-
-	traverseExpression = func(expr impls.Expression, inAggregate bool) error {
-		switch expr := expr.(type) {
-		case *functionExpression:
-			_, isAggregate, _ := lookupFunction(ctx, expr.name)
-			inAggregate = inAggregate || isAggregate
-			containsAggregate = containsAggregate || isAggregate
-
-		case NamedExpression:
-			if inAggregate {
-				aggregated = append(aggregated, expr.Field())
-			} else {
-				free = append(free, expr.Field())
-			}
-		}
-
-		for _, expr := range expr.Children() {
-			if err := traverseExpression(expr, inAggregate); err != nil {
-				return err
-			}
-		}
-
-		return nil
+	partitioner := &partitioner{}
+	if err := partitioner.partitionExpressions(ctx, exprs); err != nil {
+		return nil, nil, false, err
 	}
 
+	return partitioner.aggregatedFields, partitioner.nonAggregatedFields, partitioner.containsAggregate, nil
+}
+
+type partitioner struct {
+	aggregatedFields    []fields.Field
+	nonAggregatedFields []fields.Field
+	containsAggregate   bool
+}
+
+func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext, exprs []impls.Expression) error {
 	for _, expr := range exprs {
-		if err := traverseExpression(expr, false); err != nil {
-			return nil, nil, false, err
+		if err := p.partitionExpression(ctx, expr, false); err != nil {
+			return err
 		}
 	}
 
-	return aggregated, free, containsAggregate, nil
+	return nil
+}
+
+func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext, expr impls.Expression, inAggregate bool) error {
+	switch expr := expr.(type) {
+	case *functionExpression:
+		_, isAggregate, _ := lookupFunction(ctx, expr.name)
+		inAggregate = inAggregate || isAggregate
+		p.containsAggregate = p.containsAggregate || isAggregate
+
+	case NamedExpression:
+		if inAggregate {
+			p.aggregatedFields = append(p.aggregatedFields, expr.Field())
+		} else {
+			p.nonAggregatedFields = append(p.nonAggregatedFields, expr.Field())
+		}
+	}
+
+	for _, expr := range expr.Children() {
+		if err := p.partitionExpression(ctx, expr, inAggregate); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 //

@@ -41,6 +41,10 @@ func (e constantExpression) String() string {
 	return fmt.Sprintf("%v", e.value)
 }
 
+func (e constantExpression) Children() []impls.Expression {
+	return nil
+}
+
 func (e constantExpression) Fold() impls.Expression {
 	return &e
 }

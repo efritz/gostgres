@@ -15,7 +15,6 @@ import (
 	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -80,7 +79,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		return err
 	}
 	for i, expr := range projectedExpressions {
-		resolved, err := resolveExpression(ctx, expr.Expression, nil, len(b.Select.Groupings) > 0)
+		resolved, err := resolveExpression(ctx, expr.Expression, nil, true)
 		if err != nil {
 			return err
 		}
@@ -93,29 +92,44 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.projection = projection
 
-	if b.Select.Groupings != nil {
-	selectLoop:
-		for _, selectExpression := range projection.Aliases() {
-			if len(expressions.Fields(selectExpression.Expression)) > 0 {
-				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
+	var rawProjectedExpressions []impls.Expression
+	for _, selectExpression := range projectedExpressions {
+		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
+	}
 
-				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
-						continue selectLoop
-					}
-				}
+	aggregatedReferences, freeReferences, containsAggregate, err := expressions.PartitionGropuedNames(
+		ctx.ExpressionResolutionContext(true),
+		rawProjectedExpressions,
+	)
+	if err != nil {
+		return err
+	}
+	if len(b.Select.Groupings) == 0 && containsAggregate {
+		b.Select.Groupings = []impls.Expression{expressions.NewConstant(nil)}
+	}
 
-				// TODO - more lenient validation
-				// return nil, fmt.Errorf("%q not in group by", expression)
-			}
-		}
+	if len(b.Select.Groupings) > 0 {
+		// selectLoop:
+		// 	for _, selectExpression := range projection.Aliases() {
+		// 		if len(expressions.Fields(selectExpression.Expression)) > 0 {
+		// 			alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
 
-		var exprs []impls.Expression
-		for _, selectExpression := range b.projection.Aliases() {
-			exprs = append(exprs, selectExpression.Expression)
-		}
+		// 			for _, grouping := range b.Select.Groupings {
+		// 				if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
+		// 					continue selectLoop
+		// 				}
+		// 			}
 
-		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
+		// 			// TODO - more lenient validation
+		// 			// return nil, fmt.Errorf("%q not in group by", expression)
+		// 		}
+		// 	}
+
+		// TODO - implement these checks with ax/bx
+		_ = aggregatedReferences
+		_ = freeReferences
+
+		b.aggregateFactory = expressions.NewAggregateFactory(rawProjectedExpressions)
 	}
 
 	b.fields = projection.Fields()

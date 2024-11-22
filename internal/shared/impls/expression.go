@@ -13,6 +13,7 @@ type Expression interface {
 	Resolve(ctx ExpressionResolutionContext) error
 	Type() types.Type
 	Equal(other Expression) bool
+	Children() []Expression
 	Fold() Expression
 	Map(f func(Expression) (Expression, error)) (Expression, error)
 	ValueFrom(cts ExecutionContext, row rows.Row) (any, error)

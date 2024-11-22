@@ -32,8 +32,8 @@ func (e namedExpression) Type() types.Type {
 }
 
 func (e namedExpression) Equal(other impls.Expression) bool {
-	if o, ok := other.(*namedExpression); ok {
-		return e.field.Name() == o.field.Name() && (e.field.RelationName() == o.field.RelationName() || e.field.RelationName() == "" || o.field.RelationName() == "")
+	if o, ok := other.(NamedExpression); ok {
+		return e.field.Name() == o.Field().Name() && (e.field.RelationName() == o.Field().RelationName() || e.field.RelationName() == "" || o.Field().RelationName() == "")
 	}
 
 	return false
@@ -45,6 +45,10 @@ func (e namedExpression) Name() string {
 
 func (e namedExpression) Field() fields.Field {
 	return e.field
+}
+
+func (e namedExpression) Children() []impls.Expression {
+	return nil
 }
 
 func (e namedExpression) Fold() impls.Expression {

@@ -1,9 +1,62 @@
 package expressions
 
 import (
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
+
+//
+// TODO - clean this up
+//
+
+func PartitionGropuedNames(
+	ctx impls.ExpressionResolutionContext,
+	exprs []impls.Expression,
+) (
+	// TODO - make a set?
+	aggregated []fields.Field, // A param of an aggregate function
+	free []fields.Field, // Outside of any aggregate function
+	containsAggregate bool,
+	_ error,
+) {
+	var traverseExpression func(expr impls.Expression, inAggregate bool) error
+
+	traverseExpression = func(expr impls.Expression, inAggregate bool) error {
+		switch expr := expr.(type) {
+		case *functionExpression:
+			_, isAggregate, _ := lookupFunction(ctx, expr.name)
+			inAggregate = inAggregate || isAggregate
+			containsAggregate = containsAggregate || isAggregate
+
+		case NamedExpression:
+			if inAggregate {
+				aggregated = append(aggregated, expr.Field())
+			} else {
+				free = append(free, expr.Field())
+			}
+		}
+
+		for _, expr := range expr.Children() {
+			if err := traverseExpression(expr, inAggregate); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	for _, expr := range exprs {
+		if err := traverseExpression(expr, false); err != nil {
+			return nil, nil, false, err
+		}
+	}
+
+	return aggregated, free, containsAggregate, nil
+}
+
+//
+//
 
 func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
 	return func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {

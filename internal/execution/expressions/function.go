@@ -35,9 +35,12 @@ func (e functionExpression) String() string {
 }
 
 func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) error {
-	f, err := e.lookup(ctx)
-	if err != nil {
-		return err
+	f, isAggregate, ok := lookupFunction(ctx, e.name)
+	if !ok {
+		return fmt.Errorf("unknown function %q", e.name)
+	}
+	if isAggregate && !ctx.AllowAggregateFunctions() {
+		return fmt.Errorf("aggregate function %q not allowed in this context", e.name)
 	}
 
 	var argTypes []types.Type
@@ -57,20 +60,16 @@ func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) erro
 	return nil
 }
 
-func (e *functionExpression) lookup(ctx impls.ExpressionResolutionContext) (impls.Callable, error) {
-	if f, ok := ctx.Catalog.Functions.Get(e.name); ok {
-		return f, nil
+func lookupFunction(ctx impls.ExpressionResolutionContext, name string) (_ impls.Callable, isAggregate bool, ok bool) {
+	if f, ok := ctx.Catalog.Functions.Get(name); ok {
+		return f, false, true
 	}
 
-	if a, ok := ctx.Catalog.Aggregates.Get(e.name); ok {
-		if !ctx.AllowAggregateFunctions() {
-			return nil, fmt.Errorf("aggregate function %q not allowed in this context", e.name)
-		}
-
-		return a, nil
+	if a, ok := ctx.Catalog.Aggregates.Get(name); ok {
+		return a, true, true
 	}
 
-	return nil, fmt.Errorf("unknown function %q", e.name)
+	return nil, false, false
 }
 
 func (e functionExpression) Type() types.Type {

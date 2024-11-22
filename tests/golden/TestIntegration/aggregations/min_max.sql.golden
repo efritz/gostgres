@@ -1,0 +1,23 @@
+`
+Query:
+
+SELECT
+    min(rental_rate) AS lowest_rate,
+    max(rental_rate) AS highest_rate
+FROM film;
+
+Plan:
+
+                                             query plan
+-----------------------------------------------------------------------------------------------------
+ group by <nil>, select(min(film.rental_rate) as lowest_rate, max(film.rental_rate) as highest_rate)
+    table scan of film
+(1 rows)
+
+Results:
+
+ lowest_rate | highest_rate
+-------------+--------------
+ 0.99        | 4.99
+(1 rows)
+`

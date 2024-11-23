@@ -33,7 +33,7 @@ func resolveExpression(
 	}
 
 	if projection != nil {
-		mappedExpr, err = expr.Map(func(expr impls.Expression) (impls.Expression, error) {
+		mappedExpr, err = mappedExpr.Map(func(expr impls.Expression) (impls.Expression, error) {
 			if named, ok := expr.(expressions.NamedExpression); ok {
 				for _, pair := range projection.Aliases() {
 					if pair.Alias == named.Field().Name() {

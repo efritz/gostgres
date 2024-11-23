@@ -46,6 +46,7 @@ func (f Field) String() string {
 
 	return fmt.Sprintf("%s.%s", f.relationName, f.name)
 }
+
 func (f Field) WithRelationName(relationName string) Field {
 	return newField(relationName, f.name, f.typ, f.internalFieldType)
 }

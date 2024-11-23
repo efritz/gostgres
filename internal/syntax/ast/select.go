@@ -15,7 +15,6 @@ import (
 	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -80,7 +79,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		return err
 	}
 	for i, expr := range projectedExpressions {
-		resolved, err := resolveExpression(ctx, expr.Expression, nil, len(b.Select.Groupings) > 0)
+		resolved, err := resolveExpression(ctx, expr.Expression, nil, true)
 		if err != nil {
 			return err
 		}
@@ -92,32 +91,6 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		return err
 	}
 	b.projection = projection
-
-	if b.Select.Groupings != nil {
-	selectLoop:
-		for _, selectExpression := range projection.Aliases() {
-			if len(expressions.Fields(selectExpression.Expression)) > 0 {
-				alias := expressions.NewNamed(fields.NewField("", selectExpression.Alias, types.TypeAny, fields.NonInternalField))
-
-				for _, grouping := range b.Select.Groupings {
-					if grouping.Equal(selectExpression.Expression) || grouping.Equal(alias) {
-						continue selectLoop
-					}
-				}
-
-				// TODO - more lenient validation
-				// return nil, fmt.Errorf("%q not in group by", expression)
-			}
-		}
-
-		var exprs []impls.Expression
-		for _, selectExpression := range b.projection.Aliases() {
-			exprs = append(exprs, selectExpression.Expression)
-		}
-
-		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
-	}
-
 	b.fields = projection.Fields()
 
 	ctx.PushScope()
@@ -131,6 +104,43 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		}
 
 		b.Select.Groupings[i] = resolved
+	}
+
+	var exprs []impls.Expression
+	for _, selectExpression := range projectedExpressions {
+		exprs = append(exprs, selectExpression.Expression)
+	}
+	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
+		ctx.ExpressionResolutionContext(true),
+		exprs,
+		b.Select.Groupings,
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(b.Select.Groupings) == 0 && containsAggregate {
+		b.Select.Groupings = []impls.Expression{expressions.NewConstant(nil)}
+	}
+
+	if len(b.Select.Groupings) > 0 {
+	selectLoop:
+		for _, field := range nonAggregatedFields {
+			for _, grouping := range b.Select.Groupings {
+				if grouping.Equal(expressions.NewNamed(field)) {
+					continue selectLoop
+				}
+			}
+
+			return fmt.Errorf("%q not in group by", field)
+		}
+
+		var exprs []impls.Expression
+		for _, selectExpression := range projectedExpressions {
+			exprs = append(exprs, selectExpression.Expression)
+		}
+
+		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
 	}
 
 	if b.Order != nil {

@@ -6,13 +6,20 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func PartitionAggregatedFieldReferences(ctx impls.ExpressionResolutionContext, exprs []impls.Expression) (
+func PartitionAggregatedFieldReferences(
+	ctx impls.ExpressionResolutionContext,
+	exprs []impls.Expression,
+	groupings []impls.Expression,
+) (
 	aggregatedFields []fields.Field,
 	nonAggregatedFields []fields.Field,
 	containsAggregate bool,
 	_ error,
 ) {
-	partitioner := &partitioner{}
+	partitioner := &partitioner{
+		groupings: groupings,
+	}
+
 	if err := partitioner.partitionExpressions(ctx, exprs); err != nil {
 		return nil, nil, false, err
 	}
@@ -21,6 +28,8 @@ func PartitionAggregatedFieldReferences(ctx impls.ExpressionResolutionContext, e
 }
 
 type partitioner struct {
+	groupings []impls.Expression
+
 	aggregatedFields    []fields.Field
 	nonAggregatedFields []fields.Field
 	containsAggregate   bool
@@ -37,6 +46,12 @@ func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext
 }
 
 func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext, expr impls.Expression, inAggregate bool) error {
+	for _, grouping := range p.groupings {
+		if grouping.Equal(expr) {
+			return nil
+		}
+	}
+
 	switch expr := expr.(type) {
 	case *functionExpression:
 		_, isAggregate, _ := lookupFunction(ctx, expr.name)

@@ -91,39 +91,6 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		return err
 	}
 	b.projection = projection
-
-	var rawProjectedExpressions []impls.Expression
-	for _, selectExpression := range projectedExpressions {
-		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
-	}
-
-	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
-		ctx.ExpressionResolutionContext(true),
-		rawProjectedExpressions,
-	)
-	if err != nil {
-		return err
-	}
-	if len(b.Select.Groupings) == 0 && containsAggregate {
-		b.Select.Groupings = []impls.Expression{expressions.NewConstant(nil)}
-	}
-
-	if len(b.Select.Groupings) > 0 {
-	selectLoop:
-		for _, field := range nonAggregatedFields {
-			for _, grouping := range b.Select.Groupings {
-				if grouping.Equal(expressions.NewNamed(field)) {
-					continue selectLoop
-				}
-			}
-
-			// TODO - more lenient validation
-			return fmt.Errorf("%q not in group by", field)
-		}
-
-		b.aggregateFactory = expressions.NewAggregateFactory(rawProjectedExpressions)
-	}
-
 	b.fields = projection.Fields()
 
 	ctx.PushScope()
@@ -137,6 +104,43 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		}
 
 		b.Select.Groupings[i] = resolved
+	}
+
+	var exprs []impls.Expression
+	for _, selectExpression := range projectedExpressions {
+		exprs = append(exprs, selectExpression.Expression)
+	}
+	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
+		ctx.ExpressionResolutionContext(true),
+		exprs,
+		b.Select.Groupings,
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(b.Select.Groupings) == 0 && containsAggregate {
+		b.Select.Groupings = []impls.Expression{expressions.NewConstant(nil)}
+	}
+
+	if len(b.Select.Groupings) > 0 {
+	selectLoop:
+		for _, field := range nonAggregatedFields {
+			for _, grouping := range b.Select.Groupings {
+				if grouping.Equal(expressions.NewNamed(field)) {
+					continue selectLoop
+				}
+			}
+
+			return fmt.Errorf("%q not in group by", field)
+		}
+
+		var exprs []impls.Expression
+		for _, selectExpression := range projectedExpressions {
+			exprs = append(exprs, selectExpression.Expression)
+		}
+
+		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
 	}
 
 	if b.Order != nil {

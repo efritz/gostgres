@@ -20,7 +20,7 @@ Plan:
 ------------------------------------------------------------------------------------
  select (f.film_id, f.title, c.name)
     limit 5
-        order by rating, f.title
+        order by f.rating, f.title
             join using nested loop
                 join using nested loop
                     alias as f

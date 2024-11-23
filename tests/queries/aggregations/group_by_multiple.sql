@@ -1,6 +1,3 @@
--- SKIP
--- COUNT(*) doesn't work
-
 SELECT
     rating,
     rental_rate,

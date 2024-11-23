@@ -3,6 +3,7 @@ package parsing
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -176,7 +177,7 @@ func (p *parser) parseParenthesizedExpression(token tokens.Token) (impls.Express
 	return inner, nil
 }
 
-// namedExpressionTail := ( `.` ident ) | ( `(` [ expression [, ...] ] `)` ) | <empty>
+// namedExpressionTail := ( `.` ident ) | ( functionInvocationTail ) | <empty>
 func (p *parser) parseNamedExpression(token tokens.Token) (impls.Expression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeDot)) {
 		qualifiedNameToken, err := p.parseIdent()
@@ -188,15 +189,29 @@ func (p *parser) parseNamedExpression(token tokens.Token) (impls.Expression, err
 	}
 
 	if p.peek(0).Type == tokens.TokenTypeLeftParen {
-		args, err := parseParenthesizedCommaSeparatedList(p, false, true, p.parseRootExpression)
-		if err != nil {
-			return nil, err
-		}
-
-		return expressions.NewFunction(token.Text, args), nil
+		return p.parseFunctionInvocationTail(token)
 	}
 
 	return expressions.NewNamed(fields.NewField("", token.Text, types.TypeAny, fields.NonInternalField)), nil
+}
+
+// functionInvocationTail := `(` [ expression [, ...] ] `)`
+func (p *parser) parseFunctionInvocationTail(token tokens.Token) (impls.Expression, error) {
+	if next := p.peek(0); next.Type != tokens.TokenTypeLeftParen {
+		return nil, fmt.Errorf("expected left paren (near %s)", token.Text)
+	}
+
+	// Handle special case for COUNT(*) -> COUNT(1)
+	if strings.ToLower(token.Text) == "count" && p.advanceIf(isType(tokens.TokenTypeLeftParen), isType(tokens.TokenTypeAsterisk), isType(tokens.TokenTypeRightParen)) {
+		return expressions.NewFunction(token.Text, []impls.Expression{expressions.NewConstant(1)}), nil
+	}
+
+	args, err := parseParenthesizedCommaSeparatedList(p, false, true, p.parseRootExpression)
+	if err != nil {
+		return nil, err
+	}
+
+	return expressions.NewFunction(token.Text, args), nil
 }
 
 type unaryExpressionParserFunc func(expression impls.Expression) impls.Expression

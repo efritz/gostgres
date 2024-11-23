@@ -1,0 +1,43 @@
+`
+Query:
+
+SELECT
+    length(title) AS title_length,
+    count(*) AS films_with_length
+FROM film
+GROUP BY title_length
+ORDER BY title_length;
+
+Plan:
+
+                                                 query plan
+------------------------------------------------------------------------------------------------------------
+ order by title_length
+    group by length(film.title), select(length(film.title) as title_length, count(1) as films_with_length)
+        table scan of film
+(1 rows)
+
+Results:
+
+ title_length | films_with_length
+--------------+-------------------
+            8 |                 6
+            9 |                32
+           10 |                66
+           11 |                89
+           12 |               116
+           13 |               129
+           14 |               122
+           15 |               122
+           16 |               104
+           17 |                70
+           18 |                47
+           19 |                44
+           20 |                23
+           21 |                15
+           22 |                 9
+           23 |                 4
+           25 |                 1
+           27 |                 1
+(18 rows)
+`

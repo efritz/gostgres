@@ -1,0 +1,41 @@
+`
+Query:
+
+SELECT
+    rating,
+    rental_rate,
+    count(*) AS film_count
+FROM film
+GROUP BY rating, rental_rate
+ORDER BY rating, rental_rate;
+
+Plan:
+
+                                           query plan
+-------------------------------------------------------------------------------------------------
+ order by film.rating, film.rental_rate
+    group by film.rating, film.rental_rate, select(rating, rental_rate, count(1) as film_count)
+        table scan of film
+(1 rows)
+
+Results:
+
+ rating | rental_rate | film_count
+--------+-------------+------------
+ G      |        0.99 |         64
+ G      |        2.99 |         59
+ G      |        4.99 |         55
+ NC-17  |        0.99 |         73
+ NC-17  |        2.99 |         66
+ NC-17  |        4.99 |         71
+ PG     |        0.99 |         62
+ PG     |        2.99 |         64
+ PG     |        4.99 |         68
+ PG-13  |        0.99 |         72
+ PG-13  |        2.99 |         74
+ PG-13  |        4.99 |         77
+ R      |        0.99 |         70
+ R      |        2.99 |         60
+ R      |        4.99 |         65
+(15 rows)
+`

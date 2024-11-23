@@ -1,5 +1,4 @@
 -- SKIP
--- COUNT(*) doesn't work
 -- GROUP BY length(title) has a type error
 
 SELECT

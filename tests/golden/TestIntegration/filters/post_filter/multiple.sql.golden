@@ -20,7 +20,7 @@ Plan:
 -----------------------------------------------------------------------
  select (film_id, title, length)
     limit 5
-        order by rating, film.title
+        order by film.rating, film.title
             table scan of film
                 filter: film.length > 120 and film.rental_rate > 2.99
 (1 rows)

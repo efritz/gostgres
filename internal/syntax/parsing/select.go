@@ -80,17 +80,17 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 	return description, nil
 }
 
-// selectExpressions := `*` | ( selectExpression [, ...] )
+// selectExpressions := selectExpression [, ...]
 func (p *parser) parseSelectExpressions() (aliasedExpressions []projection.ProjectionExpression, _ error) {
-	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
-		return []projection.ProjectionExpression{projection.NewWildcardProjectionExpression()}, nil
-	}
-
 	return parseCommaSeparatedList(p, p.parseSelectExpression)
 }
 
-// selectExpression := ( ident `.` `*` ) | ( expression alias )
+// selectExpression := `*` | ( ident `.` `*` ) | ( expression alias )
 func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error) {
+	if p.advanceIf(isType(tokens.TokenTypeAsterisk)) {
+		return projection.NewWildcardProjectionExpression(), nil
+	}
+
 	nameToken := p.current()
 	if p.advanceIf(isType(tokens.TokenTypeIdent), isType(tokens.TokenTypeDot), isType(tokens.TokenTypeAsterisk)) {
 		return projection.NewTableWildcardProjectionExpression(nameToken.Text), nil

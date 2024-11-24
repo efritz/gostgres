@@ -11,11 +11,11 @@ LIMIT 5;
 
 Plan:
 
-                     query plan
-----------------------------------------------------
- select (film_id, title, rental_rate)
+                                                                                      query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ project {film_id, title, rental_rate}
     limit 5
-        alias as f
+        project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*
             btree index scan of film via film_pkey
 (1 rows)
 

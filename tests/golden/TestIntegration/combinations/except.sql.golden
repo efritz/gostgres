@@ -22,11 +22,11 @@ Plan:
 ------------------------------------------------------
  order by actor.first_name, actor.last_name
     combination
-        select (first_name, last_name)
+        project {first_name, last_name}
             btree index scan of actor via actor_pkey
                 index cond: actor.actor_id <= 15
     with
-        select (first_name, last_name)
+        project {first_name, last_name}
             btree index scan of actor via actor_pkey
                 index cond: actor.actor_id >= 10
 (1 rows)

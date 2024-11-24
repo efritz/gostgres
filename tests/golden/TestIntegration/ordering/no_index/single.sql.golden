@@ -12,8 +12,8 @@ LIMIT 5;
 Plan:
 
               query plan
---------------------------------------
- select (film_id, title, description)
+---------------------------------------
+ project {film_id, title, description}
     limit 5
         order by film.description
             table scan of film

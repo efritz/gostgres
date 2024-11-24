@@ -31,7 +31,7 @@ func (n *projectionNode) Fields() []fields.Field {
 }
 
 func (n *projectionNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("select (%s)", n.projection)
+	w.WritefLine("project %s", n.projection)
 	n.Node.Serialize(w.Indent())
 }
 
@@ -132,7 +132,7 @@ func (p *projectionNode) deprojectExpression(expression impls.Expression) impls.
 
 	for i, alias := range aliases {
 		field := fields.NewField(projectionFields[i].RelationName(), alias.Alias, types.TypeAny, fields.NonInternalField)
-		expression = projection.Dealias(expression, field, alias.Expression)
+		expression = projection.Alias(expression, field, alias.Expression)
 	}
 
 	return expression

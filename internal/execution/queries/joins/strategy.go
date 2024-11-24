@@ -3,7 +3,6 @@ package joins
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -16,49 +15,57 @@ type joinStrategy interface {
 	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 
-const (
-	EnableHashJoins  = false
-	EnableMergeJoins = false
-)
+// const (
+// 	EnableHashJoins  = false
+// 	EnableMergeJoins = false
+// )
 
-func selectJoinStrategy(n *joinNode) joinStrategy {
-	if pairs, ok := decomposeFilter(n); ok {
-		if EnableMergeJoins {
-			// if orderable?
-			// if n.right.SupportsMarkRestore()
+//
+// TODO - resurrect merge and hash join strategies
+//
 
-			// TODO - HACK!
-			var lefts, rights []impls.ExpressionWithDirection
-			for _, p := range pairs {
-				lefts = append(lefts, impls.ExpressionWithDirection{Expression: p.left})
-				rights = append(rights, impls.ExpressionWithDirection{Expression: p.right})
-			}
-			n.left = order.NewOrder(n.left, expressions.NewOrderExpression(lefts))
-			n.left.Optimize()
-			n.right = order.NewOrder(n.right, expressions.NewOrderExpression(rights))
-			n.right.Optimize()
+// func selectJoinStrategy(ctx impls.OptimizationContext, n *joinNode) joinStrategy {
+// 	if pairs, ok := decomposeFilter(n); ok {
+// 		if EnableMergeJoins {
+// 			// if orderable?
+// 			// if n.right.SupportsMarkRestore()
 
-			return &mergeJoinStrategy{
-				n:     n,
-				pairs: pairs,
-			}
-		}
+// 			// TODO - HACK!
+// 			var lefts, rights []impls.ExpressionWithDirection
+// 			for _, p := range pairs {
+// 				lefts = append(lefts, impls.ExpressionWithDirection{Expression: p.left})
+// 				rights = append(rights, impls.ExpressionWithDirection{Expression: p.right})
+// 			}
+// 			n.left = order.NewOrder(n.left, expressions.NewOrderExpression(lefts))
+// 			n.left.Optimize(ctx)
+// 			n.right = order.NewOrder(n.right, expressions.NewOrderExpression(rights))
+// 			n.right.Optimize(ctx)
 
-		if EnableHashJoins {
-			return &hashJoinStrategy{
-				n:     n,
-				pairs: pairs,
-			}
-		}
-	}
+// 			return &mergeJoinStrategy{
+// 				n:     n,
+// 				pairs: pairs,
+// 			}
+// 		}
 
-	if n.filter != nil {
-		n.right.AddFilter(n.filter)
-		n.right.Optimize()
-	}
+// 		if EnableHashJoins {
+// 			return &hashJoinStrategy{
+// 				n:     n,
+// 				pairs: pairs,
+// 			}
+// 		}
+// 	}
 
-	return &nestedLoopJoinStrategy{n: n}
-}
+// 	// if n.filter != nil {
+// 	// filter.LowerFilter(n.filter, n.left.Fields(), n.right)
+// 	// n.right.AddFilter(n.filter)
+// 	// n.right.Optimize(ctx)
+// 	// }
+
+// 	n.left.Optimize(ctx)
+// 	n.right.Optimize(ctx)
+
+// 	return &nestedLoopJoinStrategy{n: n}
+// }
 
 func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 	if n.filter == nil {

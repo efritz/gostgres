@@ -52,24 +52,38 @@ func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *joinNode) AddFilter(filterExpression impls.Expression) {
+func (n *joinNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *joinNode) AddOrder(orderExpression impls.OrderExpression) {
-	order.LowerOrder(orderExpression, n.left, n.right)
+func (n *joinNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+	order.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
-func (n *joinNode) Optimize() {
+func (n *joinNode) Optimize(ctx impls.OptimizationContext) {
+	// TODO:
+	// - only call optimize once per node
+	// - n.filter should be available for strategy, but also calculated after strategy selection
+
+	// NOTE: Outer fields depend on nested loop join strategy
+	// Merge and hash joins won't have have LHS rows available to RHS
+
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
-		filter.LowerFilter(n.filter, n.left, n.right)
+		// fmt.Printf("Want to lower %s to %T\n", n.filter, n.left)
+		filter.LowerFilter(ctx, n.filter, n.left)
+		// fmt.Printf("Done.\n\n")
+		// fmt.Printf("Want to lower %s to %T\n", n.filter, n.right)
+		filter.LowerFilter(ctx.AddOuterFields(n.left.Fields()), n.filter, n.right)
+		// fmt.Printf("Done.\n\n")
 	}
 
-	n.left.Optimize()
-	n.right.Optimize()
+	n.left.Optimize(ctx)
+	n.right.Optimize(ctx.AddOuterFields(n.left.Fields()))
+	// fmt.Printf("Left filter (%T: %s): %s\nRight filter (%T: %s): %s\n\n", n.left, n.left, n.left.Filter(), n.right, n.right, n.right.Filter())
+	// fmt.Printf("Join filter: %s\nUnion filter: %s\nAfter filter: %s\n\n", n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()), expressions.FilterDifference(n.filter, union))
 	n.filter = expressions.FilterDifference(n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
-	n.strategy = selectJoinStrategy(n)
+	n.strategy = &nestedLoopJoinStrategy{n: n}
 }
 
 func (n *joinNode) Filter() impls.Expression {

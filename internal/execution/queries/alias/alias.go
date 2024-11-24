@@ -47,28 +47,20 @@ func (n *aliasNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *aliasNode) AddFilter(filter impls.Expression) {
-	for _, field := range n.fields {
-		filter = projection.Alias(filter, field, namedFromField(field, n.Node.Name()))
-	}
-
-	n.Node.AddFilter(filter)
+func (n *aliasNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
+	n.Node.AddFilter(ctx, n.deprojectExpression(filter))
 }
 
-func (n *aliasNode) AddOrder(order impls.OrderExpression) {
+func (n *aliasNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	mapped, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
-		for _, field := range n.fields {
-			expression = projection.Alias(expression, field, namedFromField(field, n.Node.Name()))
-		}
-
-		return expression, nil
+		return n.deprojectExpression(expression), nil
 	})
 
-	n.Node.AddOrder(mapped)
+	n.Node.AddOrder(ctx, mapped)
 }
 
-func (n *aliasNode) Optimize() {
-	n.Node.Optimize()
+func (n *aliasNode) Optimize(ctx impls.OptimizationContext) {
+	n.Node.Optimize(ctx)
 }
 
 func (n *aliasNode) Filter() impls.Expression {
@@ -77,11 +69,7 @@ func (n *aliasNode) Filter() impls.Expression {
 		return nil
 	}
 
-	for _, field := range expressions.Fields(filter) {
-		filter = projection.Alias(filter, field, namedFromField(field, n.name))
-	}
-
-	return filter
+	return n.projectExpression(filter)
 }
 
 func (n *aliasNode) Ordering() impls.OrderExpression {
@@ -91,11 +79,7 @@ func (n *aliasNode) Ordering() impls.OrderExpression {
 	}
 
 	mapped, _ := ordering.Map(func(expression impls.Expression) (impls.Expression, error) {
-		for _, field := range expressions.Fields(expression) {
-			expression = projection.Alias(expression, field, namedFromField(field, n.name))
-		}
-
-		return expression, nil
+		return n.projectExpression(expression), nil
 	})
 
 	return mapped
@@ -125,6 +109,21 @@ func (n *aliasNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 	}), nil
 }
 
-func namedFromField(field fields.Field, relationName string) impls.Expression {
-	return expressions.NewNamed(field.WithRelationName(relationName))
+//
+//
+
+func (n *aliasNode) projectExpression(expression impls.Expression) impls.Expression {
+	for _, field := range expressions.Fields(expression) {
+		expression = projection.Alias(expression, field, expressions.NewNamed(field.WithRelationName(n.name)))
+	}
+
+	return expression
+}
+
+func (n *aliasNode) deprojectExpression(expression impls.Expression) impls.Expression {
+	for _, field := range n.fields {
+		expression = projection.Dealias(expression, field, expressions.NewNamed(field.WithRelationName(n.Node.Name())))
+	}
+
+	return expression
 }

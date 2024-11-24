@@ -78,17 +78,17 @@ func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *combinationNode) AddFilter(filterExpression impls.Expression) {
-	filter.LowerFilter(filterExpression, n.left, n.right)
+func (n *combinationNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
+	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
-func (n *combinationNode) AddOrder(orderExpression impls.OrderExpression) {
-	order.LowerOrder(orderExpression, n.left, n.right)
+func (n *combinationNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+	order.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
-func (n *combinationNode) Optimize() {
-	n.left.Optimize()
-	n.right.Optimize()
+func (n *combinationNode) Optimize(ctx impls.OptimizationContext) {
+	n.left.Optimize(ctx)
+	n.right.Optimize(ctx)
 }
 
 func (n *combinationNode) Filter() impls.Expression {

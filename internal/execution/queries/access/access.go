@@ -48,15 +48,15 @@ func (n *accessNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *accessNode) AddFilter(filterExpression impls.Expression) {
+func (n *accessNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *accessNode) AddOrder(order impls.OrderExpression) {
+func (n *accessNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	n.order = order
 }
 
-func (n *accessNode) Optimize() {
+func (n *accessNode) Optimize(ctx impls.OptimizationContext) {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
 	}

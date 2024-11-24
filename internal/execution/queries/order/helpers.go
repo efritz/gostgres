@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func LowerOrder(order impls.OrderExpression, nodes ...queries.Node) {
+func LowerOrder(ctx impls.OptimizationContext, order impls.OrderExpression, nodes ...queries.Node) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {
@@ -24,7 +24,7 @@ func LowerOrder(order impls.OrderExpression, nodes ...queries.Node) {
 		}
 
 		if len(filteredExpressions) != 0 {
-			node.AddOrder(expressions.NewOrderExpression(filteredExpressions))
+			node.AddOrder(ctx, expressions.NewOrderExpression(filteredExpressions))
 		}
 	}
 }

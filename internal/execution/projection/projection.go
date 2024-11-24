@@ -7,6 +7,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
+	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type Projection struct {
@@ -91,7 +92,7 @@ func (p *Projection) Fields() []fields.Field {
 	return slices.Clone(p.projectedFields)
 }
 
-func (p *Projection) Optimize() {
+func (p *Projection) Optimize(ctx impls.OptimizationContext) {
 	for i := range p.aliases {
 		p.aliases[i].Expression = p.aliases[i].Expression.Fold()
 	}

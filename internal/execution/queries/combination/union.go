@@ -62,17 +62,17 @@ func (n *unionNode) Serialize(w serialization.IndentWriter) {
 	n.right.Serialize(w.Indent())
 }
 
-func (n *unionNode) AddFilter(filterExpression impls.Expression) {
-	filter.LowerFilter(filterExpression, n.left, n.right)
+func (n *unionNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
+	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
-func (n *unionNode) AddOrder(orderExpression impls.OrderExpression) {
-	order.LowerOrder(orderExpression, n.left, n.right)
+func (n *unionNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+	order.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
-func (n *unionNode) Optimize() {
-	n.left.Optimize()
-	n.right.Optimize()
+func (n *unionNode) Optimize(ctx impls.OptimizationContext) {
+	n.left.Optimize(ctx)
+	n.right.Optimize(ctx)
 }
 
 func (n *unionNode) Filter() impls.Expression {

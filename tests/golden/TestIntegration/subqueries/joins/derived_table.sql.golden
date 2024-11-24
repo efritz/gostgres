@@ -2,43 +2,42 @@
 Query:
 
 SELECT
-    films.film_id,
-    films.title,
-    films.category_name
-FROM (
+    f.film_id,
+    f.title,
+    c.category_name
+FROM film f
+JOIN (
     SELECT
-        f.film_id,
-        f.title,
+        fc.film_id AS id,
         c.name AS category_name
-    FROM film f
-    JOIN film_category fc ON fc.film_id = f.film_id
+    FROM film_category fc
     JOIN category c ON c.category_id = fc.category_id
-) films
-ORDER BY films.film_id
+) c ON c.id = f.film_id
+ORDER BY f.film_id
 LIMIT 5;
 
 Plan:
 
                                       query plan
 --------------------------------------------------------------------------------------
- select (film_id, title, category_name)
+ select (f.film_id, f.title, c.category_name)
     limit 5
-        alias as films
-            select (f.film_id, f.title, c.name as category_name)
-                join using nested loop
+        join using nested loop
+            alias as f
+                btree index scan of film via film_pkey
+        with
+            alias as c
+                select (fc.film_id as id, c.name as category_name)
                     join using nested loop
-                        alias as f
-                            btree index scan of film via film_pkey
-                    with
                         alias as fc
                             btree index scan of film_category via film_category_pkey
                                 index cond: film_category.film_id = f.film_id
-                    on fc.film_id = f.film_id
-                with
-                    alias as c
-                        btree index scan of category via category_pkey
-                            index cond: category.category_id = fc.category_id
-                on c.category_id = fc.category_id
+                    with
+                        alias as c
+                            btree index scan of category via category_pkey
+                                index cond: category.category_id = fc.category_id
+                    on c.category_id = fc.category_id and fc.film_id = f.film_id
+        on c.id = f.film_id
 (1 rows)
 
 Results:

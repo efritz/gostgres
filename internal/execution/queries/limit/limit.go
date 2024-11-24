@@ -27,12 +27,12 @@ func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *limitNode) AddFilter(filter impls.Expression)    {}
-func (n *limitNode) AddOrder(order impls.OrderExpression) {}
-func (n *limitNode) Optimize()                            { n.Node.Optimize() }
-func (n *limitNode) Filter() impls.Expression             { return n.Node.Filter() }
-func (n *limitNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
-func (n *limitNode) SupportsMarkRestore() bool            { return false }
+func (n *limitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *limitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *limitNode) Optimize(ctx impls.OptimizationContext)                              { n.Node.Optimize(ctx) }
+func (n *limitNode) Filter() impls.Expression                                            { return n.Node.Filter() }
+func (n *limitNode) Ordering() impls.OrderExpression                                     { return n.Node.Ordering() }
+func (n *limitNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *limitNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Limit scanner")

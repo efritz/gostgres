@@ -50,11 +50,11 @@ func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *updateNode) AddFilter(filter impls.Expression)    {}
-func (n *updateNode) AddOrder(order impls.OrderExpression) {}
+func (n *updateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *updateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 
-func (n *updateNode) Optimize() {
-	n.Node.Optimize()
+func (n *updateNode) Optimize(ctx impls.OptimizationContext) {
+	n.Node.Optimize(ctx)
 }
 
 func (n *updateNode) Filter() impls.Expression        { return nil }

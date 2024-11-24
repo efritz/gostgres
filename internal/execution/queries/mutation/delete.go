@@ -41,11 +41,11 @@ func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *deleteNode) AddFilter(filter impls.Expression)    {}
-func (n *deleteNode) AddOrder(order impls.OrderExpression) {}
+func (n *deleteNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *deleteNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 
-func (n *deleteNode) Optimize() {
-	n.Node.Optimize()
+func (n *deleteNode) Optimize(ctx impls.OptimizationContext) {
+	n.Node.Optimize(ctx)
 }
 
 func (n *deleteNode) Filter() impls.Expression        { return nil }

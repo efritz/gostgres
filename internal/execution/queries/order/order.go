@@ -31,11 +31,11 @@ func (n *orderNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *orderNode) AddFilter(filter impls.Expression) {
-	n.Node.AddFilter(filter)
+func (n *orderNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
+	n.Node.AddFilter(ctx, filter)
 }
 
-func (n *orderNode) AddOrder(order impls.OrderExpression) {
+func (n *orderNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	// We are nested in a parent sort and un-separated by an ordering boundary
 	// (such as limit or offset). We'll ignore our old sort criteria and adopt
 	// our parent since the ordering of rows at this point in the query should
@@ -43,13 +43,13 @@ func (n *orderNode) AddOrder(order impls.OrderExpression) {
 	n.order = order
 }
 
-func (n *orderNode) Optimize() {
+func (n *orderNode) Optimize(ctx impls.OptimizationContext) {
 	if n.order != nil {
 		n.order = n.order.Fold()
-		n.Node.AddOrder(n.order)
+		n.Node.AddOrder(ctx, n.order)
 	}
 
-	n.Node.Optimize()
+	n.Node.Optimize(ctx)
 
 	if expressions.SubsumesOrder(n.order, n.Node.Ordering()) {
 		n.order = nil

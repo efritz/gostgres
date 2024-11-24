@@ -31,21 +31,21 @@ func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *filterNode) AddFilter(filter impls.Expression) {
+func (n *filterNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filter)
 }
 
-func (n *filterNode) AddOrder(order impls.OrderExpression) {
-	n.Node.AddOrder(order)
+func (n *filterNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
+	n.Node.AddOrder(ctx, order)
 }
 
-func (n *filterNode) Optimize() {
+func (n *filterNode) Optimize(ctx impls.OptimizationContext) {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
-		n.Node.AddFilter(n.filter)
+		n.Node.AddFilter(ctx, n.filter)
 	}
 
-	n.Node.Optimize()
+	n.Node.Optimize(ctx)
 	n.filter = expressions.FilterDifference(n.filter, n.Node.Filter())
 }
 

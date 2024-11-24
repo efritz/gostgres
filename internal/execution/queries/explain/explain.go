@@ -32,13 +32,13 @@ func (n *explain) Fields() []fields.Field {
 	return []fields.Field{queryPlanField}
 }
 
-func (n *explain) Serialize(w serialization.IndentWriter) {}
-func (n *explain) AddFilter(filter impls.Expression)      {}
-func (n *explain) AddOrder(order impls.OrderExpression)   {}
-func (n *explain) Optimize()                              { n.n.Optimize() }
-func (n *explain) Filter() impls.Expression               { return nil }
-func (n *explain) Ordering() impls.OrderExpression        { return nil }
-func (n *explain) SupportsMarkRestore() bool              { return false }
+func (n *explain) Serialize(w serialization.IndentWriter)                              {}
+func (n *explain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *explain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *explain) Optimize(ctx impls.OptimizationContext)                              { n.n.Optimize(ctx) }
+func (n *explain) Filter() impls.Expression                                            { return nil }
+func (n *explain) Ordering() impls.OrderExpression                                     { return nil }
+func (n *explain) SupportsMarkRestore() bool                                           { return false }
 
 func (n *explain) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Explain scanner")

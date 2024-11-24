@@ -12,14 +12,14 @@ Plan:
 
                      query plan
 -----------------------------------------------------
- select (email)
+ select {email}
     order by s.email
-        select s(email)
+        select "s".{email}
             combination
-                select (email)
+                select {email}
                     table scan of customer
             with
-                select (email)
+                select {email}
                     table scan of customer
                         filter: customer.active = 0
 (1 rows)

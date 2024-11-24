@@ -83,7 +83,12 @@ func (p *Projection) String() string {
 		fields = append(fields, expression.String())
 	}
 
-	return fmt.Sprintf("%s(%s)", p.targetRelationName, strings.Join(fields, ", "))
+	prefix := ""
+	if p.targetRelationName != "" {
+		prefix = fmt.Sprintf("%q.", p.targetRelationName)
+	}
+
+	return fmt.Sprintf("%s{%s}", prefix, strings.Join(fields, ", "))
 }
 
 func (p *Projection) Aliases() []ProjectedExpression {

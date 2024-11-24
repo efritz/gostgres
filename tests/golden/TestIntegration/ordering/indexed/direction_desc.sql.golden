@@ -13,7 +13,7 @@ Plan:
 
                        query plan
 ---------------------------------------------------------
- select (film_id, title, rental_rate)
+ select {film_id, title, rental_rate}
     limit 5
         backward btree index scan of film via idx_title
 (1 rows)

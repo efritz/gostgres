@@ -20,14 +20,14 @@ Plan:
 
                                                                                              query plan
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select (a1.actor_id, a1.first_name ||   || a1.last_name as actor_name, a2.actor_id as similar_actor_id, a2.first_name ||   || a2.last_name as similar_actor_name, a1.last_name as shared_last_name)
+ select {a1.actor_id, a1.first_name ||   || a1.last_name as actor_name, a2.actor_id as similar_actor_id, a2.first_name ||   || a2.last_name as similar_actor_name, a1.last_name as shared_last_name}
     limit 5
         order by a1.last_name, a1.actor_id
             join using nested loop
-                select a1(actor_id, first_name, last_name, last_update)
+                select "a1".{actor_id, first_name, last_name, last_update}
                     table scan of actor
             with
-                select a2(actor_id, first_name, last_name, last_update)
+                select "a2".{actor_id, first_name, last_name, last_update}
                     btree index scan of actor via actor_pkey
                         index cond: actor.actor_id > a1.actor_id
                         filter: a1.last_name = actor.last_name

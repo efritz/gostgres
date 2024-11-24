@@ -13,7 +13,7 @@ Plan:
 
               query plan
 --------------------------------------
- select (film_id, title, description)
+ select {film_id, title, description}
     limit 5
         order by film.description
             table scan of film

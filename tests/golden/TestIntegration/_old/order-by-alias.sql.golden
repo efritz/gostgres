@@ -9,11 +9,11 @@ ORDER BY total_cost DESC, f.title;
 
 Plan:
 
-                                                                                 query plan
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select (title as film_title, f.rental_rate + f.replacement_cost as total_cost)
+                                                                                   query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select {title as film_title, f.rental_rate + f.replacement_cost as total_cost}
     order by f.rental_rate + f.replacement_cost desc, f.title
-        select f(film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
+        select "f".{film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
             table scan of film
 (1 rows)
 

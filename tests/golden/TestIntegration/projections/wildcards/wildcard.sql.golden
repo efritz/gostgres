@@ -10,7 +10,7 @@ Plan:
 
                                                                              query plan
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select (film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
+ select {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
     limit 5
         btree index scan of film via film_pkey
 (1 rows)

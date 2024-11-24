@@ -10,7 +10,7 @@ Plan:
 
                    query plan
 ------------------------------------------------
- select (film_id)
+ select {film_id}
     limit 5
         btree index scan of film via film_pkey
 (1 rows)

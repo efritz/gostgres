@@ -15,25 +15,25 @@ LIMIT 5;
 
 Plan:
 
-                                                                                       query plan
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select (f.film_id, f.title, c.name as category_name, l.name as language_name)
+                                                                                         query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ select {f.film_id, f.title, c.name as category_name, l.name as language_name}
     limit 5
         join using nested loop
             join using nested loop
                 join using nested loop
-                    select f(film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
+                    select "f".{film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
                         btree index scan of film via film_pkey
                 with
-                    select fc(film_id, category_id, last_update)
+                    select "fc".{film_id, category_id, last_update}
                         btree index scan of film_category via film_category_pkey
                             index cond: film_category.film_id = f.film_id
             with
-                select c(category_id, name, last_update)
+                select "c".{category_id, name, last_update}
                     btree index scan of category via category_pkey
                         index cond: category.category_id = fc.category_id
         with
-            select l(language_id, name, last_update)
+            select "l".{language_id, name, last_update}
                 btree index scan of language via language_pkey
                     index cond: language.language_id = f.language_id
 (1 rows)

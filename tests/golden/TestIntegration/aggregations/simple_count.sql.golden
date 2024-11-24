@@ -8,7 +8,7 @@ Plan:
 
                     query plan
 --------------------------------------------------
- group by <nil>, select (count(1) as total_films)
+ group by <nil>, select {count(1) as total_films}
     table scan of film
 (1 rows)
 

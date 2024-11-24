@@ -12,7 +12,7 @@ Plan:
 
                                    query plan
 --------------------------------------------------------------------------------
- select (film_id, film.rental_rate * film.rental_duration as total_rental_cost)
+ select {film_id, film.rental_rate * film.rental_duration as total_rental_cost}
     limit 5
         btree index scan of film via film_pkey
 (1 rows)

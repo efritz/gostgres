@@ -30,16 +30,16 @@ Plan:
 ------------------------------------------------------------------------------
  order by actor.first_name, actor.last_name
     combination
-        select (first_name, last_name)
+        select {first_name, last_name}
             btree index scan of actor via actor_pkey
                 index cond: actor.actor_id <= 10
     with
         union
-            select (first_name, last_name)
+            select {first_name, last_name}
                 btree index scan of actor via actor_pkey
                     index cond: actor.actor_id >= 8 and actor.actor_id <= 12
         with
-            select (first_name, last_name)
+            select {first_name, last_name}
                 btree index scan of actor via actor_pkey
                     index cond: actor.actor_id >= 190
 (1 rows)

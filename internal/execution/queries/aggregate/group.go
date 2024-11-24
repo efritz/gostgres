@@ -51,7 +51,7 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 		strExpressions = append(strExpressions, expr.String())
 	}
 
-	w.WritefLine("group by %s, select(%s)", strings.Join(strExpressions, ", "), n.projection)
+	w.WritefLine("group by %s, select %s", strings.Join(strExpressions, ", "), n.projection)
 	n.Node.Serialize(w.Indent())
 }
 

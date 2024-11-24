@@ -31,7 +31,7 @@ func (n *projectionNode) Fields() []fields.Field {
 }
 
 func (n *projectionNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("select (%s)", n.projection)
+	w.WritefLine("select %s", n.projection)
 	n.Node.Serialize(w.Indent())
 }
 

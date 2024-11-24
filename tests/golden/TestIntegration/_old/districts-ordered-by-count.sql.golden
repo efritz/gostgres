@@ -11,12 +11,12 @@ LIMIT 10;
 
 Plan:
 
-                            query plan
-------------------------------------------------------------------
+                                               query plan
+---------------------------------------------------------------------------------------------------------
  limit 10
     order by count desc, a.district
-        group by a.district, select(district, count(1) as count)
-            alias as a
+        group by a.district, select (district, count(1) as count)
+            select a(address_id, address, address2, district, city_id, postal_code, phone, last_update)
                 table scan of address
 (1 rows)
 

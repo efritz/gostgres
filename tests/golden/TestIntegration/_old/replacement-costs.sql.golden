@@ -9,8 +9,8 @@ GROUP BY 1;
 Plan:
 
                                         query plan
-------------------------------------------------------------------------------------------
- group by 1, select(min(film.replacement_cost) as min, max(film.replacement_cost) as max)
+-------------------------------------------------------------------------------------------
+ group by 1, select (min(film.replacement_cost) as min, max(film.replacement_cost) as max)
     table scan of film
 (1 rows)
 

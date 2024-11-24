@@ -14,7 +14,7 @@ Plan:
 -----------------------------------------------------
  select (email)
     order by s.email
-        alias as s
+        select s(email)
             combination
                 select (email)
                     table scan of customer

@@ -18,27 +18,25 @@ LIMIT 5;
 
 Plan:
 
-                                        query plan
-------------------------------------------------------------------------------------------
+                                                                                   query plan
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  select (f.film_id, f.title, c.category_name)
     limit 5
         join using nested loop
-            alias as f
+            select f(film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
                 btree index scan of film via film_pkey
         with
-            select (film_id as id, name as category_name)
-                alias as c
+            select c(film_id as id, name as category_name)
+                select c(fc.film_id, c.name)
                     select (fc.film_id, c.name)
                         join using nested loop
-                            alias as fc
+                            select fc(film_id, category_id, last_update)
                                 btree index scan of film_category via film_category_pkey
                                     index cond: film_category.film_id = f.film_id
                         with
-                            alias as c
+                            select c(category_id, name, last_update)
                                 btree index scan of category via category_pkey
                                     index cond: category.category_id = fc.category_id
-                        on c.category_id = fc.category_id and fc.film_id = f.film_id
-        on c.id = f.film_id
 (1 rows)
 
 Results:

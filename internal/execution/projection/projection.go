@@ -11,8 +11,9 @@ import (
 )
 
 type Projection struct {
-	aliases         []ProjectedExpression
-	projectedFields []fields.Field
+	targetRelationName string
+	aliases            []ProjectedExpression
+	projectedFields    []fields.Field
 }
 
 func NewProjectionFromProjectionExpressions(
@@ -46,8 +47,9 @@ func NewProjectionFromProjectedExpressions(
 	}
 
 	return &Projection{
-		aliases:         projectedExpressions,
-		projectedFields: projectedFields,
+		targetRelationName: targetRelationName,
+		aliases:            projectedExpressions,
+		projectedFields:    projectedFields,
 	}, nil
 }
 
@@ -81,7 +83,7 @@ func (p *Projection) String() string {
 		fields = append(fields, expression.String())
 	}
 
-	return strings.Join(fields, ", ")
+	return fmt.Sprintf("%s(%s)", p.targetRelationName, strings.Join(fields, ", "))
 }
 
 func (p *Projection) Aliases() []ProjectedExpression {

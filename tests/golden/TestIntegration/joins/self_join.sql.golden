@@ -24,14 +24,13 @@ Plan:
     limit 5
         order by a1.last_name, a1.actor_id
             join using nested loop
-                alias as a1
+                select a1(actor_id, first_name, last_name, last_update)
                     table scan of actor
             with
-                alias as a2
+                select a2(actor_id, first_name, last_name, last_update)
                     btree index scan of actor via actor_pkey
                         index cond: actor.actor_id > a1.actor_id
                         filter: a1.last_name = actor.last_name
-            on a1.last_name = a2.last_name and a1.actor_id < a2.actor_id
 (1 rows)
 
 Results:

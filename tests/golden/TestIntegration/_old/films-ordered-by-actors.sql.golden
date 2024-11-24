@@ -10,25 +10,23 @@ LIMIT 50;
 
 Plan:
 
-                                query plan
----------------------------------------------------------------------------
+                                                                                       query plan
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  select (title, a.first_name ||   || a.last_name as name)
     limit 50
         order by a.last_name desc, a.first_name desc
             join using nested loop
                 join using nested loop
-                    alias as f
+                    select f(film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update)
                         table scan of film
                 with
-                    alias as fa
+                    select fa(actor_id, film_id, last_update)
                         btree index scan of film_actor via idx_fk_film_id
                             index cond: film_actor.film_id = f.film_id
-                on fa.film_id = f.film_id
             with
-                alias as a
+                select a(actor_id, first_name, last_name, last_update)
                     btree index scan of actor via actor_pkey
                         index cond: actor.actor_id = fa.actor_id
-            on a.actor_id = fa.actor_id
 (1 rows)
 
 Results:

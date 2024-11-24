@@ -10,10 +10,10 @@ ORDER BY title_length;
 
 Plan:
 
-                                                 query plan
--------------------------------------------------------------------------------------------------------------
+                                                  query plan
+--------------------------------------------------------------------------------------------------------------
  order by title_length
-    group by length(film.title), select {length(film.title) as title_length, count(1) as films_with_length}
+    group by length(film.title), project {length(film.title) as title_length, count(1) as films_with_length}
         table scan of film
 (1 rows)
 

@@ -18,23 +18,23 @@ LIMIT 5;
 
 Plan:
 
-                                                                                     query plan
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select {f.film_id, f.title, c.category_name}
+                                                                                         query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ project {f.film_id, f.title, c.category_name}
     limit 5
         join using nested loop
-            select "f".{film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
+            project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} as f.{...}
                 btree index scan of film via film_pkey
         with
-            select "c".{film_id as id, name as category_name}
-                select "c".{fc.film_id, c.name}
-                    select {fc.film_id, c.name}
+            project {film_id as id, name as category_name} as c.{...}
+                project {fc.film_id, c.name} as c.{...}
+                    project {fc.film_id, c.name}
                         join using nested loop
-                            select "fc".{film_id, category_id, last_update}
+                            project {film_id, category_id, last_update} as fc.{...}
                                 btree index scan of film_category via film_category_pkey
                                     index cond: film_category.film_id = f.film_id
                         with
-                            select "c".{category_id, name, last_update}
+                            project {category_id, name, last_update} as c.{...}
                                 btree index scan of category via category_pkey
                                     index cond: category.category_id = fc.category_id
 (1 rows)

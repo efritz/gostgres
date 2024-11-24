@@ -12,18 +12,18 @@ FROM (
 
 Plan:
 
-                                                                                           query plan
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- select {s.name ||  ( || s.lang || ) as normalized_title}
-    select "s".{title as name, language_name as lang}
-        select "s".{f.title, l.language_name}
-            select {f.title, l.name as language_name}
+                                                                                               query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ project {s.name ||  ( || s.lang || ) as normalized_title}
+    project {title as name, language_name as lang} as s.{...}
+        project {f.title, l.language_name} as s.{...}
+            project {f.title, l.name as language_name}
                 limit 50
                     join using nested loop
-                        select "f".{film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
+                        project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} as f.{...}
                             btree index scan of film via idx_title
                     with
-                        select "l".{language_id, name, last_update}
+                        project {language_id, name, last_update} as l.{...}
                             btree index scan of language via language_pkey
                                 index cond: language.language_id = f.language_id
 (1 rows)

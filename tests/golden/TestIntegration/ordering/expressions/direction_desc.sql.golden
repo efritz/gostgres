@@ -14,7 +14,7 @@ Plan:
 
                           query plan
 ---------------------------------------------------------------
- select {film_id, title, rental_rate, rental_duration}
+ project {film_id, title, rental_rate, rental_duration}
     limit 5
         order by film.rental_rate * film.rental_duration desc
             table scan of film

@@ -9,8 +9,8 @@ FROM film;
 Plan:
 
                                               query plan
-------------------------------------------------------------------------------------------------------
- group by <nil>, select {min(film.rental_rate) as lowest_rate, max(film.rental_rate) as highest_rate}
+-------------------------------------------------------------------------------------------------------
+ group by <nil>, project {min(film.rental_rate) as lowest_rate, max(film.rental_rate) as highest_rate}
     table scan of film
 (1 rows)
 

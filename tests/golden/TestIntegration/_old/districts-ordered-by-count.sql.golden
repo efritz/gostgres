@@ -11,12 +11,12 @@ LIMIT 10;
 
 Plan:
 
-                                                 query plan
-------------------------------------------------------------------------------------------------------------
+                                                     query plan
+--------------------------------------------------------------------------------------------------------------------
  limit 10
     order by count desc, a.district
-        group by a.district, select {district, count(1) as count}
-            select "a".{address_id, address, address2, district, city_id, postal_code, phone, last_update}
+        group by a.district, project {district, count(1) as count}
+            project {address_id, address, address2, district, city_id, postal_code, phone, last_update} as a.{...}
                 table scan of address
 (1 rows)
 

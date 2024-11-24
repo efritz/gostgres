@@ -14,7 +14,7 @@ Plan:
 
                    query plan
 ------------------------------------------------
- select {film_id, title, rental_rate}
+ project {film_id, title, rental_rate}
     limit 5
         btree index scan of film via film_pkey
 (1 rows)

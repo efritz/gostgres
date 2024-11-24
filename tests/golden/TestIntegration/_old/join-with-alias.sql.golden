@@ -11,16 +11,16 @@ Plan:
 
                                     query plan
 -----------------------------------------------------------------------------------
- select {fc.film_id, fc.category_id, fc.last_update, cat.id, cat.name}
+ project {fc.film_id, fc.category_id, fc.last_update, cat.id, cat.name}
     limit 50
         join using nested loop
-            select "fc".{film_id, category_id, last_update}
+            project {film_id, category_id, last_update} as fc.{...}
                 btree index scan of film_category via film_category_pkey
         with
-            select "cat".{category_id as id, name}
-                select "cat".{category_id, name}
-                    select {category_id, name}
-                        select "c".{category_id, name, last_update}
+            project {category_id as id, name} as cat.{...}
+                project {category_id, name} as cat.{...}
+                    project {category_id, name}
+                        project {category_id, name, last_update} as c.{...}
                             btree index scan of category via category_pkey
                                 index cond: category.category_id = fc.category_id
 (1 rows)

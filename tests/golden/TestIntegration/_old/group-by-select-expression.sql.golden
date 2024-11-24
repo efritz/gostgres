@@ -8,11 +8,11 @@ ORDER BY len;
 
 Plan:
 
-                                                                                   query plan
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                       query plan
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  order by len
-    group by length(f.title), select {length(f.title) as len, count(1) as count}
-        select "f".{film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update}
+    group by length(f.title), project {length(f.title) as len, count(1) as count}
+        project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} as f.{...}
             table scan of film
 (1 rows)
 

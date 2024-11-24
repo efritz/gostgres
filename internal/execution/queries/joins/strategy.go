@@ -15,14 +15,14 @@ type joinStrategy interface {
 	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 
+//
+// TODO - resurrect merge and hash join strategies
+//
+
 // const (
 // 	EnableHashJoins  = false
 // 	EnableMergeJoins = false
 // )
-
-//
-// TODO - resurrect merge and hash join strategies
-//
 
 // func selectJoinStrategy(ctx impls.OptimizationContext, n *joinNode) joinStrategy {
 // 	if pairs, ok := decomposeFilter(n); ok {

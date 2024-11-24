@@ -51,20 +51,20 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 		strExpressions = append(strExpressions, expr.String())
 	}
 
-	w.WritefLine("group by %s, select(%s)", strings.Join(strExpressions, ", "), n.projection)
+	w.WritefLine("group by %s, project %s", strings.Join(strExpressions, ", "), n.projection)
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *hashAggregate) AddFilter(filter impls.Expression) {
-	n.Node.AddFilter(filter)
+func (n *hashAggregate) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
+	n.Node.AddFilter(ctx, filter)
 }
 
-func (n *hashAggregate) AddOrder(order impls.OrderExpression) {
+func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	// No-op
 }
 
-func (n *hashAggregate) Optimize() {
-	n.Node.Optimize()
+func (n *hashAggregate) Optimize(ctx impls.OptimizationContext) {
+	n.Node.Optimize(ctx)
 }
 
 func (n *hashAggregate) Filter() impls.Expression {

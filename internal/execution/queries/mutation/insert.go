@@ -43,11 +43,11 @@ func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *insertNode) AddFilter(filter impls.Expression)    {}
-func (n *insertNode) AddOrder(order impls.OrderExpression) {}
+func (n *insertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *insertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 
-func (n *insertNode) Optimize() {
-	n.Node.Optimize()
+func (n *insertNode) Optimize(ctx impls.OptimizationContext) {
+	n.Node.Optimize(ctx)
 }
 
 func (n *insertNode) Filter() impls.Expression        { return nil }

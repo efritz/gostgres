@@ -35,12 +35,12 @@ func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")
 }
 
-func (n *valuesNode) AddFilter(filter impls.Expression)    {}
-func (n *valuesNode) AddOrder(order impls.OrderExpression) {}
-func (n *valuesNode) Optimize()                            {}
-func (n *valuesNode) Filter() impls.Expression             { return nil }
-func (n *valuesNode) Ordering() impls.OrderExpression      { return nil }
-func (n *valuesNode) SupportsMarkRestore() bool            { return false }
+func (n *valuesNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *valuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *valuesNode) Optimize(ctx impls.OptimizationContext)                              {}
+func (n *valuesNode) Filter() impls.Expression                                            { return nil }
+func (n *valuesNode) Ordering() impls.OrderExpression                                     { return nil }
+func (n *valuesNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *valuesNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Values scanner")

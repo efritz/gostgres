@@ -1,10 +1,7 @@
--- SKIP
--- Can't resolve f.id
-
 SELECT
-    f.id AS film_id,
+    f.film_id,
     f.title,
-    c.cat AS category_name
+    c.category_name
 FROM film f
 JOIN (
     SELECT
@@ -12,6 +9,6 @@ JOIN (
         c.name
     FROM film_category fc
     JOIN category c ON c.category_id = fc.category_id
-) c(id, cat) ON c.id = f.film_id
-ORDER BY f.id
+) c(id, category_name) ON c.id = f.film_id
+ORDER BY f.film_id
 LIMIT 5;

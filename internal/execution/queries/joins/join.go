@@ -52,24 +52,28 @@ func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *joinNode) AddFilter(filterExpression impls.Expression) {
+func (n *joinNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *joinNode) AddOrder(orderExpression impls.OrderExpression) {
-	order.LowerOrder(orderExpression, n.left, n.right)
+func (n *joinNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+	order.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
-func (n *joinNode) Optimize() {
+func (n *joinNode) Optimize(ctx impls.OptimizationContext) {
+	// NOTE: Outer fields depend on nested loop join strategy
+	// Merge and hash joins won't have have LHS rows available to RHS
+
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
-		filter.LowerFilter(n.filter, n.left, n.right)
+		filter.LowerFilter(ctx, n.filter, n.left)
+		filter.LowerFilter(ctx.AddOuterFields(n.left.Fields()), n.filter, n.right)
 	}
 
-	n.left.Optimize()
-	n.right.Optimize()
+	n.left.Optimize(ctx)
+	n.right.Optimize(ctx.AddOuterFields(n.left.Fields()))
 	n.filter = expressions.FilterDifference(n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
-	n.strategy = selectJoinStrategy(n)
+	n.strategy = &nestedLoopJoinStrategy{n: n}
 }
 
 func (n *joinNode) Filter() impls.Expression {

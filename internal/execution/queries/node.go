@@ -12,9 +12,9 @@ type Node interface {
 
 	Name() string
 	Fields() []fields.Field
-	AddFilter(filter impls.Expression)
-	AddOrder(order impls.OrderExpression)
-	Optimize()
+	AddFilter(ctx impls.OptimizationContext, filter impls.Expression)
+	AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression)
+	Optimize(ctx impls.OptimizationContext)
 	Filter() impls.Expression
 	Ordering() impls.OrderExpression
 

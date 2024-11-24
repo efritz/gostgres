@@ -106,6 +106,28 @@ func (ctx *NodeResolutionContext) Lookup(relationName, name string) (fields.Fiel
 //
 //
 
+type OptimizationContext struct {
+	outerFields []fields.Field
+}
+
+var EmptyOptimizationContext = NewOptimizationContext()
+
+func NewOptimizationContext() OptimizationContext {
+	return OptimizationContext{}
+}
+
+func (c OptimizationContext) OuterFields() []fields.Field {
+	return c.outerFields
+}
+
+func (c OptimizationContext) AddOuterFields(fields []fields.Field) OptimizationContext {
+	c.outerFields = append(c.outerFields, fields...)
+	return c
+}
+
+//
+//
+
 type ExecutionContext struct {
 	Catalog  CatalogSet
 	debug    bool
@@ -120,9 +142,19 @@ func NewExecutionContext(catalog CatalogSet) ExecutionContext {
 	}
 }
 
-func (c ExecutionContext) OuterRow() rows.Row                         { return c.outerRow }
-func (c ExecutionContext) WithDebug() ExecutionContext                { c.debug = true; return c }
-func (c ExecutionContext) WithOuterRow(row rows.Row) ExecutionContext { c.outerRow = row; return c }
+func (c ExecutionContext) OuterRow() rows.Row {
+	return c.outerRow
+}
+
+func (c ExecutionContext) WithDebug() ExecutionContext {
+	c.debug = true
+	return c
+}
+
+func (c ExecutionContext) AddOuterRow(row rows.Row) ExecutionContext {
+	c.outerRow = rows.CombineRows(c.outerRow, row)
+	return c
+}
 
 func (c ExecutionContext) Log(format string, args ...interface{}) {
 	if !c.debug {

@@ -31,12 +31,12 @@ func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	}
 }
 
-func (n *offsetNode) AddFilter(filter impls.Expression)    {}
-func (n *offsetNode) AddOrder(order impls.OrderExpression) {}
-func (n *offsetNode) Optimize()                            { n.Node.Optimize() }
-func (n *offsetNode) Filter() impls.Expression             { return n.Node.Filter() }
-func (n *offsetNode) Ordering() impls.OrderExpression      { return n.Node.Ordering() }
-func (n *offsetNode) SupportsMarkRestore() bool            { return false }
+func (n *offsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *offsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *offsetNode) Optimize(ctx impls.OptimizationContext)                              { n.Node.Optimize(ctx) }
+func (n *offsetNode) Filter() impls.Expression                                            { return n.Node.Filter() }
+func (n *offsetNode) Ordering() impls.OrderExpression                                     { return n.Node.Ordering() }
+func (n *offsetNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *offsetNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Offset scanner")

@@ -11,19 +11,18 @@ Plan:
 
                                     query plan
 -----------------------------------------------------------------------------------
- select (fc.film_id, fc.category_id, fc.last_update, cat.id, cat.name)
+ project {fc.film_id, fc.category_id, fc.last_update, cat.id, cat.name}
     limit 50
         join using nested loop
-            alias as fc
+            project {film_id, category_id, last_update} into fc.*
                 btree index scan of film_category via film_category_pkey
         with
-            select (category_id as id, name)
-                alias as cat
-                    select (category_id, name)
-                        alias as c
+            project {category_id as id, name} into cat.*
+                project {category_id, name} into cat.*
+                    project {category_id, name}
+                        project {category_id, name, last_update} into c.*
                             btree index scan of category via category_pkey
                                 index cond: category.category_id = fc.category_id
-        on cat.id = fc.category_id
 (1 rows)
 
 Results:

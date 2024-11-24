@@ -11,10 +11,10 @@ ORDER BY rating, rental_rate;
 
 Plan:
 
-                                           query plan
--------------------------------------------------------------------------------------------------
+                                            query plan
+---------------------------------------------------------------------------------------------------
  order by film.rating, film.rental_rate
-    group by film.rating, film.rental_rate, select(rating, rental_rate, count(1) as film_count)
+    group by film.rating, film.rental_rate, project {rating, rental_rate, count(1) as film_count}
         table scan of film
 (1 rows)
 

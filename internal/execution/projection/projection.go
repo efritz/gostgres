@@ -85,7 +85,7 @@ func (p *Projection) String() string {
 
 	suffix := ""
 	if p.targetRelationName != "" {
-		suffix = fmt.Sprintf(" as %s.{...}", p.targetRelationName)
+		suffix = fmt.Sprintf(" into %s.*", p.targetRelationName)
 	}
 
 	return fmt.Sprintf("{%s}%s", strings.Join(fields, ", "), suffix)

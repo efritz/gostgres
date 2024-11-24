@@ -24,10 +24,10 @@ Plan:
     limit 5
         order by a1.last_name, a1.actor_id
             join using nested loop
-                project {actor_id, first_name, last_name, last_update} as a1.{...}
+                project {actor_id, first_name, last_name, last_update} into a1.*
                     table scan of actor
             with
-                project {actor_id, first_name, last_name, last_update} as a2.{...}
+                project {actor_id, first_name, last_name, last_update} into a2.*
                     btree index scan of actor via actor_pkey
                         index cond: actor.actor_id > a1.actor_id
                         filter: a1.last_name = actor.last_name

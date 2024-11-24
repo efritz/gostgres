@@ -6,7 +6,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-// TODO - inline to projection
 func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
 	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
 		if named, ok := e.(expressions.NamedExpression); ok {
@@ -23,19 +22,21 @@ func Alias(e impls.Expression, field fields.Field, target impls.Expression) impl
 	return mapped
 }
 
-// TODO - necessary?
-func Dealias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
-	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if named, ok := e.(expressions.NamedExpression); ok {
-			if named.Field().RelationName() == "" || named.Field().RelationName() == field.RelationName() {
-				if named.Field().Name() == field.Name() {
-					return target, nil
-				}
-			}
-		}
+var Dealias = Alias
 
-		return e, nil
-	})
+// // TODO - necessary?
+// func Dealias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
+// 	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
+// 		if named, ok := e.(expressions.NamedExpression); ok {
+// 			if named.Field().RelationName() == "" || named.Field().RelationName() == field.RelationName() {
+// 				if named.Field().Name() == field.Name() {
+// 					return target, nil
+// 				}
+// 			}
+// 		}
 
-	return mapped
-}
+// 		return e, nil
+// 	})
+
+// 	return mapped
+// }

@@ -14,7 +14,7 @@ Plan:
 -----------------------------------------------------
  project {email}
     order by s.email
-        project {email} as s.{...}
+        project {email} into s.*
             combination
                 project {email}
                     table scan of customer

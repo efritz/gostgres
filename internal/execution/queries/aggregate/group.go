@@ -3,6 +3,7 @@ package aggregate
 import (
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -16,7 +17,7 @@ import (
 type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
-	aggregateFactory impls.AggregateExpressionFactory
+	aggregateFactory *projection.AggregateProjectionFactory
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -24,7 +25,7 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	aggregateFactory impls.AggregateExpressionFactory,
+	aggregateFactory *projection.AggregateProjectionFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
@@ -61,6 +62,7 @@ func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.Orde
 
 func (n *hashAggregate) Optimize(ctx impls.OptimizationContext) {
 	n.Node.Optimize(ctx)
+	n.aggregateFactory.Optimize(ctx)
 }
 
 func (n *hashAggregate) Filter() impls.Expression {

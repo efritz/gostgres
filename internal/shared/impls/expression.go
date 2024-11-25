@@ -3,7 +3,6 @@ package impls
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
@@ -18,11 +17,6 @@ type Expression interface {
 	Fold() Expression
 	Map(f func(Expression) (Expression, error)) (Expression, error)
 	ValueFrom(cts ExecutionContext, row rows.Row) (any, error)
-}
-
-type AggregateExpressionFactory interface {
-	Fields() []fields.Field
-	Create(ctx ExecutionContext) ([]AggregateExpression, error)
 }
 
 type AggregateExpression interface {

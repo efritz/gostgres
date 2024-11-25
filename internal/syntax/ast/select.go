@@ -26,7 +26,7 @@ type SelectBuilder struct {
 
 	fields           []fields.Field
 	projection       *projectionHelpers.Projection
-	aggregateFactory impls.AggregateExpressionFactory
+	aggregateFactory *projectionHelpers.AggregateProjectionFactory
 }
 
 type SimpleSelectDescription struct {

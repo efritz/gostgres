@@ -8,27 +8,25 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-type aggregateExpressionFactory struct {
+type AggregateProjectionFactory struct {
 	projectedExpressions []ProjectedExpression
 }
 
-var _ impls.AggregateExpressionFactory = &aggregateExpressionFactory{}
-
-func NewAggregateFactory(projectedExpressions []ProjectedExpression) impls.AggregateExpressionFactory {
-	return &aggregateExpressionFactory{
+func NewAggregateFactory(projectedExpressions []ProjectedExpression) *AggregateProjectionFactory {
+	return &AggregateProjectionFactory{
 		projectedExpressions: projectedExpressions,
 	}
 }
 
-func (f *aggregateExpressionFactory) String() string {
+func (f *AggregateProjectionFactory) String() string {
 	return fmt.Sprintf("{%s}", serializeProjectedExpressions(f.projectedExpressions))
 }
 
-func (f *aggregateExpressionFactory) Fields() []fields.Field {
+func (f *AggregateProjectionFactory) Fields() []fields.Field {
 	return fieldsFromProjectedExpressions("", f.projectedExpressions)
 }
 
-func (f *aggregateExpressionFactory) Create(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
+func (f *AggregateProjectionFactory) Create(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
 	var aggregateExpressions []impls.AggregateExpression
 	for _, projectedExpression := range f.projectedExpressions {
 		aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, projectedExpression.Expression))
@@ -37,7 +35,7 @@ func (f *aggregateExpressionFactory) Create(ctx impls.ExecutionContext) ([]impls
 	return aggregateExpressions, nil
 }
 
-func (f *aggregateExpressionFactory) Optimize(ctx impls.OptimizationContext) {
+func (f *AggregateProjectionFactory) Optimize(ctx impls.OptimizationContext) {
 	for i := range f.projectedExpressions {
 		f.projectedExpressions[i].Expression = f.projectedExpressions[i].Expression.Fold()
 	}

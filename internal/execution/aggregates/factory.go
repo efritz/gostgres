@@ -6,16 +6,31 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
-	return func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
-		var aggregateExpressions []impls.AggregateExpression
-		for _, expression := range exprs {
-			aggregateExpressions = append(aggregateExpressions, asAggregate(ctx, expression))
-		}
+type aggregateExpressionFactory struct {
+	exprs []impls.Expression
+}
 
-		return aggregateExpressions, nil
+var _ impls.AggregateExpressionFactory = &aggregateExpressionFactory{}
+
+func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
+	return &aggregateExpressionFactory{
+		exprs: exprs,
 	}
 }
+
+// TODO - fields
+
+func (f aggregateExpressionFactory) Create(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
+	var aggregateExpressions []impls.AggregateExpression
+	for _, expression := range f.exprs {
+		aggregateExpressions = append(aggregateExpressions, asAggregate(ctx, expression))
+	}
+
+	return aggregateExpressions, nil
+}
+
+//
+//
 
 func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (

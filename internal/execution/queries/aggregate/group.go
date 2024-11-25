@@ -90,7 +90,7 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return aggregateExpressions, nil
 		}
 
-		aggregateExpressions, err := n.aggregateFactory(ctx)
+		aggregateExpressions, err := n.aggregateFactory.Create(ctx)
 		if err != nil {
 			return nil, err
 		}

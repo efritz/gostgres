@@ -1,46 +1,19 @@
-package aggregates
+package expressions
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-type aggregateExpressionFactory struct {
-	exprs []impls.Expression
-}
-
-var _ impls.AggregateExpressionFactory = &aggregateExpressionFactory{}
-
-func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
-	return &aggregateExpressionFactory{
-		exprs: exprs,
-	}
-}
-
-// TODO - fields
-
-func (f aggregateExpressionFactory) Create(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
-	var aggregateExpressions []impls.AggregateExpression
-	for _, expression := range f.exprs {
-		aggregateExpressions = append(aggregateExpressions, asAggregate(ctx, expression))
-	}
-
-	return aggregateExpressions, nil
-}
-
-//
-//
-
-func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
+func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (
-		results        []expressions.ConstantPlaceholder
+		results        []ConstantPlaceholder
 		subExpressions []impls.AggregateExpression
 	)
 
 	outerExpression, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if aggregate, args, ok := expressions.UnwrapAggregate(ctx, e); ok {
-			placeholder := expressions.NewMutableConstant()
+		if aggregate, args, ok := UnwrapAggregate(ctx, e); ok {
+			placeholder := NewMutableConstant()
 			results = append(results, placeholder)
 			subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: args})
 			return placeholder, nil
@@ -66,7 +39,7 @@ func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.Aggregate
 //
 
 type explodedAggregateExpression struct {
-	results         []expressions.ConstantPlaceholder
+	results         []ConstantPlaceholder
 	subExpressions  []impls.AggregateExpression
 	outerExpression impls.Expression
 }

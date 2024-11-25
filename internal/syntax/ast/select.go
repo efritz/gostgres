@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/aggregates"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -107,13 +106,13 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 		b.Select.Groupings[i] = resolved
 	}
 
-	var exprs []impls.Expression
+	var rawProjectedExpressions []impls.Expression
 	for _, selectExpression := range projectedExpressions {
-		exprs = append(exprs, selectExpression.Expression)
+		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
 	}
 	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
 		ctx.ExpressionResolutionContext(true),
-		exprs,
+		rawProjectedExpressions,
 		b.Select.Groupings,
 	)
 	if err != nil {
@@ -136,12 +135,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 			return fmt.Errorf("%q not in group by", field)
 		}
 
-		var exprs []impls.Expression
-		for _, selectExpression := range projectedExpressions {
-			exprs = append(exprs, selectExpression.Expression)
-		}
-
-		b.aggregateFactory = aggregates.NewAggregateFactory(exprs)
+		b.aggregateFactory = projectionHelpers.NewAggregateFactory(projectedExpressions)
 	}
 
 	if b.Order != nil {
@@ -193,7 +187,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection, b.aggregateFactory)
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.aggregateFactory)
 	}
 
 	if len(b.Select.Combinations) > 0 {

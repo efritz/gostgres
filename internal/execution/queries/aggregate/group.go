@@ -3,7 +3,6 @@ package aggregate
 import (
 	"strings"
 
-	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -17,7 +16,6 @@ import (
 type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
-	projection       *projection.Projection
 	aggregateFactory impls.AggregateExpressionFactory
 }
 
@@ -26,13 +24,11 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	projection *projection.Projection,
 	aggregateFactory impls.AggregateExpressionFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
-		projection:       projection,
 		aggregateFactory: aggregateFactory,
 	}
 }
@@ -42,7 +38,7 @@ func (n *hashAggregate) Name() string {
 }
 
 func (n *hashAggregate) Fields() []fields.Field {
-	return n.projection.Fields()
+	return n.aggregateFactory.Fields()
 }
 
 func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
@@ -51,7 +47,7 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 		strExpressions = append(strExpressions, expr.String())
 	}
 
-	w.WritefLine("group by %s, project %s", strings.Join(strExpressions, ", "), n.projection)
+	w.WritefLine("group by %s, project %s", strings.Join(strExpressions, ", "), n.aggregateFactory)
 	n.Node.Serialize(w.Indent())
 }
 
@@ -150,6 +146,6 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			values = append(values, value)
 		}
 
-		return rows.Row{Fields: n.projection.Fields(), Values: values}, nil
+		return rows.Row{Fields: n.aggregateFactory.Fields(), Values: values}, nil
 	}), nil
 }

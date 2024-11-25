@@ -3,6 +3,7 @@ package impls
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
@@ -20,6 +21,7 @@ type Expression interface {
 }
 
 type AggregateExpressionFactory interface {
+	Fields() []fields.Field
 	Create(ctx ExecutionContext) ([]AggregateExpression, error)
 }
 

@@ -8,7 +8,6 @@ import (
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/alias"
 	"github.com/efritz/gostgres/internal/execution/queries/joins"
 	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
 	"github.com/efritz/gostgres/internal/shared/fields"
@@ -115,7 +114,6 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 				return err
 			}
 			e.projection = p
-
 		} else {
 			baseFields = rawFields
 		}
@@ -154,7 +152,11 @@ func (e *TableExpression) Build() (queries.Node, error) {
 	}
 
 	if e.Base.Alias != nil {
-		node = alias.NewAlias(node, e.Base.Alias.TableAlias)
+		aliased, err := aliasTableName(node, e.Base.Alias.TableAlias)
+		if err != nil {
+			return nil, err
+		}
+		node = aliased
 
 		if e.projection != nil {
 			node = projection.NewProjection(node, e.projection)

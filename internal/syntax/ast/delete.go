@@ -6,7 +6,6 @@ import (
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/alias"
 	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/queries/mutation"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -40,7 +39,11 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 func (b *DeleteBuilder) Build() (queries.Node, error) {
 	node := access.NewAccess(b.table)
 	if b.Target.AliasName != "" {
-		node = alias.NewAlias(node, b.Target.AliasName)
+		aliased, err := aliasTableName(node, b.Target.AliasName)
+		if err != nil {
+			return nil, err
+		}
+		node = aliased
 	}
 	if len(b.Using) > 0 {
 		node = joinNodes(node, b.Using)

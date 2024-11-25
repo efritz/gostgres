@@ -35,7 +35,7 @@ func NewProjectionFromProjectedExpressions(
 	return &Projection{
 		targetRelationName: targetRelationName,
 		aliases:            projectedExpressions,
-		projectedFields:    FieldsFromProjectedExpressions(targetRelationName, projectedExpressions),
+		projectedFields:    fieldsFromProjectedExpressions(targetRelationName, projectedExpressions),
 	}, nil
 }
 
@@ -45,7 +45,7 @@ func (p *Projection) String() string {
 		suffix = fmt.Sprintf(" into %s.*", p.targetRelationName)
 	}
 
-	return fmt.Sprintf("{%s}%s", SerializeProjectedExpressions(p.aliases), suffix)
+	return fmt.Sprintf("{%s}%s", serializeProjectedExpressions(p.aliases), suffix)
 }
 
 func (p *Projection) Aliases() []ProjectedExpression {

@@ -21,11 +21,11 @@ func NewAggregateFactory(projectedExpressions []ProjectedExpression) impls.Aggre
 }
 
 func (f *aggregateExpressionFactory) String() string {
-	return fmt.Sprintf("{%s}", SerializeProjectedExpressions(f.projectedExpressions))
+	return fmt.Sprintf("{%s}", serializeProjectedExpressions(f.projectedExpressions))
 }
 
 func (f *aggregateExpressionFactory) Fields() []fields.Field {
-	return FieldsFromProjectedExpressions("", f.projectedExpressions)
+	return fieldsFromProjectedExpressions("", f.projectedExpressions)
 }
 
 func (f *aggregateExpressionFactory) Create(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {

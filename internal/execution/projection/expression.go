@@ -32,7 +32,23 @@ func (p ProjectedExpression) String() string {
 //
 //
 
-func SerializeProjectedExpressions(projectedExpressions []ProjectedExpression) string {
+func fieldsFromProjectedExpressions(targetRelationName string, projectedExpressions []ProjectedExpression) []fields.Field {
+	var projectedFields []fields.Field
+	for _, field := range projectedExpressions {
+		relationName := targetRelationName
+		if relationName == "" {
+			if named, ok := field.Expression.(expressions.NamedExpression); ok {
+				relationName = named.Field().RelationName()
+			}
+		}
+
+		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, field.Expression.Type(), fields.NonInternalField))
+	}
+
+	return projectedFields
+}
+
+func serializeProjectedExpressions(projectedExpressions []ProjectedExpression) string {
 	relationNames := map[string]struct{}{}
 	for _, expression := range projectedExpressions {
 		if named, ok := expression.Expression.(expressions.NamedExpression); ok {
@@ -62,23 +78,4 @@ func SerializeProjectedExpressions(projectedExpressions []ProjectedExpression) s
 	}
 
 	return strings.Join(fields, ", ")
-}
-
-//
-//
-
-func FieldsFromProjectedExpressions(targetRelationName string, projectedExpressions []ProjectedExpression) []fields.Field {
-	var projectedFields []fields.Field
-	for _, field := range projectedExpressions {
-		relationName := targetRelationName
-		if relationName == "" {
-			if named, ok := field.Expression.(expressions.NamedExpression); ok {
-				relationName = named.Field().RelationName()
-			}
-		}
-
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, field.Expression.Type(), fields.NonInternalField))
-	}
-
-	return projectedFields
 }

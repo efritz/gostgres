@@ -78,6 +78,19 @@ func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext,
 //
 //
 
+func UnwrapAggregate(ctx impls.ExecutionContext, expr impls.Expression) (impls.Aggregate, []impls.Expression, bool) {
+	if f, ok := expr.(*functionExpression); ok {
+		if aggregate, ok := ctx.Catalog.Aggregates.Get(f.name); ok {
+			return aggregate, f.args, true
+		}
+	}
+
+	return nil, nil, false
+}
+
+//
+//
+
 func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
 	return func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
 		var aggregateExpressions []impls.AggregateExpression
@@ -96,13 +109,11 @@ func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.Aggregate
 	)
 
 	outerExpression, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if f, ok := e.(*functionExpression); ok {
-			if aggregate, ok := ctx.Catalog.Aggregates.Get(f.name); ok {
-				placeholder := &constantExpression{}
-				results = append(results, placeholder)
-				subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: f.args})
-				return placeholder, nil
-			}
+		if aggregate, args, ok := UnwrapAggregate(ctx, e); ok {
+			placeholder := &constantExpression{}
+			results = append(results, placeholder)
+			subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: args})
+			return placeholder, nil
 		}
 
 		return e, nil

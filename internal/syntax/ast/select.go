@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/aggregates"
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -140,7 +141,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 			exprs = append(exprs, selectExpression.Expression)
 		}
 
-		b.aggregateFactory = expressions.NewAggregateFactory(exprs)
+		b.aggregateFactory = aggregates.NewAggregateFactory(exprs)
 	}
 
 	if b.Order != nil {

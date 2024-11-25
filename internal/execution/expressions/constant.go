@@ -56,3 +56,25 @@ func (e constantExpression) Map(f func(impls.Expression) (impls.Expression, erro
 func (e constantExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
 	return e.value, nil
 }
+
+//
+//
+
+type ConstantPlaceholder interface {
+	impls.Expression
+	SetValue(value any)
+}
+
+type mutableConstant struct {
+	constantExpression
+}
+
+func NewMutableConstant() ConstantPlaceholder {
+	return &mutableConstant{
+		constantExpression: constantExpression{},
+	}
+}
+
+func (e *mutableConstant) SetValue(value any) {
+	e.value = value
+}

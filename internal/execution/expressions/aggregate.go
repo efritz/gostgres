@@ -104,13 +104,13 @@ func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFact
 
 func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (
-		results        []*constantExpression
+		results        []ConstantPlaceholder
 		subExpressions []impls.AggregateExpression
 	)
 
 	outerExpression, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
 		if aggregate, args, ok := UnwrapAggregate(ctx, e); ok {
-			placeholder := &constantExpression{}
+			placeholder := NewMutableConstant()
 			results = append(results, placeholder)
 			subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: args})
 			return placeholder, nil
@@ -133,7 +133,7 @@ func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.Aggregate
 }
 
 type explodedAggregateExpression struct {
-	results         []*constantExpression
+	results         []ConstantPlaceholder
 	subExpressions  []impls.AggregateExpression
 	outerExpression impls.Expression
 }
@@ -157,7 +157,7 @@ func (e *explodedAggregateExpression) Done(ctx impls.ExecutionContext) (any, err
 			return nil, err
 		}
 
-		e.results[i].value = value
+		e.results[i].SetValue(value)
 	}
 
 	return e.outerExpression.ValueFrom(ctx, rows.Row{})

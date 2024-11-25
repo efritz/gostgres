@@ -27,7 +27,7 @@ type TableReference struct {
 }
 
 func (r *TableReference) Resolve(ctx *impls.NodeResolutionContext) error {
-	table, ok := ctx.Catalog.Tables.Get(r.Name)
+	table, ok := ctx.Catalog().Tables.Get(r.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", r.Name)
 	}

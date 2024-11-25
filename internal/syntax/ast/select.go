@@ -24,9 +24,8 @@ type SelectBuilder struct {
 	Limit  *int
 	Offset *int
 
-	fields           []fields.Field
-	projection       *projectionHelpers.Projection
-	aggregateFactory *projectionHelpers.AggregateProjectionFactory
+	fields     []fields.Field
+	projection *projectionHelpers.Projection
 }
 
 type SimpleSelectDescription struct {
@@ -134,8 +133,6 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 			return fmt.Errorf("%q not in group by", field)
 		}
-
-		b.aggregateFactory = projectionHelpers.NewAggregateFactory(projectedExpressions)
 	}
 
 	if b.Order != nil {
@@ -187,7 +184,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.aggregateFactory)
+		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection)
 	}
 
 	if len(b.Select.Combinations) > 0 {

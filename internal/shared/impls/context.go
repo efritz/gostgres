@@ -9,16 +9,27 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
+type Cataloger interface {
+	Catalog() CatalogSet
+}
+
+//
+//
+
 type ExpressionResolutionContext struct {
-	Catalog                 CatalogSet
+	catalog                 CatalogSet
 	allowAggregateFunctions bool
 }
 
 func NewExpressionResolutionContext(catalog CatalogSet, allowAggregateFunctions bool) ExpressionResolutionContext {
 	return ExpressionResolutionContext{
-		Catalog:                 catalog,
+		catalog:                 catalog,
 		allowAggregateFunctions: allowAggregateFunctions,
 	}
+}
+
+func (ctx ExpressionResolutionContext) Catalog() CatalogSet {
+	return ctx.catalog
 }
 
 func (ctx ExpressionResolutionContext) AllowAggregateFunctions() bool {
@@ -29,7 +40,7 @@ func (ctx ExpressionResolutionContext) AllowAggregateFunctions() bool {
 //
 
 type NodeResolutionContext struct {
-	Catalog CatalogSet
+	catalog CatalogSet
 	Scopes  []Scope
 }
 
@@ -39,12 +50,16 @@ type Scope struct {
 
 func NewNodeResolutionContext(catalog CatalogSet) *NodeResolutionContext {
 	return &NodeResolutionContext{
-		Catalog: catalog,
+		catalog: catalog,
 	}
 }
 
+func (ctx *NodeResolutionContext) Catalog() CatalogSet {
+	return ctx.catalog
+}
+
 func (ctx *NodeResolutionContext) ExpressionResolutionContext(allowAggregateFunctions bool) ExpressionResolutionContext {
-	return NewExpressionResolutionContext(ctx.Catalog, allowAggregateFunctions)
+	return NewExpressionResolutionContext(ctx.catalog, allowAggregateFunctions)
 }
 
 func (ctx *NodeResolutionContext) WithScope(f func() error) error {
@@ -107,13 +122,18 @@ func (ctx *NodeResolutionContext) Lookup(relationName, name string) (fields.Fiel
 //
 
 type OptimizationContext struct {
+	catalog     CatalogSet
 	outerFields []fields.Field
 }
 
-var EmptyOptimizationContext = NewOptimizationContext()
+func NewOptimizationContext(catalog CatalogSet) OptimizationContext {
+	return OptimizationContext{
+		catalog: catalog,
+	}
+}
 
-func NewOptimizationContext() OptimizationContext {
-	return OptimizationContext{}
+func (c OptimizationContext) Catalog() CatalogSet {
+	return c.catalog
 }
 
 func (c OptimizationContext) OuterFields() []fields.Field {
@@ -129,7 +149,7 @@ func (c OptimizationContext) AddOuterFields(fields []fields.Field) OptimizationC
 //
 
 type ExecutionContext struct {
-	Catalog  CatalogSet
+	catalog  CatalogSet
 	debug    bool
 	outerRow rows.Row
 }
@@ -138,8 +158,16 @@ var EmptyExecutionContext = NewExecutionContext(NewCatalogEmptySet())
 
 func NewExecutionContext(catalog CatalogSet) ExecutionContext {
 	return ExecutionContext{
-		Catalog: catalog,
+		catalog: catalog,
 	}
+}
+
+func (c ExecutionContext) OptimizationContext() OptimizationContext {
+	return NewOptimizationContext(c.catalog)
+}
+
+func (c ExecutionContext) Catalog() CatalogSet {
+	return c.catalog
 }
 
 func (c ExecutionContext) OuterRow() rows.Row {

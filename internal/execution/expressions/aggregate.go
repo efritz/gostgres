@@ -6,9 +6,9 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
-func UnwrapAggregate(ctx impls.ExecutionContext, expr impls.Expression) (impls.Aggregate, []impls.Expression, bool) {
+func UnwrapAggregate(ctx impls.Cataloger, expr impls.Expression) (impls.Aggregate, []impls.Expression, bool) {
 	if f, ok := expr.(*functionExpression); ok {
-		if aggregate, ok := ctx.Catalog.Aggregates.Get(f.name); ok {
+		if aggregate, ok := ctx.Catalog().Aggregates.Get(f.name); ok {
 			return aggregate, f.args, true
 		}
 	}
@@ -20,7 +20,7 @@ func UnwrapAggregate(ctx impls.ExecutionContext, expr impls.Expression) (impls.A
 //
 
 func PartitionAggregatedFieldReferences(
-	ctx impls.ExpressionResolutionContext,
+	ctx impls.Cataloger,
 	exprs []impls.Expression,
 	groupings []impls.Expression,
 ) (
@@ -48,7 +48,7 @@ type partitioner struct {
 	containsAggregate   bool
 }
 
-func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext, exprs []impls.Expression) error {
+func (p *partitioner) partitionExpressions(ctx impls.Cataloger, exprs []impls.Expression) error {
 	for _, expr := range exprs {
 		if err := p.partitionExpression(ctx, expr, false); err != nil {
 			return err
@@ -58,7 +58,7 @@ func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext
 	return nil
 }
 
-func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext, expr impls.Expression, inAggregate bool) error {
+func (p *partitioner) partitionExpression(ctx impls.Cataloger, expr impls.Expression, inAggregate bool) error {
 	for _, grouping := range p.groupings {
 		if grouping.Equal(expr) {
 			return nil

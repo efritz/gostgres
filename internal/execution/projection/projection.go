@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type Projection struct {
@@ -60,4 +62,23 @@ func (p *Projection) Optimize(ctx impls.OptimizationContext) {
 	for i := range p.aliases {
 		p.aliases[i].Expression = p.aliases[i].Expression.Fold()
 	}
+}
+
+func (p *Projection) ProjectExpression(expression impls.Expression) impls.Expression {
+	for i, alias := range p.aliases {
+		if named, ok := alias.Expression.(expressions.NamedExpression); ok {
+			expression = Alias(expression, named.Field(), expressions.NewNamed(p.projectedFields[i]))
+		}
+	}
+
+	return expression
+}
+
+func (p *Projection) DeprojectExpression(expression impls.Expression) impls.Expression {
+	for i, alias := range p.aliases {
+		field := fields.NewField(p.projectedFields[i].RelationName(), alias.Alias, types.TypeAny, fields.NonInternalField)
+		expression = Alias(expression, field, alias.Expression)
+	}
+
+	return expression
 }

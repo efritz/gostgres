@@ -3,6 +3,7 @@ package aggregate
 import (
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
@@ -17,7 +18,7 @@ import (
 type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
-	aggregateFactory *projection.AggregateProjectionFactory
+	projection       *projection.Projection
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -25,12 +26,12 @@ var _ queries.Node = &hashAggregate{}
 func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
-	aggregateFactory *projection.AggregateProjectionFactory,
+	projection *projection.Projection,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
-		aggregateFactory: aggregateFactory,
+		projection:       projection,
 	}
 }
 
@@ -39,7 +40,7 @@ func (n *hashAggregate) Name() string {
 }
 
 func (n *hashAggregate) Fields() []fields.Field {
-	return n.aggregateFactory.Fields()
+	return n.projection.Fields()
 }
 
 func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
@@ -48,12 +49,18 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 		strExpressions = append(strExpressions, expr.String())
 	}
 
-	w.WritefLine("group by %s, project %s", strings.Join(strExpressions, ", "), n.aggregateFactory)
+	w.WritefLine("group by %s, project %s", strings.Join(strExpressions, ", "), n.projection)
 	n.Node.Serialize(w.Indent())
 }
 
 func (n *hashAggregate) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.Node.AddFilter(ctx, filter)
+	for _, expr := range expressions.Conjunctions(filter) {
+		expr := n.projection.DeprojectExpression(expr)
+
+		if _, _, containsAggregate, _ := expressions.PartitionAggregatedFieldReferences(ctx, []impls.Expression{expr}, nil); !containsAggregate {
+			n.Node.AddFilter(ctx, expr)
+		}
+	}
 }
 
 func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
@@ -61,12 +68,17 @@ func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.Orde
 }
 
 func (n *hashAggregate) Optimize(ctx impls.OptimizationContext) {
+	n.projection.Optimize(ctx)
 	n.Node.Optimize(ctx)
-	n.aggregateFactory.Optimize(ctx)
 }
 
 func (n *hashAggregate) Filter() impls.Expression {
-	return n.Node.Filter()
+	filter := n.Node.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	return n.projection.ProjectExpression(filter)
 }
 
 func (n *hashAggregate) Ordering() impls.OrderExpression {
@@ -88,9 +100,8 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return aggregateExpressions, nil
 		}
 
-		aggregateExpressions, err := n.aggregateFactory.Create(ctx)
-		if err != nil {
-			return nil, err
+		for _, projectedExpression := range n.projection.Aliases() {
+			aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, projectedExpression.Expression))
 		}
 
 		buckets[key] = aggregateExpressions
@@ -148,6 +159,6 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			values = append(values, value)
 		}
 
-		return rows.Row{Fields: n.aggregateFactory.Fields(), Values: values}, nil
+		return rows.Row{Fields: n.projection.Fields(), Values: values}, nil
 	}), nil
 }

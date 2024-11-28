@@ -33,6 +33,6 @@ func (q *createSequence) Execute(ctx impls.ExecutionContext, w protocol.Response
 }
 
 func (q *createSequence) ExecuteDDL(ctx impls.ExecutionContext) error {
-	ctx.Catalog.Sequences.Set(q.name, sequence.NewSequence(q.name, q.typ))
+	ctx.Catalog().Sequences.Set(q.name, sequence.NewSequence(q.name, q.typ))
 	return nil
 }

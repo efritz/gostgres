@@ -48,7 +48,7 @@ var currval = newFunctionImpl(
 	types.TypeBigInteger,
 	func(ctx impls.ExecutionContext, args []any) (any, error) {
 		name := args[0].(string)
-		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		sequence, ok := ctx.Catalog().Sequences.Get(name)
 		if !ok {
 			return nil, fmt.Errorf("sequence %s does not exist", name)
 		}
@@ -63,7 +63,7 @@ var nextval = newFunctionImpl(
 	types.TypeBigInteger,
 	func(ctx impls.ExecutionContext, args []any) (any, error) {
 		name := args[0].(string)
-		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		sequence, ok := ctx.Catalog().Sequences.Get(name)
 		if !ok {
 			return nil, fmt.Errorf("sequence %s does not exist", name)
 		}
@@ -78,7 +78,7 @@ var setval = newFunctionImpl(
 	types.TypeBigInteger,
 	func(ctx impls.ExecutionContext, args []any) (any, error) {
 		name := args[0].(string)
-		sequence, ok := ctx.Catalog.Sequences.Get(name)
+		sequence, ok := ctx.Catalog().Sequences.Get(name)
 		if !ok {
 			return nil, fmt.Errorf("sequence %s does not exist", name)
 		}

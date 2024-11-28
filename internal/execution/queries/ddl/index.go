@@ -58,7 +58,7 @@ func (q *createIndex) ExecuteDDL(ctx impls.ExecutionContext) error {
 		return err
 	}
 
-	table, ok := ctx.Catalog.Tables.Get(q.tableName)
+	table, ok := ctx.Catalog().Tables.Get(q.tableName)
 	if !ok {
 		return fmt.Errorf("unknown table %q", q.tableName)
 	}

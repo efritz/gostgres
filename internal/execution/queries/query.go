@@ -24,7 +24,7 @@ func NewQuery(n Node) *NodeQuery {
 }
 
 func (q *NodeQuery) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
-	q.Node.Optimize(impls.EmptyOptimizationContext)
+	q.Node.Optimize(ctx.OptimizationContext())
 
 	scanner, err := q.Node.Scanner(ctx)
 	if err != nil {

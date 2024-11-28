@@ -3,9 +3,7 @@ package projection
 import (
 	"fmt"
 	"slices"
-	"strings"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -34,61 +32,20 @@ func NewProjectionFromProjectedExpressions(
 	targetRelationName string,
 	projectedExpressions []ProjectedExpression,
 ) (*Projection, error) {
-	var projectedFields []fields.Field
-	for _, field := range projectedExpressions {
-		relationName := targetRelationName
-		if relationName == "" {
-			if named, ok := field.Expression.(expressions.NamedExpression); ok {
-				relationName = named.Field().RelationName()
-			}
-		}
-
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, field.Expression.Type(), fields.NonInternalField))
-	}
-
 	return &Projection{
 		targetRelationName: targetRelationName,
 		aliases:            projectedExpressions,
-		projectedFields:    projectedFields,
+		projectedFields:    fieldsFromProjectedExpressions(targetRelationName, projectedExpressions),
 	}, nil
 }
 
 func (p *Projection) String() string {
-	fields := make([]string, 0, len(p.aliases))
-
-	relationNames := map[string]struct{}{}
-	for _, expression := range p.aliases {
-		if named, ok := expression.Expression.(expressions.NamedExpression); ok {
-			relationNames[named.Field().RelationName()] = struct{}{}
-		}
-	}
-
-	for _, expression := range p.aliases {
-		// TODO - simplify named expressions below top-level?
-		if named, ok := expression.Expression.(expressions.NamedExpression); ok {
-			name := named.Field().String()
-			if len(relationNames) == 1 {
-				name = named.Field().Name()
-			}
-
-			if named.Field().Name() == expression.Alias {
-				fields = append(fields, name)
-			} else {
-				fields = append(fields, fmt.Sprintf("%s as %s", name, expression.Alias))
-			}
-
-			continue
-		}
-
-		fields = append(fields, expression.String())
-	}
-
 	suffix := ""
 	if p.targetRelationName != "" {
 		suffix = fmt.Sprintf(" into %s.*", p.targetRelationName)
 	}
 
-	return fmt.Sprintf("{%s}%s", strings.Join(fields, ", "), suffix)
+	return fmt.Sprintf("{%s}%s", serializeProjectedExpressions(p.aliases), suffix)
 }
 
 func (p *Projection) Aliases() []ProjectedExpression {
@@ -103,4 +60,20 @@ func (p *Projection) Optimize(ctx impls.OptimizationContext) {
 	for i := range p.aliases {
 		p.aliases[i].Expression = p.aliases[i].Expression.Fold()
 	}
+}
+
+func (p *Projection) ProjectExpression(expression impls.Expression) impls.Expression {
+	for _, alias := range p.aliases {
+		expression = MapExpressionToField(expression, p.targetRelationName, alias)
+	}
+
+	return expression
+}
+
+func (p *Projection) DeprojectExpression(expression impls.Expression) impls.Expression {
+	for i, alias := range p.aliases {
+		expression = MapFieldToExpression(expression, p.projectedFields[i].WithName(alias.Alias), alias.Expression)
+	}
+
+	return expression
 }

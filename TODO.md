@@ -39,5 +39,4 @@
 - Non-hack planning for merge joins
 - Implement Mark+Restore on indexes directly
 - Break `Node` iface into optional components
-- Combine alias and projection nodes (if possible)
 - Allow function/aggregate/callable generic and overloaded functions

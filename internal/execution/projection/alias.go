@@ -6,7 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func Alias(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
+func MapFieldToExpression(e impls.Expression, field fields.Field, target impls.Expression) impls.Expression {
 	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
 		if named, ok := e.(expressions.NamedExpression); ok {
 			if field.RelationName() == "" || named.Field().RelationName() == field.RelationName() {
@@ -14,6 +14,18 @@ func Alias(e impls.Expression, field fields.Field, target impls.Expression) impl
 					return target, nil
 				}
 			}
+		}
+
+		return e, nil
+	})
+
+	return mapped
+}
+
+func MapExpressionToField(e impls.Expression, targetRelationName string, proj ProjectedExpression) impls.Expression {
+	mapped, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
+		if e.Equal(proj.Expression) {
+			return expressions.NewNamed(fields.NewField(targetRelationName, proj.Alias, e.Type(), fields.NonInternalField)), nil
 		}
 
 		return e, nil

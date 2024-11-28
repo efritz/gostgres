@@ -6,8 +6,21 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
+func UnwrapAggregate(ctx impls.Cataloger, expr impls.Expression) (impls.Aggregate, []impls.Expression, bool) {
+	if f, ok := expr.(*functionExpression); ok {
+		if aggregate, ok := ctx.Catalog().Aggregates.Get(f.name); ok {
+			return aggregate, f.args, true
+		}
+	}
+
+	return nil, nil, false
+}
+
+//
+//
+
 func PartitionAggregatedFieldReferences(
-	ctx impls.ExpressionResolutionContext,
+	ctx impls.Cataloger,
 	exprs []impls.Expression,
 	groupings []impls.Expression,
 ) (
@@ -35,7 +48,7 @@ type partitioner struct {
 	containsAggregate   bool
 }
 
-func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext, exprs []impls.Expression) error {
+func (p *partitioner) partitionExpressions(ctx impls.Cataloger, exprs []impls.Expression) error {
 	for _, expr := range exprs {
 		if err := p.partitionExpression(ctx, expr, false); err != nil {
 			return err
@@ -45,7 +58,7 @@ func (p *partitioner) partitionExpressions(ctx impls.ExpressionResolutionContext
 	return nil
 }
 
-func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext, expr impls.Expression, inAggregate bool) error {
+func (p *partitioner) partitionExpression(ctx impls.Cataloger, expr impls.Expression, inAggregate bool) error {
 	for _, grouping := range p.groupings {
 		if grouping.Equal(expr) {
 			return nil
@@ -78,31 +91,18 @@ func (p *partitioner) partitionExpression(ctx impls.ExpressionResolutionContext,
 //
 //
 
-func NewAggregateFactory(exprs []impls.Expression) impls.AggregateExpressionFactory {
-	return func(ctx impls.ExecutionContext) ([]impls.AggregateExpression, error) {
-		var aggregateExpressions []impls.AggregateExpression
-		for _, expression := range exprs {
-			aggregateExpressions = append(aggregateExpressions, asAggregate(ctx, expression))
-		}
-
-		return aggregateExpressions, nil
-	}
-}
-
-func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
+func AsAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.AggregateExpression {
 	var (
-		results        []*constantExpression
+		results        []ConstantPlaceholder
 		subExpressions []impls.AggregateExpression
 	)
 
 	outerExpression, _ := e.Map(func(e impls.Expression) (impls.Expression, error) {
-		if f, ok := e.(*functionExpression); ok {
-			if aggregate, ok := ctx.Catalog.Aggregates.Get(f.name); ok {
-				placeholder := &constantExpression{}
-				results = append(results, placeholder)
-				subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: f.args})
-				return placeholder, nil
-			}
+		if aggregate, args, ok := UnwrapAggregate(ctx, e); ok {
+			placeholder := NewMutableConstant()
+			results = append(results, placeholder)
+			subExpressions = append(subExpressions, &aggregateSubExpression{aggregate: aggregate, args: args})
+			return placeholder, nil
 		}
 
 		return e, nil
@@ -121,8 +121,11 @@ func asAggregate(ctx impls.ExecutionContext, e impls.Expression) impls.Aggregate
 	}
 }
 
+//
+//
+
 type explodedAggregateExpression struct {
-	results         []*constantExpression
+	results         []ConstantPlaceholder
 	subExpressions  []impls.AggregateExpression
 	outerExpression impls.Expression
 }
@@ -146,11 +149,14 @@ func (e *explodedAggregateExpression) Done(ctx impls.ExecutionContext) (any, err
 			return nil, err
 		}
 
-		e.results[i].value = value
+		e.results[i].SetValue(value)
 	}
 
 	return e.outerExpression.ValueFrom(ctx, rows.Row{})
 }
+
+//
+//
 
 type aggregateSubExpression struct {
 	aggregate impls.Aggregate
@@ -183,6 +189,9 @@ func (e *aggregateSubExpression) Step(ctx impls.ExecutionContext, row rows.Row) 
 func (e *aggregateSubExpression) Done(ctx impls.ExecutionContext) (any, error) {
 	return e.aggregate.Done(ctx, e.state)
 }
+
+//
+//
 
 type nonAggregateExpression struct {
 	expression impls.Expression

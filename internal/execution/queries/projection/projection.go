@@ -1,7 +1,6 @@
 package projection
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
@@ -9,7 +8,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
-	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type projectionNode struct {
@@ -36,12 +34,12 @@ func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 }
 
 func (n *projectionNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.Node.AddFilter(ctx, n.deprojectExpression(filter))
+	n.Node.AddFilter(ctx, n.projection.DeprojectExpression(filter))
 }
 
 func (n *projectionNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	mapped, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
-		return n.deprojectExpression(expression), nil
+		return n.projection.DeprojectExpression(expression), nil
 	})
 
 	n.Node.AddOrder(ctx, mapped)
@@ -58,7 +56,7 @@ func (n *projectionNode) Filter() impls.Expression {
 		return nil
 	}
 
-	return n.projectExpression(filter)
+	return n.projection.ProjectExpression(filter)
 }
 
 func (n *projectionNode) Ordering() impls.OrderExpression {
@@ -68,7 +66,7 @@ func (n *projectionNode) Ordering() impls.OrderExpression {
 	}
 
 	mapped, _ := ordering.Map(func(expression impls.Expression) (impls.Expression, error) {
-		return n.projectExpression(expression), nil
+		return n.projection.ProjectExpression(expression), nil
 	})
 
 	return mapped
@@ -108,32 +106,4 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 
 		return rows.NewRow(n.projection.Fields(), values)
 	}), nil
-}
-
-//
-//
-
-func (p *projectionNode) projectExpression(expression impls.Expression) impls.Expression {
-	aliases := p.projection.Aliases()
-	projectionFields := p.projection.Fields()
-
-	for i, alias := range aliases {
-		if named, ok := alias.Expression.(expressions.NamedExpression); ok {
-			expression = projection.Alias(expression, named.Field(), expressions.NewNamed(projectionFields[i]))
-		}
-	}
-
-	return expression
-}
-
-func (p *projectionNode) deprojectExpression(expression impls.Expression) impls.Expression {
-	aliases := p.projection.Aliases()
-	projectionFields := p.projection.Fields()
-
-	for i, alias := range aliases {
-		field := fields.NewField(projectionFields[i].RelationName(), alias.Alias, types.TypeAny, fields.NonInternalField)
-		expression = projection.Alias(expression, field, alias.Expression)
-	}
-
-	return expression
 }

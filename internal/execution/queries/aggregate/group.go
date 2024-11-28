@@ -3,6 +3,7 @@ package aggregate
 import (
 	"strings"
 
+	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
@@ -18,7 +19,6 @@ type hashAggregate struct {
 	queries.Node
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
-	aggregateFactory impls.AggregateExpressionFactory
 }
 
 var _ queries.Node = &hashAggregate{}
@@ -27,13 +27,11 @@ func NewHashAggregate(
 	node queries.Node,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
-	aggregateFactory impls.AggregateExpressionFactory,
 ) queries.Node {
 	return &hashAggregate{
 		Node:             node,
 		groupExpressions: groupExpressions,
 		projection:       projection,
-		aggregateFactory: aggregateFactory,
 	}
 }
 
@@ -56,7 +54,13 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 }
 
 func (n *hashAggregate) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.Node.AddFilter(ctx, filter)
+	for _, expr := range expressions.Conjunctions(filter) {
+		expr := n.projection.DeprojectExpression(expr)
+
+		if _, _, containsAggregate, _ := expressions.PartitionAggregatedFieldReferences(ctx, []impls.Expression{expr}, nil); !containsAggregate {
+			n.Node.AddFilter(ctx, expr)
+		}
+	}
 }
 
 func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
@@ -64,11 +68,17 @@ func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.Orde
 }
 
 func (n *hashAggregate) Optimize(ctx impls.OptimizationContext) {
+	n.projection.Optimize(ctx)
 	n.Node.Optimize(ctx)
 }
 
 func (n *hashAggregate) Filter() impls.Expression {
-	return n.Node.Filter()
+	filter := n.Node.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	return n.projection.ProjectExpression(filter)
 }
 
 func (n *hashAggregate) Ordering() impls.OrderExpression {
@@ -90,9 +100,8 @@ func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, er
 			return aggregateExpressions, nil
 		}
 
-		aggregateExpressions, err := n.aggregateFactory(ctx)
-		if err != nil {
-			return nil, err
+		for _, projectedExpression := range n.projection.Aliases() {
+			aggregateExpressions = append(aggregateExpressions, expressions.AsAggregate(ctx, projectedExpression.Expression))
 		}
 
 		buckets[key] = aggregateExpressions

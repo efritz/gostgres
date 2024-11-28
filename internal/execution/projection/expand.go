@@ -113,7 +113,7 @@ func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables ...Aliase
 	expression := p.expression
 	for _, table := range aliasedTables {
 		for _, field := range fields {
-			expression = Alias(expression, field.WithRelationName(table.Alias), expressions.NewNamed(field))
+			expression = MapFieldToExpression(expression, field.WithRelationName(table.Alias), expressions.NewNamed(field))
 		}
 	}
 

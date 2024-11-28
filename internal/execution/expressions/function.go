@@ -60,12 +60,12 @@ func (e *functionExpression) Resolve(ctx impls.ExpressionResolutionContext) erro
 	return nil
 }
 
-func lookupFunction(ctx impls.ExpressionResolutionContext, name string) (_ impls.Callable, isAggregate bool, ok bool) {
-	if f, ok := ctx.Catalog.Functions.Get(name); ok {
+func lookupFunction(ctx impls.Cataloger, name string) (_ impls.Callable, isAggregate bool, ok bool) {
+	if f, ok := ctx.Catalog().Functions.Get(name); ok {
 		return f, false, true
 	}
 
-	if a, ok := ctx.Catalog.Aggregates.Get(name); ok {
+	if a, ok := ctx.Catalog().Aggregates.Get(name); ok {
 		return a, true, true
 	}
 
@@ -124,7 +124,7 @@ func (e functionExpression) Map(f func(impls.Expression) (impls.Expression, erro
 }
 
 func (e functionExpression) ValueFrom(ctx impls.ExecutionContext, row rows.Row) (any, error) {
-	f, ok := ctx.Catalog.Functions.Get(e.name)
+	f, ok := ctx.Catalog().Functions.Get(e.name)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", e.name)
 	}

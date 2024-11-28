@@ -22,7 +22,7 @@ Plan:
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  project {title_length, count}
     order by s.count desc, s.title_length
-        filter by s.title_length > 5 and s.count > 3
+        filter by s.count > 3
             project {title_length, count} into s.*
                 group by length(f.title), project {length(f.title) as title_length, count(1) as count}
                     project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*

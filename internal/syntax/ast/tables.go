@@ -169,6 +169,13 @@ func (e *TableExpression) Build() (queries.Node, error) {
 			return nil, err
 		}
 
+		// TODO - We might want a SELECT/JOIN mega-node in which we can better control
+		// the optimizatin of join order and strategy selection. This must include all
+		// JOIN targets as well as the FROM.
+		//
+		// We may want the ability to do some amount of optimizations before we select
+		// an order. We'll also want to do some more "global"-level rewrites, such as
+		// pulling subqueries into the join list, that are tricky to do in tree form.
 		node = joins.NewJoin(node, right, j.Condition)
 	}
 

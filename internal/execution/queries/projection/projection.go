@@ -46,12 +46,7 @@ func (n *logicalProjectionNode) Optimize(ctx impls.OptimizationContext) {
 }
 
 func (n *logicalProjectionNode) Filter() impls.Expression {
-	filter := n.LogicalNode.Filter()
-	if filter == nil {
-		return nil
-	}
-
-	return n.projection.ProjectExpression(filter)
+	return n.projection.ProjectExpression(n.LogicalNode.Filter())
 }
 
 func (n *logicalProjectionNode) Ordering() impls.OrderExpression {

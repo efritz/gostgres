@@ -10,8 +10,8 @@ ORDER BY s.email;
 
 Plan:
 
-                     query plan
------------------------------------------------------
+                    query plan
+---------------------------------------------------
  project {email}
     order by s.email
         project {email} into s.*
@@ -20,8 +20,8 @@ Plan:
                     table scan of customer
             with
                 project {email}
-                    table scan of customer
-                        filter: customer.active = 0
+                    filter by customer.active = 0
+                        table scan of customer
 (1 rows)
 
 Results:

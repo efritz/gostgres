@@ -24,8 +24,8 @@ Plan:
             join using nested loop
                 join using nested loop
                     project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*
-                        table scan of film
-                            filter: film.rental_rate > 4.5
+                        filter by film.rental_rate > 4.5
+                            table scan of film
                 with
                     project {film_id, category_id, last_update} into fc.*
                         btree index scan of film_category via film_category_pkey

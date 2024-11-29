@@ -22,11 +22,8 @@ func NewOffset(node queries.LogicalNode, offset int) queries.LogicalNode {
 	}
 }
 
-func (n *logicalOffsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalOffsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalOffsetNode) Optimize(ctx impls.OptimizationContext)                              { n.LogicalNode.Optimize(ctx) }
-func (n *logicalOffsetNode) Filter() impls.Expression                                            { return n.LogicalNode.Filter() }
-func (n *logicalOffsetNode) Ordering() impls.OrderExpression                                     { return n.LogicalNode.Ordering() }
+func (n *logicalOffsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // boundary
+func (n *logicalOffsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
 func (n *logicalOffsetNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalOffsetNode) Build() queries.Node {

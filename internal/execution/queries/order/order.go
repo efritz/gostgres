@@ -23,10 +23,6 @@ func NewOrder(node queries.LogicalNode, order impls.OrderExpression) queries.Log
 	}
 }
 
-func (n *logicalOrderNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.LogicalNode.AddFilter(ctx, filter)
-}
-
 func (n *logicalOrderNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	// We are nested in a parent sort and un-separated by an ordering boundary
 	// (such as limit or offset). We'll ignore our old sort criteria and adopt
@@ -61,6 +57,10 @@ func (n *logicalOrderNode) SupportsMarkRestore() bool {
 }
 
 func (n *logicalOrderNode) Build() queries.Node {
+	if n.order == nil {
+		return n.LogicalNode.Build()
+	}
+
 	return &orderNode{
 		Node:   n.LogicalNode.Build(),
 		order:  n.order,
@@ -80,12 +80,8 @@ type orderNode struct {
 var _ queries.Node = &orderNode{}
 
 func (n *orderNode) Serialize(w serialization.IndentWriter) {
-	if n.order == nil {
-		n.Node.Serialize(w)
-	} else {
-		w.WritefLine("order by %s", n.order)
-		n.Node.Serialize(w.Indent())
-	}
+	w.WritefLine("order by %s", n.order)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *orderNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

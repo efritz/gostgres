@@ -22,11 +22,8 @@ func NewLimit(node queries.LogicalNode, limit int) queries.LogicalNode {
 	}
 }
 
-func (n *logicalLimitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalLimitNode) Optimize(ctx impls.OptimizationContext)                              { n.LogicalNode.Optimize(ctx) }
-func (n *logicalLimitNode) Filter() impls.Expression                                            { return n.LogicalNode.Filter() }
-func (n *logicalLimitNode) Ordering() impls.OrderExpression                                     { return n.LogicalNode.Ordering() }
+func (n *logicalLimitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // boundary
+func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
 func (n *logicalLimitNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalLimitNode) Build() queries.Node {

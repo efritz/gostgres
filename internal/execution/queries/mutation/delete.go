@@ -32,20 +32,12 @@ func NewDelete(node queries.LogicalNode, table impls.Table, aliasName string) (q
 	}, nil
 }
 
-func (n *logicalDeleteNode) Fields() []fields.Field {
-	return n.fields
-}
-
+func (n *logicalDeleteNode) Fields() []fields.Field                                              { return n.fields }
 func (n *logicalDeleteNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalDeleteNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-
-func (n *logicalDeleteNode) Optimize(ctx impls.OptimizationContext) {
-	n.LogicalNode.Optimize(ctx)
-}
-
-func (n *logicalDeleteNode) Filter() impls.Expression        { return nil }
-func (n *logicalDeleteNode) Ordering() impls.OrderExpression { return nil }
-func (n *logicalDeleteNode) SupportsMarkRestore() bool       { return false }
+func (n *logicalDeleteNode) Filter() impls.Expression                                            { return nil }
+func (n *logicalDeleteNode) Ordering() impls.OrderExpression                                     { return nil }
+func (n *logicalDeleteNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalDeleteNode) Build() queries.Node {
 	return &deleteNode{

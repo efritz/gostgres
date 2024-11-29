@@ -79,10 +79,13 @@ func (n *logicalAccessNode) SupportsMarkRestore() bool {
 }
 
 func (n *logicalAccessNode) Build() queries.Node {
+	if f := n.filter; f != nil {
+		n.filter = nil
+		return filter.NewFilter(n, f).Build()
+	}
+
 	return &accessNode{
 		table:    n.table,
-		filter:   n.filter,
-		order:    n.order,
 		strategy: n.strategy,
 	}
 }
@@ -92,8 +95,6 @@ func (n *logicalAccessNode) Build() queries.Node {
 
 type accessNode struct {
 	table    impls.Table
-	filter   impls.Expression
-	order    impls.OrderExpression
 	strategy accessStrategy
 }
 
@@ -101,26 +102,8 @@ var _ queries.Node = &accessNode{}
 
 func (n *accessNode) Serialize(w serialization.IndentWriter) {
 	n.strategy.Serialize(w)
-
-	if n.filter != nil {
-		w.Indent().WritefLine("filter: %s", n.filter)
-	}
 }
 
 func (n *accessNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
-	ctx.Log("Building Access Node scanner")
-
-	scanner, err := n.strategy.Scanner(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if n.filter != nil {
-		scanner, err = filter.NewFilterScanner(ctx, scanner, n.filter)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return scanner, nil
+	return n.strategy.Scanner(ctx)
 }

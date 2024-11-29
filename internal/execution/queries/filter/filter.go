@@ -5,7 +5,9 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
+	"github.com/efritz/gostgres/internal/shared/types"
 )
 
 type logicalFilterNode struct {
@@ -26,10 +28,6 @@ func (n *logicalFilterNode) AddFilter(ctx impls.OptimizationContext, filter impl
 	n.filter = expressions.UnionFilters(n.filter, filter)
 }
 
-func (n *logicalFilterNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
-	n.LogicalNode.AddOrder(ctx, order)
-}
-
 func (n *logicalFilterNode) Optimize(ctx impls.OptimizationContext) {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
@@ -44,15 +42,15 @@ func (n *logicalFilterNode) Filter() impls.Expression {
 	return expressions.UnionFilters(n.filter, n.LogicalNode.Filter())
 }
 
-func (n *logicalFilterNode) Ordering() impls.OrderExpression {
-	return n.LogicalNode.Ordering()
-}
-
 func (n *logicalFilterNode) SupportsMarkRestore() bool {
 	return false
 }
 
 func (n *logicalFilterNode) Build() queries.Node {
+	if n.filter == nil {
+		return n.LogicalNode.Build()
+	}
+
 	return &filterNode{
 		Node:   n.LogicalNode.Build(),
 		filter: n.filter,
@@ -70,12 +68,8 @@ type filterNode struct {
 var _ queries.Node = &filterNode{}
 
 func (n *filterNode) Serialize(w serialization.IndentWriter) {
-	if n.filter == nil {
-		n.Node.Serialize(w)
-	} else {
-		w.WritefLine("filter by %s", n.filter)
-		n.Node.Serialize(w.Indent())
-	}
+	w.WritefLine("filter by %s", n.filter)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *filterNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
@@ -86,5 +80,22 @@ func (n *filterNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 		return nil, err
 	}
 
-	return NewFilterScanner(ctx, scanner, n.filter)
+	return scan.RowScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Filter")
+
+		for {
+			row, err := scanner.Scan()
+			if err != nil {
+				return rows.Row{}, err
+			}
+
+			if ok, err := types.ValueAs[bool](queries.Evaluate(ctx, n.filter, row)); err != nil {
+				return rows.Row{}, err
+			} else if ok == nil || !*ok {
+				continue
+			}
+
+			return row, nil
+		}
+	}), nil
 }

@@ -11,14 +11,14 @@ import (
 )
 
 type logicalExplain struct {
-	n queries.LogicalNode
+	queries.LogicalNode
 }
 
 var _ queries.LogicalNode = &logicalExplain{}
 
 func NewExplain(n queries.LogicalNode) *logicalExplain {
 	return &logicalExplain{
-		n: n,
+		LogicalNode: n,
 	}
 }
 
@@ -32,16 +32,15 @@ func (n *logicalExplain) Fields() []fields.Field {
 	return []fields.Field{queryPlanField}
 }
 
-func (n *logicalExplain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalExplain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalExplain) Optimize(ctx impls.OptimizationContext)                              { n.n.Optimize(ctx) }
+func (n *logicalExplain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // top-level
+func (n *logicalExplain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // top-level
 func (n *logicalExplain) Filter() impls.Expression                                            { return nil }
 func (n *logicalExplain) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalExplain) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalExplain) Build() queries.Node {
 	return &explainNode{
-		n:      n.n.Build(),
+		n:      n.LogicalNode.Build(),
 		fields: n.Fields(),
 	}
 }
@@ -57,6 +56,7 @@ type explainNode struct {
 var _ queries.Node = &explainNode{}
 
 func (n *explainNode) Serialize(w serialization.IndentWriter) {
+	// Explain never explained
 }
 
 func (n *explainNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

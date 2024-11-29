@@ -63,6 +63,10 @@ func (p *Projection) Optimize(ctx impls.OptimizationContext) {
 }
 
 func (p *Projection) ProjectExpression(expression impls.Expression) impls.Expression {
+	if expression == nil {
+		return nil
+	}
+
 	for _, alias := range p.aliases {
 		expression = MapExpressionToField(expression, p.targetRelationName, alias)
 	}
@@ -71,6 +75,10 @@ func (p *Projection) ProjectExpression(expression impls.Expression) impls.Expres
 }
 
 func (p *Projection) DeprojectExpression(expression impls.Expression) impls.Expression {
+	if expression == nil {
+		return nil
+	}
+
 	for i, alias := range p.aliases {
 		expression = MapFieldToExpression(expression, p.projectedFields[i].WithName(alias.Alias), alias.Expression)
 	}

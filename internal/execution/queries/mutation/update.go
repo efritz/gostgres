@@ -41,25 +41,12 @@ func NewUpdate(node queries.LogicalNode, table impls.Table, aliasName string, se
 	}, nil
 }
 
-func (n *logicalUpdateNode) Fields() []fields.Field {
-	return n.fields
-}
-
-func (n *updateNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("update %s", n.table.Name())
-	n.Node.Serialize(w.Indent())
-}
-
+func (n *logicalUpdateNode) Fields() []fields.Field                                              { return n.fields }
 func (n *logicalUpdateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalUpdateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-
-func (n *logicalUpdateNode) Optimize(ctx impls.OptimizationContext) {
-	n.LogicalNode.Optimize(ctx)
-}
-
-func (n *logicalUpdateNode) Filter() impls.Expression        { return nil }
-func (n *logicalUpdateNode) Ordering() impls.OrderExpression { return nil }
-func (n *logicalUpdateNode) SupportsMarkRestore() bool       { return false }
+func (n *logicalUpdateNode) Filter() impls.Expression                                            { return nil }
+func (n *logicalUpdateNode) Ordering() impls.OrderExpression                                     { return nil }
+func (n *logicalUpdateNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalUpdateNode) Build() queries.Node {
 	return &updateNode{
@@ -83,6 +70,11 @@ type updateNode struct {
 }
 
 var _ queries.Node = &updateNode{}
+
+func (n *updateNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("update %s", n.table.Name())
+	n.Node.Serialize(w.Indent())
+}
 
 func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Update scanner")

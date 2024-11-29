@@ -71,10 +71,7 @@ func (s *orderScanner) Restore() {
 }
 
 func findIndexIterationOrder(ctx impls.ExecutionContext, order impls.OrderExpression, rows rows.Rows) ([]int, error) {
-	var expressions []impls.ExpressionWithDirection
-	if order != nil {
-		expressions = order.Expressions()
-	}
+	expressions := order.Expressions()
 
 	indexValues, err := makeIndexValues(ctx, expressions, rows)
 	if err != nil {

@@ -34,20 +34,12 @@ func NewInsert(node queries.LogicalNode, table impls.Table, columnNames []string
 	}, nil
 }
 
-func (n *logicalInsertNode) Fields() []fields.Field {
-	return n.fields
-}
-
+func (n *logicalInsertNode) Fields() []fields.Field                                              { return n.fields }
 func (n *logicalInsertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalInsertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-
-func (n *logicalInsertNode) Optimize(ctx impls.OptimizationContext) {
-	n.LogicalNode.Optimize(ctx)
-}
-
-func (n *logicalInsertNode) Filter() impls.Expression        { return nil }
-func (n *logicalInsertNode) Ordering() impls.OrderExpression { return nil }
-func (n *logicalInsertNode) SupportsMarkRestore() bool       { return false }
+func (n *logicalInsertNode) Filter() impls.Expression                                            { return nil }
+func (n *logicalInsertNode) Ordering() impls.OrderExpression                                     { return nil }
+func (n *logicalInsertNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalInsertNode) Build() queries.Node {
 	return &insertNode{

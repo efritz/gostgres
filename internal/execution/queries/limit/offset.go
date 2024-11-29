@@ -8,19 +8,43 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalOffsetNode struct {
+	queries.LogicalNode
+	offset int
+}
+
+var _ queries.LogicalNode = &logicalOffsetNode{}
+
+func NewOffset(node queries.LogicalNode, offset int) queries.LogicalNode {
+	return &logicalOffsetNode{
+		LogicalNode: node,
+		offset:      offset,
+	}
+}
+
+func (n *logicalOffsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalOffsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *logicalOffsetNode) Optimize(ctx impls.OptimizationContext)                              { n.LogicalNode.Optimize(ctx) }
+func (n *logicalOffsetNode) Filter() impls.Expression                                            { return n.LogicalNode.Filter() }
+func (n *logicalOffsetNode) Ordering() impls.OrderExpression                                     { return n.LogicalNode.Ordering() }
+func (n *logicalOffsetNode) SupportsMarkRestore() bool                                           { return false }
+
+func (n *logicalOffsetNode) Build() queries.Node {
+	return &offsetNode{
+		Node:   n.LogicalNode.Build(),
+		offset: n.offset,
+	}
+}
+
+//
+//
+
 type offsetNode struct {
 	queries.Node
 	offset int
 }
 
 var _ queries.Node = &offsetNode{}
-
-func NewOffset(node queries.Node, offset int) queries.Node {
-	return &offsetNode{
-		Node:   node,
-		offset: offset,
-	}
-}
 
 func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	if n.offset == 0 {
@@ -30,13 +54,6 @@ func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 		n.Node.Serialize(w.Indent())
 	}
 }
-
-func (n *offsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *offsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *offsetNode) Optimize(ctx impls.OptimizationContext)                              { n.Node.Optimize(ctx) }
-func (n *offsetNode) Filter() impls.Expression                                            { return n.Node.Filter() }
-func (n *offsetNode) Ordering() impls.OrderExpression                                     { return n.Node.Ordering() }
-func (n *offsetNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *offsetNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Offset scanner")

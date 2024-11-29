@@ -9,7 +9,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func LowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...queries.Node) {
+func LowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...queries.LogicalNode) {
 	for _, expression := range expressions.Conjunctions(filter) {
 		for _, node := range nodes {
 			lowerFilter(ctx, expression, node)
@@ -17,7 +17,7 @@ func LowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes .
 	}
 }
 
-func lowerFilter(ctx impls.OptimizationContext, expression impls.Expression, node queries.Node) {
+func lowerFilter(ctx impls.OptimizationContext, expression impls.Expression, node queries.LogicalNode) {
 	expressionFields := expressions.Fields(expression)
 	nodeFields := node.Fields()
 	outerFields := ctx.OuterFields()

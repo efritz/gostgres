@@ -6,7 +6,7 @@ import (
 	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
 )
 
-func aliasTableName(node queries.Node, name string) (queries.Node, error) {
+func aliasTableName(node queries.LogicalNode, name string) (queries.LogicalNode, error) {
 	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
 		name,
 		node.Fields(),

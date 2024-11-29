@@ -15,35 +15,90 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type hashAggregate struct {
-	queries.Node
+type logicalGroupNode struct {
+	queries.LogicalNode
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
 }
 
-var _ queries.Node = &hashAggregate{}
+var _ queries.LogicalNode = &logicalGroupNode{}
 
 func NewHashAggregate(
-	node queries.Node,
+	node queries.LogicalNode,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
-) queries.Node {
-	return &hashAggregate{
-		Node:             node,
+) queries.LogicalNode {
+	return &logicalGroupNode{
+		LogicalNode:      node,
 		groupExpressions: groupExpressions,
 		projection:       projection,
 	}
 }
 
-func (n *hashAggregate) Name() string {
+func (n *logicalGroupNode) Name() string {
 	return ""
 }
 
-func (n *hashAggregate) Fields() []fields.Field {
+func (n *logicalGroupNode) Fields() []fields.Field {
 	return n.projection.Fields()
 }
 
-func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
+func (n *logicalGroupNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
+	for _, expr := range expressions.Conjunctions(filter) {
+		expr := n.projection.DeprojectExpression(expr)
+
+		if _, _, containsAggregate, _ := expressions.PartitionAggregatedFieldReferences(ctx, []impls.Expression{expr}, nil); !containsAggregate {
+			n.LogicalNode.AddFilter(ctx, expr)
+		}
+	}
+}
+
+func (n *logicalGroupNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
+	// No-op
+}
+
+func (n *logicalGroupNode) Optimize(ctx impls.OptimizationContext) {
+	n.projection.Optimize(ctx)
+	n.LogicalNode.Optimize(ctx)
+}
+
+func (n *logicalGroupNode) Filter() impls.Expression {
+	filter := n.LogicalNode.Filter()
+	if filter == nil {
+		return nil
+	}
+
+	return n.projection.ProjectExpression(filter)
+}
+
+func (n *logicalGroupNode) Ordering() impls.OrderExpression {
+	return nil
+}
+
+func (n *logicalGroupNode) SupportsMarkRestore() bool {
+	return false
+}
+
+func (n *logicalGroupNode) Build() queries.Node {
+	return &groupNode{
+		Node:             n.LogicalNode.Build(),
+		groupExpressions: n.groupExpressions,
+		projection:       n.projection,
+	}
+}
+
+//
+//
+
+type groupNode struct {
+	queries.Node
+	groupExpressions []impls.Expression
+	projection       *projection.Projection
+}
+
+var _ queries.Node = &groupNode{}
+
+func (n *groupNode) Serialize(w serialization.IndentWriter) {
 	var strExpressions []string
 	for _, expr := range n.groupExpressions {
 		strExpressions = append(strExpressions, expr.String())
@@ -53,43 +108,7 @@ func (n *hashAggregate) Serialize(w serialization.IndentWriter) {
 	n.Node.Serialize(w.Indent())
 }
 
-func (n *hashAggregate) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	for _, expr := range expressions.Conjunctions(filter) {
-		expr := n.projection.DeprojectExpression(expr)
-
-		if _, _, containsAggregate, _ := expressions.PartitionAggregatedFieldReferences(ctx, []impls.Expression{expr}, nil); !containsAggregate {
-			n.Node.AddFilter(ctx, expr)
-		}
-	}
-}
-
-func (n *hashAggregate) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
-	// No-op
-}
-
-func (n *hashAggregate) Optimize(ctx impls.OptimizationContext) {
-	n.projection.Optimize(ctx)
-	n.Node.Optimize(ctx)
-}
-
-func (n *hashAggregate) Filter() impls.Expression {
-	filter := n.Node.Filter()
-	if filter == nil {
-		return nil
-	}
-
-	return n.projection.ProjectExpression(filter)
-}
-
-func (n *hashAggregate) Ordering() impls.OrderExpression {
-	return nil
-}
-
-func (n *hashAggregate) SupportsMarkRestore() bool {
-	return false
-}
-
-func (n *hashAggregate) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
+func (n *groupNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Aggregate scanner")
 
 	buckets := map[uint64][]impls.AggregateExpression{}

@@ -9,6 +9,45 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalValuesNode struct {
+	fields      []fields.Field
+	expressions [][]impls.Expression
+}
+
+var _ queries.LogicalNode = &logicalValuesNode{}
+
+func NewValues(fields []fields.Field, expressions [][]impls.Expression) queries.LogicalNode {
+	return &logicalValuesNode{
+		fields:      fields,
+		expressions: expressions,
+	}
+}
+
+func (n *logicalValuesNode) Name() string {
+	return "values"
+}
+
+func (n *logicalValuesNode) Fields() []fields.Field {
+	return n.fields
+}
+
+func (n *logicalValuesNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalValuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *logicalValuesNode) Optimize(ctx impls.OptimizationContext)                              {}
+func (n *logicalValuesNode) Filter() impls.Expression                                            { return nil }
+func (n *logicalValuesNode) Ordering() impls.OrderExpression                                     { return nil }
+func (n *logicalValuesNode) SupportsMarkRestore() bool                                           { return false }
+
+func (n *logicalValuesNode) Build() queries.Node {
+	return &valuesNode{
+		fields:      n.fields,
+		expressions: n.expressions,
+	}
+}
+
+//
+//
+
 type valuesNode struct {
 	fields      []fields.Field
 	expressions [][]impls.Expression
@@ -16,31 +55,9 @@ type valuesNode struct {
 
 var _ queries.Node = &valuesNode{}
 
-func NewValues(fields []fields.Field, expressions [][]impls.Expression) queries.Node {
-	return &valuesNode{
-		fields:      fields,
-		expressions: expressions,
-	}
-}
-
-func (n *valuesNode) Name() string {
-	return "values"
-}
-
-func (n *valuesNode) Fields() []fields.Field {
-	return n.fields
-}
-
 func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")
 }
-
-func (n *valuesNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *valuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *valuesNode) Optimize(ctx impls.OptimizationContext)                              {}
-func (n *valuesNode) Filter() impls.Expression                                            { return nil }
-func (n *valuesNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *valuesNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *valuesNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Values scanner")

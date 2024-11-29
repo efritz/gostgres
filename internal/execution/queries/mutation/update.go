@@ -11,6 +11,69 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalUpdateNode struct {
+	queries.LogicalNode
+	table          impls.Table
+	fields         []fields.Field
+	aliasName      string
+	setExpressions []SetExpression
+}
+
+var _ queries.LogicalNode = &logicalUpdateNode{}
+
+type SetExpression struct {
+	Name       string
+	Expression impls.Expression
+}
+
+func NewUpdate(node queries.LogicalNode, table impls.Table, aliasName string, setExpressions []SetExpression) (queries.LogicalNode, error) {
+	var fields []fields.Field
+	for _, field := range table.Fields() {
+		fields = append(fields, field.Field)
+	}
+
+	return &logicalUpdateNode{
+		LogicalNode:    node,
+		table:          table,
+		fields:         fields,
+		aliasName:      aliasName,
+		setExpressions: setExpressions,
+	}, nil
+}
+
+func (n *logicalUpdateNode) Fields() []fields.Field {
+	return n.fields
+}
+
+func (n *updateNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("update %s", n.table.Name())
+	n.Node.Serialize(w.Indent())
+}
+
+func (n *logicalUpdateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalUpdateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+
+func (n *logicalUpdateNode) Optimize(ctx impls.OptimizationContext) {
+	n.LogicalNode.Optimize(ctx)
+}
+
+func (n *logicalUpdateNode) Filter() impls.Expression        { return nil }
+func (n *logicalUpdateNode) Ordering() impls.OrderExpression { return nil }
+func (n *logicalUpdateNode) SupportsMarkRestore() bool       { return false }
+
+func (n *logicalUpdateNode) Build() queries.Node {
+	return &updateNode{
+		Node:           n.LogicalNode.Build(),
+		table:          n.table,
+		fields:         n.fields,
+		aliasName:      n.aliasName,
+		setExpressions: n.setExpressions,
+	}
+}
+
+//
+//
+
 type updateNode struct {
 	queries.Node
 	table          impls.Table
@@ -20,46 +83,6 @@ type updateNode struct {
 }
 
 var _ queries.Node = &updateNode{}
-
-type SetExpression struct {
-	Name       string
-	Expression impls.Expression
-}
-
-func NewUpdate(node queries.Node, table impls.Table, aliasName string, setExpressions []SetExpression) (queries.Node, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	return &updateNode{
-		Node:           node,
-		table:          table,
-		fields:         fields,
-		aliasName:      aliasName,
-		setExpressions: setExpressions,
-	}, nil
-}
-
-func (n *updateNode) Fields() []fields.Field {
-	return n.fields
-}
-
-func (n *updateNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("update %s", n.table.Name())
-	n.Node.Serialize(w.Indent())
-}
-
-func (n *updateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *updateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-
-func (n *updateNode) Optimize(ctx impls.OptimizationContext) {
-	n.Node.Optimize(ctx)
-}
-
-func (n *updateNode) Filter() impls.Expression        { return nil }
-func (n *updateNode) Ordering() impls.OrderExpression { return nil }
-func (n *updateNode) SupportsMarkRestore() bool       { return false }
 
 func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Update scanner")

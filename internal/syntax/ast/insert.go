@@ -32,7 +32,7 @@ func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *InsertBuilder) Build() (queries.Node, error) {
+func (b *InsertBuilder) Build() (queries.LogicalNode, error) {
 	node, err := b.Source.Build()
 	if err != nil {
 		return nil, err

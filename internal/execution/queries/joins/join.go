@@ -13,18 +13,18 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type joinNode struct {
-	left     queries.Node
-	right    queries.Node
+type logicalJoinNode struct {
+	left     queries.LogicalNode
+	right    queries.LogicalNode
 	filter   impls.Expression
 	fields   []fields.Field
-	strategy joinStrategy
+	strategy logicalJoinStrategy
 }
 
-var _ queries.Node = &joinNode{}
+var _ queries.LogicalNode = &logicalJoinNode{}
 
-func NewJoin(left queries.Node, right queries.Node, condition impls.Expression) queries.Node {
-	return &joinNode{
+func NewJoin(left queries.LogicalNode, right queries.LogicalNode, condition impls.Expression) queries.LogicalNode {
+	return &logicalJoinNode{
 		left:     left,
 		right:    right,
 		filter:   condition,
@@ -33,34 +33,23 @@ func NewJoin(left queries.Node, right queries.Node, condition impls.Expression) 
 	}
 }
 
-func (n *joinNode) Name() string {
+func (n *logicalJoinNode) Name() string {
 	return ""
 }
 
-func (n *joinNode) Fields() []fields.Field {
+func (n *logicalJoinNode) Fields() []fields.Field {
 	return slices.Clone(n.fields)
 }
 
-func (n *joinNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("join using %s", n.strategy.Name())
-	n.left.Serialize(w.Indent())
-	w.WritefLine("with")
-	n.right.Serialize(w.Indent())
-
-	if n.filter != nil {
-		w.WritefLine("on %s", n.filter)
-	}
-}
-
-func (n *joinNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
+func (n *logicalJoinNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *joinNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+func (n *logicalJoinNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
 	order.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
-func (n *joinNode) Optimize(ctx impls.OptimizationContext) {
+func (n *logicalJoinNode) Optimize(ctx impls.OptimizationContext) {
 	// NOTE: Outer fields depend on nested loop join strategy
 	// Merge and hash joins won't have have LHS rows available to RHS
 
@@ -73,14 +62,14 @@ func (n *joinNode) Optimize(ctx impls.OptimizationContext) {
 	n.left.Optimize(ctx)
 	n.right.Optimize(ctx.AddOuterFields(n.left.Fields()))
 	n.filter = expressions.FilterDifference(n.filter, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
-	n.strategy = &nestedLoopJoinStrategy{n: n}
+	n.strategy = &logicalNestedLoopJoinStrategy{n: n}
 }
 
-func (n *joinNode) Filter() impls.Expression {
+func (n *logicalJoinNode) Filter() impls.Expression {
 	return expressions.UnionFilters(n.filter, n.left.Filter(), n.right.Filter())
 }
 
-func (n *joinNode) Ordering() impls.OrderExpression {
+func (n *logicalJoinNode) Ordering() impls.OrderExpression {
 	if n.strategy == nil {
 		panic("No strategy set - optimization required before ordering can be determined")
 	}
@@ -88,8 +77,44 @@ func (n *joinNode) Ordering() impls.OrderExpression {
 	return n.strategy.Ordering()
 }
 
-func (n *joinNode) SupportsMarkRestore() bool {
+func (n *logicalJoinNode) SupportsMarkRestore() bool {
 	return false
+}
+
+func (n *logicalJoinNode) Build() queries.Node {
+	node := &joinNode{
+		left:   n.left.Build(),
+		right:  n.right.Build(),
+		filter: n.filter,
+		fields: n.fields,
+	}
+
+	node.strategy = n.strategy.Build(node)
+	return node
+}
+
+//
+//
+
+type joinNode struct {
+	left     queries.Node
+	right    queries.Node
+	filter   impls.Expression
+	fields   []fields.Field
+	strategy joinStrategy
+}
+
+var _ queries.Node = &joinNode{}
+
+func (n *joinNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("join using %s", n.strategy.Name())
+	n.left.Serialize(w.Indent())
+	w.WritefLine("with")
+	n.right.Serialize(w.Indent())
+
+	if n.filter != nil {
+		w.WritefLine("on %s", n.filter)
+	}
 }
 
 func (n *joinNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

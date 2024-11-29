@@ -8,6 +8,37 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalLimitNode struct {
+	queries.LogicalNode
+	limit int
+}
+
+var _ queries.LogicalNode = &logicalLimitNode{}
+
+func NewLimit(node queries.LogicalNode, limit int) queries.LogicalNode {
+	return &logicalLimitNode{
+		LogicalNode: node,
+		limit:       limit,
+	}
+}
+
+func (n *logicalLimitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *logicalLimitNode) Optimize(ctx impls.OptimizationContext)                              { n.LogicalNode.Optimize(ctx) }
+func (n *logicalLimitNode) Filter() impls.Expression                                            { return n.LogicalNode.Filter() }
+func (n *logicalLimitNode) Ordering() impls.OrderExpression                                     { return n.LogicalNode.Ordering() }
+func (n *logicalLimitNode) SupportsMarkRestore() bool                                           { return false }
+
+func (n *logicalLimitNode) Build() queries.Node {
+	return &limitNode{
+		Node:  n.LogicalNode.Build(),
+		limit: n.limit,
+	}
+}
+
+//
+//
+
 type limitNode struct {
 	queries.Node
 	limit int
@@ -15,24 +46,10 @@ type limitNode struct {
 
 var _ queries.Node = &limitNode{}
 
-func NewLimit(node queries.Node, limit int) queries.Node {
-	return &limitNode{
-		Node:  node,
-		limit: limit,
-	}
-}
-
 func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("limit %d", n.limit)
 	n.Node.Serialize(w.Indent())
 }
-
-func (n *limitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *limitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *limitNode) Optimize(ctx impls.OptimizationContext)                              { n.Node.Optimize(ctx) }
-func (n *limitNode) Filter() impls.Expression                                            { return n.Node.Filter() }
-func (n *limitNode) Ordering() impls.OrderExpression                                     { return n.Node.Ordering() }
-func (n *limitNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *limitNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Limit scanner")

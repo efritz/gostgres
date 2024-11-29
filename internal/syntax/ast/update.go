@@ -42,7 +42,7 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *UpdateBuilder) Build() (queries.Node, error) {
+func (b *UpdateBuilder) Build() (queries.LogicalNode, error) {
 	node := access.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		aliased, err := aliasTableName(node, b.Target.AliasName)

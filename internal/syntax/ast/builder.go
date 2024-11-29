@@ -10,7 +10,7 @@ type Resolver interface {
 }
 
 type Builder interface {
-	Build() (queries.Node, error)
+	Build() (queries.LogicalNode, error)
 }
 
 type BuilderResolver interface {

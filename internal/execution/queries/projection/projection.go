@@ -10,48 +10,43 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type projectionNode struct {
-	queries.Node
+type logicalProjectionNode struct {
+	queries.LogicalNode
 	projection *projection.Projection
 }
 
-var _ queries.Node = &projectionNode{}
+var _ queries.LogicalNode = &logicalProjectionNode{}
 
-func NewProjection(node queries.Node, projection *projection.Projection) queries.Node {
-	return &projectionNode{
-		Node:       node,
-		projection: projection,
+func NewProjection(node queries.LogicalNode, projection *projection.Projection) queries.LogicalNode {
+	return &logicalProjectionNode{
+		LogicalNode: node,
+		projection:  projection,
 	}
 }
 
-func (n *projectionNode) Fields() []fields.Field {
+func (n *logicalProjectionNode) Fields() []fields.Field {
 	return n.projection.Fields()
 }
 
-func (n *projectionNode) Serialize(w serialization.IndentWriter) {
-	w.WritefLine("project %s", n.projection)
-	n.Node.Serialize(w.Indent())
+func (n *logicalProjectionNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
+	n.LogicalNode.AddFilter(ctx, n.projection.DeprojectExpression(filter))
 }
 
-func (n *projectionNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.Node.AddFilter(ctx, n.projection.DeprojectExpression(filter))
-}
-
-func (n *projectionNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
+func (n *logicalProjectionNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	mapped, _ := order.Map(func(expression impls.Expression) (impls.Expression, error) {
 		return n.projection.DeprojectExpression(expression), nil
 	})
 
-	n.Node.AddOrder(ctx, mapped)
+	n.LogicalNode.AddOrder(ctx, mapped)
 }
 
-func (n *projectionNode) Optimize(ctx impls.OptimizationContext) {
+func (n *logicalProjectionNode) Optimize(ctx impls.OptimizationContext) {
 	n.projection.Optimize(ctx)
-	n.Node.Optimize(ctx)
+	n.LogicalNode.Optimize(ctx)
 }
 
-func (n *projectionNode) Filter() impls.Expression {
-	filter := n.Node.Filter()
+func (n *logicalProjectionNode) Filter() impls.Expression {
+	filter := n.LogicalNode.Filter()
 	if filter == nil {
 		return nil
 	}
@@ -59,8 +54,8 @@ func (n *projectionNode) Filter() impls.Expression {
 	return n.projection.ProjectExpression(filter)
 }
 
-func (n *projectionNode) Ordering() impls.OrderExpression {
-	ordering := n.Node.Ordering()
+func (n *logicalProjectionNode) Ordering() impls.OrderExpression {
+	ordering := n.LogicalNode.Ordering()
 	if ordering == nil {
 		return nil
 	}
@@ -72,8 +67,30 @@ func (n *projectionNode) Ordering() impls.OrderExpression {
 	return mapped
 }
 
-func (n *projectionNode) SupportsMarkRestore() bool {
+func (n *logicalProjectionNode) SupportsMarkRestore() bool {
 	return false
+}
+
+func (n *logicalProjectionNode) Build() queries.Node {
+	return &projectionNode{
+		Node:       n.LogicalNode.Build(),
+		projection: n.projection,
+	}
+}
+
+//
+//
+
+type projectionNode struct {
+	queries.Node
+	projection *projection.Projection
+}
+
+var _ queries.Node = &projectionNode{}
+
+func (n *projectionNode) Serialize(w serialization.IndentWriter) {
+	w.WritefLine("project %s", n.projection)
+	n.Node.Serialize(w.Indent())
 }
 
 func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

@@ -5,21 +5,18 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-type nestedLoopJoinStrategy struct {
-	n *joinNode
+type logicalNestedLoopJoinStrategy struct {
+	n *logicalJoinNode
 }
 
-func (s *nestedLoopJoinStrategy) Name() string {
-	return "nested loop"
-}
-
-func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
+func (s *logicalNestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	leftOrdering := s.n.left.Ordering()
 	if leftOrdering == nil {
 		return nil
@@ -31,6 +28,25 @@ func (s *nestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	}
 
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
+}
+
+func (s *logicalNestedLoopJoinStrategy) Build(n *joinNode) joinStrategy {
+	return &nestedLoopJoinStrategy{
+		n:      n,
+		fields: n.fields,
+	}
+}
+
+//
+//
+
+type nestedLoopJoinStrategy struct {
+	n      *joinNode
+	fields []fields.Field
+}
+
+func (s *nestedLoopJoinStrategy) Name() string {
+	return "nested loop"
 }
 
 func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
@@ -75,7 +91,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowSc
 				return rows.Row{}, err
 			}
 
-			row, err := rows.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
+			row, err := rows.NewRow(s.fields, append(slices.Clone(leftRow.Values), rightRow.Values...))
 			if err != nil {
 				return rows.Row{}, err
 			}

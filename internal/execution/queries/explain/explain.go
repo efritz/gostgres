@@ -10,37 +10,56 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-type explain struct {
-	n queries.Node
+type logicalExplain struct {
+	n queries.LogicalNode
 }
 
-var _ queries.Node = &explain{}
+var _ queries.LogicalNode = &logicalExplain{}
 
-func NewExplain(n queries.Node) *explain {
-	return &explain{
+func NewExplain(n queries.LogicalNode) *logicalExplain {
+	return &logicalExplain{
 		n: n,
 	}
 }
 
-func (n *explain) Name() string {
+func (n *logicalExplain) Name() string {
 	return "EXPLAIN"
 }
 
 var queryPlanField = fields.NewField("", "query plan", types.TypeText, fields.NonInternalField)
 
-func (n *explain) Fields() []fields.Field {
+func (n *logicalExplain) Fields() []fields.Field {
 	return []fields.Field{queryPlanField}
 }
 
-func (n *explain) Serialize(w serialization.IndentWriter)                              {}
-func (n *explain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *explain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *explain) Optimize(ctx impls.OptimizationContext)                              { n.n.Optimize(ctx) }
-func (n *explain) Filter() impls.Expression                                            { return nil }
-func (n *explain) Ordering() impls.OrderExpression                                     { return nil }
-func (n *explain) SupportsMarkRestore() bool                                           { return false }
+func (n *logicalExplain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalExplain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+func (n *logicalExplain) Optimize(ctx impls.OptimizationContext)                              { n.n.Optimize(ctx) }
+func (n *logicalExplain) Filter() impls.Expression                                            { return nil }
+func (n *logicalExplain) Ordering() impls.OrderExpression                                     { return nil }
+func (n *logicalExplain) SupportsMarkRestore() bool                                           { return false }
 
-func (n *explain) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
+func (n *logicalExplain) Build() queries.Node {
+	return &explainNode{
+		n:      n.n.Build(),
+		fields: n.Fields(),
+	}
+}
+
+//
+//
+
+type explainNode struct {
+	n      queries.Node
+	fields []fields.Field
+}
+
+var _ queries.Node = &explainNode{}
+
+func (n *explainNode) Serialize(w serialization.IndentWriter) {
+}
+
+func (n *explainNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Explain scanner")
 
 	plan := serialization.SerializePlan(n.n)
@@ -54,6 +73,6 @@ func (n *explain) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 		}
 
 		emitted = true
-		return rows.NewRow(n.Fields(), []any{plan})
+		return rows.NewRow(n.fields, []any{plan})
 	}), nil
 }

@@ -11,6 +11,56 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalInsertNode struct {
+	queries.LogicalNode
+	table       impls.Table
+	fields      []fields.Field
+	columnNames []string
+}
+
+var _ queries.LogicalNode = &logicalInsertNode{}
+
+func NewInsert(node queries.LogicalNode, table impls.Table, columnNames []string) (queries.LogicalNode, error) {
+	var fields []fields.Field
+	for _, field := range table.Fields() {
+		fields = append(fields, field.Field)
+	}
+
+	return &logicalInsertNode{
+		LogicalNode: node,
+		table:       table,
+		fields:      fields,
+		columnNames: columnNames,
+	}, nil
+}
+
+func (n *logicalInsertNode) Fields() []fields.Field {
+	return n.fields
+}
+
+func (n *logicalInsertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
+func (n *logicalInsertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
+
+func (n *logicalInsertNode) Optimize(ctx impls.OptimizationContext) {
+	n.LogicalNode.Optimize(ctx)
+}
+
+func (n *logicalInsertNode) Filter() impls.Expression        { return nil }
+func (n *logicalInsertNode) Ordering() impls.OrderExpression { return nil }
+func (n *logicalInsertNode) SupportsMarkRestore() bool       { return false }
+
+func (n *logicalInsertNode) Build() queries.Node {
+	return &insertNode{
+		Node:        n.LogicalNode.Build(),
+		table:       n.table,
+		fields:      n.fields,
+		columnNames: n.columnNames,
+	}
+}
+
+//
+//
+
 type insertNode struct {
 	queries.Node
 	table       impls.Table
@@ -20,39 +70,10 @@ type insertNode struct {
 
 var _ queries.Node = &insertNode{}
 
-func NewInsert(node queries.Node, table impls.Table, columnNames []string) (queries.Node, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	return &insertNode{
-		Node:        node,
-		table:       table,
-		fields:      fields,
-		columnNames: columnNames,
-	}, nil
-}
-
-func (n *insertNode) Fields() []fields.Field {
-	return n.fields
-}
-
 func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("insert into %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
 }
-
-func (n *insertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *insertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-
-func (n *insertNode) Optimize(ctx impls.OptimizationContext) {
-	n.Node.Optimize(ctx)
-}
-
-func (n *insertNode) Filter() impls.Expression        { return nil }
-func (n *insertNode) Ordering() impls.OrderExpression { return nil }
-func (n *insertNode) SupportsMarkRestore() bool       { return false }
 
 func (n *insertNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Insert scanner")

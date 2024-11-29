@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func wrapReturning(node queries.Node, table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (queries.Node, error) {
+func wrapReturning(node queries.LogicalNode, table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (queries.LogicalNode, error) {
 	var aliasedTables []projectionHelpers.AliasedTable
 	if alias != "" {
 		aliasedTables = append(aliasedTables, projectionHelpers.AliasedTable{

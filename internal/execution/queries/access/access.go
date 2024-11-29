@@ -10,26 +10,26 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type accessNode struct {
+type logicalAccessNode struct {
 	table    impls.Table
 	filter   impls.Expression
 	order    impls.OrderExpression
 	strategy accessStrategy
 }
 
-var _ queries.Node = &accessNode{}
+var _ queries.LogicalNode = &logicalAccessNode{}
 
-func NewAccess(table impls.Table) queries.Node {
-	return &accessNode{
+func NewAccess(table impls.Table) queries.LogicalNode {
+	return &logicalAccessNode{
 		table: table,
 	}
 }
 
-func (n *accessNode) Name() string {
+func (n *logicalAccessNode) Name() string {
 	return n.table.Name()
 }
 
-func (n *accessNode) Fields() []fields.Field {
+func (n *logicalAccessNode) Fields() []fields.Field {
 	var fields []fields.Field
 	for _, field := range n.table.Fields() {
 		// TODO - should never not be the case?
@@ -40,23 +40,15 @@ func (n *accessNode) Fields() []fields.Field {
 	return fields
 }
 
-func (n *accessNode) Serialize(w serialization.IndentWriter) {
-	n.strategy.Serialize(w)
-
-	if n.filter != nil {
-		w.Indent().WritefLine("filter: %s", n.filter)
-	}
-}
-
-func (n *accessNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
+func (n *logicalAccessNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
 	n.filter = expressions.UnionFilters(n.filter, filterExpression)
 }
 
-func (n *accessNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
+func (n *logicalAccessNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	n.order = order
 }
 
-func (n *accessNode) Optimize(ctx impls.OptimizationContext) {
+func (n *logicalAccessNode) Optimize(ctx impls.OptimizationContext) {
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
 	}
@@ -70,7 +62,7 @@ func (n *accessNode) Optimize(ctx impls.OptimizationContext) {
 	n.order = nil
 }
 
-func (n *accessNode) Filter() impls.Expression {
+func (n *logicalAccessNode) Filter() impls.Expression {
 	if filterExpression := n.strategy.Filter(); filterExpression != nil {
 		return expressions.UnionFilters(n.filter, filterExpression)
 	}
@@ -78,12 +70,41 @@ func (n *accessNode) Filter() impls.Expression {
 	return n.filter
 }
 
-func (n *accessNode) Ordering() impls.OrderExpression {
+func (n *logicalAccessNode) Ordering() impls.OrderExpression {
 	return n.strategy.Ordering()
 }
 
-func (n *accessNode) SupportsMarkRestore() bool {
+func (n *logicalAccessNode) SupportsMarkRestore() bool {
 	return false
+}
+
+func (n *logicalAccessNode) Build() queries.Node {
+	return &accessNode{
+		table:    n.table,
+		filter:   n.filter,
+		order:    n.order,
+		strategy: n.strategy,
+	}
+}
+
+//
+//
+
+type accessNode struct {
+	table    impls.Table
+	filter   impls.Expression
+	order    impls.OrderExpression
+	strategy accessStrategy
+}
+
+var _ queries.Node = &accessNode{}
+
+func (n *accessNode) Serialize(w serialization.IndentWriter) {
+	n.strategy.Serialize(w)
+
+	if n.filter != nil {
+		w.Indent().WritefLine("filter: %s", n.filter)
+	}
 }
 
 func (n *accessNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

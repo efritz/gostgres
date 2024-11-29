@@ -44,7 +44,7 @@ func (r *TableReference) TableFields() []fields.Field {
 	return fields
 }
 
-func (r *TableReference) Build() (queries.Node, error) {
+func (r *TableReference) Build() (queries.LogicalNode, error) {
 	return access.NewAccess(r.table), nil
 }
 
@@ -145,7 +145,7 @@ func (e *TableExpression) TableFields() []fields.Field {
 	return slices.Clone(e.fields)
 }
 
-func (e *TableExpression) Build() (queries.Node, error) {
+func (e *TableExpression) Build() (queries.LogicalNode, error) {
 	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (e *TableExpression) Build() (queries.Node, error) {
 	return node, nil
 }
 
-func joinNodes(left queries.Node, expressions []*TableExpression) queries.Node {
+func joinNodes(left queries.LogicalNode, expressions []*TableExpression) queries.LogicalNode {
 	for _, expression := range expressions {
 		right, err := expression.Build()
 		if err != nil {

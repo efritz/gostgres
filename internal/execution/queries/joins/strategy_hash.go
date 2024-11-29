@@ -3,6 +3,7 @@ package joins
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -10,17 +11,34 @@ import (
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-type hashJoinStrategy struct {
-	n     *joinNode
+type logicalHashJoinStrategy struct {
+	n     *logicalJoinNode
 	pairs []equalityPair
+}
+
+func (s *logicalHashJoinStrategy) Ordering() impls.OrderExpression {
+	return s.n.left.Ordering()
+}
+
+func (s *logicalHashJoinStrategy) Build(n *joinNode) joinStrategy {
+	return &hashJoinStrategy{
+		n:      n,
+		pairs:  s.pairs,
+		fields: n.fields,
+	}
+}
+
+//
+//
+
+type hashJoinStrategy struct {
+	n      *joinNode
+	pairs  []equalityPair
+	fields []fields.Field
 }
 
 func (s *hashJoinStrategy) Name() string {
 	return "hash"
-}
-
-func (s *hashJoinStrategy) Ordering() impls.OrderExpression {
-	return s.n.left.Ordering()
 }
 
 func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
@@ -72,7 +90,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 				}
 
 				if ordering.CompareValueSlices(lKeys, rKeys) == ordering.OrderTypeEqual {
-					return rows.NewRow(s.n.Fields(), append(slices.Clone(leftRow.Values), rightRow.Values...))
+					return rows.NewRow(s.fields, append(slices.Clone(leftRow.Values), rightRow.Values...))
 				}
 			}
 

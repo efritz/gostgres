@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func LowerOrder(ctx impls.OptimizationContext, order impls.OrderExpression, nodes ...queries.Node) {
+func LowerOrder(ctx impls.OptimizationContext, order impls.OrderExpression, nodes ...queries.LogicalNode) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {

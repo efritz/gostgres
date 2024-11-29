@@ -36,7 +36,7 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *DeleteBuilder) Build() (queries.Node, error) {
+func (b *DeleteBuilder) Build() (queries.LogicalNode, error) {
 	node := access.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		aliased, err := aliasTableName(node, b.Target.AliasName)

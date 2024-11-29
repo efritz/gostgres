@@ -173,7 +173,7 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 	return slices.Clone(b.fields)
 }
 
-func (b *SelectBuilder) Build() (queries.Node, error) {
+func (b *SelectBuilder) Build() (queries.LogicalNode, error) {
 	node, err := b.Select.From.Build()
 	if err != nil {
 		return nil, err
@@ -193,7 +193,7 @@ func (b *SelectBuilder) Build() (queries.Node, error) {
 		}
 
 		for _, c := range b.Select.Combinations {
-			var factory func(left, right queries.Node, distinct bool) (queries.Node, error)
+			var factory func(left, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
 				factory = combination.NewUnion

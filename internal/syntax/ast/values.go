@@ -22,6 +22,6 @@ func (b *ValuesBuilder) TableFields() []fields.Field {
 	return slices.Clone(b.Fields)
 }
 
-func (b *ValuesBuilder) Build() (queries.Node, error) {
+func (b *ValuesBuilder) Build() (queries.LogicalNode, error) {
 	return access.NewValues(b.Fields, b.Expressions), nil
 }

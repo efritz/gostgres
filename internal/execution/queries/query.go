@@ -12,21 +12,21 @@ type Query interface {
 }
 
 type NodeQuery struct {
-	Node Node
+	LogicalNode LogicalNode
 }
 
 var _ Query = &NodeQuery{}
 
-func NewQuery(n Node) *NodeQuery {
+func NewQuery(n LogicalNode) *NodeQuery {
 	return &NodeQuery{
-		Node: n,
+		LogicalNode: n,
 	}
 }
 
 func (q *NodeQuery) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
-	q.Node.Optimize(ctx.OptimizationContext())
+	q.LogicalNode.Optimize(ctx.OptimizationContext())
 
-	scanner, err := q.Node.Scanner(ctx)
+	scanner, err := q.LogicalNode.Build().Scanner(ctx)
 	if err != nil {
 		w.Error(err)
 		return

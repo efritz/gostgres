@@ -3,24 +3,42 @@ package joins
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type mergeJoinStrategy struct {
-	n     *joinNode
+type logicalMergeJoinStrategy struct {
+	n     *logicalJoinNode
 	pairs []equalityPair
+}
+
+func (s *logicalMergeJoinStrategy) Ordering() impls.OrderExpression {
+	// TODO - can add right fields as well?
+	return s.n.left.Ordering()
+}
+
+func (s *logicalMergeJoinStrategy) Build(n *joinNode) joinStrategy {
+	return &mergeJoinStrategy{
+		n:      n,
+		pairs:  s.pairs,
+		fields: n.fields,
+	}
+}
+
+//
+//
+
+type mergeJoinStrategy struct {
+	n      *joinNode
+	pairs  []equalityPair
+	fields []fields.Field
 }
 
 func (s *mergeJoinStrategy) Name() string {
 	return "merge"
-}
-
-func (s *mergeJoinStrategy) Ordering() impls.OrderExpression {
-	// TODO - can add right fields as well?
-	return s.n.left.Ordering()
 }
 
 func (s *mergeJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
@@ -113,7 +131,7 @@ func (s *mergeJoinScanner) Scan() (rows.Row, error) {
 			if ot, err := s.compareRows(*s.leftRow, *s.rightRow); err != nil {
 				return rows.Row{}, err
 			} else if ot == ordering.OrderTypeEqual {
-				row, err := rows.NewRow(s.strategy.n.Fields(), append(slices.Clone(s.leftRow.Values), s.rightRow.Values...))
+				row, err := rows.NewRow(s.strategy.fields, append(slices.Clone(s.leftRow.Values), s.rightRow.Values...))
 				if err != nil {
 					return rows.Row{}, err
 				}

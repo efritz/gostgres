@@ -15,15 +15,15 @@ import (
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-type combinationNode struct {
-	left             queries.Node
-	right            queries.Node
+type logicalCombinationNode struct {
+	left             queries.LogicalNode
+	right            queries.LogicalNode
 	fields           []fields.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
 
-var _ queries.Node = &combinationNode{}
+var _ queries.LogicalNode = &logicalCombinationNode{}
 
 type sourcedRow struct {
 	index int
@@ -32,15 +32,15 @@ type sourcedRow struct {
 
 type groupedRowFilterFunc func(rows []sourcedRow) bool
 
-func NewIntersect(left queries.Node, right queries.Node, distinct bool) (queries.Node, error) {
+func NewIntersect(left queries.LogicalNode, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error) {
 	return newCombination(left, right, intersectFilter, distinct)
 }
 
-func NewExcept(left queries.Node, right queries.Node, distinct bool) (queries.Node, error) {
+func NewExcept(left queries.LogicalNode, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error) {
 	return newCombination(left, right, exceptFilter, distinct)
 }
 
-func newCombination(left queries.Node, right queries.Node, groupedRowFilter groupedRowFilterFunc, distinct bool) (queries.Node, error) {
+func newCombination(left queries.LogicalNode, right queries.LogicalNode, groupedRowFilter groupedRowFilterFunc, distinct bool) (queries.LogicalNode, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -54,7 +54,7 @@ func newCombination(left queries.Node, right queries.Node, groupedRowFilter grou
 		}
 	}
 
-	return &combinationNode{
+	return &logicalCombinationNode{
 		left:             left,
 		right:            right,
 		fields:           leftFields,
@@ -63,13 +63,56 @@ func newCombination(left queries.Node, right queries.Node, groupedRowFilter grou
 	}, nil
 }
 
-func (n *combinationNode) Name() string {
+func (n *logicalCombinationNode) Name() string {
 	return ""
 }
 
-func (n *combinationNode) Fields() []fields.Field {
+func (n *logicalCombinationNode) Fields() []fields.Field {
 	return slices.Clone(n.fields)
 }
+
+func (n *logicalCombinationNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
+	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
+}
+
+func (n *logicalCombinationNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
+	order.LowerOrder(ctx, orderExpression, n.left, n.right)
+}
+
+func (n *logicalCombinationNode) Optimize(ctx impls.OptimizationContext) {
+	n.left.Optimize(ctx)
+	n.right.Optimize(ctx)
+}
+
+func (n *logicalCombinationNode) Filter() impls.Expression {
+	return n.left.Filter()
+}
+
+func (n *logicalCombinationNode) Ordering() impls.OrderExpression { return nil }
+func (n *logicalCombinationNode) SupportsMarkRestore() bool       { return false }
+
+func (n *logicalCombinationNode) Build() queries.Node {
+	return &combinationNode{
+		left:             n.left.Build(),
+		right:            n.right.Build(),
+		fields:           n.fields,
+		groupedRowFilter: n.groupedRowFilter,
+		distinct:         n.distinct,
+	}
+}
+
+//
+//
+
+type combinationNode struct {
+	left             queries.Node
+	right            queries.Node
+	fields           []fields.Field
+	groupedRowFilter groupedRowFilterFunc
+	distinct         bool
+}
+
+var _ queries.Node = &combinationNode{}
 
 func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("combination")
@@ -77,26 +120,6 @@ func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("with")
 	n.right.Serialize(w.Indent())
 }
-
-func (n *combinationNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
-	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
-}
-
-func (n *combinationNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	order.LowerOrder(ctx, orderExpression, n.left, n.right)
-}
-
-func (n *combinationNode) Optimize(ctx impls.OptimizationContext) {
-	n.left.Optimize(ctx)
-	n.right.Optimize(ctx)
-}
-
-func (n *combinationNode) Filter() impls.Expression {
-	return n.left.Filter()
-}
-
-func (n *combinationNode) Ordering() impls.OrderExpression { return nil }
-func (n *combinationNode) SupportsMarkRestore() bool       { return false }
 
 func (n *combinationNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Combination scanner")
@@ -128,7 +151,7 @@ func (n *combinationNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, 
 			if len(selection) > 0 {
 				row := selection[0]
 				selection = selection[1:]
-				return rows.NewRow(n.Fields(), row.row.Values)
+				return rows.NewRow(n.fields, row.row.Values)
 			}
 
 			for key, rows := range hash {

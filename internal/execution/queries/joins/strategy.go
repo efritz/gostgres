@@ -9,9 +9,13 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
+type logicalJoinStrategy interface {
+	Ordering() impls.OrderExpression
+	Build(*joinNode) joinStrategy
+}
+
 type joinStrategy interface {
 	Name() string
-	Ordering() impls.OrderExpression
 	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 
@@ -67,7 +71,7 @@ type joinStrategy interface {
 // 	return &nestedLoopJoinStrategy{n: n}
 // }
 
-func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
+func decomposeFilter(n *logicalJoinNode) (pairs []equalityPair, _ bool) {
 	if n.filter == nil {
 		return nil, false
 	}
@@ -91,7 +95,7 @@ func decomposeFilter(n *joinNode) (pairs []equalityPair, _ bool) {
 	return pairs, len(pairs) > 0
 }
 
-func bindsAllFields(n queries.Node, expr impls.Expression) bool {
+func bindsAllFields(n queries.LogicalNode, expr impls.Expression) bool {
 	for _, field := range expressions.Fields(expr) {
 		if _, err := fields.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false

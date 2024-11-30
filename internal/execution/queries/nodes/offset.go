@@ -7,40 +7,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalOffsetNode struct {
-	LogicalNode
-	offset int
-}
-
-var _ LogicalNode = &logicalOffsetNode{}
-
-func NewOffset(node LogicalNode, offset int) LogicalNode {
-	return &logicalOffsetNode{
-		LogicalNode: node,
-		offset:      offset,
-	}
-}
-
-func (n *logicalOffsetNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // boundary
-func (n *logicalOffsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
-func (n *logicalOffsetNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalOffsetNode) Build() Node {
-	return &offsetNode{
-		Node:   n.LogicalNode.Build(),
-		offset: n.offset,
-	}
-}
-
-//
-//
-
 type offsetNode struct {
 	Node
 	offset int
 }
 
-var _ Node = &offsetNode{}
+func NewOffset(node Node, offset int) Node {
+	return &offsetNode{
+		Node:   node,
+		offset: offset,
+	}
+}
 
 func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	if n.offset == 0 {

@@ -9,21 +9,17 @@ import (
 )
 
 type NodeQuery struct {
-	LogicalNode LogicalNode
+	Node
 }
 
-var _ queries.Query = &NodeQuery{}
-
-func NewQuery(n LogicalNode) *NodeQuery {
+func NewQuery(n Node) queries.Query {
 	return &NodeQuery{
-		LogicalNode: n,
+		Node: n,
 	}
 }
 
 func (q *NodeQuery) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
-	q.LogicalNode.Optimize(ctx.OptimizationContext())
-
-	scanner, err := q.LogicalNode.Build().Scanner(ctx)
+	scanner, err := q.Scanner(ctx)
 	if err != nil {
 		w.Error(err)
 		return

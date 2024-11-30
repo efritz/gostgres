@@ -1,10 +1,10 @@
-package nodes
+package join
 
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -12,37 +12,19 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-type logicalNestedLoopJoinStrategy struct {
-	n *logicalJoinNode
-}
-
-func (s *logicalNestedLoopJoinStrategy) Ordering() impls.OrderExpression {
-	leftOrdering := s.n.left.Ordering()
-	if leftOrdering == nil {
-		return nil
-	}
-
-	rightOrdering := s.n.right.Ordering()
-	if rightOrdering == nil {
-		return leftOrdering
-	}
-
-	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
-}
-
-func (s *logicalNestedLoopJoinStrategy) Build(n *joinNode) joinStrategy {
-	return &nestedLoopJoinStrategy{
-		n:      n,
-		fields: n.fields,
-	}
-}
-
-//
-//
-
 type nestedLoopJoinStrategy struct {
-	n      *joinNode
+	left   nodes.Node
+	right  nodes.Node
+	filter impls.Expression
 	fields []fields.Field
+}
+
+func NewNestedLoopJoinStrategy(left nodes.Node, right nodes.Node, filter impls.Expression, fields []fields.Field) nodes.JoinStrategy {
+	return &nestedLoopJoinStrategy{
+		left:   left,
+		right:  right,
+		fields: fields,
+	}
 }
 
 func (s *nestedLoopJoinStrategy) Name() string {
@@ -52,7 +34,7 @@ func (s *nestedLoopJoinStrategy) Name() string {
 func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Nested Loop Join Strategy scanner")
 
-	leftScanner, err := s.n.left.Scanner(ctx)
+	leftScanner, err := s.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +55,7 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowSc
 				}
 				leftRow = &row
 
-				scanner, err := s.n.right.Scanner(ctx.AddOuterRow(row))
+				scanner, err := s.right.Scanner(ctx.AddOuterRow(row))
 				if err != nil {
 					return rows.Row{}, err
 				}
@@ -96,8 +78,8 @@ func (s *nestedLoopJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowSc
 				return rows.Row{}, err
 			}
 
-			if s.n.filter != nil {
-				if ok, err := types.ValueAs[bool](queries.Evaluate(ctx, s.n.filter, row)); err != nil {
+			if s.filter != nil {
+				if ok, err := types.ValueAs[bool](queries.Evaluate(ctx, s.filter, row)); err != nil {
 					return rows.Row{}, err
 				} else if ok == nil || !*ok {
 					continue

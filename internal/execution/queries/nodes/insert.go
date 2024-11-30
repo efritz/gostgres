@@ -10,48 +10,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalInsertNode struct {
-	LogicalNode
-	table       impls.Table
-	fields      []fields.Field
-	columnNames []string
-}
-
-var _ LogicalNode = &logicalInsertNode{}
-
-func NewInsert(node LogicalNode, table impls.Table, columnNames []string) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	return &logicalInsertNode{
-		LogicalNode: node,
-		table:       table,
-		fields:      fields,
-		columnNames: columnNames,
-	}, nil
-}
-
-func (n *logicalInsertNode) Fields() []fields.Field                                              { return n.fields }
-func (n *logicalInsertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalInsertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalInsertNode) Filter() impls.Expression                                            { return nil }
-func (n *logicalInsertNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalInsertNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalInsertNode) Build() Node {
-	return &insertNode{
-		Node:        n.LogicalNode.Build(),
-		table:       n.table,
-		fields:      n.fields,
-		columnNames: n.columnNames,
-	}
-}
-
-//
-//
-
 type insertNode struct {
 	Node
 	table       impls.Table
@@ -59,7 +17,14 @@ type insertNode struct {
 	columnNames []string
 }
 
-var _ Node = &insertNode{}
+func NewInsert(node Node, table impls.Table, fields []fields.Field, columnNames []string) Node {
+	return &insertNode{
+		Node:        node,
+		table:       table,
+		fields:      fields,
+		columnNames: columnNames,
+	}
+}
 
 func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("insert into %s", n.table.Name())

@@ -1,8 +1,9 @@
-package nodes
+package access
 
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -13,9 +14,7 @@ type tableAccessStrategy struct {
 	table impls.Table
 }
 
-var _ accessStrategy = &tableAccessStrategy{}
-
-func NewTableAccessStrategy(table impls.Table) accessStrategy {
+func NewTableAccessStrategy(table impls.Table) nodes.AccessStrategy {
 	return &tableAccessStrategy{table: table}
 }
 

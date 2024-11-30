@@ -3,7 +3,7 @@ package ast
 import (
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/opt"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -21,6 +21,6 @@ func (b *ValuesBuilder) TableFields() []fields.Field {
 	return slices.Clone(b.Fields)
 }
 
-func (b *ValuesBuilder) Build() (nodes.LogicalNode, error) {
-	return nodes.NewValues(b.Fields, b.Expressions), nil
+func (b *ValuesBuilder) Build() (opt.LogicalNode, error) {
+	return opt.NewValues(b.Fields, b.Expressions), nil
 }

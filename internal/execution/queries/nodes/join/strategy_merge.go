@@ -1,8 +1,9 @@
-package nodes
+package join
 
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
@@ -10,31 +11,20 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalMergeJoinStrategy struct {
-	n     *logicalJoinNode
-	pairs []equalityPair
-}
-
-func (s *logicalMergeJoinStrategy) Ordering() impls.OrderExpression {
-	// TODO - can add right fields as well?
-	return s.n.left.Ordering()
-}
-
-func (s *logicalMergeJoinStrategy) Build(n *joinNode) joinStrategy {
-	return &mergeJoinStrategy{
-		n:      n,
-		pairs:  s.pairs,
-		fields: n.fields,
-	}
-}
-
-//
-//
-
 type mergeJoinStrategy struct {
-	n      *joinNode
-	pairs  []equalityPair
+	left   nodes.Node
+	right  nodes.Node
+	pairs  []nodes.EqualityPair
 	fields []fields.Field
+}
+
+func NewMergeJoinStrategy(left nodes.Node, right nodes.Node, pairs []nodes.EqualityPair, fields []fields.Field) nodes.JoinStrategy {
+	return &mergeJoinStrategy{
+		left:   left,
+		right:  right,
+		pairs:  pairs,
+		fields: fields,
+	}
 }
 
 func (s *mergeJoinStrategy) Name() string {
@@ -44,12 +34,12 @@ func (s *mergeJoinStrategy) Name() string {
 func (s *mergeJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Merge Join Strategy scanner")
 
-	leftScanner, err := s.n.left.Scanner(ctx)
+	leftScanner, err := s.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rightScanner, err := s.n.right.Scanner(ctx)
+	rightScanner, err := s.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -205,12 +195,12 @@ func scanIntoTarget(scanner scan.RowScanner, target **rows.Row) error {
 }
 
 func (s *mergeJoinScanner) compareRows(leftRow, rightRow rows.Row) (ordering.OrderType, error) {
-	lValues, err := evaluatePair(s.ctx, s.strategy.pairs, leftOfPair, leftRow)
+	lValues, err := nodes.EvaluatePair(s.ctx, s.strategy.pairs, nodes.LeftOfPair, leftRow)
 	if err != nil {
 		return ordering.OrderTypeIncomparable, err
 	}
 
-	rValues, err := evaluatePair(s.ctx, s.strategy.pairs, rightOfPair, rightRow)
+	rValues, err := nodes.EvaluatePair(s.ctx, s.strategy.pairs, nodes.RightOfPair, rightRow)
 	if err != nil {
 		return ordering.OrderTypeIncomparable, err
 	}

@@ -11,56 +11,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalUpdateNode struct {
-	LogicalNode
-	table          impls.Table
-	fields         []fields.Field
-	aliasName      string
-	setExpressions []SetExpression
-}
-
-var _ LogicalNode = &logicalUpdateNode{}
-
-type SetExpression struct {
-	Name       string
-	Expression impls.Expression
-}
-
-func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpressions []SetExpression) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	return &logicalUpdateNode{
-		LogicalNode:    node,
-		table:          table,
-		fields:         fields,
-		aliasName:      aliasName,
-		setExpressions: setExpressions,
-	}, nil
-}
-
-func (n *logicalUpdateNode) Fields() []fields.Field                                              { return n.fields }
-func (n *logicalUpdateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalUpdateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalUpdateNode) Filter() impls.Expression                                            { return nil }
-func (n *logicalUpdateNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalUpdateNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalUpdateNode) Build() Node {
-	return &updateNode{
-		Node:           n.LogicalNode.Build(),
-		table:          n.table,
-		fields:         n.fields,
-		aliasName:      n.aliasName,
-		setExpressions: n.setExpressions,
-	}
-}
-
-//
-//
-
 type updateNode struct {
 	Node
 	table          impls.Table
@@ -69,7 +19,26 @@ type updateNode struct {
 	setExpressions []SetExpression
 }
 
-var _ Node = &updateNode{}
+type SetExpression struct {
+	Name       string
+	Expression impls.Expression
+}
+
+func NewUpdate(
+	node Node,
+	table impls.Table,
+	fields []fields.Field,
+	aliasName string,
+	setExpressions []SetExpression,
+) Node {
+	return &updateNode{
+		Node:           node,
+		table:          table,
+		fields:         fields,
+		aliasName:      aliasName,
+		setExpressions: setExpressions,
+	}
+}
 
 func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("update %s", n.table.Name())

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/opt"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -33,8 +33,8 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *DeleteBuilder) Build() (nodes.LogicalNode, error) {
-	node := nodes.NewAccess(b.table)
+func (b *DeleteBuilder) Build() (opt.LogicalNode, error) {
+	node := opt.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		aliased, err := aliasTableName(node, b.Target.AliasName)
 		if err != nil {
@@ -46,10 +46,10 @@ func (b *DeleteBuilder) Build() (nodes.LogicalNode, error) {
 		node = joinNodes(node, b.Using)
 	}
 	if b.Where != nil {
-		node = nodes.NewFilter(node, b.Where)
+		node = opt.NewFilter(node, b.Where)
 	}
 
-	delete, err := nodes.NewDelete(node, b.table, b.Target.AliasName)
+	delete, err := opt.NewDelete(node, b.table, b.Target.AliasName)
 	if err != nil {
 		return nil, err
 	}

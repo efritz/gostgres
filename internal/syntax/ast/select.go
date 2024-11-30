@@ -6,7 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/opt"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -167,34 +167,34 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 	return slices.Clone(b.fields)
 }
 
-func (b *SelectBuilder) Build() (nodes.LogicalNode, error) {
+func (b *SelectBuilder) Build() (opt.LogicalNode, error) {
 	node, err := b.Select.From.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	if b.Select.Where != nil {
-		node = nodes.NewFilter(node, b.Select.Where)
+		node = opt.NewFilter(node, b.Select.Where)
 	}
 
 	if b.Select.Groupings != nil {
-		node = nodes.NewHashAggregate(node, b.Select.Groupings, b.projection)
+		node = opt.NewHashAggregate(node, b.Select.Groupings, b.projection)
 	}
 
 	if len(b.Select.Combinations) > 0 {
 		if b.Select.Groupings == nil {
-			node = nodes.NewProjection(node, b.projection)
+			node = opt.NewProjection(node, b.projection)
 		}
 
 		for _, c := range b.Select.Combinations {
-			var factory func(left, right nodes.LogicalNode, distinct bool) (nodes.LogicalNode, error)
+			var factory func(left, right opt.LogicalNode, distinct bool) (opt.LogicalNode, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
-				factory = nodes.NewUnion
+				factory = opt.NewUnion
 			case tokens.TokenTypeIntersect:
-				factory = nodes.NewIntersect
+				factory = opt.NewIntersect
 			case tokens.TokenTypeExcept:
-				factory = nodes.NewExcept
+				factory = opt.NewExcept
 			}
 
 			right, err := c.Select.Build()
@@ -211,17 +211,17 @@ func (b *SelectBuilder) Build() (nodes.LogicalNode, error) {
 	}
 
 	if b.Order != nil {
-		node = nodes.NewOrder(node, b.Order)
+		node = opt.NewOrder(node, b.Order)
 	}
 	if b.Offset != nil {
-		node = nodes.NewOffset(node, *b.Offset)
+		node = opt.NewOffset(node, *b.Offset)
 	}
 	if b.Limit != nil {
-		node = nodes.NewLimit(node, *b.Limit)
+		node = opt.NewLimit(node, *b.Limit)
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
-		node = nodes.NewProjection(node, b.projection)
+		node = opt.NewProjection(node, b.projection)
 	}
 
 	return node, nil

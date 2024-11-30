@@ -1,8 +1,9 @@
-package nodes
+package join
 
 import (
 	"slices"
 
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/ordering"
@@ -11,30 +12,20 @@ import (
 	"github.com/efritz/gostgres/internal/shared/utils"
 )
 
-type logicalHashJoinStrategy struct {
-	n     *logicalJoinNode
-	pairs []equalityPair
-}
-
-func (s *logicalHashJoinStrategy) Ordering() impls.OrderExpression {
-	return s.n.left.Ordering()
-}
-
-func (s *logicalHashJoinStrategy) Build(n *joinNode) joinStrategy {
-	return &hashJoinStrategy{
-		n:      n,
-		pairs:  s.pairs,
-		fields: n.fields,
-	}
-}
-
-//
-//
-
 type hashJoinStrategy struct {
-	n      *joinNode
-	pairs  []equalityPair
+	left   nodes.Node
+	right  nodes.Node
+	pairs  []nodes.EqualityPair
 	fields []fields.Field
+}
+
+func NewHashJoinStrategy(left nodes.Node, right nodes.Node, pairs []nodes.EqualityPair, fields []fields.Field) nodes.JoinStrategy {
+	return &hashJoinStrategy{
+		left:   left,
+		right:  right,
+		pairs:  pairs,
+		fields: fields,
+	}
 }
 
 func (s *hashJoinStrategy) Name() string {
@@ -44,14 +35,14 @@ func (s *hashJoinStrategy) Name() string {
 func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Hash Join Strategy scanner")
 
-	rightScanner, err := s.n.right.Scanner(ctx)
+	rightScanner, err := s.right.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	h := map[uint64][]rows.Row{}
 	if err := scan.VisitRows(rightScanner, func(row rows.Row) (bool, error) {
-		keys, err := evaluatePair(ctx, s.pairs, rightOfPair, row)
+		keys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.RightOfPair, row)
 		if err != nil {
 			return false, err
 		}
@@ -63,7 +54,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 		return nil, err
 	}
 
-	leftScanner, err := s.n.left.Scanner(ctx)
+	leftScanner, err := s.left.Scanner(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,12 +70,12 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 				rightRow := rightRows[0]
 				rightRows = rightRows[1:]
 
-				lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
+				lKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.LeftOfPair, leftRow)
 				if err != nil {
 					return rows.Row{}, err
 				}
 
-				rKeys, err := evaluatePair(ctx, s.pairs, rightOfPair, rightRow)
+				rKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.RightOfPair, rightRow)
 				if err != nil {
 					return rows.Row{}, err
 				}
@@ -99,7 +90,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 				return rows.Row{}, err
 			}
 
-			lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
+			lKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.LeftOfPair, leftRow)
 			if err != nil {
 				return rows.Row{}, err
 			}

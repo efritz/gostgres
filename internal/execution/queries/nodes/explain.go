@@ -6,53 +6,19 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
-	"github.com/efritz/gostgres/internal/shared/types"
 )
-
-type logicalExplain struct {
-	LogicalNode
-}
-
-var _ LogicalNode = &logicalExplain{}
-
-func NewExplain(n LogicalNode) *logicalExplain {
-	return &logicalExplain{
-		LogicalNode: n,
-	}
-}
-
-func (n *logicalExplain) Name() string {
-	return "EXPLAIN"
-}
-
-var queryPlanField = fields.NewField("", "query plan", types.TypeText, fields.NonInternalField)
-
-func (n *logicalExplain) Fields() []fields.Field {
-	return []fields.Field{queryPlanField}
-}
-
-func (n *logicalExplain) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // top-level
-func (n *logicalExplain) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // top-level
-func (n *logicalExplain) Filter() impls.Expression                                            { return nil }
-func (n *logicalExplain) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalExplain) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalExplain) Build() Node {
-	return &explainNode{
-		n:      n.LogicalNode.Build(),
-		fields: n.Fields(),
-	}
-}
-
-//
-//
 
 type explainNode struct {
 	n      Node
 	fields []fields.Field
 }
 
-var _ Node = &explainNode{}
+func NewExplain(n Node, fields []fields.Field) Node {
+	return &explainNode{
+		n:      n,
+		fields: fields,
+	}
+}
 
 func (n *explainNode) Serialize(w serialization.IndentWriter) {
 	// Explain never explained

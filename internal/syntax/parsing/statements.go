@@ -3,7 +3,7 @@ package parsing
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/opt"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
@@ -58,10 +58,10 @@ func (p *parser) parseStatement(catalog impls.CatalogSet) (Query, error) {
 			}
 
 			if isExplain {
-				node = nodes.NewExplain(node)
+				node = opt.NewExplain(node)
 			}
 
-			return nodes.NewQuery(node), nil
+			return opt.NewQuery(node), nil
 		}
 	}
 

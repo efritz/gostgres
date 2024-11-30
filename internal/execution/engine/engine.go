@@ -44,6 +44,8 @@ func (e *Engine) Query(request protocol.Request, responseWriter protocol.Respons
 		executionContext = executionContext.WithDebug()
 	}
 
+	executionContext.OptimizationContext()
+
 	query.Execute(executionContext, responseWriter)
 }
 

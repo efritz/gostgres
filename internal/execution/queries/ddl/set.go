@@ -15,9 +15,7 @@ type DDLQuery interface {
 	ExecuteDDL(ctx impls.ExecutionContext) error
 }
 
-var _ queries.Query = &ddlSet{}
-
-func NewSet(queries []DDLQuery) *ddlSet {
+func NewSet(queries []DDLQuery) queries.Query {
 	return &ddlSet{
 		queries: queries,
 	}

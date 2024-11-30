@@ -1,7 +1,6 @@
 package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -10,62 +9,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
-type logicalFilterNode struct {
-	LogicalNode
-	filter impls.Expression
-}
-
-var _ LogicalNode = &logicalFilterNode{}
-
-func NewFilter(node LogicalNode, filter impls.Expression) LogicalNode {
-	return &logicalFilterNode{
-		LogicalNode: node,
-		filter:      filter,
-	}
-}
-
-func (n *logicalFilterNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression) {
-	n.filter = expressions.UnionFilters(n.filter, filter)
-}
-
-func (n *logicalFilterNode) Optimize(ctx impls.OptimizationContext) {
-	if n.filter != nil {
-		n.filter = n.filter.Fold()
-		n.LogicalNode.AddFilter(ctx, n.filter)
-	}
-
-	n.LogicalNode.Optimize(ctx)
-	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
-}
-
-func (n *logicalFilterNode) Filter() impls.Expression {
-	return expressions.UnionFilters(n.filter, n.LogicalNode.Filter())
-}
-
-func (n *logicalFilterNode) SupportsMarkRestore() bool {
-	return false
-}
-
-func (n *logicalFilterNode) Build() Node {
-	if n.filter == nil {
-		return n.LogicalNode.Build()
-	}
-
-	return &filterNode{
-		Node:   n.LogicalNode.Build(),
-		filter: n.filter,
-	}
-}
-
-//
-//
-
 type filterNode struct {
 	Node
 	filter impls.Expression
 }
 
-var _ Node = &filterNode{}
+func NewFilter(node Node, filter impls.Expression) Node {
+	return &filterNode{
+		Node:   node,
+		filter: filter,
+	}
+}
 
 func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("filter by %s", n.filter)

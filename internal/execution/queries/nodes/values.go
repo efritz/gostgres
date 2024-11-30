@@ -9,51 +9,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalValuesNode struct {
-	fields      []fields.Field
-	expressions [][]impls.Expression
-}
-
-var _ LogicalNode = &logicalValuesNode{}
-
-func NewValues(fields []fields.Field, expressions [][]impls.Expression) LogicalNode {
-	return &logicalValuesNode{
-		fields:      fields,
-		expressions: expressions,
-	}
-}
-
-func (n *logicalValuesNode) Name() string {
-	return "values"
-}
-
-func (n *logicalValuesNode) Fields() []fields.Field {
-	return n.fields
-}
-
-func (n *logicalValuesNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalValuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalValuesNode) Optimize(ctx impls.OptimizationContext)                              {}
-func (n *logicalValuesNode) Filter() impls.Expression                                            { return nil }
-func (n *logicalValuesNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalValuesNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalValuesNode) Build() Node {
-	return &valuesNode{
-		fields:      n.fields,
-		expressions: n.expressions,
-	}
-}
-
-//
-//
-
 type valuesNode struct {
 	fields      []fields.Field
 	expressions [][]impls.Expression
 }
 
-var _ Node = &valuesNode{}
+func NewValues(fields []fields.Field, expressions [][]impls.Expression) Node {
+	return &valuesNode{
+		fields:      fields,
+		expressions: expressions,
+	}
+}
 
 func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")

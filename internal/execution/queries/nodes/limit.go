@@ -7,40 +7,17 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalLimitNode struct {
-	LogicalNode
-	limit int
-}
-
-var _ LogicalNode = &logicalLimitNode{}
-
-func NewLimit(node LogicalNode, limit int) LogicalNode {
-	return &logicalLimitNode{
-		LogicalNode: node,
-		limit:       limit,
-	}
-}
-
-func (n *logicalLimitNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // boundary
-func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
-func (n *logicalLimitNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalLimitNode) Build() Node {
-	return &limitNode{
-		Node:  n.LogicalNode.Build(),
-		limit: n.limit,
-	}
-}
-
-//
-//
-
 type limitNode struct {
 	Node
 	limit int
 }
 
-var _ Node = &limitNode{}
+func NewLimit(node Node, limit int) Node {
+	return &limitNode{
+		Node:  node,
+		limit: limit,
+	}
+}
 
 func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("limit %d", n.limit)

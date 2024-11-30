@@ -1,9 +1,10 @@
-package nodes
+package access
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -16,9 +17,7 @@ type indexAccessStrategy[O impls.ScanOptions] struct {
 	opts  O
 }
 
-var _ accessStrategy = &indexAccessStrategy[impls.ScanOptions]{}
-
-func NewIndexAccessStrategy[O impls.ScanOptions](table impls.Table, index impls.Index[O], opts O) accessStrategy {
+func NewIndexAccessStrategy[O impls.ScanOptions](table impls.Table, index impls.Index[O], opts O) nodes.AccessStrategy {
 	return &indexAccessStrategy[O]{
 		table: table,
 		index: index,

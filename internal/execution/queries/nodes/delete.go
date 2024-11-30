@@ -8,48 +8,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
-type logicalDeleteNode struct {
-	LogicalNode
-	table     impls.Table
-	fields    []fields.Field
-	aliasName string
-}
-
-var _ LogicalNode = &logicalDeleteNode{}
-
-func NewDelete(node LogicalNode, table impls.Table, aliasName string) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
-	return &logicalDeleteNode{
-		LogicalNode: node,
-		table:       table,
-		fields:      fields,
-		aliasName:   aliasName,
-	}, nil
-}
-
-func (n *logicalDeleteNode) Fields() []fields.Field                                              { return n.fields }
-func (n *logicalDeleteNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
-func (n *logicalDeleteNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
-func (n *logicalDeleteNode) Filter() impls.Expression                                            { return nil }
-func (n *logicalDeleteNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalDeleteNode) SupportsMarkRestore() bool                                           { return false }
-
-func (n *logicalDeleteNode) Build() Node {
-	return &deleteNode{
-		Node:      n.LogicalNode.Build(),
-		table:     n.table,
-		fields:    n.fields,
-		aliasName: n.aliasName,
-	}
-}
-
-//
-//
-
 type deleteNode struct {
 	Node
 	table     impls.Table
@@ -57,7 +15,14 @@ type deleteNode struct {
 	aliasName string
 }
 
-var _ Node = &deleteNode{}
+func NewDelete(node Node, table impls.Table, fields []fields.Field, aliasName string) Node {
+	return &deleteNode{
+		Node:      node,
+		table:     table,
+		fields:    fields,
+		aliasName: aliasName,
+	}
+}
 
 func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("delete from %s", n.table.Name())

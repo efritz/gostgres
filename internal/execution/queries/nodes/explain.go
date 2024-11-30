@@ -1,7 +1,6 @@
-package explain
+package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -11,12 +10,12 @@ import (
 )
 
 type logicalExplain struct {
-	queries.LogicalNode
+	LogicalNode
 }
 
-var _ queries.LogicalNode = &logicalExplain{}
+var _ LogicalNode = &logicalExplain{}
 
-func NewExplain(n queries.LogicalNode) *logicalExplain {
+func NewExplain(n LogicalNode) *logicalExplain {
 	return &logicalExplain{
 		LogicalNode: n,
 	}
@@ -38,7 +37,7 @@ func (n *logicalExplain) Filter() impls.Expression                              
 func (n *logicalExplain) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalExplain) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalExplain) Build() queries.Node {
+func (n *logicalExplain) Build() Node {
 	return &explainNode{
 		n:      n.LogicalNode.Build(),
 		fields: n.Fields(),
@@ -49,11 +48,11 @@ func (n *logicalExplain) Build() queries.Node {
 //
 
 type explainNode struct {
-	n      queries.Node
+	n      Node
 	fields []fields.Field
 }
 
-var _ queries.Node = &explainNode{}
+var _ Node = &explainNode{}
 
 func (n *explainNode) Serialize(w serialization.IndentWriter) {
 	// Explain never explained

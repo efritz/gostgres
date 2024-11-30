@@ -1,7 +1,6 @@
-package limit
+package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -9,13 +8,13 @@ import (
 )
 
 type logicalOffsetNode struct {
-	queries.LogicalNode
+	LogicalNode
 	offset int
 }
 
-var _ queries.LogicalNode = &logicalOffsetNode{}
+var _ LogicalNode = &logicalOffsetNode{}
 
-func NewOffset(node queries.LogicalNode, offset int) queries.LogicalNode {
+func NewOffset(node LogicalNode, offset int) LogicalNode {
 	return &logicalOffsetNode{
 		LogicalNode: node,
 		offset:      offset,
@@ -26,7 +25,7 @@ func (n *logicalOffsetNode) AddFilter(ctx impls.OptimizationContext, filter impl
 func (n *logicalOffsetNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
 func (n *logicalOffsetNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalOffsetNode) Build() queries.Node {
+func (n *logicalOffsetNode) Build() Node {
 	return &offsetNode{
 		Node:   n.LogicalNode.Build(),
 		offset: n.offset,
@@ -37,11 +36,11 @@ func (n *logicalOffsetNode) Build() queries.Node {
 //
 
 type offsetNode struct {
-	queries.Node
+	Node
 	offset int
 }
 
-var _ queries.Node = &offsetNode{}
+var _ Node = &offsetNode{}
 
 func (n *offsetNode) Serialize(w serialization.IndentWriter) {
 	if n.offset == 0 {

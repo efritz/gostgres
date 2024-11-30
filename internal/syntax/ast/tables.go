@@ -6,10 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/joins"
-	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -44,8 +41,8 @@ func (r *TableReference) TableFields() []fields.Field {
 	return fields
 }
 
-func (r *TableReference) Build() (queries.LogicalNode, error) {
-	return access.NewAccess(r.table), nil
+func (r *TableReference) Build() (nodes.LogicalNode, error) {
+	return nodes.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -145,7 +142,7 @@ func (e *TableExpression) TableFields() []fields.Field {
 	return slices.Clone(e.fields)
 }
 
-func (e *TableExpression) Build() (queries.LogicalNode, error) {
+func (e *TableExpression) Build() (nodes.LogicalNode, error) {
 	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
@@ -159,7 +156,7 @@ func (e *TableExpression) Build() (queries.LogicalNode, error) {
 		node = aliased
 
 		if e.projection != nil {
-			node = projection.NewProjection(node, e.projection)
+			node = nodes.NewProjection(node, e.projection)
 		}
 	}
 
@@ -169,20 +166,20 @@ func (e *TableExpression) Build() (queries.LogicalNode, error) {
 			return nil, err
 		}
 
-		node = joins.NewJoin(node, right, j.Condition)
+		node = nodes.NewJoin(node, right, j.Condition)
 	}
 
 	return node, nil
 }
 
-func joinNodes(left queries.LogicalNode, expressions []*TableExpression) queries.LogicalNode {
+func joinNodes(left nodes.LogicalNode, expressions []*TableExpression) nodes.LogicalNode {
 	for _, expression := range expressions {
 		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}
 
-		left = joins.NewJoin(left, right, nil)
+		left = nodes.NewJoin(left, right, nil)
 	}
 
 	return left

@@ -1,9 +1,7 @@
-package access
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -17,9 +15,9 @@ type logicalAccessNode struct {
 	strategy accessStrategy
 }
 
-var _ queries.LogicalNode = &logicalAccessNode{}
+var _ LogicalNode = &logicalAccessNode{}
 
-func NewAccess(table impls.Table) queries.LogicalNode {
+func NewAccess(table impls.Table) LogicalNode {
 	return &logicalAccessNode{
 		table: table,
 	}
@@ -78,10 +76,10 @@ func (n *logicalAccessNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *logicalAccessNode) Build() queries.Node {
+func (n *logicalAccessNode) Build() Node {
 	if f := n.filter; f != nil {
 		n.filter = nil
-		return filter.NewFilter(n, f).Build()
+		return NewFilter(n, f).Build()
 	}
 
 	return &accessNode{
@@ -98,7 +96,7 @@ type accessNode struct {
 	strategy accessStrategy
 }
 
-var _ queries.Node = &accessNode{}
+var _ Node = &accessNode{}
 
 func (n *accessNode) Serialize(w serialization.IndentWriter) {
 	n.strategy.Serialize(w)

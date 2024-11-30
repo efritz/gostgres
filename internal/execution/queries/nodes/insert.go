@@ -1,9 +1,8 @@
-package mutation
+package nodes
 
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -12,15 +11,15 @@ import (
 )
 
 type logicalInsertNode struct {
-	queries.LogicalNode
+	LogicalNode
 	table       impls.Table
 	fields      []fields.Field
 	columnNames []string
 }
 
-var _ queries.LogicalNode = &logicalInsertNode{}
+var _ LogicalNode = &logicalInsertNode{}
 
-func NewInsert(node queries.LogicalNode, table impls.Table, columnNames []string) (queries.LogicalNode, error) {
+func NewInsert(node LogicalNode, table impls.Table, columnNames []string) (LogicalNode, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -41,7 +40,7 @@ func (n *logicalInsertNode) Filter() impls.Expression                           
 func (n *logicalInsertNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalInsertNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalInsertNode) Build() queries.Node {
+func (n *logicalInsertNode) Build() Node {
 	return &insertNode{
 		Node:        n.LogicalNode.Build(),
 		table:       n.table,
@@ -54,13 +53,13 @@ func (n *logicalInsertNode) Build() queries.Node {
 //
 
 type insertNode struct {
-	queries.Node
+	Node
 	table       impls.Table
 	fields      []fields.Field
 	columnNames []string
 }
 
-var _ queries.Node = &insertNode{}
+var _ Node = &insertNode{}
 
 func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("insert into %s", n.table.Name())

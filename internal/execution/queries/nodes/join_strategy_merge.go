@@ -1,4 +1,4 @@
-package joins
+package nodes
 
 import (
 	"slices"

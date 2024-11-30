@@ -1,4 +1,4 @@
-package filter
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -11,13 +11,13 @@ import (
 )
 
 type logicalFilterNode struct {
-	queries.LogicalNode
+	LogicalNode
 	filter impls.Expression
 }
 
-var _ queries.LogicalNode = &logicalFilterNode{}
+var _ LogicalNode = &logicalFilterNode{}
 
-func NewFilter(node queries.LogicalNode, filter impls.Expression) queries.LogicalNode {
+func NewFilter(node LogicalNode, filter impls.Expression) LogicalNode {
 	return &logicalFilterNode{
 		LogicalNode: node,
 		filter:      filter,
@@ -46,7 +46,7 @@ func (n *logicalFilterNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *logicalFilterNode) Build() queries.Node {
+func (n *logicalFilterNode) Build() Node {
 	if n.filter == nil {
 		return n.LogicalNode.Build()
 	}
@@ -61,11 +61,11 @@ func (n *logicalFilterNode) Build() queries.Node {
 //
 
 type filterNode struct {
-	queries.Node
+	Node
 	filter impls.Expression
 }
 
-var _ queries.Node = &filterNode{}
+var _ Node = &filterNode{}
 
 func (n *filterNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("filter by %s", n.filter)

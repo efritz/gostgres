@@ -1,4 +1,4 @@
-package mutation
+package nodes
 
 import (
 	"fmt"
@@ -12,21 +12,21 @@ import (
 )
 
 type logicalUpdateNode struct {
-	queries.LogicalNode
+	LogicalNode
 	table          impls.Table
 	fields         []fields.Field
 	aliasName      string
 	setExpressions []SetExpression
 }
 
-var _ queries.LogicalNode = &logicalUpdateNode{}
+var _ LogicalNode = &logicalUpdateNode{}
 
 type SetExpression struct {
 	Name       string
 	Expression impls.Expression
 }
 
-func NewUpdate(node queries.LogicalNode, table impls.Table, aliasName string, setExpressions []SetExpression) (queries.LogicalNode, error) {
+func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpressions []SetExpression) (LogicalNode, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -48,7 +48,7 @@ func (n *logicalUpdateNode) Filter() impls.Expression                           
 func (n *logicalUpdateNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalUpdateNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalUpdateNode) Build() queries.Node {
+func (n *logicalUpdateNode) Build() Node {
 	return &updateNode{
 		Node:           n.LogicalNode.Build(),
 		table:          n.table,
@@ -62,14 +62,14 @@ func (n *logicalUpdateNode) Build() queries.Node {
 //
 
 type updateNode struct {
-	queries.Node
+	Node
 	table          impls.Table
 	fields         []fields.Field
 	aliasName      string
 	setExpressions []SetExpression
 }
 
-var _ queries.Node = &updateNode{}
+var _ Node = &updateNode{}
 
 func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("update %s", n.table.Name())

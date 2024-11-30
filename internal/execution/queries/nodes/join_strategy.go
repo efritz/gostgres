@@ -1,4 +1,4 @@
-package joins
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -95,7 +95,7 @@ func decomposeFilter(n *logicalJoinNode) (pairs []equalityPair, _ bool) {
 	return pairs, len(pairs) > 0
 }
 
-func bindsAllFields(n queries.LogicalNode, expr impls.Expression) bool {
+func bindsAllFields(n LogicalNode, expr impls.Expression) bool {
 	for _, field := range expressions.Fields(expr) {
 		if _, err := fields.FindMatchingFieldIndex(field, n.Fields()); err != nil {
 			return false

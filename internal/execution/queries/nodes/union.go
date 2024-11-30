@@ -1,13 +1,10 @@
-package combination
+package nodes
 
 import (
 	"fmt"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -17,15 +14,15 @@ import (
 )
 
 type logicalUnionNode struct {
-	left     queries.LogicalNode
-	right    queries.LogicalNode
+	left     LogicalNode
+	right    LogicalNode
 	fields   []fields.Field
 	distinct bool
 }
 
-var _ queries.LogicalNode = &logicalUnionNode{}
+var _ LogicalNode = &logicalUnionNode{}
 
-func NewUnion(left queries.LogicalNode, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error) {
+func NewUnion(left LogicalNode, right LogicalNode, distinct bool) (LogicalNode, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -56,11 +53,11 @@ func (n *logicalUnionNode) Fields() []fields.Field {
 }
 
 func (n *logicalUnionNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
-	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
+	lowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
 func (n *logicalUnionNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	order.LowerOrder(ctx, orderExpression, n.left, n.right)
+	lowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
 func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {
@@ -75,7 +72,7 @@ func (n *logicalUnionNode) Filter() impls.Expression {
 func (n *logicalUnionNode) Ordering() impls.OrderExpression { return nil }
 func (n *logicalUnionNode) SupportsMarkRestore() bool       { return false }
 
-func (n *logicalUnionNode) Build() queries.Node {
+func (n *logicalUnionNode) Build() Node {
 	return &unionNode{
 		left:     n.left.Build(),
 		right:    n.right.Build(),
@@ -88,13 +85,13 @@ func (n *logicalUnionNode) Build() queries.Node {
 //
 
 type unionNode struct {
-	left     queries.Node
-	right    queries.Node
+	left     Node
+	right    Node
 	fields   []fields.Field
 	distinct bool
 }
 
-var _ queries.Node = &unionNode{}
+var _ Node = &unionNode{}
 
 func (n *unionNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("union")

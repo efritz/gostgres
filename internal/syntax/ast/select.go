@@ -6,13 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/aggregate"
-	"github.com/efritz/gostgres/internal/execution/queries/combination"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/limit"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
-	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -173,34 +167,34 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 	return slices.Clone(b.fields)
 }
 
-func (b *SelectBuilder) Build() (queries.LogicalNode, error) {
+func (b *SelectBuilder) Build() (nodes.LogicalNode, error) {
 	node, err := b.Select.From.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	if b.Select.Where != nil {
-		node = filter.NewFilter(node, b.Select.Where)
+		node = nodes.NewFilter(node, b.Select.Where)
 	}
 
 	if b.Select.Groupings != nil {
-		node = aggregate.NewHashAggregate(node, b.Select.Groupings, b.projection)
+		node = nodes.NewHashAggregate(node, b.Select.Groupings, b.projection)
 	}
 
 	if len(b.Select.Combinations) > 0 {
 		if b.Select.Groupings == nil {
-			node = projection.NewProjection(node, b.projection)
+			node = nodes.NewProjection(node, b.projection)
 		}
 
 		for _, c := range b.Select.Combinations {
-			var factory func(left, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error)
+			var factory func(left, right nodes.LogicalNode, distinct bool) (nodes.LogicalNode, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
-				factory = combination.NewUnion
+				factory = nodes.NewUnion
 			case tokens.TokenTypeIntersect:
-				factory = combination.NewIntersect
+				factory = nodes.NewIntersect
 			case tokens.TokenTypeExcept:
-				factory = combination.NewExcept
+				factory = nodes.NewExcept
 			}
 
 			right, err := c.Select.Build()
@@ -217,17 +211,17 @@ func (b *SelectBuilder) Build() (queries.LogicalNode, error) {
 	}
 
 	if b.Order != nil {
-		node = order.NewOrder(node, b.Order)
+		node = nodes.NewOrder(node, b.Order)
 	}
 	if b.Offset != nil {
-		node = limit.NewOffset(node, *b.Offset)
+		node = nodes.NewOffset(node, *b.Offset)
 	}
 	if b.Limit != nil {
-		node = limit.NewLimit(node, *b.Limit)
+		node = nodes.NewLimit(node, *b.Limit)
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
-		node = projection.NewProjection(node, b.projection)
+		node = nodes.NewProjection(node, b.projection)
 	}
 
 	return node, nil

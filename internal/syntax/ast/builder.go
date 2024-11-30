@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -10,7 +10,7 @@ type Resolver interface {
 }
 
 type Builder interface {
-	Build() (queries.LogicalNode, error)
+	Build() (nodes.LogicalNode, error)
 }
 
 type BuilderResolver interface {

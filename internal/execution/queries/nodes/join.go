@@ -1,12 +1,9 @@
-package joins
+package nodes
 
 import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -14,16 +11,16 @@ import (
 )
 
 type logicalJoinNode struct {
-	left     queries.LogicalNode
-	right    queries.LogicalNode
+	left     LogicalNode
+	right    LogicalNode
 	filter   impls.Expression
 	fields   []fields.Field
 	strategy logicalJoinStrategy
 }
 
-var _ queries.LogicalNode = &logicalJoinNode{}
+var _ LogicalNode = &logicalJoinNode{}
 
-func NewJoin(left queries.LogicalNode, right queries.LogicalNode, condition impls.Expression) queries.LogicalNode {
+func NewJoin(left LogicalNode, right LogicalNode, condition impls.Expression) LogicalNode {
 	return &logicalJoinNode{
 		left:     left,
 		right:    right,
@@ -46,7 +43,7 @@ func (n *logicalJoinNode) AddFilter(ctx impls.OptimizationContext, filterExpress
 }
 
 func (n *logicalJoinNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	order.LowerOrder(ctx, orderExpression, n.left, n.right)
+	lowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
 func (n *logicalJoinNode) Optimize(ctx impls.OptimizationContext) {
@@ -55,8 +52,8 @@ func (n *logicalJoinNode) Optimize(ctx impls.OptimizationContext) {
 
 	if n.filter != nil {
 		n.filter = n.filter.Fold()
-		filter.LowerFilter(ctx, n.filter, n.left)
-		filter.LowerFilter(ctx.AddOuterFields(n.left.Fields()), n.filter, n.right)
+		lowerFilter(ctx, n.filter, n.left)
+		lowerFilter(ctx.AddOuterFields(n.left.Fields()), n.filter, n.right)
 	}
 
 	n.left.Optimize(ctx)
@@ -81,7 +78,7 @@ func (n *logicalJoinNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *logicalJoinNode) Build() queries.Node {
+func (n *logicalJoinNode) Build() Node {
 	node := &joinNode{
 		left:   n.left.Build(),
 		right:  n.right.Build(),
@@ -97,14 +94,14 @@ func (n *logicalJoinNode) Build() queries.Node {
 //
 
 type joinNode struct {
-	left     queries.Node
-	right    queries.Node
+	left     Node
+	right    Node
 	filter   impls.Expression
 	fields   []fields.Field
 	strategy joinStrategy
 }
 
-var _ queries.Node = &joinNode{}
+var _ Node = &joinNode{}
 
 func (n *joinNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("join using %s", n.strategy.Name())

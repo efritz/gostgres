@@ -1,7 +1,6 @@
-package mutation
+package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -10,15 +9,15 @@ import (
 )
 
 type logicalDeleteNode struct {
-	queries.LogicalNode
+	LogicalNode
 	table     impls.Table
 	fields    []fields.Field
 	aliasName string
 }
 
-var _ queries.LogicalNode = &logicalDeleteNode{}
+var _ LogicalNode = &logicalDeleteNode{}
 
-func NewDelete(node queries.LogicalNode, table impls.Table, aliasName string) (queries.LogicalNode, error) {
+func NewDelete(node LogicalNode, table impls.Table, aliasName string) (LogicalNode, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -39,7 +38,7 @@ func (n *logicalDeleteNode) Filter() impls.Expression                           
 func (n *logicalDeleteNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalDeleteNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalDeleteNode) Build() queries.Node {
+func (n *logicalDeleteNode) Build() Node {
 	return &deleteNode{
 		Node:      n.LogicalNode.Build(),
 		table:     n.table,
@@ -52,13 +51,13 @@ func (n *logicalDeleteNode) Build() queries.Node {
 //
 
 type deleteNode struct {
-	queries.Node
+	Node
 	table     impls.Table
 	fields    []fields.Field
 	aliasName string
 }
 
-var _ queries.Node = &deleteNode{}
+var _ Node = &deleteNode{}
 
 func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("delete from %s", n.table.Name())

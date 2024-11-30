@@ -1,4 +1,4 @@
-package aggregate
+package nodes
 
 import (
 	"strings"
@@ -16,18 +16,18 @@ import (
 )
 
 type logicalGroupNode struct {
-	queries.LogicalNode
+	LogicalNode
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
 }
 
-var _ queries.LogicalNode = &logicalGroupNode{}
+var _ LogicalNode = &logicalGroupNode{}
 
 func NewHashAggregate(
-	node queries.LogicalNode,
+	node LogicalNode,
 	groupExpressions []impls.Expression,
 	projection *projection.Projection,
-) queries.LogicalNode {
+) LogicalNode {
 	return &logicalGroupNode{
 		LogicalNode:      node,
 		groupExpressions: groupExpressions,
@@ -74,7 +74,7 @@ func (n *logicalGroupNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *logicalGroupNode) Build() queries.Node {
+func (n *logicalGroupNode) Build() Node {
 	return &groupNode{
 		Node:             n.LogicalNode.Build(),
 		groupExpressions: n.groupExpressions,
@@ -86,12 +86,12 @@ func (n *logicalGroupNode) Build() queries.Node {
 //
 
 type groupNode struct {
-	queries.Node
+	Node
 	groupExpressions []impls.Expression
 	projection       *projection.Projection
 }
 
-var _ queries.Node = &groupNode{}
+var _ Node = &groupNode{}
 
 func (n *groupNode) Serialize(w serialization.IndentWriter) {
 	var strExpressions []string

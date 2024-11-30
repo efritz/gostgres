@@ -1,4 +1,4 @@
-package queries
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/serialization"

@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -32,13 +31,13 @@ func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *InsertBuilder) Build() (queries.LogicalNode, error) {
+func (b *InsertBuilder) Build() (nodes.LogicalNode, error) {
 	node, err := b.Source.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	insert, err := mutation.NewInsert(node, b.table, b.ColumnNames)
+	insert, err := nodes.NewInsert(node, b.table, b.ColumnNames)
 	if err != nil {
 		return nil, err
 	}

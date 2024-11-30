@@ -1,4 +1,4 @@
-package access
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries"
@@ -14,9 +14,9 @@ type logicalValuesNode struct {
 	expressions [][]impls.Expression
 }
 
-var _ queries.LogicalNode = &logicalValuesNode{}
+var _ LogicalNode = &logicalValuesNode{}
 
-func NewValues(fields []fields.Field, expressions [][]impls.Expression) queries.LogicalNode {
+func NewValues(fields []fields.Field, expressions [][]impls.Expression) LogicalNode {
 	return &logicalValuesNode{
 		fields:      fields,
 		expressions: expressions,
@@ -38,7 +38,7 @@ func (n *logicalValuesNode) Filter() impls.Expression                           
 func (n *logicalValuesNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalValuesNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalValuesNode) Build() queries.Node {
+func (n *logicalValuesNode) Build() Node {
 	return &valuesNode{
 		fields:      n.fields,
 		expressions: n.expressions,
@@ -53,7 +53,7 @@ type valuesNode struct {
 	expressions [][]impls.Expression
 }
 
-var _ queries.Node = &valuesNode{}
+var _ Node = &valuesNode{}
 
 func (n *valuesNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("values")

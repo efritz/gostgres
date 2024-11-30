@@ -1,4 +1,4 @@
-package projection
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/projection"
@@ -11,13 +11,13 @@ import (
 )
 
 type logicalProjectionNode struct {
-	queries.LogicalNode
+	LogicalNode
 	projection *projection.Projection
 }
 
-var _ queries.LogicalNode = &logicalProjectionNode{}
+var _ LogicalNode = &logicalProjectionNode{}
 
-func NewProjection(node queries.LogicalNode, projection *projection.Projection) queries.LogicalNode {
+func NewProjection(node LogicalNode, projection *projection.Projection) LogicalNode {
 	return &logicalProjectionNode{
 		LogicalNode: node,
 		projection:  projection,
@@ -66,7 +66,7 @@ func (n *logicalProjectionNode) SupportsMarkRestore() bool {
 	return false
 }
 
-func (n *logicalProjectionNode) Build() queries.Node {
+func (n *logicalProjectionNode) Build() Node {
 	return &projectionNode{
 		Node:       n.LogicalNode.Build(),
 		projection: n.projection,
@@ -77,11 +77,11 @@ func (n *logicalProjectionNode) Build() queries.Node {
 //
 
 type projectionNode struct {
-	queries.Node
+	Node
 	projection *projection.Projection
 }
 
-var _ queries.Node = &projectionNode{}
+var _ Node = &projectionNode{}
 
 func (n *projectionNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("project %s", n.projection)

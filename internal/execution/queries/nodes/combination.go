@@ -1,12 +1,9 @@
-package combination
+package nodes
 
 import (
 	"fmt"
 	"slices"
 
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/order"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -16,14 +13,14 @@ import (
 )
 
 type logicalCombinationNode struct {
-	left             queries.LogicalNode
-	right            queries.LogicalNode
+	left             LogicalNode
+	right            LogicalNode
 	fields           []fields.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
 
-var _ queries.LogicalNode = &logicalCombinationNode{}
+var _ LogicalNode = &logicalCombinationNode{}
 
 type sourcedRow struct {
 	index int
@@ -32,15 +29,15 @@ type sourcedRow struct {
 
 type groupedRowFilterFunc func(rows []sourcedRow) bool
 
-func NewIntersect(left queries.LogicalNode, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error) {
+func NewIntersect(left LogicalNode, right LogicalNode, distinct bool) (LogicalNode, error) {
 	return newCombination(left, right, intersectFilter, distinct)
 }
 
-func NewExcept(left queries.LogicalNode, right queries.LogicalNode, distinct bool) (queries.LogicalNode, error) {
+func NewExcept(left LogicalNode, right LogicalNode, distinct bool) (LogicalNode, error) {
 	return newCombination(left, right, exceptFilter, distinct)
 }
 
-func newCombination(left queries.LogicalNode, right queries.LogicalNode, groupedRowFilter groupedRowFilterFunc, distinct bool) (queries.LogicalNode, error) {
+func newCombination(left LogicalNode, right LogicalNode, groupedRowFilter groupedRowFilterFunc, distinct bool) (LogicalNode, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -72,11 +69,11 @@ func (n *logicalCombinationNode) Fields() []fields.Field {
 }
 
 func (n *logicalCombinationNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
-	filter.LowerFilter(ctx, filterExpression, n.left, n.right)
+	lowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
 func (n *logicalCombinationNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	order.LowerOrder(ctx, orderExpression, n.left, n.right)
+	lowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
 func (n *logicalCombinationNode) Optimize(ctx impls.OptimizationContext) {
@@ -91,7 +88,7 @@ func (n *logicalCombinationNode) Filter() impls.Expression {
 func (n *logicalCombinationNode) Ordering() impls.OrderExpression { return nil }
 func (n *logicalCombinationNode) SupportsMarkRestore() bool       { return false }
 
-func (n *logicalCombinationNode) Build() queries.Node {
+func (n *logicalCombinationNode) Build() Node {
 	return &combinationNode{
 		left:             n.left.Build(),
 		right:            n.right.Build(),
@@ -105,14 +102,14 @@ func (n *logicalCombinationNode) Build() queries.Node {
 //
 
 type combinationNode struct {
-	left             queries.Node
-	right            queries.Node
+	left             Node
+	right            Node
 	fields           []fields.Field
 	groupedRowFilter groupedRowFilterFunc
 	distinct         bool
 }
 
-var _ queries.Node = &combinationNode{}
+var _ Node = &combinationNode{}
 
 func (n *combinationNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("combination")

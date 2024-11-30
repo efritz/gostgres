@@ -1,23 +1,22 @@
-package filter
+package nodes
 
 import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func LowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...queries.LogicalNode) {
+func lowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...LogicalNode) {
 	for _, expression := range expressions.Conjunctions(filter) {
 		for _, node := range nodes {
-			lowerFilter(ctx, expression, node)
+			lowerFilterToNode(ctx, expression, node)
 		}
 	}
 }
 
-func lowerFilter(ctx impls.OptimizationContext, expression impls.Expression, node queries.LogicalNode) {
+func lowerFilterToNode(ctx impls.OptimizationContext, expression impls.Expression, node LogicalNode) {
 	expressionFields := expressions.Fields(expression)
 	nodeFields := node.Fields()
 	outerFields := ctx.OuterFields()

@@ -1,4 +1,4 @@
-package access
+package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/catalog/table/indexes"

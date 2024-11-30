@@ -1,7 +1,6 @@
-package limit
+package nodes
 
 import (
-	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -9,13 +8,13 @@ import (
 )
 
 type logicalLimitNode struct {
-	queries.LogicalNode
+	LogicalNode
 	limit int
 }
 
-var _ queries.LogicalNode = &logicalLimitNode{}
+var _ LogicalNode = &logicalLimitNode{}
 
-func NewLimit(node queries.LogicalNode, limit int) queries.LogicalNode {
+func NewLimit(node LogicalNode, limit int) LogicalNode {
 	return &logicalLimitNode{
 		LogicalNode: node,
 		limit:       limit,
@@ -26,7 +25,7 @@ func (n *logicalLimitNode) AddFilter(ctx impls.OptimizationContext, filter impls
 func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // boundary
 func (n *logicalLimitNode) SupportsMarkRestore() bool                                           { return false }
 
-func (n *logicalLimitNode) Build() queries.Node {
+func (n *logicalLimitNode) Build() Node {
 	return &limitNode{
 		Node:  n.LogicalNode.Build(),
 		limit: n.limit,
@@ -37,11 +36,11 @@ func (n *logicalLimitNode) Build() queries.Node {
 //
 
 type limitNode struct {
-	queries.Node
+	Node
 	limit int
 }
 
-var _ queries.Node = &limitNode{}
+var _ Node = &limitNode{}
 
 func (n *limitNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("limit %d", n.limit)

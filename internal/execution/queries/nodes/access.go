@@ -14,18 +14,11 @@ type AccessStrategy interface {
 }
 
 type accessNode struct {
-	table    impls.Table
-	strategy AccessStrategy
+	AccessStrategy
 }
 
-func NewAccess(table impls.Table, strategy AccessStrategy) Node {
-	return &accessNode{table, strategy}
-}
-
-func (n *accessNode) Serialize(w serialization.IndentWriter) {
-	n.strategy.Serialize(w)
-}
-
-func (n *accessNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
-	return n.strategy.Scanner(ctx)
+func NewAccess(strategy AccessStrategy) Node {
+	return &accessNode{
+		AccessStrategy: strategy,
+	}
 }

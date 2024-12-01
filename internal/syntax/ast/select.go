@@ -213,11 +213,8 @@ func (b *SelectBuilder) Build() (opt.LogicalNode, error) {
 	if b.Order != nil {
 		node = opt.NewOrder(node, b.Order)
 	}
-	if b.Offset != nil {
-		node = opt.NewOffset(node, *b.Offset)
-	}
-	if b.Limit != nil {
-		node = opt.NewLimit(node, *b.Limit)
+	if b.Limit != nil || b.Offset != nil {
+		node = opt.NewLimitOffset(node, b.Limit, b.Offset)
 	}
 
 	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {

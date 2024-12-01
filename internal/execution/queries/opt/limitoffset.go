@@ -7,13 +7,15 @@ import (
 
 type logicalLimitNode struct {
 	LogicalNode
-	limit int
+	limit  *int
+	offset *int
 }
 
-func NewLimit(node LogicalNode, limit int) LogicalNode {
+func NewLimitOffset(node LogicalNode, limit *int, offset *int) LogicalNode {
 	return &logicalLimitNode{
 		LogicalNode: node,
 		limit:       limit,
+		offset:      offset,
 	}
 }
 
@@ -22,5 +24,13 @@ func (n *logicalLimitNode) AddOrder(ctx impls.OptimizationContext, order impls.O
 func (n *logicalLimitNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalLimitNode) Build() nodes.Node {
-	return nodes.NewLimit(n.LogicalNode.Build(), n.limit)
+	node := n.LogicalNode.Build()
+	if n.offset != nil {
+		node = nodes.NewOffset(node, *n.offset)
+	}
+	if n.limit != nil {
+		node = nodes.NewLimit(node, *n.limit)
+	}
+
+	return node
 }

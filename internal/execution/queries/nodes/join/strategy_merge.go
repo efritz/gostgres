@@ -14,11 +14,11 @@ import (
 type mergeJoinStrategy struct {
 	left   nodes.Node
 	right  nodes.Node
-	pairs  []nodes.EqualityPair
+	pairs  []EqualityPair
 	fields []fields.Field
 }
 
-func NewMergeJoinStrategy(left nodes.Node, right nodes.Node, pairs []nodes.EqualityPair, fields []fields.Field) nodes.JoinStrategy {
+func NewMergeJoinStrategy(left nodes.Node, right nodes.Node, pairs []EqualityPair, fields []fields.Field) nodes.JoinStrategy {
 	return &mergeJoinStrategy{
 		left:   left,
 		right:  right,
@@ -195,12 +195,12 @@ func scanIntoTarget(scanner scan.RowScanner, target **rows.Row) error {
 }
 
 func (s *mergeJoinScanner) compareRows(leftRow, rightRow rows.Row) (ordering.OrderType, error) {
-	lValues, err := nodes.EvaluatePair(s.ctx, s.strategy.pairs, nodes.LeftOfPair, leftRow)
+	lValues, err := evaluatePair(s.ctx, s.strategy.pairs, leftOfPair, leftRow)
 	if err != nil {
 		return ordering.OrderTypeIncomparable, err
 	}
 
-	rValues, err := nodes.EvaluatePair(s.ctx, s.strategy.pairs, nodes.RightOfPair, rightRow)
+	rValues, err := evaluatePair(s.ctx, s.strategy.pairs, rightOfPair, rightRow)
 	if err != nil {
 		return ordering.OrderTypeIncomparable, err
 	}

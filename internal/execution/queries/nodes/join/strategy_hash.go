@@ -15,11 +15,11 @@ import (
 type hashJoinStrategy struct {
 	left   nodes.Node
 	right  nodes.Node
-	pairs  []nodes.EqualityPair
+	pairs  []EqualityPair
 	fields []fields.Field
 }
 
-func NewHashJoinStrategy(left nodes.Node, right nodes.Node, pairs []nodes.EqualityPair, fields []fields.Field) nodes.JoinStrategy {
+func NewHashJoinStrategy(left nodes.Node, right nodes.Node, pairs []EqualityPair, fields []fields.Field) nodes.JoinStrategy {
 	return &hashJoinStrategy{
 		left:   left,
 		right:  right,
@@ -42,7 +42,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 
 	h := map[uint64][]rows.Row{}
 	if err := scan.VisitRows(rightScanner, func(row rows.Row) (bool, error) {
-		keys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.RightOfPair, row)
+		keys, err := evaluatePair(ctx, s.pairs, rightOfPair, row)
 		if err != nil {
 			return false, err
 		}
@@ -70,12 +70,12 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 				rightRow := rightRows[0]
 				rightRows = rightRows[1:]
 
-				lKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.LeftOfPair, leftRow)
+				lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
 				if err != nil {
 					return rows.Row{}, err
 				}
 
-				rKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.RightOfPair, rightRow)
+				rKeys, err := evaluatePair(ctx, s.pairs, rightOfPair, rightRow)
 				if err != nil {
 					return rows.Row{}, err
 				}
@@ -90,7 +90,7 @@ func (s *hashJoinStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner,
 				return rows.Row{}, err
 			}
 
-			lKeys, err := nodes.EvaluatePair(ctx, s.pairs, nodes.LeftOfPair, leftRow)
+			lKeys, err := evaluatePair(ctx, s.pairs, leftOfPair, leftRow)
 			if err != nil {
 				return rows.Row{}, err
 			}

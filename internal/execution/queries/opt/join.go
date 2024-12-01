@@ -134,7 +134,7 @@ func (s *logicalNestedLoopJoinStrategy) Build(left nodes.Node, right nodes.Node,
 
 type logicalMergeJoinStrategy struct {
 	n     *logicalJoinNode
-	pairs []nodes.EqualityPair
+	pairs []join.EqualityPair
 }
 
 var _ logicalJoinStrategy = &logicalMergeJoinStrategy{}
@@ -163,7 +163,7 @@ func (s *logicalMergeJoinStrategy) Build(left nodes.Node, right nodes.Node, fiel
 
 type logicalHashJoinStrategy struct {
 	n     *logicalJoinNode
-	pairs []nodes.EqualityPair
+	pairs []join.EqualityPair
 }
 
 var _ logicalJoinStrategy = &logicalHashJoinStrategy{}
@@ -232,7 +232,7 @@ func (s *logicalHashJoinStrategy) Build(left nodes.Node, right nodes.Node, field
 // 	return &nestedLoopJoinStrategy{n: n}
 // }
 
-func decomposeFilter(n *logicalJoinNode) (pairs []nodes.EqualityPair, _ bool) {
+func decomposeFilter(n *logicalJoinNode) (pairs []join.EqualityPair, _ bool) {
 	if n.filter == nil {
 		return nil, false
 	}
@@ -240,12 +240,12 @@ func decomposeFilter(n *logicalJoinNode) (pairs []nodes.EqualityPair, _ bool) {
 	for _, expr := range expressions.Conjunctions(n.filter) {
 		if comparisonType, left, right := expressions.IsComparison(expr); comparisonType == expressions.ComparisonTypeEquals {
 			if bindsAllFields(n.left, left) && bindsAllFields(n.right, right) {
-				pairs = append(pairs, nodes.EqualityPair{Left: left, Right: right})
+				pairs = append(pairs, join.EqualityPair{Left: left, Right: right})
 				continue
 			}
 
 			if bindsAllFields(n.left, right) && bindsAllFields(n.right, left) {
-				pairs = append(pairs, nodes.EqualityPair{Left: right, Right: left})
+				pairs = append(pairs, join.EqualityPair{Left: right, Right: left})
 				continue
 			}
 		}

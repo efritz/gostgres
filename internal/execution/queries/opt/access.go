@@ -81,7 +81,7 @@ func (n *logicalAccessNode) Build() nodes.Node {
 		return NewFilter(n, f).Build()
 	}
 
-	return nodes.NewAccess(n.table, n.strategy)
+	return nodes.NewAccess(n.strategy)
 }
 
 //

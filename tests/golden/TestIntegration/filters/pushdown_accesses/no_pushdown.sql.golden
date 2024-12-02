@@ -16,14 +16,14 @@ LIMIT 5;
 
 Plan:
 
-                     query plan
-----------------------------------------------------
+                       query plan
+--------------------------------------------------------
  project {film_id, title, length}
     limit 5
         order by film.rating, film.title
-            btree index scan of film via idx_title
-                index cond: film.title < C
-                filter: film.length > 120
+            filter by film.length > 120
+                btree index scan of film via idx_title
+                    index cond: film.title < C
 (1 rows)
 
 Results:

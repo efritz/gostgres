@@ -6,10 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/joins"
-	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -44,8 +41,8 @@ func (r *TableReference) TableFields() []fields.Field {
 	return fields
 }
 
-func (r *TableReference) Build() (queries.Node, error) {
-	return access.NewAccess(r.table), nil
+func (r *TableReference) Build() (plan.LogicalNode, error) {
+	return plan.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -145,7 +142,7 @@ func (e *TableExpression) TableFields() []fields.Field {
 	return slices.Clone(e.fields)
 }
 
-func (e *TableExpression) Build() (queries.Node, error) {
+func (e *TableExpression) Build() (plan.LogicalNode, error) {
 	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
@@ -159,7 +156,7 @@ func (e *TableExpression) Build() (queries.Node, error) {
 		node = aliased
 
 		if e.projection != nil {
-			node = projection.NewProjection(node, e.projection)
+			node = plan.NewProjection(node, e.projection)
 		}
 	}
 
@@ -169,20 +166,20 @@ func (e *TableExpression) Build() (queries.Node, error) {
 			return nil, err
 		}
 
-		node = joins.NewJoin(node, right, j.Condition)
+		node = plan.NewJoin(node, right, j.Condition)
 	}
 
 	return node, nil
 }
 
-func joinNodes(left queries.Node, expressions []*TableExpression) queries.Node {
+func joinNodes(left plan.LogicalNode, expressions []*TableExpression) plan.LogicalNode {
 	for _, expression := range expressions {
 		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}
 
-		left = joins.NewJoin(left, right, nil)
+		left = plan.NewJoin(left, right, nil)
 	}
 
 	return left

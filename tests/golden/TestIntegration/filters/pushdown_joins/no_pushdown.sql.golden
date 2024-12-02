@@ -31,9 +31,9 @@ Plan:
                             index cond: film_category.film_id = f.film_id
             with
                 project {category_id, name, last_update} into c.*
-                    btree index scan of category via category_pkey
-                        index cond: category.category_id = fc.category_id
-                        filter: length(f.title) > length(category.name)
+                    filter by length(f.title) > length(category.name)
+                        btree index scan of category via category_pkey
+                            index cond: category.category_id = fc.category_id
 (1 rows)
 
 Results:

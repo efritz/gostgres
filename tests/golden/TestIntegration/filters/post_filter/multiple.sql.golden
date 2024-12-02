@@ -16,13 +16,13 @@ LIMIT 5;
 
 Plan:
 
-                              query plan
------------------------------------------------------------------------
+                             query plan
+---------------------------------------------------------------------
  project {film_id, title, length}
     limit 5
         order by film.rating, film.title
-            table scan of film
-                filter: film.length > 120 and film.rental_rate > 2.99
+            filter by film.length > 120 and film.rental_rate > 2.99
+                table scan of film
 (1 rows)
 
 Results:

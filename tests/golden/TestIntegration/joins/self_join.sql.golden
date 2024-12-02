@@ -28,9 +28,9 @@ Plan:
                     table scan of actor
             with
                 project {actor_id, first_name, last_name, last_update} into a2.*
-                    btree index scan of actor via actor_pkey
-                        index cond: actor.actor_id > a1.actor_id
-                        filter: a1.last_name = actor.last_name
+                    filter by a1.last_name = actor.last_name
+                        btree index scan of actor via actor_pkey
+                            index cond: actor.actor_id > a1.actor_id
 (1 rows)
 
 Results:

@@ -4,10 +4,7 @@ import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	"github.com/efritz/gostgres/internal/execution/queries/access"
-	"github.com/efritz/gostgres/internal/execution/queries/filter"
-	"github.com/efritz/gostgres/internal/execution/queries/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -36,8 +33,8 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *DeleteBuilder) Build() (queries.Node, error) {
-	node := access.NewAccess(b.table)
+func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
+	node := plan.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		aliased, err := aliasTableName(node, b.Target.AliasName)
 		if err != nil {
@@ -49,10 +46,10 @@ func (b *DeleteBuilder) Build() (queries.Node, error) {
 		node = joinNodes(node, b.Using)
 	}
 	if b.Where != nil {
-		node = filter.NewFilter(node, b.Where)
+		node = plan.NewFilter(node, b.Where)
 	}
 
-	delete, err := mutation.NewDelete(node, b.table, b.Target.AliasName)
+	delete, err := plan.NewDelete(node, b.table, b.Target.AliasName)
 	if err != nil {
 		return nil, err
 	}

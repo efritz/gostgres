@@ -26,8 +26,8 @@ Plan:
             project {title_length, count} into s.*
                 group by length(f.title), project {length(f.title) as title_length, count(1) as count}
                     project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*
-                        table scan of film
-                            filter: length(film.title) > 5
+                        filter by length(film.title) > 5
+                            table scan of film
 (1 rows)
 
 Results:

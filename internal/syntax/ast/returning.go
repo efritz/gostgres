@@ -2,12 +2,11 @@ package ast
 
 import (
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
-	projection "github.com/efritz/gostgres/internal/execution/queries/projection"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func wrapReturning(node queries.Node, table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (queries.Node, error) {
+func wrapReturning(node plan.LogicalNode, table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (plan.LogicalNode, error) {
 	var aliasedTables []projectionHelpers.AliasedTable
 	if alias != "" {
 		aliasedTables = append(aliasedTables, projectionHelpers.AliasedTable{
@@ -21,5 +20,5 @@ func wrapReturning(node queries.Node, table impls.Table, alias string, expressio
 		return nil, err
 	}
 
-	return projection.NewProjection(node, p), nil
+	return plan.NewProjection(node, p), nil
 }

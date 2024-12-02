@@ -2,10 +2,10 @@ package ast
 
 import (
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries/opt"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 )
 
-func aliasTableName(node opt.LogicalNode, name string) (opt.LogicalNode, error) {
+func aliasTableName(node plan.LogicalNode, name string) (plan.LogicalNode, error) {
 	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
 		name,
 		node.Fields(),
@@ -17,5 +17,5 @@ func aliasTableName(node opt.LogicalNode, name string) (opt.LogicalNode, error) 
 		return nil, err
 	}
 
-	return opt.NewProjection(node, p), nil
+	return plan.NewProjection(node, p), nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
-	"github.com/efritz/gostgres/internal/execution/queries/opt"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -40,8 +40,8 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *UpdateBuilder) Build() (opt.LogicalNode, error) {
-	node := opt.NewAccess(b.table)
+func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
+	node := plan.NewAccess(b.table)
 	if b.Target.AliasName != "" {
 		aliased, err := aliasTableName(node, b.Target.AliasName)
 		if err != nil {
@@ -55,7 +55,7 @@ func (b *UpdateBuilder) Build() (opt.LogicalNode, error) {
 	}
 
 	if b.Where != nil {
-		node = opt.NewFilter(node, b.Where)
+		node = plan.NewFilter(node, b.Where)
 	}
 
 	setExpressions := make([]nodes.SetExpression, len(b.Updates))
@@ -66,7 +66,7 @@ func (b *UpdateBuilder) Build() (opt.LogicalNode, error) {
 		}
 	}
 
-	update, err := opt.NewUpdate(node, b.table, b.Target.AliasName, setExpressions)
+	update, err := plan.NewUpdate(node, b.table, b.Target.AliasName, setExpressions)
 	if err != nil {
 		return nil, err
 	}

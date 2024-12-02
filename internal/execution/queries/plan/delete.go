@@ -1,4 +1,4 @@
-package opt
+package plan
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"

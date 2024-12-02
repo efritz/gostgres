@@ -1,4 +1,4 @@
-package opt
+package plan
 
 import (
 	"slices"

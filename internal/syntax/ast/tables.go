@@ -6,7 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries/opt"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -41,8 +41,8 @@ func (r *TableReference) TableFields() []fields.Field {
 	return fields
 }
 
-func (r *TableReference) Build() (opt.LogicalNode, error) {
-	return opt.NewAccess(r.table), nil
+func (r *TableReference) Build() (plan.LogicalNode, error) {
+	return plan.NewAccess(r.table), nil
 }
 
 type TableExpression struct {
@@ -142,7 +142,7 @@ func (e *TableExpression) TableFields() []fields.Field {
 	return slices.Clone(e.fields)
 }
 
-func (e *TableExpression) Build() (opt.LogicalNode, error) {
+func (e *TableExpression) Build() (plan.LogicalNode, error) {
 	node, err := e.Base.BaseTableExpression.Build()
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (e *TableExpression) Build() (opt.LogicalNode, error) {
 		node = aliased
 
 		if e.projection != nil {
-			node = opt.NewProjection(node, e.projection)
+			node = plan.NewProjection(node, e.projection)
 		}
 	}
 
@@ -166,20 +166,20 @@ func (e *TableExpression) Build() (opt.LogicalNode, error) {
 			return nil, err
 		}
 
-		node = opt.NewJoin(node, right, j.Condition)
+		node = plan.NewJoin(node, right, j.Condition)
 	}
 
 	return node, nil
 }
 
-func joinNodes(left opt.LogicalNode, expressions []*TableExpression) opt.LogicalNode {
+func joinNodes(left plan.LogicalNode, expressions []*TableExpression) plan.LogicalNode {
 	for _, expression := range expressions {
 		right, err := expression.Build()
 		if err != nil {
 			return nil
 		}
 
-		left = opt.NewJoin(left, right, nil)
+		left = plan.NewJoin(left, right, nil)
 	}
 
 	return left

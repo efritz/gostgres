@@ -31,18 +31,15 @@ func (p *parser) parseSelect() (ast.TableReferenceOrExpression, error) {
 		return nil, err
 	}
 
-	builder := &ast.SelectBuilder{
-		Select: simpleSelect,
-		Order:  orderExpression,
-		Limit:  limit,
-		Offset: offset,
-	}
+	simpleSelect.Order = orderExpression
+	simpleSelect.Limit = limit
+	simpleSelect.Offset = offset
 
-	return builder, nil
+	return simpleSelect, nil
 }
 
 // simpleSelect := selectExpressions from where groupBy combinedQuery
-func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
+func (p *parser) parseSimpleSelect() (*ast.SelectBuilder, error) {
 	selectExpressions, err := p.parseSelectExpressions()
 	if err != nil {
 		return nil, err
@@ -69,7 +66,7 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 		return nil, err
 	}
 
-	description := &ast.SimpleSelectDescription{
+	builder := &ast.SelectBuilder{
 		SelectExpressions: selectExpressions,
 		From:              node,
 		Where:             whereExpression,
@@ -77,7 +74,7 @@ func (p *parser) parseSimpleSelect() (*ast.SimpleSelectDescription, error) {
 		Combinations:      combinations,
 	}
 
-	return description, nil
+	return builder, nil
 }
 
 // selectExpressions := selectExpression [, ...]
@@ -184,13 +181,9 @@ func (p *parser) parseCombinationTarget() (ast.TableReferenceOrExpression, error
 				return nil, err
 			}
 
-			description, err := p.parseSimpleSelect()
+			builder, err := p.parseSimpleSelect()
 			if err != nil {
 				return nil, err
-			}
-
-			builder := &ast.SelectBuilder{
-				Select: description,
 			}
 
 			return builder, nil

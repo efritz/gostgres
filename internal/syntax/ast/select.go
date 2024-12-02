@@ -13,21 +13,17 @@ import (
 )
 
 type SelectBuilder struct {
-	Select *SimpleSelectDescription
-	Order  impls.OrderExpression
-	Limit  *int
-	Offset *int
-
-	fields     []fields.Field
-	projection *projectionHelpers.Projection
-}
-
-type SimpleSelectDescription struct {
 	SelectExpressions []projectionHelpers.ProjectionExpression
 	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
 	Combinations      []*CombinationDescription
+	Order             impls.OrderExpression
+	Limit             *int
+	Offset            *int
+
+	fields     []fields.Field
+	projection *projectionHelpers.Projection
 }
 
 type CombinationDescription struct {
@@ -50,24 +46,24 @@ func (b *SelectBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 
 func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) error {
 	if err := ctx.WithScope(func() error {
-		return b.Select.From.Resolve(ctx)
+		return b.From.Resolve(ctx)
 	}); err != nil {
 		return err
 	}
 
-	fromFields := b.Select.From.TableFields()
+	fromFields := b.From.TableFields()
 
 	ctx.PushScope()
 	defer ctx.PopScope()
 	ctx.Bind(fromFields...)
 
-	resolved, err := resolveExpression(ctx, b.Select.Where, nil, false)
+	resolved, err := resolveExpression(ctx, b.Where, nil, false)
 	if err != nil {
 		return err
 	}
-	b.Select.Where = resolved
+	b.Where = resolved
 
-	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.Select.SelectExpressions)
+	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.SelectExpressions)
 	if err != nil {
 		return err
 	}
@@ -90,13 +86,13 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	defer ctx.PopScope()
 	ctx.Bind(b.fields...)
 
-	for i, expr := range b.Select.Groupings {
+	for i, expr := range b.Groupings {
 		resolved, err := resolveExpression(ctx, expr, projection, false)
 		if err != nil {
 			return err
 		}
 
-		b.Select.Groupings[i] = resolved
+		b.Groupings[i] = resolved
 	}
 
 	var rawProjectedExpressions []impls.Expression
@@ -106,20 +102,20 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
 		ctx.ExpressionResolutionContext(true),
 		rawProjectedExpressions,
-		b.Select.Groupings,
+		b.Groupings,
 	)
 	if err != nil {
 		return err
 	}
 
-	if len(b.Select.Groupings) == 0 && containsAggregate {
-		b.Select.Groupings = []impls.Expression{expressions.NewConstant(nil)}
+	if len(b.Groupings) == 0 && containsAggregate {
+		b.Groupings = []impls.Expression{expressions.NewConstant(nil)}
 	}
 
-	if len(b.Select.Groupings) > 0 {
+	if len(b.Groupings) > 0 {
 	selectLoop:
 		for _, field := range nonAggregatedFields {
-			for _, grouping := range b.Select.Groupings {
+			for _, grouping := range b.Groupings {
 				if grouping.Equal(expressions.NewNamed(field)) {
 					continue selectLoop
 				}
@@ -131,7 +127,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	if b.Order != nil {
 		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
-			if len(b.Select.Groupings) > 0 {
+			if len(b.Groupings) > 0 {
 				return resolveExpression(ctx, expr, nil, false)
 			}
 
@@ -148,7 +144,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 }
 
 func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) error {
-	for _, c := range b.Select.Combinations {
+	for _, c := range b.Combinations {
 		if err := ctx.WithScope(func() error {
 			return c.Select.Resolve(ctx)
 		}); err != nil {
@@ -168,25 +164,25 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 }
 
 func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
-	node, err := b.Select.From.Build()
+	node, err := b.From.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	if b.Select.Where != nil {
-		node = plan.NewFilter(node, b.Select.Where)
+	if b.Where != nil {
+		node = plan.NewFilter(node, b.Where)
 	}
 
-	if b.Select.Groupings != nil {
-		node = plan.NewHashAggregate(node, b.Select.Groupings, b.projection)
+	if b.Groupings != nil {
+		node = plan.NewHashAggregate(node, b.Groupings, b.projection)
 	}
 
-	if len(b.Select.Combinations) > 0 {
-		if b.Select.Groupings == nil {
+	if len(b.Combinations) > 0 {
+		if b.Groupings == nil {
 			node = plan.NewProjection(node, b.projection)
 		}
 
-		for _, c := range b.Select.Combinations {
+		for _, c := range b.Combinations {
 			var factory func(left, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
@@ -217,7 +213,7 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		node = plan.NewLimitOffset(node, b.Limit, b.Offset)
 	}
 
-	if b.Select.Groupings == nil && len(b.Select.Combinations) == 0 {
+	if b.Groupings == nil && len(b.Combinations) == 0 {
 		node = plan.NewProjection(node, b.projection)
 	}
 

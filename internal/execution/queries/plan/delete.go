@@ -1,6 +1,8 @@
 package plan
 
 import (
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -9,27 +11,28 @@ import (
 type logicalDeleteNode struct {
 	LogicalNode
 	table     impls.Table
-	fields    []fields.Field
 	aliasName string
 	filter    impls.Expression
+	returning *projection.Projection
 }
 
-func NewDelete(node LogicalNode, table impls.Table, aliasName string, filter impls.Expression) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
+func NewDelete(
+	node LogicalNode,
+	table impls.Table,
+	aliasName string,
+	filter impls.Expression,
+	returning *projection.Projection,
+) (LogicalNode, error) {
 	return &logicalDeleteNode{
 		LogicalNode: node,
 		table:       table,
-		fields:      fields,
 		aliasName:   aliasName,
 		filter:      filter,
+		returning:   returning,
 	}, nil
 }
 
-func (n *logicalDeleteNode) Fields() []fields.Field                                              { return n.fields }
+func (n *logicalDeleteNode) Fields() []fields.Field                                              { return n.returning.Fields() }
 func (n *logicalDeleteNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalDeleteNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 func (n *logicalDeleteNode) Filter() impls.Expression                                            { return nil }
@@ -37,8 +40,16 @@ func (n *logicalDeleteNode) Ordering() impls.OrderExpression                    
 func (n *logicalDeleteNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalDeleteNode) Optimize(ctx impls.OptimizationContext) {
+	n.returning.Optimize(ctx)
+
+	if n.filter != nil {
+		n.filter = n.filter.Fold()
+		n.LogicalNode.AddFilter(ctx, n.filter)
+	}
+
 	n.LogicalNode.Optimize(ctx)
-	n.filter = n.filter.Fold()
+
+	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
 }
 
 func (n *logicalDeleteNode) Build() nodes.Node {
@@ -47,5 +58,7 @@ func (n *logicalDeleteNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	return nodes.NewDelete(node, n.table, n.fields, n.aliasName)
+	node = nodes.NewDelete(node, n.table, n.aliasName)
+	node = nodes.NewProjection(node, n.returning)
+	return node
 }

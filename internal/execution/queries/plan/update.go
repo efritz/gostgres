@@ -1,6 +1,8 @@
 package plan
 
 import (
+	"github.com/efritz/gostgres/internal/execution/expressions"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -9,29 +11,31 @@ import (
 type logicalUpdateNode struct {
 	LogicalNode
 	table          impls.Table
-	fields         []fields.Field
 	aliasName      string
 	setExpressions []nodes.SetExpression
 	filter         impls.Expression
+	returning      *projection.Projection
 }
 
-func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpressions []nodes.SetExpression, filter impls.Expression) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
+func NewUpdate(
+	node LogicalNode,
+	table impls.Table,
+	aliasName string,
+	setExpressions []nodes.SetExpression,
+	filter impls.Expression,
+	returning *projection.Projection,
+) (LogicalNode, error) {
 	return &logicalUpdateNode{
 		LogicalNode:    node,
 		table:          table,
-		fields:         fields,
 		aliasName:      aliasName,
 		setExpressions: setExpressions,
 		filter:         filter,
+		returning:      returning,
 	}, nil
 }
 
-func (n *logicalUpdateNode) Fields() []fields.Field                                              { return n.fields }
+func (n *logicalUpdateNode) Fields() []fields.Field                                              { return n.returning.Fields() }
 func (n *logicalUpdateNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalUpdateNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 func (n *logicalUpdateNode) Filter() impls.Expression                                            { return nil }
@@ -39,8 +43,16 @@ func (n *logicalUpdateNode) Ordering() impls.OrderExpression                    
 func (n *logicalUpdateNode) SupportsMarkRestore() bool                                           { return false }
 
 func (n *logicalUpdateNode) Optimize(ctx impls.OptimizationContext) {
+	n.returning.Optimize(ctx)
+
+	if n.filter != nil {
+		n.filter = n.filter.Fold()
+		n.LogicalNode.AddFilter(ctx, n.filter)
+	}
+
 	n.LogicalNode.Optimize(ctx)
-	n.filter = n.filter.Fold()
+
+	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
 }
 
 func (n *logicalUpdateNode) Build() nodes.Node {
@@ -49,5 +61,7 @@ func (n *logicalUpdateNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	return nodes.NewUpdate(node, n.table, n.fields, n.aliasName, n.setExpressions)
+	node = nodes.NewUpdate(node, n.table, n.aliasName, n.setExpressions)
+	node = nodes.NewProjection(node, n.returning)
+	return node
 }

@@ -2,11 +2,20 @@ package ast
 
 import (
 	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func wrapReturning(node plan.LogicalNode, table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (plan.LogicalNode, error) {
+func returningProjection(table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (*projectionHelpers.Projection, error) {
+	if len(expressions) == 0 {
+		return projectionHelpers.NewProjectionFromProjectedExpressions("", nil)
+	}
+
+	var fields []fields.Field
+	for _, field := range table.Fields() {
+		fields = append(fields, field.Field)
+	}
+
 	var aliasedTables []projectionHelpers.AliasedTable
 	if alias != "" {
 		aliasedTables = append(aliasedTables, projectionHelpers.AliasedTable{
@@ -15,10 +24,5 @@ func wrapReturning(node plan.LogicalNode, table impls.Table, alias string, expre
 		})
 	}
 
-	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(node.Name(), node.Fields(), expressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	return plan.NewProjection(node, p), nil
+	return projectionHelpers.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables...)
 }

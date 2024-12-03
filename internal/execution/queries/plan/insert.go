@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -9,31 +10,39 @@ import (
 type logicalInsertNode struct {
 	LogicalNode
 	table       impls.Table
-	fields      []fields.Field
 	columnNames []string
+	returning   *projection.Projection
 }
 
-func NewInsert(node LogicalNode, table impls.Table, columnNames []string) (LogicalNode, error) {
-	var fields []fields.Field
-	for _, field := range table.Fields() {
-		fields = append(fields, field.Field)
-	}
-
+func NewInsert(
+	node LogicalNode,
+	table impls.Table,
+	columnNames []string,
+	returning *projection.Projection,
+) (LogicalNode, error) {
 	return &logicalInsertNode{
 		LogicalNode: node,
 		table:       table,
-		fields:      fields,
 		columnNames: columnNames,
+		returning:   returning,
 	}, nil
 }
 
-func (n *logicalInsertNode) Fields() []fields.Field                                              { return n.fields }
+func (n *logicalInsertNode) Fields() []fields.Field                                              { return n.returning.Fields() }
 func (n *logicalInsertNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalInsertNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 func (n *logicalInsertNode) Filter() impls.Expression                                            { return nil }
 func (n *logicalInsertNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalInsertNode) SupportsMarkRestore() bool                                           { return false }
 
+func (n *logicalInsertNode) Opitmize(ctx impls.OptimizationContext) {
+	n.returning.Optimize(ctx)
+	n.LogicalNode.Optimize(ctx)
+}
+
 func (n *logicalInsertNode) Build() nodes.Node {
-	return nodes.NewInsert(n.LogicalNode.Build(), n.table, n.fields, n.columnNames)
+	node := n.LogicalNode.Build()
+	node = nodes.NewInsert(node, n.table, n.columnNames)
+	node = nodes.NewProjection(node, n.returning)
+	return node
 }

@@ -96,17 +96,19 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field, aliased
 type aliasedExpression struct {
 	expression impls.Expression
 	alias      string
+	isTID      bool
 }
 
-func NewAliasedExpression(expression impls.Expression, alias string) ProjectionExpression {
+func NewAliasedExpression(expression impls.Expression, alias string, isTID bool) ProjectionExpression {
 	return aliasedExpression{
 		expression: expression,
 		alias:      alias,
+		isTID:      isTID,
 	}
 }
 
 func NewAliasedExpressionFromField(field fields.Field) ProjectionExpression {
-	return NewAliasedExpression(expressions.NewNamed(field), field.Name())
+	return NewAliasedExpression(expressions.NewNamed(field), field.Name(), field.IsTID())
 }
 
 func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables ...AliasedTable) ([]ProjectedExpression, error) {
@@ -117,5 +119,5 @@ func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables ...Aliase
 		}
 	}
 
-	return []ProjectedExpression{NewProjectedExpression(expression, p.alias)}, nil
+	return []ProjectedExpression{NewProjectedExpression(expression, p.alias, p.isTID)}, nil
 }

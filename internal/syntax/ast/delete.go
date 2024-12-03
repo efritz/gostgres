@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -14,7 +15,8 @@ type DeleteBuilder struct {
 	Where     impls.Expression
 	Returning []projection.ProjectionExpression
 
-	table impls.Table
+	table     impls.Table
+	returning *projection.Projection
 }
 
 func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
@@ -24,32 +26,60 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.table = table
 
+	var baseFields []fields.Field
+	for _, field := range table.Fields() {
+		baseFields = append(baseFields, field.Field)
+	}
+
+	if b.Target.AliasName != "" {
+		for i, field := range baseFields {
+			baseFields[i] = field.WithRelationName(b.Target.AliasName)
+		}
+	}
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+
+	ctx.Bind(baseFields...)
+
 	for _, e := range b.Using {
 		if err := e.Resolve(ctx); err != nil {
 			return err
 		}
+
+		joinFields := e.TableFields()
+		ctx.Bind(joinFields...)
+		baseFields = append(baseFields, joinFields...)
 	}
+
+	resolved, err := resolveExpression(ctx, b.Where, nil, false)
+	if err != nil {
+		return err
+	}
+	b.Where = resolved
+
+	// TODO - resolve projection
+	returning, err := returningProjection(b.table, b.Target.AliasName, b.Returning)
+	if err != nil {
+		return err
+	}
+	b.returning = returning
 
 	return nil
 }
 
 func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
-	if b.Target.AliasName != "" {
-		aliased, err := aliasTableName(node, b.Target.AliasName)
-		if err != nil {
-			return nil, err
-		}
-		node = aliased
+
+	aliased, err := aliasTableNameForMutataion(node, b.Target.AliasName)
+	if err != nil {
+		return nil, err
 	}
+	node = aliased
+
 	if len(b.Using) > 0 {
 		node = joinNodes(node, b.Using)
 	}
 
-	delete, err := plan.NewDelete(node, b.table, b.Target.AliasName, b.Where)
-	if err != nil {
-		return nil, err
-	}
-
-	return wrapReturning(delete, b.table, b.Target.AliasName, b.Returning)
+	return plan.NewDelete(node, b.table, b.Target.AliasName, b.Where, b.returning)
 }

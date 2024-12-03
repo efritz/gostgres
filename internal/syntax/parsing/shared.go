@@ -21,18 +21,10 @@ func (p *parser) parseWhere() (impls.Expression, bool, error) {
 }
 
 // returning := [`RETURNING` selectExpressions]
-func (p *parser) parseReturning(name string) (returningExpressions []projection.ProjectionExpression, err error) {
+func (p *parser) parseReturning() (returningExpressions []projection.ProjectionExpression, err error) {
 	if !p.advanceIf(isType(tokens.TokenTypeReturning)) {
 		return nil, nil
 	}
 
-	returningExpressions, err = p.parseSelectExpressions()
-	if err != nil {
-		return nil, err
-	}
-	if returningExpressions != nil {
-		return returningExpressions, nil
-	}
-
-	return []projection.ProjectionExpression{projection.NewTableWildcardProjectionExpression(name)}, nil
+	return p.parseSelectExpressions()
 }

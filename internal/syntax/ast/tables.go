@@ -103,7 +103,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 			for i, field := range rawFields {
 				alias := columnAliases[i]
 				baseFields[i] = field.WithName(alias)
-				projectionExpressions = append(projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias))
+				projectionExpressions = append(projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias, false))
 			}
 
 			p, err := projectionHelpers.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions)

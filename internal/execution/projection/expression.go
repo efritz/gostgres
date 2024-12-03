@@ -12,17 +12,19 @@ import (
 type ProjectedExpression struct {
 	Expression impls.Expression
 	Alias      string
+	IsTID      bool
 }
 
-func NewProjectedExpression(expression impls.Expression, alias string) ProjectedExpression {
+func NewProjectedExpression(expression impls.Expression, alias string, isTID bool) ProjectedExpression {
 	return ProjectedExpression{
 		Expression: expression,
 		Alias:      alias,
+		IsTID:      isTID,
 	}
 }
 
 func NewProjectedExpressionFromField(field fields.Field) ProjectedExpression {
-	return NewProjectedExpression(expressions.NewNamed(field), field.Name())
+	return NewProjectedExpression(expressions.NewNamed(field), field.Name(), field.IsTID())
 }
 
 func (p ProjectedExpression) String() string {
@@ -34,15 +36,20 @@ func (p ProjectedExpression) String() string {
 
 func fieldsFromProjectedExpressions(targetRelationName string, projectedExpressions []ProjectedExpression) []fields.Field {
 	var projectedFields []fields.Field
-	for _, field := range projectedExpressions {
+	for _, proj := range projectedExpressions {
 		relationName := targetRelationName
 		if relationName == "" {
-			if named, ok := field.Expression.(expressions.NamedExpression); ok {
+			if named, ok := proj.Expression.(expressions.NamedExpression); ok {
 				relationName = named.Field().RelationName()
 			}
 		}
 
-		projectedFields = append(projectedFields, fields.NewField(relationName, field.Alias, field.Expression.Type(), fields.NonInternalField))
+		internalType := fields.NonInternalField
+		if proj.IsTID {
+			internalType = fields.InternalFieldTid
+		}
+
+		projectedFields = append(projectedFields, fields.NewField(relationName, proj.Alias, proj.Expression.Type(), internalType))
 	}
 
 	return projectedFields

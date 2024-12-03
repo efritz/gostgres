@@ -13,15 +13,13 @@ import (
 type insertNode struct {
 	Node
 	table       impls.Table
-	fields      []fields.Field
 	columnNames []string
 }
 
-func NewInsert(node Node, table impls.Table, fields []fields.Field, columnNames []string) Node {
+func NewInsert(node Node, table impls.Table, columnNames []string) Node {
 	return &insertNode{
 		Node:        node,
 		table:       table,
-		fields:      fields,
 		columnNames: columnNames,
 	}
 }

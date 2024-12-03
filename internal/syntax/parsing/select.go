@@ -112,7 +112,7 @@ func (p *parser) parseSelectExpression() (projection.ProjectionExpression, error
 		alias = "?column?"
 	}
 
-	return projection.NewAliasedExpression(expression, alias), nil
+	return projection.NewAliasedExpression(expression, alias, false), nil
 }
 
 // groupBy := [ `GROUP BY` expression [, ...] ]

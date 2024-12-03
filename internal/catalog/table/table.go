@@ -6,7 +6,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
-	"github.com/efritz/gostgres/internal/shared/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -23,7 +22,7 @@ var _ impls.Table = &table{}
 
 func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	tableFields := []impls.TableField{
-		impls.NewTableField(name, "tid", types.TypeBigInteger, fields.InternalFieldTid),
+		impls.NewTableFieldFromField(fields.TIDField.WithRelationName(name)),
 	}
 	for _, field := range nonInternalFields {
 		tableFields = append(tableFields, field.WithRelationName(name))

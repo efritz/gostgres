@@ -6,6 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
@@ -16,7 +17,8 @@ type UpdateBuilder struct {
 	Where     impls.Expression
 	Returning []projection.ProjectionExpression
 
-	table impls.Table
+	table     impls.Table
+	returning *projection.Projection
 }
 
 type SetExpression struct {
@@ -31,24 +33,58 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.table = table
 
+	// TODO - resolve set expressions
+
+	var baseFields []fields.Field
+	for _, field := range table.Fields() {
+		baseFields = append(baseFields, field.Field)
+	}
+
+	if b.Target.AliasName != "" {
+		for i, field := range baseFields {
+			baseFields[i] = field.WithRelationName(b.Target.AliasName)
+		}
+	}
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+
+	ctx.Bind(baseFields...)
+
 	for _, from := range b.From {
 		if err := from.Resolve(ctx); err != nil {
 			return err
 		}
+
+		joinFields := from.TableFields()
+		ctx.Bind(joinFields...)
+		baseFields = append(baseFields, joinFields...)
 	}
+
+	resolved, err := resolveExpression(ctx, b.Where, nil, false)
+	if err != nil {
+		return err
+	}
+	b.Where = resolved
+
+	// TODO - resolve projection
+	returning, err := returningProjection(b.table, b.Target.AliasName, b.Returning)
+	if err != nil {
+		return err
+	}
+	b.returning = returning
 
 	return nil
 }
 
 func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
-	if b.Target.AliasName != "" {
-		aliased, err := aliasTableName(node, b.Target.AliasName)
-		if err != nil {
-			return nil, err
-		}
-		node = aliased
+
+	aliased, err := aliasTableNameForMutataion(node, b.Target.AliasName)
+	if err != nil {
+		return nil, err
 	}
+	node = aliased
 
 	if b.From != nil {
 		node = joinNodes(node, b.From)
@@ -62,10 +98,5 @@ func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 		}
 	}
 
-	update, err := plan.NewUpdate(node, b.table, b.Target.AliasName, setExpressions, b.Where)
-	if err != nil {
-		return nil, err
-	}
-
-	return wrapReturning(update, b.table, b.Target.AliasName, b.Returning)
+	return plan.NewUpdate(node, b.table, b.Target.AliasName, setExpressions, b.Where, b.returning)
 }

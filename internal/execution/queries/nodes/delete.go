@@ -2,7 +2,6 @@ package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/serialization"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
@@ -11,15 +10,13 @@ import (
 type deleteNode struct {
 	Node
 	table     impls.Table
-	fields    []fields.Field
 	aliasName string
 }
 
-func NewDelete(node Node, table impls.Table, fields []fields.Field, aliasName string) Node {
+func NewDelete(node Node, table impls.Table, aliasName string) Node {
 	return &deleteNode{
 		Node:      node,
 		table:     table,
-		fields:    fields,
 		aliasName: aliasName,
 	}
 }

@@ -14,7 +14,8 @@ type InsertBuilder struct {
 	Source      TableReferenceOrExpression
 	Returning   []projection.ProjectionExpression
 
-	table impls.Table
+	table     impls.Table
+	returning *projection.Projection
 }
 
 func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
@@ -24,9 +25,18 @@ func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.table = table
 
+	// TODO - resolve column names
+
 	if err := b.Source.Resolve(ctx); err != nil {
 		return err
 	}
+
+	// TODO - resolve projection
+	returning, err := returningProjection(b.table, b.Target.AliasName, b.Returning)
+	if err != nil {
+		return err
+	}
+	b.returning = returning
 
 	return nil
 }
@@ -37,10 +47,5 @@ func (b *InsertBuilder) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	insert, err := plan.NewInsert(node, b.table, b.ColumnNames)
-	if err != nil {
-		return nil, err
-	}
-
-	return wrapReturning(insert, b.table, b.Target.AliasName, b.Returning)
+	return plan.NewInsert(node, b.table, b.ColumnNames, b.returning)
 }

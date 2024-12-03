@@ -26,7 +26,7 @@ func (p *parser) parseDelete(token tokens.Token) (ast.BuilderResolver, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.Name)
+	returningExpressions, err := p.parseReturning()
 	if err != nil {
 		return nil, err
 	}

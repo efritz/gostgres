@@ -12,6 +12,7 @@ type logicalSelectNode struct {
 	LogicalNode
 	projection       *projection.Projection
 	groupExpressions []impls.Expression
+	filter           impls.Expression
 	order            impls.OrderExpression
 	limit            *int
 	offset           *int
@@ -21,6 +22,7 @@ func NewSelect(
 	node LogicalNode,
 	projection *projection.Projection,
 	groupExpressions []impls.Expression,
+	filter impls.Expression,
 	order impls.OrderExpression,
 	limit *int,
 	offset *int,
@@ -29,6 +31,7 @@ func NewSelect(
 		LogicalNode:      node,
 		projection:       projection,
 		groupExpressions: groupExpressions,
+		filter:           filter,
 		order:            order,
 		limit:            limit,
 		offset:           offset,
@@ -69,7 +72,7 @@ func (n *logicalSelectNode) AddFilter(ctx impls.OptimizationContext, filter impl
 			filter = n.projection.DeprojectExpression(filter)
 		}
 
-		n.LogicalNode.AddFilter(ctx, filter)
+		n.filter = expressions.UnionFilters(n.filter, filter)
 	}
 }
 
@@ -112,6 +115,11 @@ func (n *logicalSelectNode) Optimize(ctx impls.OptimizationContext) {
 		n.projection.Optimize(ctx)
 	}
 
+	if n.filter != nil {
+		n.filter = n.filter.Fold()
+		n.LogicalNode.AddFilter(ctx, n.filter)
+	}
+
 	if n.order != nil {
 		n.order = n.order.Fold()
 		n.LogicalNode.AddOrder(ctx, n.order)
@@ -119,13 +127,15 @@ func (n *logicalSelectNode) Optimize(ctx impls.OptimizationContext) {
 
 	n.LogicalNode.Optimize(ctx)
 
+	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
+
 	if expressions.SubsumesOrder(n.order, n.LogicalNode.Ordering()) {
 		n.order = nil
 	}
 }
 
 func (n *logicalSelectNode) Filter() impls.Expression {
-	filter := n.LogicalNode.Filter()
+	filter := expressions.UnionFilters(n.filter, n.LogicalNode.Filter())
 
 	if n.projection != nil {
 		filter = n.projection.ProjectExpression(filter)
@@ -158,6 +168,10 @@ func (n *logicalSelectNode) SupportsMarkRestore() bool {
 
 func (n *logicalSelectNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
+
+	if n.filter != nil {
+		node = nodes.NewFilter(node, n.filter)
+	}
 
 	if len(n.groupExpressions) > 0 {
 		node = nodes.NewGroup(node, n.groupExpressions, n.projection)

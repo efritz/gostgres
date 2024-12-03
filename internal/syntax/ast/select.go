@@ -209,6 +209,7 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			node,
 			nil,
 			nil,
+			nil,
 			b.Order,
 			b.Limit,
 			b.Offset,
@@ -219,14 +220,11 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			return nil, err
 		}
 
-		if b.Where != nil {
-			node = plan.NewFilter(node, b.Where)
-		}
-
 		node = plan.NewSelect(
 			node,
 			b.projection,
 			b.Groupings,
+			b.Where,
 			b.Order,
 			b.Limit,
 			b.Offset,

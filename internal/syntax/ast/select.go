@@ -164,20 +164,20 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 }
 
 func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
-	node, err := b.From.Build()
-	if err != nil {
-		return nil, err
-	}
-
-	if b.Where != nil {
-		node = plan.NewFilter(node, b.Where)
-	}
-
-	if b.Groupings != nil {
-		node = plan.NewHashAggregate(node, b.Groupings, b.projection)
-	}
-
 	if len(b.Combinations) > 0 {
+		node, err := b.From.Build()
+		if err != nil {
+			return nil, err
+		}
+
+		if b.Where != nil {
+			node = plan.NewFilter(node, b.Where)
+		}
+
+		if b.Groupings != nil {
+			node = plan.NewHashAggregate(node, b.Groupings, b.projection)
+		}
+
 		if b.Groupings == nil {
 			node = plan.NewProjection(node, b.projection)
 		}
@@ -204,18 +204,40 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			}
 			node = newNode
 		}
-	}
 
-	if b.Order != nil {
-		node = plan.NewOrder(node, b.Order)
-	}
-	if b.Limit != nil || b.Offset != nil {
-		node = plan.NewLimitOffset(node, b.Limit, b.Offset)
-	}
+		if b.Order != nil {
+			node = plan.NewOrder(node, b.Order)
+		}
+		if b.Limit != nil || b.Offset != nil {
+			node = plan.NewLimitOffset(node, b.Limit, b.Offset)
+		}
 
-	if b.Groupings == nil && len(b.Combinations) == 0 {
-		node = plan.NewProjection(node, b.projection)
-	}
+		return plan.NewSelect(node), nil
+	} else {
+		node, err := b.From.Build()
+		if err != nil {
+			return nil, err
+		}
 
-	return plan.NewSelect(node), nil
+		if b.Where != nil {
+			node = plan.NewFilter(node, b.Where)
+		}
+
+		if b.Groupings != nil {
+			node = plan.NewHashAggregate(node, b.Groupings, b.projection)
+		}
+
+		if b.Order != nil {
+			node = plan.NewOrder(node, b.Order)
+		}
+		if b.Limit != nil || b.Offset != nil {
+			node = plan.NewLimitOffset(node, b.Limit, b.Offset)
+		}
+
+		if b.Groupings == nil {
+			node = plan.NewProjection(node, b.projection)
+		}
+
+		return plan.NewSelect(node), nil
+	}
 }

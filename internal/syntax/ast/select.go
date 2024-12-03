@@ -208,13 +208,12 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		if b.Order != nil {
 			node = plan.NewOrder(node, b.Order)
 		}
-		if b.Limit != nil || b.Offset != nil {
-			node = plan.NewLimitOffset(node, b.Limit, b.Offset)
-		}
 
 		return plan.NewSelect(
 			node,
 			nil,
+			b.Limit,
+			b.Offset,
 		), nil
 	} else {
 		node, err := b.From.Build()
@@ -233,16 +232,18 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		if b.Order != nil {
 			node = plan.NewOrder(node, b.Order)
 		}
-		if b.Limit != nil || b.Offset != nil {
-			node = plan.NewLimitOffset(node, b.Limit, b.Offset)
+
+		p := b.projection
+		if b.Groupings != nil {
+			p = nil
 		}
 
-		if b.Groupings == nil {
-			node = plan.NewSelect(
-				node,
-				b.projection,
-			)
-		}
+		node = plan.NewSelect(
+			node,
+			p,
+			b.Limit,
+			b.Offset,
+		)
 
 		return node, nil
 	}

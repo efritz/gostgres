@@ -217,5 +217,5 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		node = plan.NewProjection(node, b.projection)
 	}
 
-	return node, nil
+	return plan.NewSelect(node), nil
 }

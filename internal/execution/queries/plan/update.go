@@ -12,9 +12,10 @@ type logicalUpdateNode struct {
 	fields         []fields.Field
 	aliasName      string
 	setExpressions []nodes.SetExpression
+	filter         impls.Expression
 }
 
-func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpressions []nodes.SetExpression) (LogicalNode, error) {
+func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpressions []nodes.SetExpression, filter impls.Expression) (LogicalNode, error) {
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)
@@ -26,6 +27,7 @@ func NewUpdate(node LogicalNode, table impls.Table, aliasName string, setExpress
 		fields:         fields,
 		aliasName:      aliasName,
 		setExpressions: setExpressions,
+		filter:         filter,
 	}, nil
 }
 
@@ -36,6 +38,16 @@ func (n *logicalUpdateNode) Filter() impls.Expression                           
 func (n *logicalUpdateNode) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalUpdateNode) SupportsMarkRestore() bool                                           { return false }
 
+func (n *logicalUpdateNode) Optimize(ctx impls.OptimizationContext) {
+	n.LogicalNode.Optimize(ctx)
+	n.filter = n.filter.Fold()
+}
+
 func (n *logicalUpdateNode) Build() nodes.Node {
-	return nodes.NewUpdate(n.LogicalNode.Build(), n.table, n.fields, n.aliasName, n.setExpressions)
+	node := n.LogicalNode.Build()
+	if n.filter != nil {
+		node = nodes.NewFilter(node, n.filter)
+	}
+
+	return nodes.NewUpdate(node, n.table, n.fields, n.aliasName, n.setExpressions)
 }

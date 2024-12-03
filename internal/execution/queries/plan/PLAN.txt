@@ -1,5 +1,4 @@
-1. Inline logicalFilterNode into mutation nodes
-2. Inline logicalProjectionNode into mutation nodes
-3. Standardize union/combination logical nodes
-4. Flatten joins into a list for re-orderability
-5. Flatten projections (table alias + projection nodes)
+1. Inline logicalProjectionNode into mutation nodes
+2. Standardize union/combination logical nodes
+3. Flatten joins into a list for re-orderability
+4. Flatten projections (table alias + projection nodes)

@@ -45,11 +45,8 @@ func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
 	if len(b.Using) > 0 {
 		node = joinNodes(node, b.Using)
 	}
-	if b.Where != nil {
-		node = plan.NewFilter(node, b.Where)
-	}
 
-	delete, err := plan.NewDelete(node, b.table, b.Target.AliasName)
+	delete, err := plan.NewDelete(node, b.table, b.Target.AliasName, b.Where)
 	if err != nil {
 		return nil, err
 	}

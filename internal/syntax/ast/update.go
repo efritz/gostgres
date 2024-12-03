@@ -54,10 +54,6 @@ func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 		node = joinNodes(node, b.From)
 	}
 
-	if b.Where != nil {
-		node = plan.NewFilter(node, b.Where)
-	}
-
 	setExpressions := make([]nodes.SetExpression, len(b.Updates))
 	for i, setExpression := range b.Updates {
 		setExpressions[i] = nodes.SetExpression{
@@ -66,7 +62,7 @@ func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 		}
 	}
 
-	update, err := plan.NewUpdate(node, b.table, b.Target.AliasName, setExpressions)
+	update, err := plan.NewUpdate(node, b.table, b.Target.AliasName, setExpressions, b.Where)
 	if err != nil {
 		return nil, err
 	}

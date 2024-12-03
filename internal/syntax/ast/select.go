@@ -205,13 +205,10 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			node = newNode
 		}
 
-		if b.Order != nil {
-			node = plan.NewOrder(node, b.Order)
-		}
-
 		return plan.NewSelect(
 			node,
 			nil,
+			b.Order,
 			b.Limit,
 			b.Offset,
 		), nil
@@ -229,10 +226,6 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			node = plan.NewHashAggregate(node, b.Groupings, b.projection)
 		}
 
-		if b.Order != nil {
-			node = plan.NewOrder(node, b.Order)
-		}
-
 		p := b.projection
 		if b.Groupings != nil {
 			p = nil
@@ -241,6 +234,7 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		node = plan.NewSelect(
 			node,
 			p,
+			b.Order,
 			b.Limit,
 			b.Offset,
 		)

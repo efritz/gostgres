@@ -76,12 +76,13 @@ func (n *logicalAccessNode) SupportsMarkRestore() bool {
 }
 
 func (n *logicalAccessNode) Build() nodes.Node {
-	if f := n.filter; f != nil {
-		n.filter = nil
-		return NewFilter(n, f).Build()
+	node := nodes.NewAccess(n.strategy)
+
+	if n.filter != nil {
+		node = nodes.NewFilter(node, n.filter)
 	}
 
-	return nodes.NewAccess(n.strategy)
+	return node
 }
 
 //

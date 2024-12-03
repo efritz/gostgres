@@ -164,23 +164,21 @@ func (b *SelectBuilder) TableFields() []fields.Field {
 }
 
 func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
+	node, err := b.From.Build()
+	if err != nil {
+		return nil, err
+	}
+
 	if len(b.Combinations) > 0 {
-		node, err := b.From.Build()
-		if err != nil {
-			return nil, err
-		}
-
-		if b.Where != nil {
-			node = plan.NewFilter(node, b.Where)
-		}
-
-		if b.Groupings != nil {
-			node = plan.NewHashAggregate(node, b.Groupings, b.projection)
-		}
-
-		if b.Groupings == nil {
-			node = plan.NewProjection(node, b.projection)
-		}
+		node = plan.NewSelect(
+			node,
+			b.projection,
+			b.Groupings,
+			b.Where,
+			nil,
+			nil,
+			nil,
+		)
 
 		for _, c := range b.Combinations {
 			var factory func(left, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error)
@@ -215,11 +213,6 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			b.Offset,
 		), nil
 	} else {
-		node, err := b.From.Build()
-		if err != nil {
-			return nil, err
-		}
-
 		node = plan.NewSelect(
 			node,
 			b.projection,

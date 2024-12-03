@@ -212,7 +212,10 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			node = plan.NewLimitOffset(node, b.Limit, b.Offset)
 		}
 
-		return plan.NewSelect(node), nil
+		return plan.NewSelect(
+			node,
+			nil,
+		), nil
 	} else {
 		node, err := b.From.Build()
 		if err != nil {
@@ -235,9 +238,12 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		}
 
 		if b.Groupings == nil {
-			node = plan.NewProjection(node, b.projection)
+			node = plan.NewSelect(
+				node,
+				b.projection,
+			)
 		}
 
-		return plan.NewSelect(node), nil
+		return node, nil
 	}
 }

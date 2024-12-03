@@ -10,25 +10,28 @@ import (
 
 type logicalSelectNode struct {
 	LogicalNode
-	projection *projection.Projection
-	order      impls.OrderExpression
-	limit      *int
-	offset     *int
+	projection       *projection.Projection
+	groupExpressions []impls.Expression
+	order            impls.OrderExpression
+	limit            *int
+	offset           *int
 }
 
 func NewSelect(
 	node LogicalNode,
 	projection *projection.Projection,
+	groupExpressions []impls.Expression,
 	order impls.OrderExpression,
 	limit *int,
 	offset *int,
 ) LogicalNode {
 	return &logicalSelectNode{
-		LogicalNode: node,
-		projection:  projection,
-		order:       order,
-		limit:       limit,
-		offset:      offset,
+		LogicalNode:      node,
+		projection:       projection,
+		groupExpressions: groupExpressions,
+		order:            order,
+		limit:            limit,
+		offset:           offset,
 	}
 }
 
@@ -53,15 +56,28 @@ func (n *logicalSelectNode) AddFilter(ctx impls.OptimizationContext, filter impl
 		return // boundary
 	}
 
-	if n.projection != nil {
-		filter = n.projection.DeprojectExpression(filter)
-	}
+	if len(n.groupExpressions) > 0 {
+		for _, expr := range expressions.Conjunctions(filter) {
+			expr := n.projection.DeprojectExpression(expr)
 
-	n.LogicalNode.AddFilter(ctx, filter)
+			if _, _, containsAggregate, _ := expressions.PartitionAggregatedFieldReferences(ctx, []impls.Expression{expr}, nil); !containsAggregate {
+				n.LogicalNode.AddFilter(ctx, expr)
+			}
+		}
+	} else {
+		if n.projection != nil {
+			filter = n.projection.DeprojectExpression(filter)
+		}
+
+		n.LogicalNode.AddFilter(ctx, filter)
+	}
 }
 
 func (n *logicalSelectNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {
 	if n.limit != nil || n.offset != nil {
+		return // boundary
+	}
+	if len(n.groupExpressions) > 0 {
 		return // boundary
 	}
 
@@ -120,7 +136,7 @@ func (n *logicalSelectNode) Filter() impls.Expression {
 
 func (n *logicalSelectNode) Ordering() impls.OrderExpression {
 	ordering := n.order
-	if ordering == nil {
+	if ordering == nil && len(n.groupExpressions) == 0 {
 		ordering = n.LogicalNode.Ordering()
 	}
 	if ordering == nil {
@@ -143,8 +159,17 @@ func (n *logicalSelectNode) SupportsMarkRestore() bool {
 func (n *logicalSelectNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
 
+	if len(n.groupExpressions) > 0 {
+		node = nodes.NewGroup(node, n.groupExpressions, n.projection)
+	}
+
 	if n.order != nil {
-		node = nodes.NewOrder(node, n.order, n.LogicalNode.Fields())
+		fields := n.LogicalNode.Fields()
+		if len(n.groupExpressions) > 0 {
+			fields = n.projection.Fields()
+		}
+
+		node = nodes.NewOrder(node, n.order, fields)
 	}
 
 	if n.offset != nil {
@@ -155,7 +180,7 @@ func (n *logicalSelectNode) Build() nodes.Node {
 		node = nodes.NewLimit(node, *n.limit)
 	}
 
-	if n.projection != nil {
+	if n.projection != nil && len(n.groupExpressions) == 0 {
 		node = nodes.NewProjection(node, n.projection)
 	}
 

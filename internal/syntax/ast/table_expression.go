@@ -115,11 +115,17 @@ func (e *TableExpression) Build() (plan.LogicalNode, error) {
 	}
 
 	if e.Base.Alias != nil {
-		aliased, err := aliasTableName(node, e.Base.Alias.TableAlias)
+		p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
+			e.Base.Alias.TableAlias,
+			node.Fields(),
+			[]projectionHelpers.ProjectionExpression{
+				projectionHelpers.NewWildcardProjectionExpression(),
+			},
+		)
 		if err != nil {
 			return nil, err
 		}
-		node = aliased
+		node = plan.NewProjection(node, p)
 
 		if e.projection != nil {
 			node = plan.NewProjection(node, e.projection)
@@ -136,22 +142,4 @@ func (e *TableExpression) Build() (plan.LogicalNode, error) {
 	}
 
 	return node, nil
-}
-
-//
-//
-
-func aliasTableName(node plan.LogicalNode, name string) (plan.LogicalNode, error) {
-	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
-		name,
-		node.Fields(),
-		[]projectionHelpers.ProjectionExpression{
-			projectionHelpers.NewWildcardProjectionExpression(),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return plan.NewProjection(node, p), nil
 }

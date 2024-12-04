@@ -15,9 +15,8 @@ type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
 
-	fields                []fields.Field
-	tableAliasProjection  *projection.Projection
-	columnAliasProjection *projection.Projection
+	fields     []fields.Field
+	projection *projection.Projection
 }
 
 type TableReferenceOrExpression interface {
@@ -48,70 +47,11 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		return err
 	}
 
-	baseFields := e.Base.BaseTableExpression.TableFields()
-
-	if e.Base.Alias != nil {
-		tableAlias := e.Base.Alias.TableAlias
-		columnAliases := e.Base.Alias.ColumnAliases
-
-		p, err := projection.NewProjectionFromProjectionExpressions(
-			tableAlias,
-			baseFields,
-			[]projection.ProjectionExpression{
-				projection.NewWildcardProjectionExpression(),
-			},
-		)
-		if err != nil {
-			return err
-		}
-		e.tableAliasProjection = p
-
-		var nonInternalFields []fields.Field
-		for _, f := range baseFields {
-			if !f.Internal() {
-				nonInternalFields = append(nonInternalFields, f)
-			}
-		}
-		var nonInternalTableAliasedFields []fields.Field
-		for _, f := range nonInternalFields {
-			nonInternalTableAliasedFields = append(nonInternalTableAliasedFields, f.WithRelationName(tableAlias))
-		}
-
-		if len(columnAliases) > 0 {
-			if len(columnAliases) != len(nonInternalTableAliasedFields) {
-				return fmt.Errorf("wrong number of fields in alias")
-			}
-
-			// This table expresses aliased table AND fields
-			for i, field := range nonInternalTableAliasedFields {
-				baseFields[i] = field.WithName(columnAliases[i])
-			}
-
-			var projectionExpressions []projection.ProjectionExpression
-
-			for i, field := range nonInternalFields {
-				projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(
-					expressions.NewNamed(field),
-					columnAliases[i],
-					false,
-				))
-			}
-
-			p, err := projection.NewProjectionFromProjectionExpressions(
-				tableAlias,
-				baseFields,
-				projectionExpressions,
-			)
-			if err != nil {
-				return err
-			}
-			e.columnAliasProjection = p
-			e.tableAliasProjection = nil
-		} else {
-			// This table exposed aliased table only
-			baseFields = nonInternalTableAliasedFields
-		}
+	baseFields, aliasProjection, err := e.resolveTableAlias()
+	if err != nil {
+		return err
 	}
+	e.projection = aliasProjection
 
 	ctx.Bind(baseFields...)
 
@@ -135,6 +75,67 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
+func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Projection, error) {
+	if e.Base.Alias == nil {
+		// No alias, return base fields without modification
+		return e.Base.BaseTableExpression.TableFields(), nil, nil
+	}
+
+	tableAlias := e.Base.Alias.TableAlias
+	columnAliases := e.Base.Alias.ColumnAliases
+	baseFields := e.Base.BaseTableExpression.TableFields()
+
+	var internalFields []fields.Field
+	var nonInternalFields []fields.Field
+	for _, field := range baseFields {
+		if field.Internal() {
+			internalFields = append(internalFields, field)
+		} else {
+			nonInternalFields = append(nonInternalFields, field)
+		}
+	}
+
+	for _, field := range nonInternalFields[len(columnAliases):] {
+		columnAliases = append(columnAliases, field.Name())
+	}
+	if len(columnAliases) > len(nonInternalFields) {
+		return nil, nil, fmt.Errorf("has %d columns available but %d columns specified", len(nonInternalFields), len(columnAliases))
+	}
+
+	var projectionExpressions []projection.ProjectionExpression
+
+	for i, field := range nonInternalFields {
+		projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(
+			expressions.NewNamed(field),
+			columnAliases[i],
+			false,
+		))
+	}
+
+	for _, field := range internalFields {
+		projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(
+			expressions.NewNamed(field),
+			field.Name(),
+			true,
+		))
+	}
+
+	p, err := projection.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var fields []fields.Field
+	for i, field := range nonInternalFields {
+		fields = append(fields, field.WithRelationName(tableAlias).WithName(columnAliases[i]))
+	}
+	for _, field := range internalFields {
+		fields = append(fields, field.WithRelationName(tableAlias))
+	}
+
+	return fields, p, nil
+}
+
 func (e *TableExpression) TableFields() []fields.Field {
 	return slices.Clone(e.fields)
 }
@@ -145,11 +146,8 @@ func (e *TableExpression) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	if e.tableAliasProjection != nil {
-		node = plan.NewProjection(node, e.tableAliasProjection)
-	}
-	if e.columnAliasProjection != nil {
-		node = plan.NewProjection(node, e.columnAliasProjection)
+	if e.projection != nil {
+		node = plan.NewProjection(node, e.projection)
 	}
 
 	for _, j := range e.Joins {

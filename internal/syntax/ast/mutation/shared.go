@@ -19,6 +19,7 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 		name = node.Name()
 	}
 
+	// TODO - share with resolveTableAlias
 	p, err := projection.NewProjectionFromProjectionExpressions(
 		name,
 		node.Fields(),

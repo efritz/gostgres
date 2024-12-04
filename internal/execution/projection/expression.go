@@ -67,6 +67,10 @@ func serializeProjectedExpressions(projectedExpressions []ProjectedExpression) s
 	for _, expression := range projectedExpressions {
 		// TODO - simplify named expressions below top-level?
 		if named, ok := expression.Expression.(expressions.NamedExpression); ok {
+			if named.Field().Internal() {
+				continue
+			}
+
 			name := named.Field().String()
 			if len(relationNames) == 1 {
 				name = named.Field().Name()

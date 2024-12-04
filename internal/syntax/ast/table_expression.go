@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -16,8 +16,8 @@ type TableExpression struct {
 	Joins []Join
 
 	fields                []fields.Field
-	tableAliasProjection  *projectionHelpers.Projection
-	columnAliasProjection *projectionHelpers.Projection
+	tableAliasProjection  *projection.Projection
+	columnAliasProjection *projection.Projection
 }
 
 type TableReferenceOrExpression interface {
@@ -54,18 +54,11 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		tableAlias := e.Base.Alias.TableAlias
 		columnAliases := e.Base.Alias.ColumnAliases
 
-		var rawFields []fields.Field
-		for _, f := range baseFields {
-			if !f.Internal() {
-				rawFields = append(rawFields, f.WithRelationName(tableAlias))
-			}
-		}
-
-		p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
+		p, err := projection.NewProjectionFromProjectionExpressions(
 			tableAlias,
 			baseFields,
-			[]projectionHelpers.ProjectionExpression{
-				projectionHelpers.NewWildcardProjectionExpression(),
+			[]projection.ProjectionExpression{
+				projection.NewWildcardProjectionExpression(),
 			},
 		)
 		if err != nil {
@@ -73,19 +66,30 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		}
 		e.tableAliasProjection = p
 
+		var rawFields []fields.Field
+		for _, f := range baseFields {
+			if !f.Internal() {
+				rawFields = append(rawFields, f.WithRelationName(tableAlias))
+			}
+		}
+
 		if len(columnAliases) > 0 {
 			if len(columnAliases) != len(rawFields) {
 				return fmt.Errorf("wrong number of fields in alias")
 			}
 
-			var projectionExpressions []projectionHelpers.ProjectionExpression
+			var projectionExpressions []projection.ProjectionExpression
 			for i, field := range rawFields {
 				alias := columnAliases[i]
 				baseFields[i] = field.WithName(alias)
-				projectionExpressions = append(projectionExpressions, projectionHelpers.NewAliasedExpression(expressions.NewNamed(field), alias, false))
+				projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(expressions.NewNamed(field), alias, false))
 			}
 
-			p, err := projectionHelpers.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions)
+			p, err := projection.NewProjectionFromProjectionExpressions(
+				tableAlias,
+				baseFields,
+				projectionExpressions,
+			)
 			if err != nil {
 				return err
 			}

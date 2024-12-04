@@ -2,14 +2,14 @@ package ast
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 func ResolveExpression(
 	ctx *impls.NodeResolutionContext,
 	expr impls.Expression,
-	projection *projectionHelpers.Projection,
+	projection *projection.Projection,
 	allowAggregateFunctions bool,
 ) (impls.Expression, error) {
 	if expr == nil {

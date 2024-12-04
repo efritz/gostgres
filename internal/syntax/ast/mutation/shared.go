@@ -2,7 +2,7 @@ package mutation
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -19,12 +19,12 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 		name = node.Name()
 	}
 
-	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
+	p, err := projection.NewProjectionFromProjectionExpressions(
 		name,
 		node.Fields(),
-		[]projectionHelpers.ProjectionExpression{
-			projectionHelpers.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
-			projectionHelpers.NewWildcardProjectionExpression(),
+		[]projection.ProjectionExpression{
+			projection.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
+			projection.NewWildcardProjectionExpression(),
 		},
 	)
 	if err != nil {
@@ -34,9 +34,9 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 	return plan.NewProjection(node, p), nil
 }
 
-func returningProjection(table impls.Table, alias string, expressions []projectionHelpers.ProjectionExpression) (*projectionHelpers.Projection, error) {
+func returningProjection(table impls.Table, alias string, expressions []projection.ProjectionExpression) (*projection.Projection, error) {
 	if len(expressions) == 0 {
-		return projectionHelpers.NewProjectionFromProjectedExpressions("", nil)
+		return projection.NewProjectionFromProjectedExpressions("", nil)
 	}
 
 	var fields []fields.Field
@@ -44,15 +44,15 @@ func returningProjection(table impls.Table, alias string, expressions []projecti
 		fields = append(fields, field.Field)
 	}
 
-	var aliasedTables []projectionHelpers.AliasedTable
+	var aliasedTables []projection.AliasedTable
 	if alias != "" {
-		aliasedTables = append(aliasedTables, projectionHelpers.AliasedTable{
+		aliasedTables = append(aliasedTables, projection.AliasedTable{
 			TableName: table.Name(),
 			Alias:     alias,
 		})
 	}
 
-	return projectionHelpers.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables...)
+	return projection.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables...)
 }
 
 func joinNodes(left plan.LogicalNode, expressions []*ast.TableExpression) plan.LogicalNode {

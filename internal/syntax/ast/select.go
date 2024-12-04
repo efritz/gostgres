@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -13,7 +13,7 @@ import (
 )
 
 type SelectBuilder struct {
-	SelectExpressions []projectionHelpers.ProjectionExpression
+	SelectExpressions []projection.ProjectionExpression
 	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
@@ -23,7 +23,7 @@ type SelectBuilder struct {
 	Offset            *int
 
 	fields     []fields.Field
-	projection *projectionHelpers.Projection
+	projection *projection.Projection
 }
 
 type CombinationDescription struct {
@@ -63,7 +63,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.Where = resolved
 
-	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.SelectExpressions)
+	projectedExpressions, err := projection.ExpandProjection(fromFields, b.SelectExpressions)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 		projectedExpressions[i].Expression = resolved
 	}
-	projection, err := projectionHelpers.NewProjectionFromProjectedExpressions("", projectedExpressions)
+	projection, err := projection.NewProjectionFromProjectedExpressions("", projectedExpressions)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func resolveExpression(
+func ResolveExpression(
 	ctx *impls.NodeResolutionContext,
 	expr impls.Expression,
 	projection *projectionHelpers.Projection,

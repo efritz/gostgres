@@ -1,30 +1,32 @@
-package plan
+package mutation
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type logicalUpdateNode struct {
-	LogicalNode
+	plan.LogicalNode
 	table          impls.Table
 	aliasName      string
-	setExpressions []nodes.SetExpression
+	setExpressions []mutation.SetExpression
 	filter         impls.Expression
 	returning      *projection.Projection
 }
 
 func NewUpdate(
-	node LogicalNode,
+	node plan.LogicalNode,
 	table impls.Table,
 	aliasName string,
-	setExpressions []nodes.SetExpression,
+	setExpressions []mutation.SetExpression,
 	filter impls.Expression,
 	returning *projection.Projection,
-) (LogicalNode, error) {
+) (plan.LogicalNode, error) {
 	return &logicalUpdateNode{
 		LogicalNode:    node,
 		table:          table,
@@ -61,7 +63,7 @@ func (n *logicalUpdateNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	node = nodes.NewUpdate(node, n.table, n.aliasName, n.setExpressions)
+	node = mutation.NewUpdate(node, n.table, n.aliasName, n.setExpressions)
 	node = nodes.NewProjection(node, n.returning)
 	return node
 }

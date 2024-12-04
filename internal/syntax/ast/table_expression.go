@@ -11,40 +11,6 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-type TargetTable struct {
-	Name      string
-	AliasName string
-}
-
-type TableReference struct {
-	Name string
-
-	table impls.Table
-}
-
-func (r *TableReference) Resolve(ctx *impls.NodeResolutionContext) error {
-	table, ok := ctx.Catalog().Tables.Get(r.Name)
-	if !ok {
-		return fmt.Errorf("unknown table %q", r.Name)
-	}
-	r.table = table
-
-	return nil
-}
-
-func (r *TableReference) TableFields() []fields.Field {
-	var fields []fields.Field
-	for _, f := range r.table.Fields() {
-		fields = append(fields, f.Field)
-	}
-
-	return fields
-}
-
-func (r *TableReference) Build() (plan.LogicalNode, error) {
-	return plan.NewAccess(r.table), nil
-}
-
 type TableExpression struct {
 	Base  AliasedTableReferenceOrExpression
 	Joins []Join
@@ -127,7 +93,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		ctx.Bind(joinFields...)
 		baseFields = append(baseFields, joinFields...)
 
-		resolved, err := resolveExpression(ctx, j.Condition, nil, false)
+		resolved, err := ResolveExpression(ctx, j.Condition, nil, false)
 		if err != nil {
 			return err
 		}
@@ -172,15 +138,20 @@ func (e *TableExpression) Build() (plan.LogicalNode, error) {
 	return node, nil
 }
 
-func joinNodes(left plan.LogicalNode, expressions []*TableExpression) plan.LogicalNode {
-	for _, expression := range expressions {
-		right, err := expression.Build()
-		if err != nil {
-			return nil
-		}
+//
+//
 
-		left = plan.NewJoin(left, right, nil)
+func aliasTableName(node plan.LogicalNode, name string) (plan.LogicalNode, error) {
+	p, err := projectionHelpers.NewProjectionFromProjectionExpressions(
+		name,
+		node.Fields(),
+		[]projectionHelpers.ProjectionExpression{
+			projectionHelpers.NewWildcardProjectionExpression(),
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	return left
+	return plan.NewProjection(node, p), nil
 }

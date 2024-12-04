@@ -1,6 +1,7 @@
-package nodes
+package mutation
 
 import (
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -8,12 +9,12 @@ import (
 )
 
 type deleteNode struct {
-	Node
+	nodes.Node
 	table     impls.Table
 	aliasName string
 }
 
-func NewDelete(node Node, table impls.Table, aliasName string) Node {
+func NewDelete(node nodes.Node, table impls.Table, aliasName string) nodes.Node {
 	return &deleteNode{
 		Node:      node,
 		table:     table,

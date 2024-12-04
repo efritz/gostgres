@@ -1,8 +1,9 @@
-package nodes
+package mutation
 
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -11,12 +12,12 @@ import (
 )
 
 type insertNode struct {
-	Node
+	nodes.Node
 	table       impls.Table
 	columnNames []string
 }
 
-func NewInsert(node Node, table impls.Table, columnNames []string) Node {
+func NewInsert(node nodes.Node, table impls.Table, columnNames []string) nodes.Node {
 	return &insertNode{
 		Node:        node,
 		table:       table,

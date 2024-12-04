@@ -1,15 +1,17 @@
-package plan
+package mutation
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type logicalDeleteNode struct {
-	LogicalNode
+	plan.LogicalNode
 	table     impls.Table
 	aliasName string
 	filter    impls.Expression
@@ -17,12 +19,12 @@ type logicalDeleteNode struct {
 }
 
 func NewDelete(
-	node LogicalNode,
+	node plan.LogicalNode,
 	table impls.Table,
 	aliasName string,
 	filter impls.Expression,
 	returning *projection.Projection,
-) (LogicalNode, error) {
+) (plan.LogicalNode, error) {
 	return &logicalDeleteNode{
 		LogicalNode: node,
 		table:       table,
@@ -58,7 +60,7 @@ func (n *logicalDeleteNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	node = nodes.NewDelete(node, n.table, n.aliasName)
+	node = mutation.NewDelete(node, n.table, n.aliasName)
 	node = nodes.NewProjection(node, n.returning)
 	return node
 }

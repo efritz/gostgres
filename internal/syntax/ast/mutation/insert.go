@@ -1,17 +1,19 @@
-package ast
+package mutation
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/mutation"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 )
 
 type InsertBuilder struct {
 	Target      TargetTable
 	ColumnNames []string
-	Source      TableReferenceOrExpression
+	Source      ast.TableReferenceOrExpression
 	Returning   []projection.ProjectionExpression
 
 	table     impls.Table
@@ -47,5 +49,5 @@ func (b *InsertBuilder) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	return plan.NewInsert(node, b.table, b.ColumnNames, b.returning)
+	return mutation.NewInsert(node, b.table, b.ColumnNames, b.returning)
 }

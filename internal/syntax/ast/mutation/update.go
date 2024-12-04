@@ -1,17 +1,21 @@
-package ast
+package mutation
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
+	mutationNodes "github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/mutation"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 )
 
-type DeleteBuilder struct {
+type UpdateBuilder struct {
 	Target    TargetTable
-	Using     []*TableExpression
+	Updates   []SetExpression
+	From      []*ast.TableExpression
 	Where     impls.Expression
 	Returning []projection.ProjectionExpression
 
@@ -19,12 +23,19 @@ type DeleteBuilder struct {
 	returning *projection.Projection
 }
 
-func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
+type SetExpression struct {
+	Name       string
+	Expression impls.Expression
+}
+
+func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	table, ok := ctx.Catalog().Tables.Get(b.Target.Name)
 	if !ok {
 		return fmt.Errorf("unknown table %q", b.Target.Name)
 	}
 	b.table = table
+
+	// TODO - resolve set expressions
 
 	var baseFields []fields.Field
 	for _, field := range table.Fields() {
@@ -42,17 +53,17 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 
 	ctx.Bind(baseFields...)
 
-	for _, e := range b.Using {
-		if err := e.Resolve(ctx); err != nil {
+	for _, from := range b.From {
+		if err := from.Resolve(ctx); err != nil {
 			return err
 		}
 
-		joinFields := e.TableFields()
+		joinFields := from.TableFields()
 		ctx.Bind(joinFields...)
 		baseFields = append(baseFields, joinFields...)
 	}
 
-	resolved, err := resolveExpression(ctx, b.Where, nil, false)
+	resolved, err := ast.ResolveExpression(ctx, b.Where, nil, false)
 	if err != nil {
 		return err
 	}
@@ -68,7 +79,7 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
+func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
 
 	aliased, err := aliasTableNameForMutataion(node, b.Target.AliasName)
@@ -77,9 +88,17 @@ func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
 	}
 	node = aliased
 
-	if len(b.Using) > 0 {
-		node = joinNodes(node, b.Using)
+	if b.From != nil {
+		node = joinNodes(node, b.From)
 	}
 
-	return plan.NewDelete(node, b.table, b.Target.AliasName, b.Where, b.returning)
+	setExpressions := make([]mutationNodes.SetExpression, len(b.Updates))
+	for i, setExpression := range b.Updates {
+		setExpressions[i] = mutationNodes.SetExpression{
+			Name:       setExpression.Name,
+			Expression: setExpression.Expression,
+		}
+	}
+
+	return mutation.NewUpdate(node, b.table, b.Target.AliasName, setExpressions, b.Where, b.returning)
 }

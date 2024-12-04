@@ -1,25 +1,27 @@
-package plan
+package mutation
 
 import (
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type logicalInsertNode struct {
-	LogicalNode
+	plan.LogicalNode
 	table       impls.Table
 	columnNames []string
 	returning   *projection.Projection
 }
 
 func NewInsert(
-	node LogicalNode,
+	node plan.LogicalNode,
 	table impls.Table,
 	columnNames []string,
 	returning *projection.Projection,
-) (LogicalNode, error) {
+) (plan.LogicalNode, error) {
 	return &logicalInsertNode{
 		LogicalNode: node,
 		table:       table,
@@ -42,7 +44,7 @@ func (n *logicalInsertNode) Opitmize(ctx impls.OptimizationContext) {
 
 func (n *logicalInsertNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
-	node = nodes.NewInsert(node, n.table, n.columnNames)
+	node = mutation.NewInsert(node, n.table, n.columnNames)
 	node = nodes.NewProjection(node, n.returning)
 	return node
 }

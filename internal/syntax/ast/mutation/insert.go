@@ -33,8 +33,7 @@ func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 		return err
 	}
 
-	// TODO - resolve projection
-	returning, err := returningProjection(b.table, b.Target.AliasName, b.Returning)
+	returning, err := resolveReturning(ctx, b.table, b.Target.AliasName, b.Returning)
 	if err != nil {
 		return err
 	}

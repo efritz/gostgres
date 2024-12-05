@@ -43,7 +43,7 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 		baseFields = append(baseFields, field.Field)
 	}
 
-	p, err := aliasTableNameForMutation(table.Name(), b.Target.AliasName, baseFields)
+	p, err := resolveMutationProjection(ctx, table.Name(), b.Target.AliasName, baseFields)
 	if err != nil {
 		return err
 	}
@@ -67,8 +67,7 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.Where = resolved
 
-	// TODO - resolve projection
-	returning, err := returningProjection(b.table, b.Target.AliasName, b.Returning)
+	returning, err := resolveReturning(ctx, b.table, b.Target.AliasName, b.Returning)
 	if err != nil {
 		return err
 	}

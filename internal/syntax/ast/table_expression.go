@@ -103,7 +103,6 @@ func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Proje
 	}
 
 	var projectionExpressions []projection.ProjectionExpression
-
 	for i, field := range nonInternalFields {
 		projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(
 			expressions.NewNamed(field),
@@ -111,7 +110,6 @@ func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Proje
 			false,
 		))
 	}
-
 	for _, field := range internalFields {
 		projectionExpressions = append(projectionExpressions, projection.NewAliasedExpression(
 			expressions.NewNamed(field),
@@ -119,8 +117,11 @@ func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Proje
 			true,
 		))
 	}
-
-	p, err := projection.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions, nil)
+	projectedExpressions, err := projection.ExpandProjection(baseFields, projectionExpressions, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	p, err := projection.NewProjection(tableAlias, projectedExpressions)
 	if err != nil {
 		return nil, nil, err
 	}

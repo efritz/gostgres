@@ -20,15 +20,15 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 	}
 
 	// TODO - share with resolveTableAlias
-	p, err := projection.NewProjectionFromProjectionExpressions(
-		name,
-		node.Fields(),
-		[]projection.ProjectionExpression{
-			projection.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
-			projection.NewWildcardProjectionExpression(),
-		},
-		nil,
-	)
+	projectionExpressions := []projection.ProjectionExpression{
+		projection.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
+		projection.NewWildcardProjectionExpression(),
+	}
+	projectedExpressions, err := projection.ExpandProjection(node.Fields(), projectionExpressions, nil)
+	if err != nil {
+		return nil, err
+	}
+	p, err := projection.NewProjection(name, projectedExpressions)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 
 func returningProjection(table impls.Table, alias string, expressions []projection.ProjectionExpression) (*projection.Projection, error) {
 	if len(expressions) == 0 {
-		return projection.NewProjectionFromProjectedExpressions("", nil)
+		return projection.NewProjection("", nil)
 	}
 
 	var fields []fields.Field
@@ -53,8 +53,11 @@ func returningProjection(table impls.Table, alias string, expressions []projecti
 			Alias:     alias,
 		})
 	}
-
-	return projection.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables)
+	projectedExpressions, err := projection.ExpandProjection(fields, expressions, aliasedTables)
+	if err != nil {
+		return nil, err
+	}
+	return projection.NewProjection("", projectedExpressions)
 }
 
 func joinNodes(left plan.LogicalNode, expressions []*ast.TableExpression) plan.LogicalNode {

@@ -75,7 +75,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 		projectedExpressions[i].Expression = resolved
 	}
-	projection, err := projection.NewProjectionFromProjectedExpressions("", projectedExpressions)
+	projection, err := projection.NewProjection("", projectedExpressions)
 	if err != nil {
 		return err
 	}

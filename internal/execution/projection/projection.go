@@ -18,9 +18,9 @@ func NewProjectionFromProjectionExpressions(
 	targetRelationName string,
 	relationFields []fields.Field,
 	projectionExpressions []ProjectionExpression,
-	aliasedTables ...AliasedTable,
+	aliasedTables []AliasedTable,
 ) (*Projection, error) {
-	projectedExpressions, err := ExpandProjection(relationFields, projectionExpressions, aliasedTables...)
+	projectedExpressions, err := ExpandProjection(relationFields, projectionExpressions, aliasedTables)
 	if err != nil {
 		return nil, err
 	}

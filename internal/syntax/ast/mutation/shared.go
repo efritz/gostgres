@@ -27,6 +27,7 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 			projection.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
 			projection.NewWildcardProjectionExpression(),
 		},
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -53,7 +54,7 @@ func returningProjection(table impls.Table, alias string, expressions []projecti
 		})
 	}
 
-	return projection.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables...)
+	return projection.NewProjectionFromProjectionExpressions("", fields, expressions, aliasedTables)
 }
 
 func joinNodes(left plan.LogicalNode, expressions []*ast.TableExpression) plan.LogicalNode {

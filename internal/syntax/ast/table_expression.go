@@ -120,7 +120,7 @@ func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Proje
 		))
 	}
 
-	p, err := projection.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions)
+	p, err := projection.NewProjectionFromProjectionExpressions(tableAlias, baseFields, projectionExpressions, nil)
 	if err != nil {
 		return nil, nil, err
 	}

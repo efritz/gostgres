@@ -47,7 +47,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		return err
 	}
 
-	baseFields, aliasProjection, err := e.resolveTableAlias()
+	baseFields, aliasProjection, err := e.resolveTableAlias(ctx)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 	return nil
 }
 
-func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Projection, error) {
+func (e *TableExpression) resolveTableAlias(ctx *impls.NodeResolutionContext) ([]fields.Field, *projection.Projection, error) {
 	if e.Base.Alias == nil {
 		// No alias, return base fields without modification
 		return e.Base.BaseTableExpression.TableFields(), nil, nil
@@ -117,11 +117,12 @@ func (e *TableExpression) resolveTableAlias() ([]fields.Field, *projection.Proje
 			true,
 		))
 	}
-	projectedExpressions, err := projection.ExpandProjection(baseFields, projectionExpressions, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	p, err := projection.NewProjection(tableAlias, projectedExpressions)
+
+	ctx.PushScope()
+	defer ctx.PopScope()
+	ctx.Bind(baseFields...)
+
+	p, err := ResolveProjection(ctx, tableAlias, baseFields, projectionExpressions, nil)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -63,19 +63,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 	b.Where = resolved
 
-	projectedExpressions, err := projection.ExpandProjection(fromFields, b.SelectExpressions, nil)
-	if err != nil {
-		return err
-	}
-	for i, expr := range projectedExpressions {
-		resolved, err := ResolveExpression(ctx, expr.Expression, nil, true)
-		if err != nil {
-			return err
-		}
-
-		projectedExpressions[i].Expression = resolved
-	}
-	projection, err := projection.NewProjection("", projectedExpressions)
+	projection, err := ResolveProjection(ctx, "", fromFields, b.SelectExpressions, nil)
 	if err != nil {
 		return err
 	}
@@ -96,7 +84,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 
 	var rawProjectedExpressions []impls.Expression
-	for _, selectExpression := range projectedExpressions {
+	for _, selectExpression := range projection.Aliases() {
 		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
 	}
 	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(

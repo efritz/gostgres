@@ -37,10 +37,6 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 }
 
 func returningProjection(table impls.Table, alias string, expressions []projection.ProjectionExpression) (*projection.Projection, error) {
-	if len(expressions) == 0 {
-		return projection.NewProjection("", nil)
-	}
-
 	var fields []fields.Field
 	for _, field := range table.Fields() {
 		fields = append(fields, field.Field)

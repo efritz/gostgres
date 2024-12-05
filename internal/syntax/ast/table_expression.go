@@ -53,7 +53,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	e.projection = aliasProjection
 
-	ctx.Bind(baseFields...)
+	ctx.Bind(baseFields)
 
 	for _, j := range e.Joins {
 		if err := j.Table.Resolve(ctx); err != nil {
@@ -61,7 +61,7 @@ func (e *TableExpression) Resolve(ctx *impls.NodeResolutionContext) error {
 		}
 
 		joinFields := j.Table.TableFields()
-		ctx.Bind(joinFields...)
+		ctx.Bind(joinFields)
 		baseFields = append(baseFields, joinFields...)
 
 		resolved, err := ResolveExpression(ctx, j.Condition, nil, false)
@@ -120,7 +120,7 @@ func (e *TableExpression) resolveTableAlias(ctx *impls.NodeResolutionContext) ([
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(baseFields...)
+	ctx.Bind(baseFields)
 
 	p, err := ResolveProjection(ctx, tableAlias, baseFields, projectionExpressions, nil)
 	if err != nil {

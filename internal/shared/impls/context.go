@@ -85,7 +85,7 @@ func (ctx *NodeResolutionContext) CurrentScope() *Scope {
 	return &ctx.Scopes[len(ctx.Scopes)-1]
 }
 
-func (ctx *NodeResolutionContext) Bind(fields ...fields.Field) {
+func (ctx *NodeResolutionContext) Bind(fields []fields.Field) {
 	scope := ctx.CurrentScope()
 	scope.fields = append(scope.fields, fields...)
 }

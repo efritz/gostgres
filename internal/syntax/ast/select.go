@@ -55,7 +55,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(fromFields...)
+	ctx.Bind(fromFields)
 
 	resolved, err := ResolveExpression(ctx, b.Where, nil, false)
 	if err != nil {
@@ -72,7 +72,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(b.fields...)
+	ctx.Bind(b.fields)
 
 	for i, expr := range b.Groupings {
 		resolved, err := ResolveExpression(ctx, expr, projection, false)

@@ -32,7 +32,7 @@ func resolveMutationProjection(
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(tableFields...)
+	ctx.Bind(tableFields)
 
 	return ast.ResolveProjection(ctx, name, tableFields, projectionExpressions, nil)
 }
@@ -58,7 +58,7 @@ func resolveReturning(
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(fields...)
+	ctx.Bind(fields)
 
 	return ast.ResolveProjection(ctx, "", fields, expressions, aliasedTables)
 }

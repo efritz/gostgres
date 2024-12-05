@@ -42,14 +42,14 @@ func (b *DeleteBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(p.Fields()...)
+	ctx.Bind(p.Fields())
 
 	for _, e := range b.Using {
 		if err := e.Resolve(ctx); err != nil {
 			return err
 		}
 
-		ctx.Bind(e.TableFields()...)
+		ctx.Bind(e.TableFields())
 	}
 
 	resolved, err := ast.ResolveExpression(ctx, b.Where, nil, false)

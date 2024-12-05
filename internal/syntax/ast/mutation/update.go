@@ -51,14 +51,14 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(p.Fields()...)
+	ctx.Bind(p.Fields())
 
 	for _, from := range b.From {
 		if err := from.Resolve(ctx); err != nil {
 			return err
 		}
 
-		ctx.Bind(from.TableFields()...)
+		ctx.Bind(from.TableFields())
 	}
 
 	resolved, err := ast.ResolveExpression(ctx, b.Where, nil, false)

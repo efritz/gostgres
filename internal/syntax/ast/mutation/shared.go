@@ -14,17 +14,18 @@ type TargetTable struct {
 	AliasName string
 }
 
-func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.LogicalNode, error) {
+// TODO - share with resolveTableAlias if possible
+func aliasTableNameForMutation(tableName string, aliasName string, tableFields []fields.Field) (*projection.Projection, error) {
+	name := aliasName
 	if name == "" {
-		name = node.Name()
+		name = tableName
 	}
 
-	// TODO - share with resolveTableAlias
 	projectionExpressions := []projection.ProjectionExpression{
 		projection.NewAliasedExpression(expressions.NewNamed(fields.TIDField), "$tid", true),
 		projection.NewWildcardProjectionExpression(),
 	}
-	projectedExpressions, err := projection.ExpandProjection(node.Fields(), projectionExpressions, nil)
+	projectedExpressions, err := projection.ExpandProjection(tableFields, projectionExpressions, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +34,7 @@ func aliasTableNameForMutataion(node plan.LogicalNode, name string) (plan.Logica
 		return nil, err
 	}
 
-	return plan.NewProjection(node, p), nil
+	return p, nil
 }
 
 func returningProjection(table impls.Table, alias string, expressions []projection.ProjectionExpression) (*projection.Projection, error) {

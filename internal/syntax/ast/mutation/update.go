@@ -19,8 +19,9 @@ type UpdateBuilder struct {
 	Where     impls.Expression
 	Returning []projection.ProjectionExpression
 
-	table     impls.Table
-	returning *projection.Projection
+	table           impls.Table
+	aliasProjection *projection.Projection
+	returning       *projection.Projection
 }
 
 type SetExpression struct {
@@ -42,25 +43,22 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 		baseFields = append(baseFields, field.Field)
 	}
 
-	if b.Target.AliasName != "" {
-		for i, field := range baseFields {
-			baseFields[i] = field.WithRelationName(b.Target.AliasName)
-		}
+	p, err := aliasTableNameForMutation(table.Name(), b.Target.AliasName, baseFields)
+	if err != nil {
+		return err
 	}
+	b.aliasProjection = p
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-
-	ctx.Bind(baseFields...)
+	ctx.Bind(p.Fields()...)
 
 	for _, from := range b.From {
 		if err := from.Resolve(ctx); err != nil {
 			return err
 		}
 
-		joinFields := from.TableFields()
-		ctx.Bind(joinFields...)
-		baseFields = append(baseFields, joinFields...)
+		ctx.Bind(from.TableFields()...)
 	}
 
 	resolved, err := ast.ResolveExpression(ctx, b.Where, nil, false)
@@ -81,12 +79,7 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 
 func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
-
-	aliased, err := aliasTableNameForMutataion(node, b.Target.AliasName)
-	if err != nil {
-		return nil, err
-	}
-	node = aliased
+	node = plan.NewProjection(node, b.aliasProjection)
 
 	if b.From != nil {
 		node = joinNodes(node, b.From)

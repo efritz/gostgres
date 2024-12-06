@@ -36,8 +36,6 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.table = table
 
-	// TODO - resolve set expressions
-
 	var baseFields []fields.Field
 	for _, field := range table.Fields() {
 		baseFields = append(baseFields, field.Field)
@@ -59,6 +57,15 @@ func (b *UpdateBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 		}
 
 		ctx.Bind(from.TableFields())
+	}
+
+	for i, setExpression := range b.Updates {
+		resolved, err := ast.ResolveExpression(ctx, setExpression.Expression, nil, false)
+		if err != nil {
+			return err
+		}
+
+		b.Updates[i].Expression = resolved
 	}
 
 	resolved, err := ast.ResolveExpression(ctx, b.Where, nil, false)

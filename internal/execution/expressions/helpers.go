@@ -5,6 +5,8 @@ import (
 	"github.com/efritz/gostgres/internal/shared/rows"
 )
 
+// TODO - normalization into "Conjunctive Normal Form"
+
 func Conjunctions(e impls.Expression) []impls.Expression {
 	if e == nil {
 		return nil

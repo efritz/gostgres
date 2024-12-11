@@ -29,9 +29,9 @@ func lowerFilterToNode(ctx impls.OptimizationContext, expression impls.Expressio
 	}
 }
 
-func matchesAllFields(haystack, candidates []fields.Field) bool {
-	for _, f := range haystack {
-		if _, err := fields.FindMatchingFieldIndex(f, candidates); err != nil {
+func matchesAllFields(needles, haystack []fields.Field) bool {
+	for _, f := range needles {
+		if _, err := fields.FindMatchingFieldIndex(f, haystack); err != nil {
 			return false
 		}
 	}

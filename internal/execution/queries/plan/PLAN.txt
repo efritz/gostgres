@@ -2,4 +2,4 @@
 2. Standardize union/combination logical nodes
 3. Standardize mutation logical nodes
 4. Flatten joins into a list for re-orderability
-5. Flatten projections (table alias + projection nodes)
+5. Flatten adjacent projections

@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -13,7 +13,7 @@ import (
 )
 
 type SelectBuilder struct {
-	SelectExpressions []projectionHelpers.ProjectionExpression
+	SelectExpressions []projection.ProjectionExpression
 	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
@@ -23,7 +23,7 @@ type SelectBuilder struct {
 	Offset            *int
 
 	fields     []fields.Field
-	projection *projectionHelpers.Projection
+	projection *projection.Projection
 }
 
 type CombinationDescription struct {
@@ -55,27 +55,15 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(fromFields...)
+	ctx.Bind(fromFields)
 
-	resolved, err := resolveExpression(ctx, b.Where, nil, false)
+	resolved, err := ResolveExpression(ctx, b.Where, nil, false)
 	if err != nil {
 		return err
 	}
 	b.Where = resolved
 
-	projectedExpressions, err := projectionHelpers.ExpandProjection(fromFields, b.SelectExpressions)
-	if err != nil {
-		return err
-	}
-	for i, expr := range projectedExpressions {
-		resolved, err := resolveExpression(ctx, expr.Expression, nil, true)
-		if err != nil {
-			return err
-		}
-
-		projectedExpressions[i].Expression = resolved
-	}
-	projection, err := projectionHelpers.NewProjectionFromProjectedExpressions("", projectedExpressions)
+	projection, err := ResolveProjection(ctx, "", fromFields, b.SelectExpressions, nil)
 	if err != nil {
 		return err
 	}
@@ -84,10 +72,10 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 
 	ctx.PushScope()
 	defer ctx.PopScope()
-	ctx.Bind(b.fields...)
+	ctx.Bind(b.fields)
 
 	for i, expr := range b.Groupings {
-		resolved, err := resolveExpression(ctx, expr, projection, false)
+		resolved, err := ResolveExpression(ctx, expr, projection, false)
 		if err != nil {
 			return err
 		}
@@ -96,7 +84,7 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	}
 
 	var rawProjectedExpressions []impls.Expression
-	for _, selectExpression := range projectedExpressions {
+	for _, selectExpression := range projection.Aliases() {
 		rawProjectedExpressions = append(rawProjectedExpressions, selectExpression.Expression)
 	}
 	_, nonAggregatedFields, containsAggregate, err := expressions.PartitionAggregatedFieldReferences(
@@ -128,10 +116,10 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 	if b.Order != nil {
 		resolved, err := b.Order.Map(func(expr impls.Expression) (impls.Expression, error) {
 			if len(b.Groupings) > 0 {
-				return resolveExpression(ctx, expr, nil, false)
+				return ResolveExpression(ctx, expr, nil, false)
 			}
 
-			return resolveExpression(ctx, expr, projection, false)
+			return ResolveExpression(ctx, expr, projection, false)
 		})
 		if err != nil {
 			return err
@@ -169,18 +157,16 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	if b.Where != nil {
-		node = plan.NewFilter(node, b.Where)
-	}
-
-	if b.Groupings != nil {
-		node = plan.NewHashAggregate(node, b.Groupings, b.projection)
-	}
-
 	if len(b.Combinations) > 0 {
-		if b.Groupings == nil {
-			node = plan.NewProjection(node, b.projection)
-		}
+		node = plan.NewSelect(
+			node,
+			b.projection,
+			b.Groupings,
+			b.Where,
+			nil,
+			nil,
+			nil,
+		)
 
 		for _, c := range b.Combinations {
 			var factory func(left, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error)
@@ -204,18 +190,27 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			}
 			node = newNode
 		}
-	}
 
-	if b.Order != nil {
-		node = plan.NewOrder(node, b.Order)
-	}
-	if b.Limit != nil || b.Offset != nil {
-		node = plan.NewLimitOffset(node, b.Limit, b.Offset)
-	}
+		return plan.NewSelect(
+			node,
+			nil,
+			nil,
+			nil,
+			b.Order,
+			b.Limit,
+			b.Offset,
+		), nil
+	} else {
+		node = plan.NewSelect(
+			node,
+			b.projection,
+			b.Groupings,
+			b.Where,
+			b.Order,
+			b.Limit,
+			b.Offset,
+		)
 
-	if b.Groupings == nil && len(b.Combinations) == 0 {
-		node = plan.NewProjection(node, b.projection)
+		return node, nil
 	}
-
-	return node, nil
 }

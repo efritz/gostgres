@@ -20,6 +20,8 @@ type Field struct {
 	internalFieldType InternalFieldType
 }
 
+var TIDField = NewField("", "tid", types.TypeBigInteger, InternalFieldTid)
+
 func NewField(relationName, name string, typ types.Type, internalFieldType InternalFieldType) Field {
 	return newField(relationName, name, typ, internalFieldType)
 }

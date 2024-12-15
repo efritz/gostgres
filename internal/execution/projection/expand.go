@@ -9,7 +9,7 @@ import (
 )
 
 type ProjectionExpression interface {
-	Expand(fields []fields.Field, aliasedTables ...AliasedTable) ([]ProjectedExpression, error)
+	Expand(fields []fields.Field, aliasedTables []AliasedTable) ([]ProjectedExpression, error)
 }
 
 type AliasedTable struct {
@@ -17,10 +17,10 @@ type AliasedTable struct {
 	Alias     string
 }
 
-func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression, aliasedTables ...AliasedTable) ([]ProjectedExpression, error) {
+func ExpandProjection(fields []fields.Field, expressions []ProjectionExpression, aliasedTables []AliasedTable) ([]ProjectedExpression, error) {
 	aliases := make([]ProjectedExpression, 0, len(fields))
 	for _, expression := range expressions {
-		as, err := expression.Expand(fields, aliasedTables...)
+		as, err := expression.Expand(fields, aliasedTables)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func NewWildcardProjectionExpression() ProjectionExpression {
 	return wildcardProjectionExpression{}
 }
 
-func (p wildcardProjectionExpression) Expand(fields []fields.Field, aliasedTables ...AliasedTable) (projections []ProjectedExpression, _ error) {
+func (p wildcardProjectionExpression) Expand(fields []fields.Field, aliasedTables []AliasedTable) (projections []ProjectedExpression, _ error) {
 	for _, field := range fields {
 		if field.Internal() {
 			continue
@@ -65,7 +65,7 @@ func NewTableWildcardProjectionExpression(relationName string) ProjectionExpress
 	}
 }
 
-func (p tableWildcardProjectionExpression) Expand(fields []fields.Field, aliasedTables ...AliasedTable) (projections []ProjectedExpression, _ error) {
+func (p tableWildcardProjectionExpression) Expand(fields []fields.Field, aliasedTables []AliasedTable) (projections []ProjectedExpression, _ error) {
 	name := p.relationName
 	for _, aliasedTable := range aliasedTables {
 		if p.relationName == aliasedTable.Alias {
@@ -96,20 +96,22 @@ func (p tableWildcardProjectionExpression) Expand(fields []fields.Field, aliased
 type aliasedExpression struct {
 	expression impls.Expression
 	alias      string
+	isTID      bool
 }
 
-func NewAliasedExpression(expression impls.Expression, alias string) ProjectionExpression {
+func NewAliasedExpression(expression impls.Expression, alias string, isTID bool) ProjectionExpression {
 	return aliasedExpression{
 		expression: expression,
 		alias:      alias,
+		isTID:      isTID,
 	}
 }
 
 func NewAliasedExpressionFromField(field fields.Field) ProjectionExpression {
-	return NewAliasedExpression(expressions.NewNamed(field), field.Name())
+	return NewAliasedExpression(expressions.NewNamed(field), field.Name(), field.IsTID())
 }
 
-func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables ...AliasedTable) ([]ProjectedExpression, error) {
+func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables []AliasedTable) ([]ProjectedExpression, error) {
 	expression := p.expression
 	for _, table := range aliasedTables {
 		for _, field := range fields {
@@ -117,5 +119,5 @@ func (p aliasedExpression) Expand(fields []fields.Field, aliasedTables ...Aliase
 		}
 	}
 
-	return []ProjectedExpression{NewProjectedExpression(expression, p.alias)}, nil
+	return []ProjectedExpression{NewProjectedExpression(expression, p.alias, p.isTID)}, nil
 }

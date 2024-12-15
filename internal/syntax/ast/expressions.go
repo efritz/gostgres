@@ -2,14 +2,15 @@ package ast
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
-	projectionHelpers "github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/execution/projection"
+	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func resolveExpression(
+func ResolveExpression(
 	ctx *impls.NodeResolutionContext,
 	expr impls.Expression,
-	projection *projectionHelpers.Projection,
+	projection *projection.Projection,
 	allowAggregateFunctions bool,
 ) (impls.Expression, error) {
 	if expr == nil {
@@ -54,4 +55,28 @@ func resolveExpression(
 	}
 
 	return mappedExpr, nil
+}
+
+func ResolveProjection(
+	ctx *impls.NodeResolutionContext,
+	name string,
+	fields []fields.Field,
+	projectionExpressions []projection.ProjectionExpression,
+	tableAliases []projection.AliasedTable,
+) (*projection.Projection, error) {
+	projectedExpressions, err := projection.ExpandProjection(fields, projectionExpressions, tableAliases)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, expr := range projectedExpressions {
+		resolved, err := ResolveExpression(ctx, expr.Expression, nil, true)
+		if err != nil {
+			return nil, err
+		}
+
+		projectedExpressions[i].Expression = resolved
+	}
+
+	return projection.NewProjection(name, projectedExpressions)
 }

@@ -2,6 +2,7 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -27,12 +28,12 @@ func (p *parser) parseInsert(token tokens.Token) (ast.BuilderResolver, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.Name)
+	returningExpressions, err := p.parseReturning()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ast.InsertBuilder{
+	return &mutation.InsertBuilder{
 		Target:      tableDescription,
 		ColumnNames: columnNames,
 		Source:      node,

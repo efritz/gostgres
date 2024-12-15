@@ -7,22 +7,23 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
 	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
 // table := ident alias
-func (p *parser) parseTable() (ast.TargetTable, error) {
+func (p *parser) parseTable() (mutation.TargetTable, error) {
 	name, err := p.parseIdent()
 	if err != nil {
-		return ast.TargetTable{}, err
+		return mutation.TargetTable{}, err
 	}
 
 	alias, _, err := p.parseAlias()
 	if err != nil {
-		return ast.TargetTable{}, err
+		return mutation.TargetTable{}, err
 	}
 
-	return ast.TargetTable{
+	return mutation.TargetTable{
 		Name:      name,
 		AliasName: alias,
 	}, nil

@@ -2,6 +2,7 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -34,12 +35,12 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.BuilderResolver, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.Name)
+	returningExpressions, err := p.parseReturning()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ast.UpdateBuilder{
+	return &mutation.UpdateBuilder{
 		Target:    tableDescription,
 		Updates:   setExpressions,
 		From:      fromExpressions,
@@ -49,7 +50,7 @@ func (p *parser) parseUpdate(token tokens.Token) (ast.BuilderResolver, error) {
 }
 
 // setExpression := ident `=` expression
-func (p *parser) parseSetExpression() (ast.SetExpression, error) {
+func (p *parser) parseSetExpression() (mutation.SetExpression, error) {
 	if p.advanceIf(isType(tokens.TokenTypeLeftParen)) {
 		// TODO - support sub-select
 		// TODO - support row values
@@ -58,19 +59,19 @@ func (p *parser) parseSetExpression() (ast.SetExpression, error) {
 
 	name, err := p.parseIdent()
 	if err != nil {
-		return ast.SetExpression{}, err
+		return mutation.SetExpression{}, err
 	}
 
 	if _, err := p.mustAdvance(isType(tokens.TokenTypeEquals)); err != nil {
-		return ast.SetExpression{}, err
+		return mutation.SetExpression{}, err
 	}
 
 	expr, err := p.parseRootExpression()
 	if err != nil {
-		return ast.SetExpression{}, err
+		return mutation.SetExpression{}, err
 	}
 
-	return ast.SetExpression{
+	return mutation.SetExpression{
 		Name:       name,
 		Expression: expr,
 	}, nil

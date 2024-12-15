@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -57,11 +58,11 @@ func (n *logicalCombinationNode) Fields() []fields.Field {
 }
 
 func (n *logicalCombinationNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
-	lowerFilter(ctx, filterExpression, n.left, n.right)
+	util.LowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
 func (n *logicalCombinationNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	lowerOrder(ctx, orderExpression, n.left, n.right)
+	util.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
 func (n *logicalCombinationNode) Optimize(ctx impls.OptimizationContext) {

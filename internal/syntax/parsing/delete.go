@@ -2,6 +2,7 @@ package parsing
 
 import (
 	"github.com/efritz/gostgres/internal/syntax/ast"
+	"github.com/efritz/gostgres/internal/syntax/ast/mutation"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
 )
 
@@ -26,12 +27,12 @@ func (p *parser) parseDelete(token tokens.Token) (ast.BuilderResolver, error) {
 		return nil, err
 	}
 
-	returningExpressions, err := p.parseReturning(tableDescription.Name)
+	returningExpressions, err := p.parseReturning()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ast.DeleteBuilder{
+	return &mutation.DeleteBuilder{
 		Target:    tableDescription,
 		Using:     usingExpressions,
 		Where:     whereExpression,

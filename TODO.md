@@ -40,3 +40,7 @@
 - Implement Mark+Restore on indexes directly
 - Break `Node` iface into optional components
 - Allow function/aggregate/callable generic and overloaded functions
+- Standardize union/combination logical nodes
+- Standardize mutation logical nodes
+- Flatten adjacent projections
+

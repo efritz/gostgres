@@ -1,20 +1,19 @@
-package nodes
+package mutation
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/queries"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type updateNode struct {
-	Node
+	nodes.Node
 	table          impls.Table
-	fields         []fields.Field
 	aliasName      string
 	setExpressions []SetExpression
 }
@@ -25,16 +24,14 @@ type SetExpression struct {
 }
 
 func NewUpdate(
-	node Node,
+	node nodes.Node,
 	table impls.Table,
-	fields []fields.Field,
 	aliasName string,
 	setExpressions []SetExpression,
-) Node {
+) nodes.Node {
 	return &updateNode{
 		Node:           node,
 		table:          table,
-		fields:         fields,
 		aliasName:      aliasName,
 		setExpressions: setExpressions,
 	}

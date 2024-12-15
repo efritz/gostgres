@@ -14,21 +14,7 @@ type Projection struct {
 	projectedFields    []fields.Field
 }
 
-func NewProjectionFromProjectionExpressions(
-	targetRelationName string,
-	relationFields []fields.Field,
-	projectionExpressions []ProjectionExpression,
-	aliasedTables ...AliasedTable,
-) (*Projection, error) {
-	projectedExpressions, err := ExpandProjection(relationFields, projectionExpressions, aliasedTables...)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewProjectionFromProjectedExpressions(targetRelationName, projectedExpressions)
-}
-
-func NewProjectionFromProjectedExpressions(
+func NewProjection(
 	targetRelationName string,
 	projectedExpressions []ProjectedExpression,
 ) (*Projection, error) {

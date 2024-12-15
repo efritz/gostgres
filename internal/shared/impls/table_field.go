@@ -13,7 +13,11 @@ type TableField struct {
 }
 
 func NewTableField(relationName, name string, typ types.Type, internalFieldType fields.InternalFieldType) TableField {
-	return newTableField(fields.NewField(relationName, name, typ, internalFieldType), true, nil)
+	return NewTableFieldFromField(fields.NewField(relationName, name, typ, internalFieldType))
+}
+
+func NewTableFieldFromField(field fields.Field) TableField {
+	return newTableField(field, true, nil)
 }
 
 func newTableField(field fields.Field, nullable bool, defaultExpression Expression) TableField {

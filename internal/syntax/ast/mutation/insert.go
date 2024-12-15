@@ -1,20 +1,23 @@
-package ast
+package mutation
 
 import (
 	"fmt"
 
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/mutation"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/syntax/ast"
 )
 
 type InsertBuilder struct {
 	Target      TargetTable
 	ColumnNames []string
-	Source      TableReferenceOrExpression
+	Source      ast.TableReferenceOrExpression
 	Returning   []projection.ProjectionExpression
 
-	table impls.Table
+	table     impls.Table
+	returning *projection.Projection
 }
 
 func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
@@ -24,9 +27,17 @@ func (b *InsertBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
 	}
 	b.table = table
 
+	// TODO - resolve column names
+
 	if err := b.Source.Resolve(ctx); err != nil {
 		return err
 	}
+
+	returning, err := resolveReturning(ctx, b.table, b.Target.AliasName, b.Returning)
+	if err != nil {
+		return err
+	}
+	b.returning = returning
 
 	return nil
 }
@@ -37,10 +48,5 @@ func (b *InsertBuilder) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	insert, err := plan.NewInsert(node, b.table, b.ColumnNames)
-	if err != nil {
-		return nil, err
-	}
-
-	return wrapReturning(insert, b.table, b.Target.AliasName, b.Returning)
+	return mutation.NewInsert(node, b.table, b.ColumnNames, b.returning)
 }

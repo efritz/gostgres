@@ -12,20 +12,19 @@ FROM (
 
 Plan:
 
-                                                                                              query plan
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                            query plan
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  project {s.name ||  ( || s.lang || ) as normalized_title}
-    project {title as name, language_name as lang} into s.*
-        project {f.title, l.language_name} into s.*
-            project {f.title, l.name as language_name}
-                limit 50
-                    join using nested loop
-                        project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*
-                            btree index scan of film via idx_title
-                    with
-                        project {language_id, name, last_update} into l.*
-                            btree index scan of language via language_pkey
-                                index cond: language.language_id = f.language_id
+    project {f.title as name, l.language_name as lang} into s.*
+        project {f.title, l.name as language_name}
+            limit 50
+                join using nested loop
+                    project {film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update} into f.*
+                        btree index scan of film via idx_title
+                with
+                    project {language_id, name, last_update} into l.*
+                        btree index scan of language via language_pkey
+                            index cond: language.language_id = f.language_id
 (1 rows)
 
 Results:

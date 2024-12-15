@@ -1,25 +1,23 @@
-package nodes
+package mutation
 
 import (
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
-	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"github.com/efritz/gostgres/internal/shared/scan"
 )
 
 type deleteNode struct {
-	Node
+	nodes.Node
 	table     impls.Table
-	fields    []fields.Field
 	aliasName string
 }
 
-func NewDelete(node Node, table impls.Table, fields []fields.Field, aliasName string) Node {
+func NewDelete(node nodes.Node, table impls.Table, aliasName string) nodes.Node {
 	return &deleteNode{
 		Node:      node,
 		table:     table,
-		fields:    fields,
 		aliasName: aliasName,
 	}
 }

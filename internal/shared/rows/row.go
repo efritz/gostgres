@@ -65,7 +65,7 @@ func (r Row) IsolateTID(relationName string) (Row, error) {
 	var values []any
 
 	for i, field := range r.Fields {
-		if !field.IsTID() || field.RelationName() != relationName {
+		if !field.IsTID() {
 			continue
 		}
 

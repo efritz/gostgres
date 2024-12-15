@@ -3,7 +3,9 @@ package mutation
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
+	concreteJoin "github.com/efritz/gostgres/internal/execution/queries/nodes/join"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	logicalJoin "github.com/efritz/gostgres/internal/execution/queries/plan/join"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/ast"
@@ -63,15 +65,25 @@ func resolveReturning(
 	return ast.ResolveProjection(ctx, "", fields, expressions, aliasedTables)
 }
 
-func joinNodes(left plan.LogicalNode, expressions []*ast.TableExpression) plan.LogicalNode {
-	for _, expression := range expressions {
-		right, err := expression.Build()
-		if err != nil {
-			return nil
-		}
-
-		left = plan.NewJoin(left, right, nil)
+// TODO - share with table expressions
+func joinNodes(node plan.LogicalNode, expressions []*ast.TableExpression) (plan.LogicalNode, error) {
+	if len(expressions) == 0 {
+		return node, nil
 	}
 
-	return left
+	joinNode := logicalJoin.NewJoinLeafNode(node)
+
+	for _, e := range expressions {
+		right, err := e.Build()
+		if err != nil {
+			return nil, err
+		}
+
+		joinNode = logicalJoin.NewJoinInternalNode(joinNode, logicalJoin.NewJoinLeafNode(right), logicalJoin.JoinOperator{
+			JoinType:  concreteJoin.JoinTypeInner, // TODO - cross join?
+			Condition: nil,
+		})
+	}
+
+	return joinNode, nil
 }

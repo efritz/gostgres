@@ -6,7 +6,9 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
+	concreteJoin "github.com/efritz/gostgres/internal/execution/queries/nodes/join"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	logicalJoin "github.com/efritz/gostgres/internal/execution/queries/plan/join"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -152,14 +154,23 @@ func (e *TableExpression) Build() (plan.LogicalNode, error) {
 		node = plan.NewProjection(node, e.projection)
 	}
 
+	if len(e.Joins) == 0 {
+		return node, nil
+	}
+
+	joinNode := logicalJoin.NewJoinLeafNode(node)
+
 	for _, j := range e.Joins {
 		right, err := j.Table.Build()
 		if err != nil {
 			return nil, err
 		}
 
-		node = plan.NewJoin(node, right, j.Condition)
+		joinNode = logicalJoin.NewJoinInternalNode(joinNode, logicalJoin.NewJoinLeafNode(right), logicalJoin.JoinOperator{
+			JoinType:  concreteJoin.JoinTypeInner,
+			Condition: j.Condition,
+		})
 	}
 
-	return node, nil
+	return joinNode, nil
 }

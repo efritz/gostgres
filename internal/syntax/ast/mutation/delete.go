@@ -71,8 +71,9 @@ func (b *DeleteBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
 	node = plan.NewProjection(node, b.aliasProjection)
 
-	if len(b.Using) > 0 {
-		node = joinNodes(node, b.Using)
+	node, err := joinNodes(node, b.Using)
+	if err != nil {
+		return nil, err
 	}
 
 	return mutation.NewDelete(node, b.table, b.Target.AliasName, b.Where, b.returning)

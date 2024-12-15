@@ -1,4 +1,4 @@
-package plan
+package util
 
 import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
@@ -6,7 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func lowerOrder(ctx impls.OptimizationContext, order impls.OrderExpression, nodes ...LogicalNode) {
+func LowerOrder(ctx impls.OptimizationContext, order impls.OrderExpression, nodes ...LogicalNode) {
 	orderExpressions := order.Expressions()
 
 	for _, node := range nodes {

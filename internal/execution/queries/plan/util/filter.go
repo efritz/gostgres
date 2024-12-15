@@ -1,4 +1,4 @@
-package plan
+package util
 
 import (
 	"slices"
@@ -8,7 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
-func lowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...LogicalNode) {
+func LowerFilter(ctx impls.OptimizationContext, filter impls.Expression, nodes ...LogicalNode) {
 	for _, expression := range expressions.Conjunctions(filter) {
 		for _, node := range nodes {
 			lowerFilterToNode(ctx, expression, node)

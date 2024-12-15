@@ -6,6 +6,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -48,11 +49,11 @@ func (n *logicalUnionNode) Fields() []fields.Field {
 }
 
 func (n *logicalUnionNode) AddFilter(ctx impls.OptimizationContext, filterExpression impls.Expression) {
-	lowerFilter(ctx, filterExpression, n.left, n.right)
+	util.LowerFilter(ctx, filterExpression, n.left, n.right)
 }
 
 func (n *logicalUnionNode) AddOrder(ctx impls.OptimizationContext, orderExpression impls.OrderExpression) {
-	lowerOrder(ctx, orderExpression, n.left, n.right)
+	util.LowerOrder(ctx, orderExpression, n.left, n.right)
 }
 
 func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {

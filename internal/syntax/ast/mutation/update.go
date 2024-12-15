@@ -87,8 +87,9 @@ func (b *UpdateBuilder) Build() (plan.LogicalNode, error) {
 	node := plan.NewAccess(b.table)
 	node = plan.NewProjection(node, b.aliasProjection)
 
-	if b.From != nil {
-		node = joinNodes(node, b.From)
+	node, err := joinNodes(node, b.From)
+	if err != nil {
+		return nil, err
 	}
 
 	setExpressions := make([]mutationNodes.SetExpression, len(b.Updates))

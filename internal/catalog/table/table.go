@@ -10,12 +10,22 @@ import (
 )
 
 type table struct {
-	name        string
-	fields      []impls.TableField
-	rows        map[int64]rows.Row
-	primaryKey  impls.BaseIndex
-	indexes     []impls.BaseIndex
-	constraints []impls.Constraint
+	name             string
+	fields           []impls.TableField
+	rows             map[int64]rows.Row
+	primaryKey       impls.BaseIndex
+	indexes          []impls.BaseIndex
+	constraints      []impls.Constraint
+	tableStatistics  TableStatistics
+	columnStatistics []ColumnStatistics
+}
+
+type TableStatistics struct {
+	RowCount int
+}
+
+type ColumnStatistics struct {
+	DistinctCount int
 }
 
 var _ impls.Table = &table{}
@@ -29,9 +39,11 @@ func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	}
 
 	return &table{
-		name:   name,
-		fields: tableFields,
-		rows:   map[int64]rows.Row{},
+		name:             name,
+		fields:           tableFields,
+		rows:             map[int64]rows.Row{},
+		tableStatistics:  TableStatistics{},
+		columnStatistics: make([]ColumnStatistics, len(tableFields)),
 	}
 }
 
@@ -157,6 +169,28 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 }
 
 func (t *table) Analyze() error {
-	// TODO
-	return fmt.Errorf("analyze not implemented")
+	t.analyzeTable()
+
+	for i := range t.fields {
+		t.analyzeColumn(i)
+	}
+
+	return nil
+}
+
+func (t *table) analyzeTable() {
+	t.tableStatistics = TableStatistics{
+		RowCount: len(t.rows),
+	}
+}
+
+func (t *table) analyzeColumn(i int) {
+	distinctValues := map[any]struct{}{}
+	for _, row := range t.rows {
+		distinctValues[row.Values[i]] = struct{}{}
+	}
+
+	t.columnStatistics[i] = ColumnStatistics{
+		DistinctCount: len(distinctValues),
+	}
 }

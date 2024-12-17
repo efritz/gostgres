@@ -5,6 +5,7 @@ import (
 
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"golang.org/x/exp/slices"
 )
@@ -25,7 +26,9 @@ type TableStatistics struct {
 }
 
 type ColumnStatistics struct {
-	DistinctCount int
+	NullCount       int
+	DistinctCount   int
+	HistogramBounds []any
 }
 
 var _ impls.Table = &table{}
@@ -184,13 +187,55 @@ func (t *table) analyzeTable() {
 	}
 }
 
-func (t *table) analyzeColumn(i int) {
-	distinctValues := map[any]struct{}{}
+func (t *table) analyzeColumn(columnIndex int) {
+	nullCount := 0
+	nonNilValueSet := map[any]struct{}{}
+	nonNilValues := make([]any, 0, len(t.rows))
+
 	for _, row := range t.rows {
-		distinctValues[row.Values[i]] = struct{}{}
+		value := row.Values[columnIndex]
+
+		if value == nil {
+			nullCount++
+		} else {
+			nonNilValueSet[value] = struct{}{}
+			nonNilValues = append(nonNilValues, value)
+		}
 	}
 
-	t.columnStatistics[i] = ColumnStatistics{
-		DistinctCount: len(distinctValues),
+	t.columnStatistics[columnIndex] = ColumnStatistics{
+		NullCount:       nullCount,
+		DistinctCount:   len(nonNilValueSet),
+		HistogramBounds: t.calculateHistogramBounds(nonNilValues),
 	}
+}
+
+const numHistogramBuckets = 100
+
+func (t *table) calculateHistogramBounds(nonNilValues []any) []any {
+	if len(nonNilValues) < 2 || ordering.CompareValues(nonNilValues[0], nonNilValues[1]) == ordering.OrderTypeIncomparable {
+		return nil
+	}
+
+	slices.SortFunc(nonNilValues, func(a, b any) int {
+		switch ordering.CompareValues(a, b) {
+		case ordering.OrderTypeBefore:
+			return -1
+		case ordering.OrderTypeAfter:
+			return 1
+		default:
+			return 0
+		}
+	})
+
+	if len(nonNilValues) <= numHistogramBuckets {
+		return nonNilValues
+	}
+
+	bounds := make([]any, 0, numHistogramBuckets-1)
+	for i := 1; i < numHistogramBuckets; i++ {
+		bounds = append(bounds, nonNilValues[(i*len(nonNilValues))/numHistogramBuckets])
+	}
+
+	return bounds
 }

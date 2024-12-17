@@ -16,7 +16,7 @@ type parser struct {
 	alterParsers            alterParsers
 	addConstraintParsers    addConstraintParsers
 	columnConstraintParsers columnConstraintParsers
-	explainableParsers      explainableParsers
+	queryParsers            explainableParsers
 	prefixParsers           prefixParsers
 	infixParsers            infixParsers
 }

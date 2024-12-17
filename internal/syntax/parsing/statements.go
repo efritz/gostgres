@@ -16,17 +16,19 @@ func (p *parser) initDDLParsers() {
 }
 
 func (p *parser) initStatementParsers() {
-	p.explainableParsers = explainableParsers{
-		tokens.TokenTypeSelect: p.parseSelectBuilder,
-		tokens.TokenTypeInsert: p.parseInsert,
-		tokens.TokenTypeUpdate: p.parseUpdate,
-		tokens.TokenTypeDelete: p.parseDelete,
+	p.queryParsers = explainableParsers{
+		tokens.TokenTypeAnalyze: p.parseAnalyze,
+		tokens.TokenTypeSelect:  p.parseSelectBuilder,
+		tokens.TokenTypeInsert:  p.parseInsert,
+		tokens.TokenTypeUpdate:  p.parseUpdate,
+		tokens.TokenTypeDelete:  p.parseDelete,
 	}
 }
 
-// statement := ddlStatement | ( [ `EXPLAIN` ] explainableStatement )
+// statement := ddlStatement | analyzeStatement ( [ `EXPLAIN` ] explainableStatement )
 // ddlStatement := ( `CREATE` createTail ) | ( `ALTER` alterTail )
-// explainableStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
+// analyzeStatement := `ANALYZE` analyzeTail
+// queryStatement := ( `SELECT` selectTail ) | ( `INSERT` insertTail ) | ( `UPDATE` updateTail ) | ( `DELETE` deleteTail )
 func (p *parser) parseStatement(catalog impls.CatalogSet) (Query, error) {
 	for tokenType, parser := range p.ddlParsers {
 		token := p.current()
@@ -38,9 +40,13 @@ func (p *parser) parseStatement(catalog impls.CatalogSet) (Query, error) {
 	isExplain := false
 	if p.advanceIf(isType(tokens.TokenTypeExplain)) {
 		isExplain = true
+
+		if p.peek(0).Type == tokens.TokenTypeAnalyze {
+			return nil, fmt.Errorf("cannot explain analyze")
+		}
 	}
 
-	for tokenType, parser := range p.explainableParsers {
+	for tokenType, parser := range p.queryParsers {
 		token := p.current()
 		if p.advanceIf(isType(tokenType)) {
 			builder, err := parser(token)

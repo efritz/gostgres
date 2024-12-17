@@ -14,4 +14,5 @@ type Table interface {
 	AddConstraint(ctx ExecutionContext, constraint Constraint) error
 	Insert(ctx ExecutionContext, row rows.Row) (_ rows.Row, err error)
 	Delete(row rows.Row) (rows.Row, bool, error)
+	Analyze() error
 }

@@ -159,3 +159,8 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 	delete(t.rows, tid)
 	return fullRow, true, nil
 }
+
+func (t *table) Analyze() error {
+	// TODO
+	return fmt.Errorf("analyze not implemented")
+}

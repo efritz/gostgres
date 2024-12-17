@@ -6,7 +6,6 @@ type Table interface {
 	Name() string
 	Indexes() []BaseIndex
 	Fields() []TableField
-	Size() int
 	TIDs() []int64
 	Row(tid int64) (rows.Row, bool)
 	SetPrimaryKey(index BaseIndex) error

@@ -51,10 +51,6 @@ func (t *table) Fields() []impls.TableField {
 	return slices.Clone(t.fields)
 }
 
-func (t *table) Size() int {
-	return len(t.rows)
-}
-
 func (t *table) TIDs() []int64 {
 	tids := make([]int64, 0, len(t.rows))
 	for tid := range t.rows {

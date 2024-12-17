@@ -42,6 +42,10 @@ func (n *logicalInsertNode) Opitmize(ctx impls.OptimizationContext) {
 	n.LogicalNode.Optimize(ctx)
 }
 
+func (n *logicalInsertNode) EstimateCost() plan.Cost {
+	return plan.Cost{} // TODO
+}
+
 func (n *logicalInsertNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
 	node = mutation.NewInsert(node, n.table, n.columnNames)

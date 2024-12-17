@@ -70,6 +70,10 @@ func (n *logicalCombinationNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 }
 
+func (n *logicalCombinationNode) EstimateCost() Cost {
+	return Cost{} // TODO
+}
+
 func (n *logicalCombinationNode) Filter() impls.Expression {
 	return n.left.Filter()
 }

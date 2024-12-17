@@ -134,6 +134,10 @@ func (n *logicalSelectNode) Optimize(ctx impls.OptimizationContext) {
 	}
 }
 
+func (n *logicalSelectNode) EstimateCost() Cost {
+	return Cost{} // TODO
+}
+
 func (n *logicalSelectNode) Filter() impls.Expression {
 	filter := expressions.UnionFilters(n.filter, n.LogicalNode.Filter())
 

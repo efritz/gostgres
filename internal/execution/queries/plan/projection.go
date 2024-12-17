@@ -40,6 +40,10 @@ func (n *logicalProjectionNode) Optimize(ctx impls.OptimizationContext) {
 	n.LogicalNode.Optimize(ctx)
 }
 
+func (n *logicalProjectionNode) EstimateCost() Cost {
+	return Cost{} // TODO
+}
+
 func (n *logicalProjectionNode) Filter() impls.Expression {
 	return n.projection.ProjectExpression(n.LogicalNode.Filter())
 }

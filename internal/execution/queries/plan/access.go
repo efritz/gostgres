@@ -59,6 +59,10 @@ func (n *logicalAccessNode) Optimize(ctx impls.OptimizationContext) {
 	n.order = nil
 }
 
+func (n *logicalAccessNode) EstimateCost() Cost {
+	return Cost{} // TODO
+}
+
 func (n *logicalAccessNode) Filter() impls.Expression {
 	if filterExpression := n.strategy.Filter(); filterExpression != nil {
 		return expressions.UnionFilters(n.filter, filterExpression)

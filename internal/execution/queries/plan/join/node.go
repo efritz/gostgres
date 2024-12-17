@@ -118,6 +118,10 @@ func (n *joinNodeLeaf) Optimize(ctx impls.OptimizationContext) {
 	n.relation.Optimize(ctx)
 }
 
+func (n *joinNodeLeaf) EstimateCost() plan.Cost {
+	return n.relation.EstimateCost()
+}
+
 func (n *joinNodeLeaf) Filter() impls.Expression {
 	return n.relation.Filter()
 }
@@ -181,6 +185,10 @@ func (n *joinNodeInternal) Optimize(ctx impls.OptimizationContext) {
 	// TODO - determine when this might inappropriately alter query semantics
 	n.operator.Condition = expressions.FilterDifference(n.operator.Condition, expressions.UnionFilters(n.left.Filter(), n.right.Filter()))
 	n.strategy = &logicalNestedLoopJoinStrategy{n: n}
+}
+
+func (n *joinNodeInternal) EstimateCost() plan.Cost {
+	return plan.Cost{} // TODO
 }
 
 func (n *joinNodeInternal) Filter() impls.Expression {

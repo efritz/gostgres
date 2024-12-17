@@ -14,6 +14,7 @@ type LogicalNode interface {
 	AddFilter(ctx impls.OptimizationContext, filter impls.Expression)
 	AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression)
 	Optimize(ctx impls.OptimizationContext)
+	EstimateCost() Cost
 	Filter() impls.Expression
 	Ordering() impls.OrderExpression
 
@@ -22,6 +23,10 @@ type LogicalNode interface {
 	SupportsMarkRestore() bool
 
 	Build() nodes.Node
+}
+
+type Cost struct {
+	// TODO
 }
 
 //

@@ -54,6 +54,10 @@ func (n *logicalDeleteNode) Optimize(ctx impls.OptimizationContext) {
 	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
 }
 
+func (n *logicalDeleteNode) EstimateCost() plan.Cost {
+	return plan.Cost{} // TODO
+}
+
 func (n *logicalDeleteNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
 	if n.filter != nil {

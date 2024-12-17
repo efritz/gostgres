@@ -61,6 +61,10 @@ func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 }
 
+func (n *logicalUnionNode) EstimateCost() Cost {
+	return Cost{} // TODO
+}
+
 func (n *logicalUnionNode) Filter() impls.Expression {
 	return expressions.FilterIntersection(n.left.Filter(), n.right.Filter())
 }

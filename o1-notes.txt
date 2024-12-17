@@ -1,0 +1,519 @@
+package planner
+
+import (
+	"math"
+)
+
+// Global multipliers for different cost components.
+// In a real system, these would be configurable, possibly read from config.
+var CPUCostMultiplier float64 = 1.0
+var IOCostMultiplier float64 = 1.0
+var RowPenaltyMultiplier float64 = 0.0 // not used now, but could be in the future
+
+// Cost represents the cost of executing a plan node.
+// Startup costs are paid before the first tuple is produced (e.g. building a hash table for a hash join).
+// Per-tuple costs are paid for each tuple processed or output by the node.
+// EstimatedRows is the number of output rows expected from this node.
+//
+// In a more complex system, you might separate CPU and IO even more distinctly,
+// or add memory cost, network cost, etc.
+type Cost struct {
+	StartupCPU    float64
+	StartupIO     float64
+	PerTupleCPU   float64
+	PerTupleIO    float64
+	EstimatedRows float64
+}
+
+// Total returns a single scalar cost value, combining CPU and IO with global multipliers.
+// Future: You might factor in row-based penalties, memory usage, etc.
+func (c Cost) Total() float64 {
+	cpuCost := c.StartupCPU*CPUCostMultiplier + c.PerTupleCPU*c.EstimatedRows*CPUCostMultiplier
+	ioCost := c.StartupIO*IOCostMultiplier + c.PerTupleIO*c.EstimatedRows*IOCostMultiplier
+	return cpuCost + ioCost
+}
+
+// LogicalNode is assumed to be an interface that all logical nodes implement.
+// Each node will have an EstimateCost() method returning a Cost.
+type LogicalNode interface {
+	EstimateCost() Cost
+}
+
+// JoinOperator, JoinNode, and logicalJoinStrategy are placeholders.
+// They would be defined elsewhere in your code.
+type JoinOperator int
+type logicalJoinStrategy int
+
+type JoinNode interface {
+	LogicalNode
+}
+
+// For demonstration, we will assume a very simple selectivity estimation function.
+// In reality, you would have more complex logic with histograms, distinct counts, etc.
+func EstimateSelectivity(expr impls.Expression, tableStats TableStatistics, colStats []ColumnStatistics) float64 {
+	// Base assumption: If no expression, selectivity = 1.0 (no filtering).
+	if expr == nil {
+		return 1.0
+	}
+
+	// For now, assume uniform distribution for equality predicates:
+	// If expr is something like "col = X", selectivity ~ 1/ndistinct for that column.
+	// If it’s a range predicate (col < X), and we have histogram bounds, estimate fraction from them.
+	// If unknown, fallback to a guess like 0.1 or use no filter (1.0).
+	
+	// The Expression interface should provide some metadata:
+	// - Which column(s) are involved?
+	// - What kind of operator is it? (=, <, >, etc.)
+	// - What is the constant value compared against?
+
+	// Pseudocode for a simple eq:
+	//   if expr is col = val:
+	//       find col's ColumnStatistics
+	//       if DistinctCount > 0:
+	//           return 1.0 / float64(DistinctCount)
+	//       else:
+	//           return 1.0 // no data, assume everything
+	//
+	// For a range (col < val):
+	//   If we have histogram bounds, try to find where 'val' fits and return fraction accordingly.
+	//   If not, guess 0.5.
+
+	// This is a placeholder since we don't have the actual logic of impls.Expression:
+	return 0.1
+}
+
+//----------- Example Node Implementations ------------//
+
+// joinNodeLeaf corresponds to a base relation access.
+type joinNodeLeaf struct {
+	relation LogicalNode
+}
+
+func (n *joinNodeLeaf) EstimateCost() Cost {
+	// If this leaf is just delegating to another logical node (relation),
+	// just return that node's cost:
+	return n.relation.EstimateCost()
+}
+
+// joinNodeInternal is a nested loop join between left and right.
+// We'll assume all joins are nested loop for now.
+// Future: Change to handle hash join or merge join differently.
+type joinNodeInternal struct {
+	left     JoinNode
+	right    JoinNode
+	operator JoinOperator
+	strategy logicalJoinStrategy
+}
+
+func (n *joinNodeInternal) EstimateCost() Cost {
+	// Assume nested loop join:
+	// Cost ~ cost of left + (for each left tuple, cost of right)
+	leftCost := n.left.EstimateCost()
+	rightCost := n.right.EstimateCost()
+
+	// Estimated rows of join output depends on join selectivity.
+	// For now, assume join selectivity is a small fraction (e.g., 0.01).
+	// Future: derive from join conditions using EstimateSelectivity with combined stats.
+	joinSelectivity := 0.01 
+	outputRows := leftCost.EstimatedRows * rightCost.EstimatedRows * joinSelectivity
+
+	// For nested loop, we scan right for each left tuple (very expensive):
+	// This is a simplification. Real systems factor in indexes or early join conditions.
+	// CPU cost = left CPU + (left_rows * right_cost)
+	// We don't necessarily want to double-count rightCost startup cost. 
+	// A simplistic approach: full right cost * number_of_left_rows + left cost.
+
+	// Startup cost: just sum of children startup.
+	startupCPU := leftCost.StartupCPU + rightCost.StartupCPU
+	startupIO := leftCost.StartupIO + rightCost.StartupIO
+
+	// Per-tuple CPU: For each left row, we process all right rows:
+	perTupleCPU := leftCost.PerTupleCPU + (rightCost.Total()/rightCost.EstimatedRows)*leftCost.EstimatedRows
+	// This is a rough approximation. A more careful approach:
+	//   per left tuple, we incur the cost of scanning right completely.
+	//   So, total CPU might be left_rows*(right startup + right per_tuple * right_rows).
+	// That could get large. Let's simplify for demo purposes:
+	perTupleIO := leftCost.PerTupleIO + rightCost.PerTupleIO // similarly simplistic
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     startupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    perTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+// logicalValuesNode produces a set of constant values. 
+// Cost is minimal: no I/O, just CPU proportional to number of rows.
+type logicalValuesNode struct {
+	fields      []fields.Field
+	expressions [][]impls.Expression
+}
+
+func (n *logicalValuesNode) EstimateCost() Cost {
+	rowCount := float64(len(n.expressions))
+	return Cost{
+		EstimatedRows: rowCount,
+		PerTupleCPU:   0.0001, // trivial CPU per row
+		// no startup cost, no IO
+	}
+}
+
+// logicalAccessNode: accesses a table directly.
+// We'll estimate selectivity using table statistics and column stats.
+type logicalAccessNode struct {
+	table    impls.Table
+	filter   impls.Expression
+	order    impls.OrderExpression
+	strategy nodes.AccessStrategy
+}
+
+func (n *logicalAccessNode) EstimateCost() Cost {
+	ts := n.table.TableStatistics()
+	cs := n.table.ColumnStatistics()
+
+	sel := EstimateSelectivity(n.filter, ts, cs)
+	outputRows := sel * float64(ts.RowCount)
+
+	// Since all in memory for now, just a CPU cost proportional to rows:
+	// If no index, a full scan: O(N).
+	// If index-based and we know how to estimate that, we could reduce cost.
+	// Let's assume a full scan for now:
+	return Cost{
+		EstimatedRows: outputRows,
+		PerTupleCPU:   0.001, // scanning cost per tuple
+	}
+}
+
+// logicalProjectionNode: transforms rows by applying expressions.
+// Cost: minor CPU per row, no I/O added.
+type logicalProjectionNode struct {
+	LogicalNode
+	projection *projection.Projection
+}
+
+func (n *logicalProjectionNode) EstimateCost() Cost {
+	childCost := n.LogicalNode.EstimateCost()
+	// Assume projection costs a small CPU cost per tuple.
+	return Cost{
+		StartupCPU:    childCost.StartupCPU,
+		StartupIO:     childCost.StartupIO,
+		PerTupleCPU:   childCost.PerTupleCPU + 0.0005, // extra CPU for projection
+		PerTupleIO:    childCost.PerTupleIO,
+		EstimatedRows: childCost.EstimatedRows,
+	}
+}
+
+// logicalSelectNode: applies a filter, possibly aggregates, orders, limits.
+// Let's break it down simply:
+// - Filter: reduce rows by some selectivity (we might have to re-estimate selectivity here if filter != child's filter)
+// - Projection: small CPU cost
+// - Grouping (Hash Aggregation): Has a startup cost (building a hash table) + per tuple cost
+// - Ordering: in-memory sort cost O(N log N) CPU if needed
+// For now, assume no disk and that we can handle all in memory.
+type logicalSelectNode struct {
+	LogicalNode
+	projection       *projection.Projection
+	groupExpressions []impls.Expression // for aggregation
+	filter           impls.Expression
+	order            impls.OrderExpression
+	limit            *int
+	offset           *int
+}
+
+func (n *logicalSelectNode) EstimateCost() Cost {
+	childCost := n.LogicalNode.EstimateCost()
+
+	// Recalculate selectivity for the new filter if present
+	// We might chain filters: child's cost may have its own filter, 
+	// but for demonstration, let's just assume child's estimated_rows is our input.
+	inputRows := childCost.EstimatedRows
+
+	ts := TableStatistics{RowCount: int(inputRows)} // Fake stats: now inputRows is "total"
+	var cs []ColumnStatistics // If we track column stats at a higher level, we should pass them here.
+
+	sel := EstimateSelectivity(n.filter, ts, cs)
+	outputRows := inputRows * sel
+
+	// Projection cost:
+	perTupleCPU := childCost.PerTupleCPU
+	if n.projection != nil {
+		perTupleCPU += 0.0005
+	}
+
+	// Grouping (Hash Aggregation):
+	// Assume building a hash table is startup CPU cost proportional to inputRows:
+	startupCPU := childCost.StartupCPU
+	if len(n.groupExpressions) > 0 {
+		// Hash aggregation startup cost (build hash table)
+		startupCPU += 0.01 * inputRows
+		// Per tuple after grouping might be less if it reduces rows, but we’ll assume outputRows is post-group:
+	}
+
+	// Ordering:
+	if n.order != nil {
+		// In-memory sort O(N log N):
+		// CPU cost ~ outputRows * log2(outputRows)
+		perTupleCPU += (math.Log2(outputRows + 1) * 0.0005) // small cost factor
+	}
+
+	// Limit/offset: reduce outputRows if limit < outputRows
+	if n.limit != nil && float64(*n.limit) < outputRows {
+		outputRows = float64(*n.limit)
+	}
+	// offset reduces the number of returned rows but still costs CPU to skip them
+	// We'll still pay cost for offset rows, but final returned rows are fewer.
+	// Just keep outputRows as the final returned rows.
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     childCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    childCost.PerTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+// logicalUnionNode: union of two children.
+// If distinct = true, we might have to do a hash set to remove duplicates => more startup CPU.
+type logicalUnionNode struct {
+	left     LogicalNode
+	right    LogicalNode
+	fields   []fields.Field
+	distinct bool
+}
+
+func (n *logicalUnionNode) EstimateCost() Cost {
+	leftCost := n.left.EstimateCost()
+	rightCost := n.right.EstimateCost()
+
+	outputRows := leftCost.EstimatedRows + rightCost.EstimatedRows
+	startupCPU := leftCost.StartupCPU + rightCost.StartupCPU
+	perTupleCPU := leftCost.PerTupleCPU + rightCost.PerTupleCPU
+	perTupleIO := leftCost.PerTupleIO + rightCost.PerTupleIO
+
+	if n.distinct {
+		// Hash table to remove duplicates
+		startupCPU += 0.01 * (leftCost.EstimatedRows + rightCost.EstimatedRows)
+		// After distinct, outputRows might be smaller. Without stats, just guess 80% unique.
+		outputRows = outputRows * 0.8
+	}
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     leftCost.StartupIO + rightCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    perTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+// logicalCombinationNode: intersection or difference (like INTERSECT, EXCEPT).
+// If distinct = true, also need hashing.
+type logicalCombinationNode struct {
+	left             LogicalNode
+	right            LogicalNode
+	fields           []fields.Field
+	groupedRowFilter nodes.GroupedRowFilterFunc
+	distinct         bool
+}
+
+func (n *logicalCombinationNode) EstimateCost() Cost {
+	leftCost := n.left.EstimateCost()
+	rightCost := n.right.EstimateCost()
+
+	startupCPU := leftCost.StartupCPU + rightCost.StartupCPU
+	perTupleCPU := leftCost.PerTupleCPU + rightCost.PerTupleCPU
+	perTupleIO := leftCost.PerTupleIO + rightCost.PerTupleIO
+
+	// Estimate outputRows: if intersection, might be smaller than each input.
+	// Without stats, guess some fraction:
+	outputRows := math.Min(leftCost.EstimatedRows, rightCost.EstimatedRows) * 0.5
+
+	if n.distinct {
+		// hashing to remove duplicates
+		startupCPU += 0.01 * (leftCost.EstimatedRows + rightCost.EstimatedRows)
+		// intersection distinct might be smaller, guess 50% again:
+		outputRows = outputRows * 0.5
+	}
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     leftCost.StartupIO + rightCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    perTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+// logicalInsertNode: inserting rows into a table.
+// Cost: proportional to number of rows inserted + small startup CPU.
+type logicalInsertNode struct {
+	plan.LogicalNode
+	table       impls.Table
+	columnNames []string
+	returning   *projection.Projection
+}
+
+func (n *logicalInsertNode) EstimateCost() Cost {
+	childCost := n.LogicalNode.EstimateCost()
+	// Insert cost: scanning child's result + inserting rows.
+	// Inserting might be O(1) per tuple in memory.
+	perTupleCPU := childCost.PerTupleCPU + 0.001 // extra for insertion
+	startupCPU := childCost.StartupCPU + 0.01    // small overhead for insert setup
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     childCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    childCost.PerTupleIO,
+		EstimatedRows: childCost.EstimatedRows, // same as input to insert
+	}
+}
+
+// logicalUpdateNode: updating rows. Similar to insert/delete combo.
+type logicalUpdateNode struct {
+	plan.LogicalNode
+	table          impls.Table
+	aliasName      string
+	setExpressions []mutation.SetExpression
+	filter         impls.Expression
+	returning      *projection.Projection
+}
+
+func (n *logicalUpdateNode) EstimateCost() Cost {
+	childCost := n.LogicalNode.EstimateCost()
+	// Re-estimate selectivity for the filter if needed:
+	ts := TableStatistics{RowCount: int(childCost.EstimatedRows)}
+	var cs []ColumnStatistics
+	sel := EstimateSelectivity(n.filter, ts, cs)
+	outputRows := childCost.EstimatedRows * sel
+
+	// Updates: reading rows + rewriting them.
+	// Assume per tuple CPU is small for the actual update.
+	perTupleCPU := childCost.PerTupleCPU + 0.002
+	startupCPU := childCost.StartupCPU + 0.01
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     childCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    childCost.PerTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+// logicalDeleteNode: deleting rows.
+type logicalDeleteNode struct {
+	plan.LogicalNode
+	table     impls.Table
+	aliasName string
+	filter    impls.Expression
+	returning *projection.Projection
+}
+
+func (n *logicalDeleteNode) EstimateCost() Cost {
+	childCost := n.LogicalNode.EstimateCost()
+	// Re-estimate selectivity for filter if needed:
+	ts := TableStatistics{RowCount: int(childCost.EstimatedRows)}
+	var cs []ColumnStatistics
+	sel := EstimateSelectivity(n.filter, ts, cs)
+	outputRows := childCost.EstimatedRows * sel
+
+	// Deletions: small CPU cost per tuple.
+	perTupleCPU := childCost.PerTupleCPU + 0.001
+	startupCPU := childCost.StartupCPU
+
+	return Cost{
+		StartupCPU:    startupCPU,
+		StartupIO:     childCost.StartupIO,
+		PerTupleCPU:   perTupleCPU,
+		PerTupleIO:    childCost.PerTupleIO,
+		EstimatedRows: outputRows,
+	}
+}
+
+//-------------------------------------------//
+// Extensible design for Selectivity:
+// 
+// In this example, we placed a simple `EstimateSelectivity()` function.
+// In reality, you'd have a separate module that can handle various predicate types.
+// The Expression interface should expose methods like:
+//    - InvolvedColumns() []ColumnRef
+//    - Operator() OperatorType
+//    - ConstantValue() interface{}
+// so that selectivity estimation can rely on column stats and possibly histograms.
+//
+// Adding MCV lists in the future:
+// Just modify EstimateSelectivity function to check if the tested value is in an MCV list.
+// If so, adjust selectivity accordingly. Since all nodes call this one function
+// (or similar shared functionality), you won't need to modify each node's code.
+//
+// This approach centralizes selectivity logic and ensures future improvements
+// (like better histograms, MCV lists, null fraction handling) only require changes
+// in one place.
+//-------------------------------------------//
+
+// Example interfaces and structs just for reference.
+// These would live elsewhere in your code:
+
+// Example Expression interface:
+package impls
+
+type Expression interface {
+	// Methods to identify columns, operator, and constants
+	// e.g.:
+	// OperatorType() OperatorType
+	// ColumnsInvolved() []string
+	// ConstantValues() []interface{}
+	// ...
+}
+
+// Example Table interface:
+type Table interface {
+	Name() string
+	TableStatistics() TableStatistics
+	ColumnStatistics() []ColumnStatistics
+}
+
+// Example OrderExpression interface:
+type OrderExpression interface{}
+
+// Example fields, constraints, indexes, etc.:
+package fields
+
+type Field struct {
+	Name string
+	Type string
+}
+
+// Example nodes, strategies:
+package nodes
+
+type AccessStrategy int
+type GroupedRowFilterFunc func([][]interface{}) bool
+
+// Example projection, mutation:
+package projection
+
+type Projection struct {
+	// details of projection
+}
+
+package mutation
+
+type SetExpression struct {
+	// details of set expression for update
+}
+
+// Table statistics structs (already given):
+type TableStatistics struct {
+	RowCount int
+}
+
+type ColumnStatistics struct {
+	NullCount       int
+	DistinctCount   int
+	HistogramBounds []any
+}

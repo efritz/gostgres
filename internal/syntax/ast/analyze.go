@@ -13,8 +13,13 @@ type AnalyzeBuilder struct {
 }
 
 func (b *AnalyzeBuilder) Resolve(ctx *impls.NodeResolutionContext) error {
+	tableNames := b.TableNames
+	if len(tableNames) == 0 {
+		tableNames = ctx.Catalog().Tables.Keys()
+	}
+
 	var tables []impls.Table
-	for _, name := range b.TableNames {
+	for _, name := range tableNames {
 		table, ok := ctx.Catalog().Tables.Get(name)
 		if !ok {
 			return fmt.Errorf("unknown table %q", name)

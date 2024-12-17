@@ -26,3 +26,12 @@ func (c Catalog[T]) Get(name string) (T, bool) {
 func (c Catalog[T]) Set(name string, entry T) {
 	c.entries[name] = entry
 }
+
+func (c Catalog[T]) Keys() []string {
+	var keys []string
+	for key := range c.entries {
+		keys = append(keys, key)
+	}
+
+	return keys
+}

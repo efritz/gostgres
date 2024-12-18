@@ -15,7 +15,7 @@ Plan:
  project {email}
     order by s.email
         project {email} into s.*
-            combination
+            except
                 project {email}
                     table scan of customer
             with

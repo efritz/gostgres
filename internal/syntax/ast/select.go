@@ -7,6 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/combination"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -140,6 +141,7 @@ func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) er
 		}
 
 		if len(c.Select.TableFields()) != len(b.fields) {
+			// TODO - check types as well
 			return fmt.Errorf("selects in combination must have the same number of columns")
 		}
 	}
@@ -172,11 +174,11 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			var factory func(left, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error)
 			switch c.Type {
 			case tokens.TokenTypeUnion:
-				factory = plan.NewUnion
+				factory = combination.NewUnion
 			case tokens.TokenTypeIntersect:
-				factory = plan.NewIntersect
+				factory = combination.NewIntersect
 			case tokens.TokenTypeExcept:
-				factory = plan.NewExcept
+				factory = combination.NewExcept
 			}
 
 			right, err := c.Select.Build()

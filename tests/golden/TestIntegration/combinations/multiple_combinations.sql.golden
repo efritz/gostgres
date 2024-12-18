@@ -29,7 +29,7 @@ Plan:
                                   query plan
 ------------------------------------------------------------------------------
  order by actor.first_name, actor.last_name
-    combination
+    except
         project {first_name, last_name}
             btree index scan of actor via actor_pkey
                 index cond: actor.actor_id <= 10

@@ -1,4 +1,4 @@
-package plan
+package combination
 
 import (
 	"fmt"
@@ -6,19 +6,21 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
 
 type logicalUnionNode struct {
-	left     LogicalNode
-	right    LogicalNode
+	left     plan.LogicalNode
+	right    plan.LogicalNode
 	fields   []fields.Field
 	distinct bool
 }
 
-func NewUnion(left LogicalNode, right LogicalNode, distinct bool) (LogicalNode, error) {
+func NewUnion(left plan.LogicalNode, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error) {
 	leftFields := left.Fields()
 	rightFields := right.Fields()
 
@@ -61,8 +63,8 @@ func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 }
 
-func (n *logicalUnionNode) EstimateCost() Cost {
-	return Cost{} // TODO
+func (n *logicalUnionNode) EstimateCost() plan.Cost {
+	return plan.Cost{} // TODO
 }
 
 func (n *logicalUnionNode) Filter() impls.Expression {
@@ -73,5 +75,9 @@ func (n *logicalUnionNode) Ordering() impls.OrderExpression { return nil }
 func (n *logicalUnionNode) SupportsMarkRestore() bool       { return false }
 
 func (n *logicalUnionNode) Build() nodes.Node {
-	return nodes.NewUnion(n.left.Build(), n.right.Build(), n.fields, n.distinct)
+	if !n.distinct {
+		return combination.NewAppend(n.left.Build(), n.right.Build(), n.fields)
+	}
+
+	return combination.NewUnion(n.left.Build(), n.right.Build(), n.fields)
 }

@@ -1,6 +1,7 @@
-package nodes
+package combination
 
 import (
+	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -10,18 +11,16 @@ import (
 )
 
 type unionNode struct {
-	left     Node
-	right    Node
-	fields   []fields.Field
-	distinct bool
+	left   nodes.Node
+	right  nodes.Node
+	fields []fields.Field
 }
 
-func NewUnion(left Node, right Node, fields []fields.Field, distinct bool) Node {
+func NewUnion(left nodes.Node, right nodes.Node, fields []fields.Field) nodes.Node {
 	return &unionNode{
-		left:     left,
-		right:    right,
-		fields:   fields,
-		distinct: distinct,
+		left:   left,
+		right:  right,
+		fields: fields,
 	}
 }
 
@@ -39,7 +38,7 @@ func (n *unionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 	mark := func(row rows.Row) bool {
 		key := utils.HashSlice(row.Values)
 		if _, ok := hash[key]; ok {
-			return !n.distinct
+			return false
 		}
 
 		hash[key] = struct{}{}

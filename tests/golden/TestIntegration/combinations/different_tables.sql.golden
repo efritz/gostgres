@@ -23,11 +23,11 @@ Plan:
                         query plan
 ----------------------------------------------------------
  order by actor.first_name, actor.last_name, actor
-    union
+    append
         project {first_name, last_name, actor as source}
             btree index scan of actor via actor_pkey
                 index cond: actor.actor_id < 5
-    with
+    and
         project {first_name, last_name, staff as source}
             table scan of staff
 (1 rows)

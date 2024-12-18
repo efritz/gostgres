@@ -17,18 +17,8 @@ type table struct {
 	primaryKey       impls.BaseIndex
 	indexes          []impls.BaseIndex
 	constraints      []impls.Constraint
-	tableStatistics  TableStatistics
-	columnStatistics []ColumnStatistics
-}
-
-type TableStatistics struct {
-	RowCount int
-}
-
-type ColumnStatistics struct {
-	NullCount       int
-	DistinctCount   int
-	HistogramBounds []any
+	tableStatistics  impls.TableStatistics
+	columnStatistics []impls.ColumnStatistics
 }
 
 var _ impls.Table = &table{}
@@ -45,8 +35,8 @@ func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 		name:             name,
 		fields:           tableFields,
 		rows:             map[int64]rows.Row{},
-		tableStatistics:  TableStatistics{},
-		columnStatistics: make([]ColumnStatistics, len(tableFields)),
+		tableStatistics:  impls.TableStatistics{},
+		columnStatistics: make([]impls.ColumnStatistics, len(tableFields)),
 	}
 }
 
@@ -171,6 +161,10 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 	return fullRow, true, nil
 }
 
+func (t *table) Statistics() (impls.TableStatistics, []impls.ColumnStatistics) {
+	return t.tableStatistics, t.columnStatistics
+}
+
 func (t *table) Analyze() error {
 	t.analyzeTable()
 
@@ -182,7 +176,7 @@ func (t *table) Analyze() error {
 }
 
 func (t *table) analyzeTable() {
-	t.tableStatistics = TableStatistics{
+	t.tableStatistics = impls.TableStatistics{
 		RowCount: len(t.rows),
 	}
 }
@@ -203,7 +197,7 @@ func (t *table) analyzeColumn(columnIndex int) {
 		}
 	}
 
-	t.columnStatistics[columnIndex] = ColumnStatistics{
+	t.columnStatistics[columnIndex] = impls.ColumnStatistics{
 		NullCount:       nullCount,
 		DistinctCount:   len(nonNilValueSet),
 		HistogramBounds: t.calculateHistogramBounds(nonNilValues),

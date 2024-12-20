@@ -8,8 +8,6 @@ import (
 
 type AccessStrategy interface {
 	Serialize(w serialization.IndentWriter)
-	Filter() impls.Expression
-	Ordering() impls.OrderExpression
 	Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 }
 

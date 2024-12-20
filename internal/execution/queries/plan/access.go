@@ -13,7 +13,7 @@ type logicalAccessNode struct {
 	table    impls.Table
 	filter   impls.Expression
 	order    impls.OrderExpression
-	strategy nodes.AccessStrategy
+	strategy logicalAccessStrategy
 }
 
 func NewAccess(table impls.Table) LogicalNode {
@@ -80,7 +80,7 @@ func (n *logicalAccessNode) SupportsMarkRestore() bool {
 }
 
 func (n *logicalAccessNode) Build() nodes.Node {
-	node := nodes.NewAccess(n.strategy)
+	node := nodes.NewAccess(n.strategy.Build())
 
 	if n.filter != nil {
 		node = nodes.NewFilter(node, n.filter)
@@ -96,20 +96,21 @@ func selectAccessStrategy(
 	table impls.Table,
 	filterExpression impls.Expression,
 	orderExpression impls.OrderExpression,
-) nodes.AccessStrategy {
-	var candidates []nodes.AccessStrategy
+) logicalAccessStrategy {
+	var candidates []logicalAccessStrategy
 	for _, index := range table.Indexes() {
 		if index, opts, ok := indexes.CanSelectHashIndex(index, filterExpression); ok {
-			candidates = append(candidates, access.NewIndexAccessStrategy(table, index, opts))
+			candidates = append(candidates, &logicalIndexAccessStrategy[indexes.HashIndexScanOptions]{table: table, index: index, opts: opts})
 		}
 
 		if index, opts, ok := indexes.CanSelectBtreeIndex(index, filterExpression, orderExpression); ok {
-			candidates = append(candidates, access.NewIndexAccessStrategy(table, index, opts))
+			candidates = append(candidates, &logicalIndexAccessStrategy[indexes.BtreeIndexScanOptions]{table: table, index: index, opts: opts})
 		}
 	}
 
+	// TODO - use actual costs here
 	maxScore := 0
-	bestStrategy := access.NewTableAccessStrategy(table)
+	var bestStrategy logicalAccessStrategy = &logicalTableAccessStrategy{table: table}
 
 	for _, index := range candidates {
 		indexCost := 0
@@ -134,4 +135,57 @@ func selectAccessStrategy(
 	}
 
 	return bestStrategy
+}
+
+//
+//
+
+type logicalAccessStrategy interface {
+	Filter() impls.Expression
+	Ordering() impls.OrderExpression
+	EstimateCost() impls.NodeCost
+	Build() nodes.AccessStrategy
+}
+
+//
+//
+
+type logicalTableAccessStrategy struct {
+	table impls.Table
+}
+
+func (s *logicalTableAccessStrategy) Filter() impls.Expression {
+	return nil
+}
+
+func (s *logicalTableAccessStrategy) Ordering() impls.OrderExpression {
+	return nil
+}
+
+func (s *logicalTableAccessStrategy) Build() nodes.AccessStrategy {
+	return access.NewTableAccessStrategy(s.table)
+}
+
+//
+//
+
+type logicalIndexAccessStrategy[O impls.ScanOptions] struct {
+	table impls.Table
+	index impls.Index[O]
+	opts  O
+}
+
+func (s *logicalIndexAccessStrategy[O]) Ordering() impls.OrderExpression {
+	return s.index.Ordering(s.opts)
+}
+
+func (s *logicalIndexAccessStrategy[O]) Filter() impls.Expression {
+	filterExpression := s.index.Filter()
+	condition := s.index.Condition(s.opts)
+
+	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
+}
+
+func (s *logicalIndexAccessStrategy[O]) Build() nodes.AccessStrategy {
+	return access.NewIndexAccessStrategy(s.table, s.index, s.opts, s.Filter())
 }

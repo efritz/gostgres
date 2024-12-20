@@ -64,7 +64,5 @@ func (n *logicalDeleteNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	node = mutation.NewDelete(node, n.table, n.aliasName)
-	node = nodes.NewProjection(node, n.returning)
-	return node
+	return mutation.NewDelete(node, n.table, n.aliasName, n.returning)
 }

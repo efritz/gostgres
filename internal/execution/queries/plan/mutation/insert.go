@@ -47,8 +47,5 @@ func (n *logicalInsertNode) EstimateCost() plan.Cost {
 }
 
 func (n *logicalInsertNode) Build() nodes.Node {
-	node := n.LogicalNode.Build()
-	node = mutation.NewInsert(node, n.table, n.columnNames)
-	node = nodes.NewProjection(node, n.returning)
-	return node
+	return mutation.NewInsert(n.LogicalNode.Build(), n.table, n.columnNames, n.returning)
 }

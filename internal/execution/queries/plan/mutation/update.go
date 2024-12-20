@@ -67,7 +67,5 @@ func (n *logicalUpdateNode) Build() nodes.Node {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	node = mutation.NewUpdate(node, n.table, n.aliasName, n.setExpressions)
-	node = nodes.NewProjection(node, n.returning)
-	return node
+	return mutation.NewUpdate(node, n.table, n.aliasName, n.setExpressions, n.returning)
 }

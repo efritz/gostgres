@@ -2,7 +2,7 @@ package nodes
 
 import (
 	"github.com/efritz/gostgres/internal/execution/projection"
-	"github.com/efritz/gostgres/internal/execution/queries"
+	projectionHelpers "github.com/efritz/gostgres/internal/execution/queries/nodes/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -34,8 +34,6 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 		return nil, err
 	}
 
-	aliases := n.projection.Aliases()
-
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Projection")
 
@@ -44,16 +42,6 @@ func (n *projectionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, e
 			return rows.Row{}, err
 		}
 
-		values := make([]any, 0, len(aliases))
-		for _, field := range aliases {
-			value, err := queries.Evaluate(ctx, field.Expression, row)
-			if err != nil {
-				return rows.Row{}, err
-			}
-
-			values = append(values, value)
-		}
-
-		return rows.NewRow(n.projection.Fields(), values)
+		return projectionHelpers.Project(ctx, row, n.projection)
 	}), nil
 }

@@ -3,7 +3,9 @@ package mutation
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	projectionHelpers "github.com/efritz/gostgres/internal/execution/queries/nodes/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -15,24 +17,50 @@ type insertNode struct {
 	nodes.Node
 	table       impls.Table
 	columnNames []string
+	projection  *projection.Projection
 }
 
-func NewInsert(node nodes.Node, table impls.Table, columnNames []string) nodes.Node {
+func NewInsert(node nodes.Node, table impls.Table, columnNames []string, projection *projection.Projection) nodes.Node {
 	return &insertNode{
 		Node:        node,
 		table:       table,
 		columnNames: columnNames,
+		projection:  projection,
 	}
 }
 
 func (n *insertNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("insert into %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
+
+	if n.projection != nil {
+		w.WritefLine("returning %s", n.projection)
+		n.Node.Serialize(w.Indent())
+	}
 }
 
 func (n *insertNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Insert scanner")
 
+	insertedRows, err := n.insertRows(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return scan.RowScannerFunc(func() (rows.Row, error) {
+		ctx.Log("Scanning Insert")
+
+		if len(insertedRows) != 0 {
+			return rows.Row{}, scan.ErrNoRows
+		}
+
+		row := insertedRows[0]
+		insertedRows = insertedRows[1:]
+		return projectionHelpers.Project(ctx, row, n.projection)
+	}), nil
+}
+
+func (n *insertNode) insertRows(ctx impls.ExecutionContext) ([]rows.Row, error) {
 	scanner, err := n.Node.Scanner(ctx)
 	if err != nil {
 		return nil, err
@@ -50,31 +78,38 @@ func (n *insertNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 		fields = append(fields, field.Field)
 	}
 
-	return scan.RowScannerFunc(func() (rows.Row, error) {
-		ctx.Log("Scanning Insert")
-
+	var insertedRows []rows.Row
+	for {
 		row, err := scanner.Scan()
 		if err != nil {
-			return rows.Row{}, err
+			if err == scan.ErrNoRows {
+				break
+			}
+
+			return nil, err
 		}
 
 		values, err := n.prepareValuesForRow(ctx, row, nonInternalFields)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
 		insertedRow, err := rows.NewRow(fields, values)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
 		insertedRow, err = n.table.Insert(ctx, insertedRow)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
-		return insertedRow, nil
-	}), nil
+		if n.projection != nil {
+			insertedRows = append(insertedRows, insertedRow)
+		}
+	}
+
+	return insertedRows, nil
 }
 
 func (n *insertNode) prepareValuesForRow(ctx impls.ExecutionContext, row rows.Row, fields []impls.TableField) ([]any, error) {

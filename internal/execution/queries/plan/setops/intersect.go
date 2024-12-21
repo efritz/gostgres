@@ -62,7 +62,10 @@ func (n *logicalIntersectNode) Optimize(ctx impls.OptimizationContext) {
 	n.left.Optimize(ctx)
 	n.right.Optimize(ctx)
 
-	// TODO - flip sides if one side is much smaller than the other
+	// If left is smaller than right, swap order so we materialize the smaller relation
+	if n.left.EstimateCost().EstimatedRows < n.right.EstimateCost().EstimatedRows {
+		n.left, n.right = n.right, n.left
+	}
 }
 
 func (n *logicalIntersectNode) EstimateCost() impls.NodeCost {

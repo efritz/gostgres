@@ -65,14 +65,7 @@ func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {
 }
 
 func (n *logicalUnionNode) EstimateCost() impls.NodeCost {
-	selectivity := 1.0 // TODO - estimate
-
-	return cost.EstimateUnionCost(
-		n.left.EstimateCost(),
-		n.right.EstimateCost(),
-		selectivity,
-		n.distinct,
-	)
+	return cost.EstimateUnionCost(n.left.EstimateCost(), n.right.EstimateCost(), n.distinct)
 }
 
 func (n *logicalUnionNode) Filter() impls.Expression {

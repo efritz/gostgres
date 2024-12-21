@@ -1,12 +1,13 @@
-package combination
+package setops
 
 import (
 	"fmt"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
-	"github.com/efritz/gostgres/internal/execution/queries/nodes/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/setops"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -60,10 +61,12 @@ func (n *logicalIntersectNode) AddOrder(ctx impls.OptimizationContext, orderExpr
 func (n *logicalIntersectNode) Optimize(ctx impls.OptimizationContext) {
 	n.left.Optimize(ctx)
 	n.right.Optimize(ctx)
+
+	// TODO - flip sides if one side is much smaller than the other
 }
 
-func (n *logicalIntersectNode) EstimateCost() plan.Cost {
-	return plan.Cost{} // TODO
+func (n *logicalIntersectNode) EstimateCost() impls.NodeCost {
+	return cost.EstimateIntersectCost(n.left.EstimateCost(), n.right.EstimateCost(), n.distinct)
 }
 
 func (n *logicalIntersectNode) Filter() impls.Expression {
@@ -74,5 +77,5 @@ func (n *logicalIntersectNode) Ordering() impls.OrderExpression { return nil }
 func (n *logicalIntersectNode) SupportsMarkRestore() bool       { return false }
 
 func (n *logicalIntersectNode) Build() nodes.Node {
-	return combination.NewIntersect(n.left.Build(), n.right.Build(), n.fields, n.distinct)
+	return setops.NewIntersect(n.left.Build(), n.right.Build(), n.fields, n.distinct)
 }

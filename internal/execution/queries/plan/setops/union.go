@@ -1,4 +1,4 @@
-package combination
+package setops
 
 import (
 	"fmt"
@@ -6,8 +6,9 @@ import (
 
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
-	"github.com/efritz/gostgres/internal/execution/queries/nodes/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/setops"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -63,8 +64,15 @@ func (n *logicalUnionNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 }
 
-func (n *logicalUnionNode) EstimateCost() plan.Cost {
-	return plan.Cost{} // TODO
+func (n *logicalUnionNode) EstimateCost() impls.NodeCost {
+	selectivity := 1.0 // TODO - estimate
+
+	return cost.EstimateUnionCost(
+		n.left.EstimateCost(),
+		n.right.EstimateCost(),
+		selectivity,
+		n.distinct,
+	)
 }
 
 func (n *logicalUnionNode) Filter() impls.Expression {
@@ -76,8 +84,8 @@ func (n *logicalUnionNode) SupportsMarkRestore() bool       { return false }
 
 func (n *logicalUnionNode) Build() nodes.Node {
 	if !n.distinct {
-		return combination.NewAppend(n.left.Build(), n.right.Build(), n.fields)
+		return setops.NewAppend(n.left.Build(), n.right.Build(), n.fields)
 	}
 
-	return combination.NewUnion(n.left.Build(), n.right.Build(), n.fields)
+	return setops.NewUnion(n.left.Build(), n.right.Build(), n.fields)
 }

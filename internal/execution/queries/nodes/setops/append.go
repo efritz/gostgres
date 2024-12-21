@@ -1,4 +1,4 @@
-package combination
+package setops
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"

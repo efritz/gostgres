@@ -11,10 +11,11 @@ import (
 )
 
 type hashIndex struct {
-	name       string
-	tableName  string
-	expression impls.Expression
-	entries    map[uint64][]hashItem
+	name            string
+	tableName       string
+	expression      impls.Expression
+	entries         map[uint64][]hashItem
+	indexStatistics impls.IndexStatistics
 }
 
 type hashItem struct {
@@ -112,4 +113,16 @@ func (i *hashIndex) extractTIDAndValueFromRow(row rows.Row) (int64, any, error) 
 	}
 
 	return tid, value, nil
+}
+
+func (i *hashIndex) Statistics() impls.IndexStatistics {
+	return i.indexStatistics
+}
+
+func (i *hashIndex) Analyze() error {
+	i.indexStatistics = impls.IndexStatistics{
+		RowCount: len(i.entries),
+	}
+
+	return nil
 }

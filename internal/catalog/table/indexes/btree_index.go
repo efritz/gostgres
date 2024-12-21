@@ -11,11 +11,12 @@ import (
 )
 
 type btreeIndex struct {
-	name        string
-	tableName   string
-	unique      bool
-	expressions []impls.ExpressionWithDirection
-	root        *btreeNode
+	name            string
+	tableName       string
+	unique          bool
+	expressions     []impls.ExpressionWithDirection
+	root            *btreeNode
+	indexStatistics impls.IndexStatistics
 }
 
 type btreeNode struct {
@@ -301,4 +302,33 @@ func (i *btreeIndex) extractTIDAndValuesFromRow(row rows.Row) (int64, []any, err
 	}
 
 	return tid, values, nil
+}
+
+func (i *btreeIndex) Statistics() impls.IndexStatistics {
+	return i.indexStatistics
+}
+
+func (i *btreeIndex) Analyze() error {
+	count := 0
+
+	stack := []btreeNode{*i.root}
+	for len(stack) > 0 {
+		count++
+		node := stack[0]
+		stack = stack[1:]
+
+		if node.left != nil {
+			stack = append(stack, *node.left)
+		}
+
+		if node.right != nil {
+			stack = append(stack, *node.right)
+		}
+	}
+
+	i.indexStatistics = impls.IndexStatistics{
+		RowCount: count,
+	}
+
+	return nil
 }

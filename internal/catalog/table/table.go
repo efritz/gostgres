@@ -168,8 +168,14 @@ func (t *table) Statistics() (impls.TableStatistics, []impls.ColumnStatistics) {
 func (t *table) Analyze() error {
 	t.analyzeTable()
 
-	for i := range t.fields {
-		t.analyzeColumn(i)
+	for columnIndex := range t.fields {
+		t.analyzeColumn(columnIndex)
+	}
+
+	for _, index := range t.Indexes() {
+		if err := index.Analyze(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -197,10 +203,20 @@ func (t *table) analyzeColumn(columnIndex int) {
 		}
 	}
 
+	nullFraction := 0.0
+	if total := len(t.rows); total > 0 {
+		nullFraction = float64(nullCount) / float64(total)
+	}
+
+	inverseDistinctFraction := 0.0
+	if distinctCount := len(nonNilValueSet); distinctCount > 0 {
+		inverseDistinctFraction = 1 / float64(distinctCount)
+	}
+
 	t.columnStatistics[columnIndex] = impls.ColumnStatistics{
-		NullCount:       nullCount,
-		DistinctCount:   len(nonNilValueSet),
-		HistogramBounds: t.calculateHistogramBounds(nonNilValues),
+		InverseNullProportion:   nullFraction,
+		InverseDistinctFraction: inverseDistinctFraction,
+		HistogramBounds:         t.calculateHistogramBounds(nonNilValues),
 	}
 }
 

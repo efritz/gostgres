@@ -5,7 +5,11 @@ type TableStatistics struct {
 }
 
 type ColumnStatistics struct {
-	NullCount       int
-	DistinctCount   int
-	HistogramBounds []any
+	InverseNullProportion   float64
+	InverseDistinctFraction float64
+	HistogramBounds         []any
+}
+
+type IndexStatistics struct {
+	RowCount int
 }

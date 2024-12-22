@@ -11,14 +11,13 @@ import (
 )
 
 type table struct {
-	name             string
-	fields           []impls.TableField
-	rows             map[int64]rows.Row
-	primaryKey       impls.BaseIndex
-	indexes          []impls.BaseIndex
-	constraints      []impls.Constraint
-	tableStatistics  impls.TableStatistics
-	columnStatistics []impls.ColumnStatistics
+	name            string
+	fields          []impls.TableField
+	rows            map[int64]rows.Row
+	primaryKey      impls.BaseIndex
+	indexes         []impls.BaseIndex
+	constraints     []impls.Constraint
+	tableStatistics impls.TableStatistics
 }
 
 var _ impls.Table = &table{}
@@ -32,11 +31,10 @@ func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	}
 
 	return &table{
-		name:             name,
-		fields:           tableFields,
-		rows:             map[int64]rows.Row{},
-		tableStatistics:  impls.TableStatistics{},
-		columnStatistics: make([]impls.ColumnStatistics, len(tableFields)),
+		name:            name,
+		fields:          tableFields,
+		rows:            map[int64]rows.Row{},
+		tableStatistics: impls.TableStatistics{},
 	}
 }
 
@@ -161,15 +159,18 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 	return fullRow, true, nil
 }
 
-func (t *table) Statistics() (impls.TableStatistics, []impls.ColumnStatistics) {
-	return t.tableStatistics, t.columnStatistics
+func (t *table) Statistics() impls.TableStatistics {
+	return t.tableStatistics
 }
 
 func (t *table) Analyze() error {
-	t.analyzeTable()
+	tableStats := impls.TableStatistics{
+		RowCount:         len(t.rows),
+		ColumnStatistics: make([]impls.ColumnStatistics, len(t.fields)),
+	}
 
 	for columnIndex := range t.fields {
-		t.analyzeColumn(columnIndex)
+		tableStats.ColumnStatistics[columnIndex] = t.analyzeColumn(columnIndex)
 	}
 
 	for _, index := range t.Indexes() {
@@ -178,16 +179,11 @@ func (t *table) Analyze() error {
 		}
 	}
 
+	t.tableStatistics = tableStats
 	return nil
 }
 
-func (t *table) analyzeTable() {
-	t.tableStatistics = impls.TableStatistics{
-		RowCount: len(t.rows),
-	}
-}
-
-func (t *table) analyzeColumn(columnIndex int) {
+func (t *table) analyzeColumn(columnIndex int) impls.ColumnStatistics {
 	nullCount := 0
 	nonNilValueSet := map[any]struct{}{}
 	nonNilValues := make([]any, 0, len(t.rows))
@@ -213,7 +209,8 @@ func (t *table) analyzeColumn(columnIndex int) {
 		inverseDistinctFraction = 1 / float64(distinctCount)
 	}
 
-	t.columnStatistics[columnIndex] = impls.ColumnStatistics{
+	return impls.ColumnStatistics{
+		Field:                   t.fields[columnIndex].Field,
 		InverseNullProportion:   nullFraction,
 		InverseDistinctFraction: inverseDistinctFraction,
 		HistogramBounds:         t.calculateHistogramBounds(nonNilValues),

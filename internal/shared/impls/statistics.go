@@ -8,10 +8,18 @@ type TableStatistics struct {
 }
 
 type ColumnStatistics struct {
-	Field                   fields.Field
-	InverseNullProportion   float64
-	InverseDistinctFraction float64
-	HistogramBounds         []any
+	Field            fields.Field
+	NullFraction     float64
+	DistinctFraction float64
+	MinValue         any
+	MaxValue         any
+	MostCommonValues []MostCommonValue
+	HistogramBounds  []any
+}
+
+type MostCommonValue struct {
+	Value     any
+	Frequency float64
 }
 
 type IndexStatistics struct {

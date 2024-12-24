@@ -185,8 +185,7 @@ func (t *table) Analyze() error {
 
 func (t *table) analyzeColumn(columnIndex int) impls.ColumnStatistics {
 	nullCount := 0
-	nonNilValueSet := map[any]struct{}{}
-	nonNilValues := make([]any, 0, len(t.rows))
+	countsByValue := map[any]int{}
 
 	for _, row := range t.rows {
 		value := row.Values[columnIndex]
@@ -194,37 +193,93 @@ func (t *table) analyzeColumn(columnIndex int) impls.ColumnStatistics {
 		if value == nil {
 			nullCount++
 		} else {
-			nonNilValueSet[value] = struct{}{}
-			nonNilValues = append(nonNilValues, value)
+			countsByValue[value] = countsByValue[value] + 1
+		}
+	}
+
+	mostCommonValues := t.calculateMostCommonValues(countsByValue)
+
+	commonValueSet := map[any]struct{}{}
+	for _, mcv := range mostCommonValues {
+		commonValueSet[mcv.Value] = struct{}{}
+	}
+	var nonNilNonCommonValues []any
+	for value, count := range countsByValue {
+		if _, ok := commonValueSet[value]; !ok {
+			for i := 0; i < count; i++ {
+				nonNilNonCommonValues = append(nonNilNonCommonValues, value)
+			}
 		}
 	}
 
 	nullFraction := 0.0
+	distinctFraction := 0.0
 	if total := len(t.rows); total > 0 {
 		nullFraction = float64(nullCount) / float64(total)
+
+		if nonNullCount := total - nullCount; nonNullCount > 0 {
+			distinctFraction = float64(len(countsByValue)) / float64(nonNullCount)
+		}
 	}
 
-	inverseDistinctFraction := 0.0
-	if distinctCount := len(nonNilValueSet); distinctCount > 0 {
-		inverseDistinctFraction = 1 / float64(distinctCount)
+	var minValue, maxValue any
+	for value := range countsByValue {
+		if minValue == nil || ordering.CompareValues(value, minValue) == ordering.OrderTypeBefore {
+			minValue = value
+		}
+
+		if maxValue == nil || ordering.CompareValues(value, maxValue) == ordering.OrderTypeAfter {
+			maxValue = value
+		}
 	}
 
 	return impls.ColumnStatistics{
-		Field:                   t.fields[columnIndex].Field,
-		InverseNullProportion:   nullFraction,
-		InverseDistinctFraction: inverseDistinctFraction,
-		HistogramBounds:         t.calculateHistogramBounds(nonNilValues),
+		Field:            t.fields[columnIndex].Field,
+		NullFraction:     nullFraction,
+		DistinctFraction: distinctFraction,
+		MinValue:         minValue,
+		MaxValue:         maxValue,
+		MostCommonValues: mostCommonValues,
+		HistogramBounds:  t.calculateHistogramBounds(nonNilNonCommonValues),
 	}
+}
+
+const maxMostCommonValues = 20
+const minimumCommonFrequency = 0.001
+
+func (t *table) calculateMostCommonValues(countsByValue map[any]int) []impls.MostCommonValue {
+	var mostCommonValues []impls.MostCommonValue
+	for value, count := range countsByValue {
+		if float64(count)/float64(len(t.rows)) >= minimumCommonFrequency {
+			mostCommonValues = append(mostCommonValues, impls.MostCommonValue{Value: value, Frequency: float64(count) / float64(len(t.rows))})
+		}
+	}
+
+	slices.SortFunc(mostCommonValues, func(a, b impls.MostCommonValue) int {
+		if a.Frequency < b.Frequency {
+			return 1
+		} else if a.Frequency > b.Frequency {
+			return -1
+		}
+
+		return 0
+	})
+
+	if len(mostCommonValues) > maxMostCommonValues {
+		mostCommonValues = mostCommonValues[:maxMostCommonValues]
+	}
+
+	return mostCommonValues
 }
 
 const numHistogramBuckets = 100
 
-func (t *table) calculateHistogramBounds(nonNilValues []any) []any {
-	if len(nonNilValues) < 2 || ordering.CompareValues(nonNilValues[0], nonNilValues[1]) == ordering.OrderTypeIncomparable {
+func (t *table) calculateHistogramBounds(nonNilNonCommonValues []any) []any {
+	if len(nonNilNonCommonValues) < 2 || ordering.CompareValues(nonNilNonCommonValues[0], nonNilNonCommonValues[1]) == ordering.OrderTypeIncomparable {
 		return nil
 	}
 
-	slices.SortFunc(nonNilValues, func(a, b any) int {
+	slices.SortFunc(nonNilNonCommonValues, func(a, b any) int {
 		switch ordering.CompareValues(a, b) {
 		case ordering.OrderTypeBefore:
 			return -1
@@ -235,13 +290,13 @@ func (t *table) calculateHistogramBounds(nonNilValues []any) []any {
 		}
 	})
 
-	if len(nonNilValues) <= numHistogramBuckets {
-		return nonNilValues
+	if len(nonNilNonCommonValues) <= numHistogramBuckets {
+		return nonNilNonCommonValues
 	}
 
 	bounds := make([]any, 0, numHistogramBuckets-1)
 	for i := 1; i < numHistogramBuckets; i++ {
-		bounds = append(bounds, nonNilValues[(i*len(nonNilValues))/numHistogramBuckets])
+		bounds = append(bounds, nonNilNonCommonValues[(i*len(nonNilNonCommonValues))/numHistogramBuckets])
 	}
 
 	return bounds

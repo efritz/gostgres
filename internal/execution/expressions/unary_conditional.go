@@ -8,6 +8,14 @@ import (
 	"github.com/efritz/gostgres/internal/shared/types"
 )
 
+func IsNegation(expr impls.Expression) (impls.Expression, bool) {
+	if u, ok := expr.(*unaryExpression); ok && u.operatorText == "not" {
+		return u.expression, true
+	}
+
+	return expr, false
+}
+
 func NewNot(expression impls.Expression) impls.Expression {
 	typeChecker := func(expression types.Type) (types.Type, error) {
 		if expression == types.TypeBool {

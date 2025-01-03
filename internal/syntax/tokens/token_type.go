@@ -18,6 +18,7 @@ const (
 	TokenTypeAll
 	TokenTypeAlter
 	TokenTypeAnd
+	TokenTypeAny
 	TokenTypeAs
 	TokenTypeAscending
 	TokenTypeBetween
@@ -30,12 +31,14 @@ const (
 	TokenTypeDescending
 	TokenTypeDistinct
 	TokenTypeExcept
+	TokenTypeExists
 	TokenTypeExplain
 	TokenTypeFalse
 	TokenTypeForeign
 	TokenTypeFrom
 	TokenTypeGroup
 	TokenTypeILike
+	TokenTypeIn
 	TokenTypeIndex
 	TokenTypeInsert
 	TokenTypeIntersect
@@ -58,6 +61,7 @@ const (
 	TokenTypeSelect
 	TokenTypeSequence
 	TokenTypeSet
+	TokenTypeSome
 	TokenTypeSymmetric
 	TokenTypeTable
 	TokenTypeTrue
@@ -110,6 +114,7 @@ const (
 	TokenTypeNotBetween
 	TokenTypeNotBetweenSymmetric
 	TokenTypeNotILike
+	TokenTypeNotIn
 	TokenTypeNotLike
 	TokenTypeNotNull
 	TokenTypePrimaryKey

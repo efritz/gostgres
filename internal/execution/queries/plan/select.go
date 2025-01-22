@@ -4,6 +4,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -132,6 +133,28 @@ func (n *logicalSelectNode) Optimize(ctx impls.OptimizationContext) {
 	if expressions.SubsumesOrder(n.order, n.LogicalNode.Ordering()) {
 		n.order = nil
 	}
+}
+
+func (n *logicalSelectNode) EstimateCost() impls.NodeCost {
+	selectCost := n.LogicalNode.EstimateCost()
+
+	selectCost = cost.ApplyFilterToCost(selectCost, n.filter)
+
+	if len(n.groupExpressions) > 0 {
+		selectCost = cost.ApplyAggregationToCost(selectCost)
+	}
+
+	if n.order != nil {
+		selectCost = cost.ApplySortToCost(selectCost)
+	}
+
+	selectCost = cost.AlterCostByLimitOffset(selectCost, n.limit, n.offset)
+
+	if n.projection != nil && len(n.groupExpressions) == 0 {
+		selectCost = cost.ApplyProjectionToCost(selectCost)
+	}
+
+	return selectCost
 }
 
 func (n *logicalSelectNode) Filter() impls.Expression {

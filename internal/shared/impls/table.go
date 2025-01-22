@@ -6,7 +6,6 @@ type Table interface {
 	Name() string
 	Indexes() []BaseIndex
 	Fields() []TableField
-	Size() int
 	TIDs() []int64
 	Row(tid int64) (rows.Row, bool)
 	SetPrimaryKey(index BaseIndex) error
@@ -14,4 +13,6 @@ type Table interface {
 	AddConstraint(ctx ExecutionContext, constraint Constraint) error
 	Insert(ctx ExecutionContext, row rows.Row) (_ rows.Row, err error)
 	Delete(row rows.Row) (rows.Row, bool, error)
+	Statistics() TableStatistics
+	Analyze() error
 }

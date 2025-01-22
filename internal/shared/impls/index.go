@@ -13,6 +13,8 @@ type BaseIndex interface {
 	Filter() Expression
 	Insert(row rows.Row) error
 	Delete(row rows.Row) error
+	Statistics() IndexStatistics
+	Analyze() error
 }
 
 type ScanOptions any

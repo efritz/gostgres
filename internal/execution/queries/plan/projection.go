@@ -3,6 +3,7 @@ package plan
 import (
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -38,6 +39,10 @@ func (n *logicalProjectionNode) AddOrder(ctx impls.OptimizationContext, order im
 func (n *logicalProjectionNode) Optimize(ctx impls.OptimizationContext) {
 	n.projection.Optimize(ctx)
 	n.LogicalNode.Optimize(ctx)
+}
+
+func (n *logicalProjectionNode) EstimateCost() impls.NodeCost {
+	return cost.ApplyProjectionToCost(n.LogicalNode.EstimateCost())
 }
 
 func (n *logicalProjectionNode) Filter() impls.Expression {

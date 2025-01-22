@@ -7,7 +7,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
-	"github.com/efritz/gostgres/internal/execution/queries/plan/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/setops"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/syntax/tokens"
@@ -18,7 +18,7 @@ type SelectBuilder struct {
 	From              *TableExpression
 	Where             impls.Expression
 	Groupings         []impls.Expression
-	Combinations      []*CombinationDescription
+	SetOps            []*SetOpDescription
 	Order             impls.OrderExpression
 	Limit             *int
 	Offset            *int
@@ -27,7 +27,7 @@ type SelectBuilder struct {
 	projection *projection.Projection
 }
 
-type CombinationDescription struct {
+type SetOpDescription struct {
 	Type     tokens.TokenType
 	Distinct bool
 	Select   TableReferenceOrExpression
@@ -133,16 +133,16 @@ func (b *SelectBuilder) resolvePrimarySelect(ctx *impls.NodeResolutionContext) e
 }
 
 func (b *SelectBuilder) resolveCombinations(ctx *impls.NodeResolutionContext) error {
-	for _, c := range b.Combinations {
+	for _, setOp := range b.SetOps {
 		if err := ctx.WithScope(func() error {
-			return c.Select.Resolve(ctx)
+			return setOp.Select.Resolve(ctx)
 		}); err != nil {
 			return err
 		}
 
-		if len(c.Select.TableFields()) != len(b.fields) {
+		if len(setOp.Select.TableFields()) != len(b.fields) {
 			// TODO - check types as well
-			return fmt.Errorf("selects in combination must have the same number of columns")
+			return fmt.Errorf("selects in set operations must have the same number of columns")
 		}
 	}
 
@@ -159,7 +159,7 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 		return nil, err
 	}
 
-	if len(b.Combinations) > 0 {
+	if len(b.SetOps) > 0 {
 		node = plan.NewSelect(
 			node,
 			b.projection,
@@ -170,23 +170,23 @@ func (b *SelectBuilder) Build() (plan.LogicalNode, error) {
 			nil,
 		)
 
-		for _, c := range b.Combinations {
+		for _, setOp := range b.SetOps {
 			var factory func(left, right plan.LogicalNode, distinct bool) (plan.LogicalNode, error)
-			switch c.Type {
+			switch setOp.Type {
 			case tokens.TokenTypeUnion:
-				factory = combination.NewUnion
+				factory = setops.NewUnion
 			case tokens.TokenTypeIntersect:
-				factory = combination.NewIntersect
+				factory = setops.NewIntersect
 			case tokens.TokenTypeExcept:
-				factory = combination.NewExcept
+				factory = setops.NewExcept
 			}
 
-			right, err := c.Select.Build()
+			right, err := setOp.Select.Build()
 			if err != nil {
 				return nil, err
 			}
 
-			newNode, err := factory(node, right, c.Distinct)
+			newNode, err := factory(node, right, setOp.Distinct)
 			if err != nil {
 				return nil, err
 			}

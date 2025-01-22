@@ -61,7 +61,7 @@ func (p *parser) parseSimpleSelect() (*ast.SelectBuilder, error) {
 		return nil, err
 	}
 
-	combinations, err := p.parseCombinedQuery()
+	setOps, err := p.parseCombinedQuery()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (p *parser) parseSimpleSelect() (*ast.SelectBuilder, error) {
 		From:              node,
 		Where:             whereExpression,
 		Groupings:         groupings,
-		Combinations:      combinations,
+		SetOps:            setOps,
 	}
 
 	return builder, nil
@@ -131,8 +131,8 @@ func (p *parser) parseGroupBy() ([]impls.Expression, bool, error) {
 }
 
 // combinedQuery := [ ( ( `UNION` | `INTERSECT` | `EXCEPT` ) [ ( `ALL` | `DISTINCT` ) ] combinationTarget ) [, ...] ]
-func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
-	var combinations []*ast.CombinationDescription
+func (p *parser) parseCombinedQuery() ([]*ast.SetOpDescription, error) {
+	var setOps []*ast.SetOpDescription
 	for {
 		typ := p.current().Type
 
@@ -155,16 +155,16 @@ func (p *parser) parseCombinedQuery() ([]*ast.CombinationDescription, error) {
 			return nil, err
 		}
 
-		description := &ast.CombinationDescription{
+		description := &ast.SetOpDescription{
 			Type:     typ,
 			Distinct: distinct,
 			Select:   unionTarget,
 		}
 
-		combinations = append(combinations, description)
+		setOps = append(setOps, description)
 	}
 
-	return combinations, nil
+	return setOps, nil
 }
 
 // combinationTarget := simpleSelect | ( `(` selectOrValues `)` )

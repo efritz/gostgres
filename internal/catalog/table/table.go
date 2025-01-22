@@ -5,17 +5,19 @@ import (
 
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
+	"github.com/efritz/gostgres/internal/shared/ordering"
 	"github.com/efritz/gostgres/internal/shared/rows"
 	"golang.org/x/exp/slices"
 )
 
 type table struct {
-	name        string
-	fields      []impls.TableField
-	rows        map[int64]rows.Row
-	primaryKey  impls.BaseIndex
-	indexes     []impls.BaseIndex
-	constraints []impls.Constraint
+	name            string
+	fields          []impls.TableField
+	rows            map[int64]rows.Row
+	primaryKey      impls.BaseIndex
+	indexes         []impls.BaseIndex
+	constraints     []impls.Constraint
+	tableStatistics impls.TableStatistics
 }
 
 var _ impls.Table = &table{}
@@ -29,9 +31,10 @@ func NewTable(name string, nonInternalFields []impls.TableField) impls.Table {
 	}
 
 	return &table{
-		name:   name,
-		fields: tableFields,
-		rows:   map[int64]rows.Row{},
+		name:            name,
+		fields:          tableFields,
+		rows:            map[int64]rows.Row{},
+		tableStatistics: impls.TableStatistics{},
 	}
 }
 
@@ -49,10 +52,6 @@ func (t *table) Indexes() []impls.BaseIndex {
 
 func (t *table) Fields() []impls.TableField {
 	return slices.Clone(t.fields)
-}
-
-func (t *table) Size() int {
-	return len(t.rows)
 }
 
 func (t *table) TIDs() []int64 {
@@ -158,4 +157,147 @@ func (t *table) Delete(row rows.Row) (rows.Row, bool, error) {
 
 	delete(t.rows, tid)
 	return fullRow, true, nil
+}
+
+func (t *table) Statistics() impls.TableStatistics {
+	return t.tableStatistics
+}
+
+func (t *table) Analyze() error {
+	tableStats := impls.TableStatistics{
+		RowCount:         len(t.rows),
+		ColumnStatistics: make([]impls.ColumnStatistics, len(t.fields)),
+	}
+
+	for columnIndex := range t.fields {
+		tableStats.ColumnStatistics[columnIndex] = t.analyzeColumn(columnIndex)
+	}
+
+	for _, index := range t.Indexes() {
+		if err := index.Analyze(); err != nil {
+			return err
+		}
+	}
+
+	t.tableStatistics = tableStats
+	return nil
+}
+
+func (t *table) analyzeColumn(columnIndex int) impls.ColumnStatistics {
+	nullCount := 0
+	countsByValue := map[any]int{}
+
+	for _, row := range t.rows {
+		value := row.Values[columnIndex]
+
+		if value == nil {
+			nullCount++
+		} else {
+			countsByValue[value] = countsByValue[value] + 1
+		}
+	}
+
+	mostCommonValues := t.calculateMostCommonValues(countsByValue)
+
+	commonValueSet := map[any]struct{}{}
+	for _, mcv := range mostCommonValues {
+		commonValueSet[mcv.Value] = struct{}{}
+	}
+	var nonNilNonCommonValues []any
+	for value, count := range countsByValue {
+		if _, ok := commonValueSet[value]; !ok {
+			for i := 0; i < count; i++ {
+				nonNilNonCommonValues = append(nonNilNonCommonValues, value)
+			}
+		}
+	}
+
+	nullFraction := 0.0
+	distinctFraction := 0.0
+	if total := len(t.rows); total > 0 {
+		nullFraction = float64(nullCount) / float64(total)
+
+		if nonNullCount := total - nullCount; nonNullCount > 0 {
+			distinctFraction = float64(len(countsByValue)) / float64(nonNullCount)
+		}
+	}
+
+	var minValue, maxValue any
+	for value := range countsByValue {
+		if minValue == nil || ordering.CompareValues(value, minValue) == ordering.OrderTypeBefore {
+			minValue = value
+		}
+
+		if maxValue == nil || ordering.CompareValues(value, maxValue) == ordering.OrderTypeAfter {
+			maxValue = value
+		}
+	}
+
+	return impls.ColumnStatistics{
+		Field:            t.fields[columnIndex].Field,
+		NullFraction:     nullFraction,
+		DistinctFraction: distinctFraction,
+		MinValue:         minValue,
+		MaxValue:         maxValue,
+		MostCommonValues: mostCommonValues,
+		HistogramBounds:  t.calculateHistogramBounds(nonNilNonCommonValues),
+	}
+}
+
+const maxMostCommonValues = 20
+const minimumCommonFrequency = 0.001
+
+func (t *table) calculateMostCommonValues(countsByValue map[any]int) []impls.MostCommonValue {
+	var mostCommonValues []impls.MostCommonValue
+	for value, count := range countsByValue {
+		if float64(count)/float64(len(t.rows)) >= minimumCommonFrequency {
+			mostCommonValues = append(mostCommonValues, impls.MostCommonValue{Value: value, Frequency: float64(count) / float64(len(t.rows))})
+		}
+	}
+
+	slices.SortFunc(mostCommonValues, func(a, b impls.MostCommonValue) int {
+		if a.Frequency < b.Frequency {
+			return 1
+		} else if a.Frequency > b.Frequency {
+			return -1
+		}
+
+		return 0
+	})
+
+	if len(mostCommonValues) > maxMostCommonValues {
+		mostCommonValues = mostCommonValues[:maxMostCommonValues]
+	}
+
+	return mostCommonValues
+}
+
+const numHistogramBuckets = 100
+
+func (t *table) calculateHistogramBounds(nonNilNonCommonValues []any) []any {
+	if len(nonNilNonCommonValues) < 2 || ordering.CompareValues(nonNilNonCommonValues[0], nonNilNonCommonValues[1]) == ordering.OrderTypeIncomparable {
+		return nil
+	}
+
+	slices.SortFunc(nonNilNonCommonValues, func(a, b any) int {
+		switch ordering.CompareValues(a, b) {
+		case ordering.OrderTypeBefore:
+			return -1
+		case ordering.OrderTypeAfter:
+			return 1
+		default:
+			return 0
+		}
+	})
+
+	if len(nonNilNonCommonValues) <= numHistogramBuckets {
+		return nonNilNonCommonValues
+	}
+
+	bounds := make([]any, 0, numHistogramBuckets-1)
+	for i := 1; i < numHistogramBuckets; i++ {
+		bounds = append(bounds, nonNilNonCommonValues[(i*len(nonNilNonCommonValues))/numHistogramBuckets])
+	}
+
+	return bounds
 }

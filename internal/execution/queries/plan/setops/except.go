@@ -1,12 +1,13 @@
-package combination
+package setops
 
 import (
 	"fmt"
 	"slices"
 
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
-	"github.com/efritz/gostgres/internal/execution/queries/nodes/combination"
+	"github.com/efritz/gostgres/internal/execution/queries/nodes/setops"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -62,6 +63,10 @@ func (n *logicalExceptNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 }
 
+func (n *logicalExceptNode) EstimateCost() impls.NodeCost {
+	return cost.EstimateExceptCost(n.left.EstimateCost(), n.right.EstimateCost(), n.distinct)
+}
+
 func (n *logicalExceptNode) Filter() impls.Expression {
 	return n.left.Filter()
 }
@@ -70,5 +75,5 @@ func (n *logicalExceptNode) Ordering() impls.OrderExpression { return nil }
 func (n *logicalExceptNode) SupportsMarkRestore() bool       { return false }
 
 func (n *logicalExceptNode) Build() nodes.Node {
-	return combination.NewExcept(n.left.Build(), n.right.Build(), n.fields, n.distinct)
+	return setops.NewExcept(n.left.Build(), n.right.Build(), n.fields, n.distinct)
 }

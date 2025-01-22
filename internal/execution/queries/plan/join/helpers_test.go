@@ -31,6 +31,7 @@ func (m *mockLogicalNode) Fields() []fields.Field {
 func (*mockLogicalNode) AddFilter(impls.OptimizationContext, impls.Expression)     {}
 func (*mockLogicalNode) AddOrder(impls.OptimizationContext, impls.OrderExpression) {}
 func (*mockLogicalNode) Optimize(impls.OptimizationContext)                        {}
+func (*mockLogicalNode) EstimateCost() impls.NodeCost                              { return impls.NodeCost{} }
 func (*mockLogicalNode) Filter() impls.Expression                                  { return nil }
 func (*mockLogicalNode) Ordering() impls.OrderExpression                           { return nil }
 func (*mockLogicalNode) SupportsMarkRestore() bool                                 { return false }

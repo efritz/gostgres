@@ -29,9 +29,20 @@ func (n *logicalValuesNode) Fields() []fields.Field {
 func (n *logicalValuesNode) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {}
 func (n *logicalValuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 func (n *logicalValuesNode) Optimize(ctx impls.OptimizationContext)                              {}
-func (n *logicalValuesNode) Filter() impls.Expression                                            { return nil }
-func (n *logicalValuesNode) Ordering() impls.OrderExpression                                     { return nil }
-func (n *logicalValuesNode) SupportsMarkRestore() bool                                           { return false }
+
+func (n *logicalValuesNode) EstimateCost() impls.NodeCost {
+	// TODO - create statistics
+	return impls.NodeCost{
+		Statistics: impls.RelationStatistics{
+			RowCount:         len(n.expressions),
+			ColumnStatistics: nil,
+		},
+	}
+}
+
+func (n *logicalValuesNode) Filter() impls.Expression        { return nil }
+func (n *logicalValuesNode) Ordering() impls.OrderExpression { return nil }
+func (n *logicalValuesNode) SupportsMarkRestore() bool       { return false }
 
 func (n *logicalValuesNode) Build() nodes.Node {
 	return nodes.NewValues(n.fields, n.expressions)

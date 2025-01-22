@@ -7,6 +7,14 @@ import (
 
 // TODO - normalization into "Conjunctive Normal Form"
 
+func IsConjunction(e impls.Expression) bool {
+	if c, ok := e.(*conditionalExpression); ok {
+		return c.conjunctions
+	}
+
+	return false
+}
+
 func Conjunctions(e impls.Expression) []impls.Expression {
 	if e == nil {
 		return nil
@@ -17,6 +25,14 @@ func Conjunctions(e impls.Expression) []impls.Expression {
 	}
 
 	return []impls.Expression{e}
+}
+
+func IsDisjunction(e impls.Expression) bool {
+	if c, ok := e.(*conditionalExpression); ok {
+		return !c.conjunctions
+	}
+
+	return false
 }
 
 func Disjunctions(e impls.Expression) []impls.Expression {

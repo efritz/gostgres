@@ -1,4 +1,4 @@
-package combination
+package setops
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
@@ -64,7 +64,7 @@ func (n *exceptNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			rc, ok := rowsToIgnore[key]
 			if !ok {
 				if n.distinct {
-					// This is an "EXCEPT DISTINCT" queryh, and we need to track the set of rows
+					// This is an "EXCEPT DISTINCT" query, and we need to track the set of rows
 					// we emit so we don't emit a duplicate later. We can reuse the same list.
 					// The value of the count here is not relevant, as we only adjust and check
 					// this value for "EXCEPT ALL" queries.

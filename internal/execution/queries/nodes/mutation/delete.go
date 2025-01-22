@@ -1,7 +1,9 @@
 package mutation
 
 import (
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	projectionHelpers "github.com/efritz/gostgres/internal/execution/queries/nodes/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -10,27 +12,34 @@ import (
 
 type deleteNode struct {
 	nodes.Node
-	table     impls.Table
-	aliasName string
+	table      impls.Table
+	aliasName  string
+	projection *projection.Projection
 }
 
-func NewDelete(node nodes.Node, table impls.Table, aliasName string) nodes.Node {
+func NewDelete(node nodes.Node, table impls.Table, aliasName string, projection *projection.Projection) nodes.Node {
 	return &deleteNode{
-		Node:      node,
-		table:     table,
-		aliasName: aliasName,
+		Node:       node,
+		table:      table,
+		aliasName:  aliasName,
+		projection: projection,
 	}
 }
 
 func (n *deleteNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("delete from %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
+
+	if n.projection != nil {
+		w.WritefLine("returning %s", n.projection)
+		n.Node.Serialize(w.Indent())
+	}
 }
 
 func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Delete scanner")
 
-	scanner, err := n.Node.Scanner(ctx)
+	deletedRows, err := n.deleteRows(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,9 +47,31 @@ func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Delete")
 
+		if len(deletedRows) != 0 {
+			return rows.Row{}, scan.ErrNoRows
+		}
+
+		row := deletedRows[0]
+		deletedRows = deletedRows[1:]
+		return projectionHelpers.Project(ctx, row, n.projection)
+	}), nil
+}
+
+func (n *deleteNode) deleteRows(ctx impls.ExecutionContext) ([]rows.Row, error) {
+	scanner, err := n.Node.Scanner(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var deletedRows []rows.Row
+	for {
 		row, err := scanner.Scan()
 		if err != nil {
-			return rows.Row{}, err
+			if err == scan.ErrNoRows {
+				break
+			}
+
+			return nil, err
 		}
 
 		relationName := n.table.Name()
@@ -50,17 +81,21 @@ func (n *deleteNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 
 		tidRow, err := row.IsolateTID(relationName)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
 		deletedRow, ok, err := n.table.Delete(tidRow)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 		if !ok {
-			return rows.Row{}, scan.ErrNoRows
+			continue
 		}
 
-		return deletedRow, nil
-	}), nil
+		if n.projection != nil {
+			deletedRows = append(deletedRows, deletedRow)
+		}
+	}
+
+	return deletedRows, nil
 }

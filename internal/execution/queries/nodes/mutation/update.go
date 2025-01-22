@@ -3,8 +3,10 @@ package mutation
 import (
 	"fmt"
 
+	"github.com/efritz/gostgres/internal/execution/projection"
 	"github.com/efritz/gostgres/internal/execution/queries"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
+	projectionHelpers "github.com/efritz/gostgres/internal/execution/queries/nodes/projection"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/rows"
@@ -16,6 +18,7 @@ type updateNode struct {
 	table          impls.Table
 	aliasName      string
 	setExpressions []SetExpression
+	projection     *projection.Projection
 }
 
 type SetExpression struct {
@@ -28,24 +31,31 @@ func NewUpdate(
 	table impls.Table,
 	aliasName string,
 	setExpressions []SetExpression,
+	projection *projection.Projection,
 ) nodes.Node {
 	return &updateNode{
 		Node:           node,
 		table:          table,
 		aliasName:      aliasName,
 		setExpressions: setExpressions,
+		projection:     projection,
 	}
 }
 
 func (n *updateNode) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("update %s", n.table.Name())
 	n.Node.Serialize(w.Indent())
+
+	if n.projection != nil {
+		w.WritefLine("returning %s", n.projection)
+		n.Node.Serialize(w.Indent())
+	}
 }
 
 func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Update scanner")
 
-	scanner, err := n.Node.Scanner(ctx)
+	updatedRows, err := n.updateRows(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -53,23 +63,45 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Update")
 
+		if len(updatedRows) != 0 {
+			return rows.Row{}, scan.ErrNoRows
+		}
+
+		row := updatedRows[0]
+		updatedRows = updatedRows[1:]
+		return projectionHelpers.Project(ctx, row, n.projection)
+	}), nil
+}
+
+func (n *updateNode) updateRows(ctx impls.ExecutionContext) ([]rows.Row, error) {
+	scanner, err := n.Node.Scanner(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedRows []rows.Row
+	for {
 		row, err := scanner.Scan()
 		if err != nil {
-			return rows.Row{}, err
+			if err == scan.ErrNoRows {
+				break
+			}
+
+			return nil, err
 		}
 
 		updates := map[int]any{}
 		for _, set := range n.setExpressions {
 			value, err := queries.Evaluate(ctx, set.Expression, row)
 			if err != nil {
-				return rows.Row{}, err
+				return nil, err
 			}
 
 			found := false
 			for i, field := range n.table.Fields() {
 				if field.Name() == set.Name {
 					if field.Internal() {
-						return rows.Row{}, fmt.Errorf("cannot update internal field %q", field.Name())
+						return nil, fmt.Errorf("cannot update internal field %q", field.Name())
 					}
 
 					found = true
@@ -79,7 +111,7 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			}
 
 			if !found {
-				return rows.Row{}, fmt.Errorf("unknown column %q", set.Name)
+				return nil, fmt.Errorf("unknown column %q", set.Name)
 			}
 		}
 
@@ -90,14 +122,14 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 
 		tidRow, err := row.IsolateTID(relationName)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
 		baseRow, ok, err := n.table.Delete(tidRow)
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		} else if !ok {
-			return rows.Row{}, nil
+			return nil, nil
 		}
 
 		for i, value := range updates {
@@ -106,9 +138,13 @@ func (n *updateNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 
 		updatedRow, err := n.table.Insert(ctx, baseRow.DropInternalFields())
 		if err != nil {
-			return rows.Row{}, err
+			return nil, err
 		}
 
-		return updatedRow, nil
-	}), nil
+		if n.projection != nil {
+			updatedRows = append(updatedRows, updatedRow)
+		}
+	}
+
+	return updatedRows, nil
 }

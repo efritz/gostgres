@@ -14,6 +14,7 @@ const (
 	//
 	// Keywords
 
+	TokenTypeAnalyze
 	TokenTypeAdd
 	TokenTypeAll
 	TokenTypeAlter

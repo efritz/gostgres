@@ -17,6 +17,7 @@ var keywordSet = map[string]tokens.TokenType{
 	"add":        tokens.TokenTypeAdd,
 	"all":        tokens.TokenTypeAll,
 	"alter":      tokens.TokenTypeAlter,
+	"analyze":    tokens.TokenTypeAnalyze,
 	"and":        tokens.TokenTypeAnd,
 	"as":         tokens.TokenTypeAs,
 	"asc":        tokens.TokenTypeAscending,

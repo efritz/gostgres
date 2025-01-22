@@ -1,4 +1,4 @@
-package combination
+package setops
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
@@ -50,7 +50,10 @@ func (n *unionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 		return nil, err
 	}
 
-	var rightScanner scan.RowScanner
+	rightScanner, err := n.right.Scanner(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Union")
@@ -65,17 +68,11 @@ func (n *unionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 
 				return rows.Row{}, err
 			}
-
-			if mark(row) {
-				return row, nil
+			if !mark(row) {
+				continue
 			}
-		}
 
-		if rightScanner == nil {
-			rightScanner, err = n.right.Scanner(ctx)
-			if err != nil {
-				return rows.Row{}, err
-			}
+			return row, nil
 		}
 
 		for {
@@ -83,10 +80,11 @@ func (n *unionNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error)
 			if err != nil {
 				return rows.Row{}, err
 			}
-
-			if mark(row) {
-				return rows.NewRow(n.fields, row.Values)
+			if !mark(row) {
+				continue
 			}
+
+			return rows.NewRow(n.fields, row.Values)
 		}
 	}), nil
 }

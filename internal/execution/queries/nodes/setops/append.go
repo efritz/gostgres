@@ -1,4 +1,4 @@
-package combination
+package setops
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
@@ -38,7 +38,10 @@ func (n *appendNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 		return nil, err
 	}
 
-	var rightScanner scan.RowScanner
+	rightScanner, err := n.right.Scanner(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return scan.RowScannerFunc(func() (rows.Row, error) {
 		ctx.Log("Scanning Append")
@@ -57,20 +60,11 @@ func (n *appendNode) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error
 			return row, nil
 		}
 
-		if rightScanner == nil {
-			rightScanner, err = n.right.Scanner(ctx)
-			if err != nil {
-				return rows.Row{}, err
-			}
+		row, err := rightScanner.Scan()
+		if err != nil {
+			return rows.Row{}, err
 		}
 
-		for {
-			row, err := rightScanner.Scan()
-			if err != nil {
-				return rows.Row{}, err
-			}
-
-			return rows.NewRow(n.fields, row.Values)
-		}
+		return rows.NewRow(n.fields, row.Values)
 	}), nil
 }

@@ -3,7 +3,6 @@ package access
 import (
 	"fmt"
 
-	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/serialization"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -12,36 +11,27 @@ import (
 )
 
 type indexAccessStrategy[O impls.ScanOptions] struct {
-	table impls.Table
-	index impls.Index[O]
-	opts  O
+	table     impls.Table
+	index     impls.Index[O]
+	opts      O
+	condition impls.Expression
 }
 
-func NewIndexAccessStrategy[O impls.ScanOptions](table impls.Table, index impls.Index[O], opts O) nodes.AccessStrategy {
+func NewIndexAccessStrategy[O impls.ScanOptions](table impls.Table, index impls.Index[O], opts O, condition impls.Expression) nodes.AccessStrategy {
 	return &indexAccessStrategy[O]{
-		table: table,
-		index: index,
-		opts:  opts,
+		table:     table,
+		index:     index,
+		opts:      opts,
+		condition: condition,
 	}
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Serialize(w serialization.IndentWriter) {
 	w.WritefLine(s.index.Description(s.opts))
 
-	if filter := s.Filter(); filter != nil {
-		w.Indent().WritefLine("index cond: %s", filter)
+	if s.condition != nil {
+		w.Indent().WritefLine("index cond: %s", s.condition)
 	}
-}
-
-func (s *indexAccessStrategy[ScanOptions]) Filter() impls.Expression {
-	filterExpression := s.index.Filter()
-	condition := s.index.Condition(s.opts)
-
-	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
-}
-
-func (s *indexAccessStrategy[ScanOptions]) Ordering() impls.OrderExpression {
-	return s.index.Ordering(s.opts)
 }
 
 func (s *indexAccessStrategy[ScanOptions]) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {

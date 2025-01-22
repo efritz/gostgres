@@ -22,14 +22,6 @@ func (s *tableAccessStrategy) Serialize(w serialization.IndentWriter) {
 	w.WritefLine("table scan of %s", s.table.Name())
 }
 
-func (s *tableAccessStrategy) Filter() impls.Expression {
-	return nil
-}
-
-func (s *tableAccessStrategy) Ordering() impls.OrderExpression {
-	return nil
-}
-
 func (s *tableAccessStrategy) Scanner(ctx impls.ExecutionContext) (scan.RowScanner, error) {
 	ctx.Log("Building Table Access Strategy scanner")
 

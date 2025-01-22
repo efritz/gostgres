@@ -6,6 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -57,13 +58,24 @@ func (n *logicalUpdateNode) Optimize(ctx impls.OptimizationContext) {
 	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
 }
 
+func (n *logicalUpdateNode) EstimateCost() impls.NodeCost {
+	updateCost := cost.MaterializeCost(n.LogicalNode.EstimateCost())
+	// NOTE: There's only one way to update data, so we don't need to consider the cost of
+	// the data manipulation. Every alternative plan will have the same cost, so comparison
+	// is useless.
+
+	if n.returning != nil {
+		updateCost = cost.ApplyProjectionToCost(updateCost)
+	}
+
+	return updateCost
+}
+
 func (n *logicalUpdateNode) Build() nodes.Node {
 	node := n.LogicalNode.Build()
 	if n.filter != nil {
 		node = nodes.NewFilter(node, n.filter)
 	}
 
-	node = mutation.NewUpdate(node, n.table, n.aliasName, n.setExpressions)
-	node = nodes.NewProjection(node, n.returning)
-	return node
+	return mutation.NewUpdate(node, n.table, n.aliasName, n.setExpressions, n.returning)
 }

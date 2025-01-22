@@ -14,7 +14,7 @@ type LogicalNode interface {
 	AddFilter(ctx impls.OptimizationContext, filter impls.Expression)
 	AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression)
 	Optimize(ctx impls.OptimizationContext)
-	EstimateCost() Cost
+	EstimateCost() impls.NodeCost
 	Filter() impls.Expression
 	Ordering() impls.OrderExpression
 
@@ -23,10 +23,6 @@ type LogicalNode interface {
 	SupportsMarkRestore() bool
 
 	Build() nodes.Node
-}
-
-type Cost struct {
-	// TODO
 }
 
 //
@@ -44,5 +40,6 @@ func NewQuery(n LogicalNode) queries.Query {
 
 func (q *NodeQuery) Execute(ctx impls.ExecutionContext, w protocol.ResponseWriter) {
 	q.LogicalNode.Optimize(ctx.OptimizationContext())
+	_ = q.LogicalNode.EstimateCost() // DEBUGGING
 	nodes.NewQuery(q.LogicalNode.Build()).Execute(ctx, w)
 }

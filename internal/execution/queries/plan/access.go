@@ -5,6 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/expressions"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes/access"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -59,8 +60,8 @@ func (n *logicalAccessNode) Optimize(ctx impls.OptimizationContext) {
 	n.order = nil
 }
 
-func (n *logicalAccessNode) EstimateCost() Cost {
-	return Cost{} // TODO
+func (n *logicalAccessNode) EstimateCost() impls.NodeCost {
+	return cost.ApplyFilterToCost(n.strategy.EstimateCost(), n.filter)
 }
 
 func (n *logicalAccessNode) Filter() impls.Expression {
@@ -162,6 +163,17 @@ func (s *logicalTableAccessStrategy) Ordering() impls.OrderExpression {
 	return nil
 }
 
+var tableAccessCostPerRow = impls.ResourceCost{CPU: 0.01, IO: 0.1}
+
+func (s *logicalTableAccessStrategy) EstimateCost() impls.NodeCost {
+	stats := s.table.Statistics()
+
+	return impls.NodeCost{
+		VariableCost: tableAccessCostPerRow.ScaleUniform(float64(stats.RowCount)),
+		Statistics:   stats,
+	}
+}
+
 func (s *logicalTableAccessStrategy) Build() nodes.AccessStrategy {
 	return access.NewTableAccessStrategy(s.table)
 }
@@ -184,6 +196,28 @@ func (s *logicalIndexAccessStrategy[O]) Filter() impls.Expression {
 	condition := s.index.Condition(s.opts)
 
 	return expressions.UnionFilters(append(expressions.Conjunctions(filterExpression), expressions.Conjunctions(condition)...)...)
+}
+
+var indexAccessCostPerRow = impls.ResourceCost{CPU: 0.01, IO: 0.1}
+
+func (s *logicalIndexAccessStrategy[O]) EstimateCost() impls.NodeCost {
+	tableStats := s.table.Statistics()
+	indexStats := s.index.Statistics()
+
+	// TODO - remove this use
+	selectivity := cost.EstimateFilterSelectivity(s.index.Condition(s.opts), impls.RelationStatistics{
+		RowCount:         indexStats.RowCount,
+		ColumnStatistics: tableStats.ColumnStatistics,
+	})
+	estimatedRows := float64(indexStats.RowCount) * selectivity
+
+	return impls.NodeCost{
+		VariableCost: indexAccessCostPerRow.ScaleUniform(estimatedRows),
+		Statistics: impls.RelationStatistics{
+			RowCount:         int(estimatedRows),
+			ColumnStatistics: tableStats.ColumnStatistics, // TODO - update based on filter, condition
+		},
+	}
 }
 
 func (s *logicalIndexAccessStrategy[O]) Build() nodes.AccessStrategy {

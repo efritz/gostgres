@@ -21,7 +21,7 @@ func (n *logicalAnalyze) Fields() []fields.Field                                
 func (n *logicalAnalyze) AddFilter(ctx impls.OptimizationContext, filter impls.Expression)    {} // top-level
 func (n *logicalAnalyze) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {} // top-level
 func (n *logicalAnalyze) Optimize(ctx impls.OptimizationContext)                              {}
-func (n *logicalAnalyze) EstimateCost() Cost                                                  { return Cost{} }
+func (n *logicalAnalyze) EstimateCost() impls.NodeCost                                        { return impls.NodeCost{} }
 func (n *logicalAnalyze) Filter() impls.Expression                                            { return nil }
 func (n *logicalAnalyze) Ordering() impls.OrderExpression                                     { return nil }
 func (n *logicalAnalyze) SupportsMarkRestore() bool                                           { return false }

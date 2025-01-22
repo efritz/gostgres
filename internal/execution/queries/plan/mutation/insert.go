@@ -5,6 +5,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -42,8 +43,17 @@ func (n *logicalInsertNode) Opitmize(ctx impls.OptimizationContext) {
 	n.LogicalNode.Optimize(ctx)
 }
 
-func (n *logicalInsertNode) EstimateCost() plan.Cost {
-	return plan.Cost{} // TODO
+func (n *logicalInsertNode) EstimateCost() impls.NodeCost {
+	insertCost := cost.MaterializeCost(n.LogicalNode.EstimateCost())
+	// NOTE: There's only one way to insert data, so we don't need to consider the cost of
+	// the data manipulation. Every alternative plan will have the same cost, so comparison
+	// is useless.
+
+	if n.returning != nil {
+		insertCost = cost.ApplyProjectionToCost(insertCost)
+	}
+
+	return insertCost
 }
 
 func (n *logicalInsertNode) Build() nodes.Node {

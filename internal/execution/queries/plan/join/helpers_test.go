@@ -2,7 +2,6 @@ package join
 
 import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
-	"github.com/efritz/gostgres/internal/execution/queries/plan"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 	"github.com/efritz/gostgres/internal/shared/types"
@@ -32,7 +31,7 @@ func (m *mockLogicalNode) Fields() []fields.Field {
 func (*mockLogicalNode) AddFilter(impls.OptimizationContext, impls.Expression)     {}
 func (*mockLogicalNode) AddOrder(impls.OptimizationContext, impls.OrderExpression) {}
 func (*mockLogicalNode) Optimize(impls.OptimizationContext)                        {}
-func (*mockLogicalNode) EstimateCost() plan.Cost                                   { return plan.Cost{} }
+func (*mockLogicalNode) EstimateCost() impls.NodeCost                              { return impls.NodeCost{} }
 func (*mockLogicalNode) Filter() impls.Expression                                  { return nil }
 func (*mockLogicalNode) Ordering() impls.OrderExpression                           { return nil }
 func (*mockLogicalNode) SupportsMarkRestore() bool                                 { return false }

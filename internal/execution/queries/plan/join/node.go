@@ -8,6 +8,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes/join"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/execution/queries/plan/util"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
@@ -118,7 +119,7 @@ func (n *joinNodeLeaf) Optimize(ctx impls.OptimizationContext) {
 	n.relation.Optimize(ctx)
 }
 
-func (n *joinNodeLeaf) EstimateCost() plan.Cost {
+func (n *joinNodeLeaf) EstimateCost() impls.NodeCost {
 	return n.relation.EstimateCost()
 }
 
@@ -187,8 +188,8 @@ func (n *joinNodeInternal) Optimize(ctx impls.OptimizationContext) {
 	n.strategy = &logicalNestedLoopJoinStrategy{n: n}
 }
 
-func (n *joinNodeInternal) EstimateCost() plan.Cost {
-	return plan.Cost{} // TODO
+func (n *joinNodeInternal) EstimateCost() impls.NodeCost {
+	return n.strategy.EstimateCost()
 }
 
 func (n *joinNodeInternal) Filter() impls.Expression {
@@ -225,6 +226,7 @@ func (n *joinNodeInternal) Build() nodes.Node {
 
 type logicalJoinStrategy interface {
 	Ordering() impls.OrderExpression
+	EstimateCost() impls.NodeCost
 	Build(left nodes.Node, right nodes.Node, fields []fields.Field) nodes.JoinStrategy
 }
 
@@ -251,6 +253,17 @@ func (s *logicalNestedLoopJoinStrategy) Ordering() impls.OrderExpression {
 	return expressions.NewOrderExpression(append(leftOrdering.Expressions(), rightOrdering.Expressions()...))
 }
 
+func (s *logicalNestedLoopJoinStrategy) EstimateCost() impls.NodeCost {
+	leftCost := s.n.left.EstimateCost()
+	rightCost := s.n.right.EstimateCost()
+
+	// TODO - remove this use
+	selectivity := cost.EstimateFilterSelectivity(s.n.operator.Condition, leftCost.Statistics) // TODO - combine with rightCost.Statistics
+	hasCondition := s.n.operator.Condition != nil
+
+	return cost.EstimateNestedLoopJoinCost(leftCost, rightCost, selectivity, hasCondition)
+}
+
 func (s *logicalNestedLoopJoinStrategy) Build(left nodes.Node, right nodes.Node, fields []fields.Field) nodes.JoinStrategy {
 	return join.NewNestedLoopJoinStrategy(
 		left,
@@ -273,6 +286,10 @@ var _ logicalJoinStrategy = &logicalMergeJoinStrategy{}
 func (s *logicalMergeJoinStrategy) Ordering() impls.OrderExpression {
 	// TODO - can add right fields as well?
 	return s.n.left.Ordering()
+}
+
+func (s *logicalMergeJoinStrategy) EstimateCost() impls.NodeCost {
+	panic("unimplemented")
 }
 
 func (s *logicalMergeJoinStrategy) Build(left nodes.Node, right nodes.Node, fields []fields.Field) nodes.JoinStrategy {
@@ -301,6 +318,10 @@ var _ logicalJoinStrategy = &logicalHashJoinStrategy{}
 
 func (s *logicalHashJoinStrategy) Ordering() impls.OrderExpression {
 	return s.n.left.Ordering()
+}
+
+func (s *logicalHashJoinStrategy) EstimateCost() impls.NodeCost {
+	panic("unimplemented")
 }
 
 func (s *logicalHashJoinStrategy) Build(left nodes.Node, right nodes.Node, fields []fields.Field) nodes.JoinStrategy {

@@ -2,10 +2,12 @@ package impls
 
 import "github.com/efritz/gostgres/internal/shared/fields"
 
-type TableStatistics struct {
+type RelationStatistics struct {
 	RowCount         int
 	ColumnStatistics []ColumnStatistics
 }
+
+type TableStatistics = RelationStatistics
 
 type ColumnStatistics struct {
 	Field            fields.Field
@@ -24,4 +26,5 @@ type MostCommonValue struct {
 
 type IndexStatistics struct {
 	RowCount int
+	// TODO - separate column stats here?
 }

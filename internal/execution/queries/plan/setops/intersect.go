@@ -63,7 +63,7 @@ func (n *logicalIntersectNode) Optimize(ctx impls.OptimizationContext) {
 	n.right.Optimize(ctx)
 
 	// If left is smaller than right, swap order so we materialize the smaller relation
-	if n.left.EstimateCost().EstimatedRows < n.right.EstimateCost().EstimatedRows {
+	if n.left.EstimateCost().Statistics.RowCount < n.right.EstimateCost().Statistics.RowCount {
 		n.left, n.right = n.right, n.left
 	}
 }

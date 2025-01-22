@@ -6,6 +6,7 @@ import (
 	"github.com/efritz/gostgres/internal/execution/queries/nodes"
 	"github.com/efritz/gostgres/internal/execution/queries/nodes/mutation"
 	"github.com/efritz/gostgres/internal/execution/queries/plan"
+	"github.com/efritz/gostgres/internal/execution/queries/plan/cost"
 	"github.com/efritz/gostgres/internal/shared/fields"
 	"github.com/efritz/gostgres/internal/shared/impls"
 )
@@ -54,8 +55,17 @@ func (n *logicalDeleteNode) Optimize(ctx impls.OptimizationContext) {
 	n.filter = expressions.FilterDifference(n.filter, n.LogicalNode.Filter())
 }
 
-func (n *logicalDeleteNode) EstimateCost() plan.Cost {
-	return plan.Cost{} // TODO
+func (n *logicalDeleteNode) EstimateCost() impls.NodeCost {
+	deleteCost := cost.MaterializeCost(n.LogicalNode.EstimateCost())
+	// NOTE: There's only one way to delete data, so we don't need to consider the cost of
+	// the data manipulation. Every alternative plan will have the same cost, so comparison
+	// is useless.
+
+	if n.returning != nil {
+		deleteCost = cost.ApplyProjectionToCost(deleteCost)
+	}
+
+	return deleteCost
 }
 
 func (n *logicalDeleteNode) Build() nodes.Node {

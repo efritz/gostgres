@@ -30,8 +30,14 @@ func (n *logicalValuesNode) AddFilter(ctx impls.OptimizationContext, filter impl
 func (n *logicalValuesNode) AddOrder(ctx impls.OptimizationContext, order impls.OrderExpression) {}
 func (n *logicalValuesNode) Optimize(ctx impls.OptimizationContext)                              {}
 
-func (n *logicalValuesNode) EstimateCost() Cost {
-	return Cost{} // TODO
+func (n *logicalValuesNode) EstimateCost() impls.NodeCost {
+	// TODO - create statistics
+	return impls.NodeCost{
+		Statistics: impls.RelationStatistics{
+			RowCount:         len(n.expressions),
+			ColumnStatistics: nil,
+		},
+	}
 }
 
 func (n *logicalValuesNode) Filter() impls.Expression        { return nil }
